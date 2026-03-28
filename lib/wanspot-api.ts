@@ -1,7 +1,22 @@
+import Constants from 'expo-constants'
 import { supabase } from '@/lib/supabase'
 
+type Extra = {
+  wanspotApiUrl?: string
+}
+
+function firstNonEmpty(...vals: (string | undefined)[]): string {
+  for (const v of vals) {
+    const t = typeof v === 'string' ? v.trim() : ''
+    if (t) return t
+  }
+  return ''
+}
+
+/** Next.js wanspot のオリジン（末尾スラッシュなし）。実機では localhost ではなく本番 or LAN の URL を .env に。 */
 export function getWanspotApiBase(): string {
-  const raw = String(process.env.EXPO_PUBLIC_WANSPOT_API_URL ?? '').trim()
+  const extra = Constants.expoConfig?.extra as Extra | undefined
+  const raw = firstNonEmpty(process.env.EXPO_PUBLIC_WANSPOT_API_URL, extra?.wanspotApiUrl)
   return raw.replace(/\/$/, '')
 }
 
@@ -20,10 +35,16 @@ export type WanspotFetchInit = RequestInit & { json?: unknown }
 export async function wanspotFetch(path: string, init: WanspotFetchInit = {}): Promise<Response> {
   const base = getWanspotApiBase()
   if (!base) {
-    return new Response(JSON.stringify({ error: 'EXPO_PUBLIC_WANSPOT_API_URL が未設定です' }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({
+        error:
+          'API のベース URL が未設定です。.env.local に EXPO_PUBLIC_WANSPOT_API_URL（推奨）または NEXT_PUBLIC_APP_URL を書き、npx expo start を再起動してください。',
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
   }
   const url = `${base}${path.startsWith('/') ? path : `/${path}`}`
   const { data: { session } } = await supabase.auth.getSession()

@@ -28,7 +28,7 @@ import { IconPaw } from '@/components/IconPaw'
 import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
-import { spotPhotoUrl, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
+import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 
 const { width: WIN_W } = Dimensions.get('window')
 
@@ -43,6 +43,7 @@ type Spot = {
   address: string | null
   lat: number | null
   lng: number | null
+  price_level?: number | null
   instagram_id?: string | null
   ig_status?: IgStatus | string | null
   ig_last_checked?: string | null
@@ -67,18 +68,65 @@ type DetailJson = {
   reviews?: { text?: string }[]
 }
 
+function normalizePriceLevel(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === '') return null
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isFinite(n)) return null
+  return Math.max(0, Math.min(4, Math.round(n)))
+}
+
+/** Places Detail の JSON（フラット or { result } / エラーオブジェクト）を正規化 */
+function parsePlaceDetailResponse(json: unknown): DetailJson | null {
+  if (!json || typeof json !== 'object') return null
+  const o = json as Record<string, unknown>
+  if (typeof o.error === 'string' && o.error.length > 0) return null
+  if (o.result && typeof o.result === 'object') {
+    return o.result as DetailJson
+  }
+  return o as DetailJson
+}
+
+function priceLevelFromDetail(d: DetailJson | null): number | null {
+  if (!d) return null
+  const o = d as Record<string, unknown>
+  return normalizePriceLevel(o.price_level ?? o.priceLevel)
+}
+
 async function syncUserSpotReview(
   client: SupabaseClient,
   params: { spotId: string; userId: string; rating: number; comment: string | null }
 ) {
   const { spotId, userId, rating, comment } = params
   if (rating > 0) {
-    return client.from('reviews').upsert(
-      { spot_id: spotId, user_id: userId, rating, comment },
-      { onConflict: 'user_id,spot_id' }
-    )
+    const { data: rows } = await client
+      .from('reviews')
+      .select('id')
+      .eq('spot_id', spotId)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    const ids = (rows ?? []).map((x: { id: string }) => x.id).filter(Boolean)
+    const keepId = ids[0]
+    const row = { spot_id: spotId, user_id: userId, rating, comment }
+    if (keepId) {
+      const dupIds = ids.slice(1)
+      if (dupIds.length > 0) {
+        await client.from('reviews').delete().in('id', dupIds)
+      }
+      return client.from('reviews').update({ rating, comment }).eq('id', keepId)
+    }
+    return client.from('reviews').insert(row)
   }
   return client.from('reviews').delete().eq('spot_id', spotId).eq('user_id', userId)
+}
+
+/** 1ユーザー1件（DBに複製があっても最新のみ表示） */
+function dedupeReviewsLatestPerUser(rows: Review[]): Review[] {
+  const m = new Map<string, Review>()
+  for (const r of rows) {
+    const prev = m.get(r.user_id)
+    if (!prev || new Date(r.created_at).getTime() > new Date(prev.created_at).getTime()) m.set(r.user_id, r)
+  }
+  return Array.from(m.values()).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 
 const IconChevronLeft = () => (
@@ -99,18 +147,24 @@ const IconStar = ({ filled, size = 28 }: { filled: boolean; size?: number }) => 
   </Svg>
 )
 
-const IconStarSm = ({ filled }: { filled: boolean }) => <IconStar filled={filled} size={14} />
+/** メタカード内のレビュー星と同じ表示サイズ */
+const META_STAR_PX = 14
+
+const IconStarSm = ({ filled }: { filled: boolean }) => <IconStar filled={filled} size={META_STAR_PX} />
 
 function PriceLevel({ level }: { level: number | null }) {
   if (level === null || level === undefined) {
     return <Text style={styles.priceQ}>?</Text>
   }
+  const px = META_STAR_PX
+  const yenFs = Math.round((12 * px) / 10)
+  const yenY = Math.round((16 * px) / 10)
   return (
-    <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
+    <View style={styles.priceLevelRow}>
       {[1, 2, 3, 4].map((i) => (
-        <Svg key={i} width={10} height={10} viewBox="0 0 24 24">
+        <Svg key={i} width={px} height={px} viewBox="0 0 24 24">
           <Circle cx={12} cy={12} r={10} fill={i <= level ? '#FFD84D' : '#e8e8e8'} />
-          <SvgTextNode x={12} y={16} textAnchor="middle" fontSize={12} fill={i <= level ? '#1a1a1a' : '#bbb'} fontWeight="bold">
+          <SvgTextNode x={12} y={yenY} textAnchor="middle" fontSize={yenFs} fill={i <= level ? '#1a1a1a' : '#bbb'} fontWeight="bold">
             ¥
           </SvgTextNode>
         </Svg>
@@ -161,6 +215,8 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   const likeScale = useRef(new Animated.Value(1)).current
   const instagramAutoFetchSent = useRef<string | null>(null)
   const photoListRef = useRef<FlatList<string>>(null)
+  /** モーダル表示時点の評価・コメント（変更検知・未保存クローズ確認用） */
+  const checkInBaselineRef = useRef<{ rating: number; comment: string } | null>(null)
 
   const [spot, setSpot] = useState<Spot | null>(null)
   const [likeCount, setLikeCount] = useState(0)
@@ -190,7 +246,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
 
   const loadReviews = useCallback(async (sId: string) => {
     const { data } = await supabase.from('reviews').select('*').eq('spot_id', sId).order('created_at', { ascending: false })
-    setReviews((data ?? []) as Review[])
+    setReviews(dedupeReviewsLatestPerUser((data ?? []) as Review[]))
   }, [])
 
   useEffect(() => {
@@ -206,9 +262,17 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       setSpot(spotData as Spot)
       if (user) setUserId(user.id)
 
-      const detailRes = await wanspotFetchJson<DetailJson>(
+      const detailHttp = await wanspotFetch(
         `/api/spots/detail?place_id=${encodeURIComponent(spotData.place_id)}`
-      ).catch(() => null as DetailJson | null)
+      ).catch(() => null)
+      let detailRes: DetailJson | null = null
+      if (detailHttp?.ok) {
+        try {
+          detailRes = parsePlaceDetailResponse(await detailHttp.json())
+        } catch {
+          detailRes = null
+        }
+      }
 
       const [
         { count: likeC },
@@ -231,8 +295,24 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       if (detailRes?.photos?.length) {
         setPhotoRefs(detailRes.photos.slice(0, 8).map((p) => p.photo_reference).filter(Boolean) as string[])
       }
-      if (detailRes?.rating) setGoogleRating(detailRes.rating)
-      setGooglePriceLevel(detailRes?.price_level ?? null)
+      const dr = detailRes?.rating
+      if (typeof dr === 'number' && Number.isFinite(dr)) setGoogleRating(dr)
+      let priceLvl = priceLevelFromDetail(detailRes) ?? normalizePriceLevel((spotData as Spot).price_level)
+      if (priceLvl === null && spotData.place_id && (!detailHttp || !detailHttp.ok)) {
+        try {
+          const br = await wanspotFetch('/api/spots/batch-details', {
+            method: 'POST',
+            json: { place_ids: [spotData.place_id] },
+          })
+          if (br.ok) {
+            const bj = (await br.json()) as { details?: Record<string, { price_level?: unknown }> }
+            priceLvl = normalizePriceLevel(bj.details?.[spotData.place_id]?.price_level) ?? priceLvl
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      setGooglePriceLevel(priceLvl)
       setGoogleAddress(detailRes?.formatted_address ?? detailRes?.vicinity ?? null)
       setLoading(false)
 
@@ -340,13 +420,18 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   }, [checkInToastMessage])
 
   useEffect(() => {
-    if (!showCheckInModal || !spot || !userId) return
+    if (!showCheckInModal || !spot || !userId) {
+      checkInBaselineRef.current = null
+      return
+    }
     if (!checkedIn) {
       setCheckInRating(0)
       setCheckInComment('')
       setCheckInPrefillLoading(false)
+      checkInBaselineRef.current = { rating: 0, comment: '' }
       return
     }
+    checkInBaselineRef.current = null
     let cancelled = false
     setCheckInPrefillLoading(true)
     void (async () => {
@@ -382,12 +467,34 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
         setCheckInRating(r)
         setCheckInComment(c)
         setCheckInPrefillLoading(false)
+        checkInBaselineRef.current = { rating: r, comment: c.trim() }
       }
     })()
     return () => {
       cancelled = true
     }
   }, [showCheckInModal, checkedIn, spot?.id, userId, spot])
+
+  const isCheckInDirty = () => {
+    const b = checkInBaselineRef.current
+    if (!b) return false
+    return checkInRating !== b.rating || checkInComment.trim() !== b.comment
+  }
+
+  const tryCloseCheckInModal = () => {
+    if (checkInPrefillLoading) {
+      setShowCheckInModal(false)
+      return
+    }
+    if (isCheckInDirty()) {
+      Alert.alert('確認', '変更は保存されません。閉じますか？', [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '閉じる', onPress: () => setShowCheckInModal(false) },
+      ])
+      return
+    }
+    setShowCheckInModal(false)
+  }
 
   const toggleLike = async () => {
     if (!userId || !spot || likeLoading) return
@@ -446,6 +553,11 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       Alert.alert('', '評価をお願いします')
       return
     }
+    const b = checkInBaselineRef.current
+    if (b && checkInRating === b.rating && checkInComment.trim() === b.comment) {
+      Alert.alert('', '変更はありません')
+      return
+    }
     setCheckInSubmitting(true)
     try {
       const comment = checkInComment.trim() || null
@@ -456,6 +568,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       await loadReviews(spot.id)
       setShowCheckInModal(false)
       setCheckInToastMessage('記録を更新しました')
+      checkInBaselineRef.current = { rating: checkInRating, comment: checkInComment.trim() }
     } finally {
       setCheckInSubmitting(false)
     }
@@ -655,7 +768,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
           </View>
 
           <View style={styles.metaCard}>
-            <View style={styles.metaCol}>
+            <View style={[styles.metaSeg, { flex: 1.5 }]}>
               <View style={styles.metaHead}>
                 <IconGoogle />
                 <Text style={styles.metaLbl}>レビュー</Text>
@@ -675,7 +788,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                 )}
               </View>
             </View>
-            <View style={[styles.metaCol, styles.metaMid]}>
+            <View style={[styles.metaSeg, { flex: 1 }]}>
               <Text style={styles.metaLbl}>価格帯</Text>
               <View style={styles.rateRow}>
                 {googlePriceLevel != null ? (
@@ -685,7 +798,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                 )}
               </View>
             </View>
-            <View style={styles.metaIcons}>
+            <View style={[styles.metaSegIcons, { flex: 1.5 }]}>
               <Pressable
                 style={styles.iconSq}
                 onPress={() =>
@@ -729,14 +842,16 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
               <Text style={styles.revHint}>「行った」ボタンを押すとレビューを残せます</Text>
             ) : (
               reviews.map((r, i) => (
-                <View key={r.id} style={[styles.revItem, i < reviews.length - 1 && styles.revBorder]}>
+                <View key={r.user_id} style={[styles.revItem, i < reviews.length - 1 && styles.revBorder]}>
                   <View style={styles.revTop}>
-                    <View style={{ flexDirection: 'row', gap: 2 }}>
+                    <View style={styles.revStarsWrap}>
                       {[1, 2, 3, 4, 5].map((s) => (
                         <IconStarSm key={s} filled={s <= r.rating} />
                       ))}
                     </View>
-                    <Text style={styles.revDate}>{formatDate(r.created_at)}</Text>
+                    <Text style={styles.revDate} numberOfLines={1}>
+                      {formatDate(r.created_at)}
+                    </Text>
                   </View>
                   {r.comment ? <Text style={styles.revComment}>{r.comment}</Text> : null}
                 </View>
@@ -766,8 +881,8 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
         </View>
       </ScrollView>
 
-      <Modal visible={showCheckInModal} transparent animationType="slide" onRequestClose={() => setShowCheckInModal(false)}>
-        <Pressable style={styles.modalBg} onPress={() => setShowCheckInModal(false)}>
+      <Modal visible={showCheckInModal} transparent animationType="slide" onRequestClose={tryCloseCheckInModal}>
+        <Pressable style={styles.modalBg} onPress={tryCloseCheckInModal}>
           <Pressable style={[styles.sheet, { paddingBottom: bottomInset }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.sheetGrab} />
             <Text style={styles.sheetTitle}>{spot.name}</Text>
@@ -954,15 +1069,28 @@ const styles = StyleSheet.create({
     minHeight: 92,
     overflow: 'hidden',
   },
-  metaCol: { flex: 1, paddingVertical: 12, paddingHorizontal: 12, borderRightWidth: 1, borderRightColor: '#ebebeb' },
-  metaMid: { flexGrow: 0, flexShrink: 0, width: 100 },
+  metaSeg: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRightWidth: 1,
+    borderRightColor: '#ebebeb',
+    justifyContent: 'center',
+  },
+  metaSegIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
   metaHead: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
   metaLbl: { fontSize: 10, fontWeight: '700', color: '#aaa', letterSpacing: 0.6 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 28 },
   rateNum: { fontSize: 20, fontWeight: '800', color: '#1a1a1a' },
   rateDash: { fontSize: 18, fontWeight: '800', color: '#ccc' },
-  priceQ: { fontSize: 12, color: '#ccc' },
-  metaIcons: { justifyContent: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
+  priceLevelRow: { flexDirection: 'row', gap: 2, alignItems: 'center', flexShrink: 0 },
+  priceQ: { fontSize: 14, fontWeight: '800', color: '#ccc', lineHeight: META_STAR_PX },
   iconSq: {
     width: 40,
     height: 40,
@@ -982,9 +1110,16 @@ const styles = StyleSheet.create({
   revHint: { fontSize: 14, color: '#aaa', textAlign: 'center', paddingVertical: 16 },
   revItem: { paddingBottom: 12 },
   revBorder: { borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
-  revTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  revDate: { fontSize: 12, color: '#bbb' },
-  revComment: { fontSize: 14, lineHeight: 22, color: '#555' },
+  revTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 6,
+  },
+  revStarsWrap: { flexDirection: 'row', gap: 2, flexShrink: 0 },
+  revDate: { fontSize: 12, color: '#bbb', flexShrink: 0, marginTop: 1, marginLeft: 8, textAlign: 'right' },
+  revComment: { fontSize: 14, lineHeight: 22, color: '#555', flexShrink: 1 },
   adviceFoot: { fontSize: 12, color: '#bbb', marginTop: 12, lineHeight: 18 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: {

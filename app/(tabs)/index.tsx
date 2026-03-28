@@ -125,6 +125,7 @@ export default function NearbyPage() {
   const [sortKey, setSortKey] = useState<SortKey>('distance')
   const [showSort, setShowSort] = useState(false)
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({})
+  const [spotsFetchError, setSpotsFetchError] = useState('')
 
   useEffect(() => {
     void (async () => {
@@ -154,10 +155,29 @@ export default function NearbyPage() {
   useEffect(() => {
     if (!location) return
     setLoading(true)
+    setSpotsFetchError('')
     const q = `/api/spots/nearby?lat=${location.lat}&lng=${location.lng}&radius=${distance}&type=${genre}`
     void wanspotFetch(q)
-      .then((r) => r.json())
-      .then((data: { spots?: PlaceResult[] }) => setSpots(data.spots ?? []))
+      .then(async (r) => {
+        let data: { spots?: PlaceResult[]; error?: string } = {}
+        try {
+          data = (await r.json()) as { spots?: PlaceResult[]; error?: string }
+        } catch {
+          setSpots([])
+          setSpotsFetchError('スポット情報の解析に失敗しました')
+          return
+        }
+        if (!r.ok) {
+          setSpots([])
+          setSpotsFetchError(typeof data.error === 'string' ? data.error : `スポットの取得に失敗しました (${r.status})`)
+          return
+        }
+        setSpots(data.spots ?? [])
+      })
+      .catch(() => {
+        setSpots([])
+        setSpotsFetchError('ネットワークエラーです。API の URL（NEXT_PUBLIC_APP_URL 等）を確認してください')
+      })
       .finally(() => setLoading(false))
   }, [location, genre, distance])
 
@@ -239,8 +259,9 @@ export default function NearbyPage() {
 
         <View style={styles.list}>
           {error ? <Text style={styles.err}>{error}</Text> : null}
+          {spotsFetchError ? <Text style={styles.err}>{spotsFetchError}</Text> : null}
           {loading ? <RunningDog label="近くのスポットを探し中..." /> : null}
-          {!loading && !error && spots.length === 0 && location ? (
+          {!loading && !error && !spotsFetchError && spots.length === 0 && location ? (
             <PowState label="近くにスポットが見つかりませんでした" />
           ) : null}
           {sortedSpots.map((spot) => (
@@ -330,7 +351,19 @@ function SpotCard({
     }
     const { data: spotRow, error } = await supabase
       .from('spots')
-      .upsert({ place_id: spot.place_id, name: spot.name, category: spot.category }, { onConflict: 'place_id' })
+      .upsert(
+        {
+          place_id: spot.place_id,
+          name: spot.name,
+          category: spot.category,
+          address: spot.address,
+          lat: spot.lat,
+          lng: spot.lng,
+          rating: spot.rating,
+          price_level: spot.price_level,
+        },
+        { onConflict: 'place_id' }
+      )
       .select('id')
       .single()
     if (!error && spotRow) {
@@ -352,7 +385,19 @@ function SpotCard({
     if (!liked) {
       const { data: spotRow, error: spotErr } = await supabase
         .from('spots')
-        .upsert({ place_id: spot.place_id, name: spot.name, category: spot.category }, { onConflict: 'place_id' })
+        .upsert(
+          {
+            place_id: spot.place_id,
+            name: spot.name,
+            category: spot.category,
+            address: spot.address,
+            lat: spot.lat,
+            lng: spot.lng,
+            rating: spot.rating,
+            price_level: spot.price_level,
+          },
+          { onConflict: 'place_id' }
+        )
         .select('id')
         .single()
       if (spotErr || !spotRow) {

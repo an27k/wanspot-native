@@ -1,7 +1,10 @@
+import DateTimePicker from '@react-native-community/datetimepicker'
 import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useEffect, useState } from 'react'
 import {
   Image,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,9 +19,9 @@ import { Ionicons } from '@expo/vector-icons'
 import { AppHeader } from '@/components/AppHeader'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
+import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { defaultBioFromDog } from '@/lib/default-bio'
-import { HEART_ICON } from '@/lib/constants'
 import { supabase } from '@/lib/supabase'
 
 type UserProfile = {
@@ -60,17 +63,60 @@ const IconEdit = () => (
   </Svg>
 )
 
-const IconHeart = () => (
-  <Svg width={16} height={16} viewBox="0 0 24 24" fill={HEART_ICON.filled} stroke={HEART_ICON.filled} strokeWidth={2}>
-    <Path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-  </Svg>
-)
-
 const IconSyringe = () => (
   <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} strokeLinecap="round">
     <Path d="M18 2l4 4M17 7l1-1M3 21l6-6M9 15l2-2M12 12l2-2M6 21c0-2 2-4 4-4M15 3l-6 6M15 3l3 3-7 7-3-3 7-7z" />
   </Svg>
 )
+
+function formatYmd(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function parseYmd(s: string): Date {
+  if (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, mo, da] = s.split('-').map(Number)
+    const dt = new Date(y, mo - 1, da, 12, 0, 0)
+    if (!Number.isNaN(dt.getTime())) return dt
+  }
+  return new Date()
+}
+
+/** 西暦・4桁年で表示（和暦・2桁年にしない。例: 2026年3月28日） */
+function formatDateJaGregorian(ymd: string): string {
+  if (!ymd) return ''
+  const d = parseYmd(ymd)
+  const y = d.getFullYear()
+  const m = d.getMonth() + 1
+  const day = d.getDate()
+  return `${y}年${m}月${day}日`
+}
+
+/** 未登録時ピッカーの初期日（当年1月1日・西暦20xx） */
+function defaultVaccinePickerDate(): Date {
+  const y = new Date().getFullYear()
+  return new Date(y, 0, 1, 12, 0, 0)
+}
+
+/** DB の日付文字列を YYYY-MM-DD に正規化 */
+function ymdFromDogField(s: string | null | undefined): string {
+  if (!s) return ''
+  const t = typeof s === 'string' ? s.trim() : ''
+  if (!t) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t
+  return formatYmd(new Date(t))
+}
+
+/** 最終接種から1年経過で要再接種（狂犬病の表示用） */
+function isVaccineYearExpired(ymd: string): boolean {
+  if (!ymd) return false
+  const d = parseYmd(ymd)
+  const next = new Date(d.getFullYear() + 1, d.getMonth(), d.getDate())
+  return new Date() > next
+}
 
 export default function MypageTab() {
   const router = useRouter()
@@ -90,6 +136,8 @@ export default function MypageTab() {
   const [editDogBirthday, setEditDogBirthday] = useState('')
   const [editRabiesDate, setEditRabiesDate] = useState('')
   const [editVaccineDate, setEditVaccineDate] = useState('')
+  const [vaccinePickerKind, setVaccinePickerKind] = useState<null | 'rabies' | 'mixed'>(null)
+  const [vaccinePickerTemp, setVaccinePickerTemp] = useState(() => defaultVaccinePickerDate())
   const [dogPhotoPreview, setDogPhotoPreview] = useState<string | null>(null)
   const [dogPhotoUri, setDogPhotoUri] = useState<string | null>(null)
 
@@ -258,16 +306,106 @@ export default function MypageTab() {
     return years === 0 ? `${months}ヶ月` : `${years}歳${months}ヶ月`
   }
 
-  const isExpired = (dateStr: string) => {
-    const next = new Date(dateStr)
-    next.setFullYear(next.getFullYear() + 1)
-    return new Date() > next
-  }
-
   const parentLabel = (type: string | null) => PARENT_OPTIONS.find((o) => o.value === type)?.label ?? 'パパ'
 
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
   const avatarSrc = avatarPreview ?? profile?.photo_url
+
+  const persistVaccineDate = useCallback(
+    async (kind: 'rabies' | 'mixed', ymd: string) => {
+      if (!dog) return
+      if (editingDog) {
+        if (kind === 'rabies') setEditRabiesDate(ymd)
+        else setEditVaccineDate(ymd)
+        return
+      }
+      const patch =
+        kind === 'rabies'
+          ? { rabies_vaccinated_at: ymd || null }
+          : { vaccine_vaccinated_at: ymd || null }
+      const { error } = await supabase.from('dogs').update(patch).eq('id', dog.id)
+      if (error) {
+        console.error(error)
+        return
+      }
+      setDog((prev) => (prev ? { ...prev, ...patch } : prev))
+    },
+    [dog, editingDog]
+  )
+
+  const openVaccinePicker = useCallback(
+    (kind: 'rabies' | 'mixed') => {
+      if (!dog) return
+      const stored =
+        kind === 'rabies'
+          ? (editingDog ? editRabiesDate : dog.rabies_vaccinated_at)
+          : (editingDog ? editVaccineDate : dog.vaccine_vaccinated_at)
+      const ymd = ymdFromDogField(stored ?? '')
+      setVaccinePickerTemp(ymd ? parseYmd(ymd) : defaultVaccinePickerDate())
+      setVaccinePickerKind(kind)
+    },
+    [dog, editingDog, editRabiesDate, editVaccineDate]
+  )
+
+  const confirmVaccinePicker = () => {
+    if (vaccinePickerKind === null) return
+    void persistVaccineDate(vaccinePickerKind, formatYmd(vaccinePickerTemp))
+    setVaccinePickerKind(null)
+  }
+
+  const renderVaccineSection = (row: {
+    label: string
+    kind: 'rabies' | 'mixed'
+    editYmd: string
+    storedAt: string | null
+    vaccinatedFlag: boolean | null
+    showRabiesExpiry: boolean
+  }) => {
+    const stored = editingDog ? row.editYmd : row.storedAt
+    const ymd = ymdFromDogField(stored)
+    const hasDate = !!ymd
+    const flag = !!row.vaccinatedFlag
+
+    let badge: { t: string; bad?: boolean } | null = null
+    if (row.showRabiesExpiry) {
+      if (hasDate) badge = isVaccineYearExpired(ymd) ? { t: '要接種', bad: true } : { t: '接種済' }
+      else if (flag) badge = { t: '接種済' }
+    } else if (hasDate || flag) {
+      badge = { t: '接種済' }
+    }
+
+    const primaryText = hasDate
+      ? `${formatDateJaGregorian(ymd)}（最後）`
+      : flag
+        ? '接種日が未登録です（タップして登録）'
+        : '未登録（タップして登録）'
+
+    return (
+      <>
+        <View style={styles.syringeRow}>
+          <IconSyringe />
+          <Text style={styles.vLbl}>{row.label}</Text>
+        </View>
+        <View style={styles.vacDateRow}>
+          <Pressable
+            style={[styles.datePickBtn, styles.vacDateBtnFlex]}
+            onPress={() => openVaccinePicker(row.kind)}
+            accessibilityRole="button"
+            accessibilityLabel={`${row.label}を選択`}
+          >
+            <Text style={[styles.datePickTxt, !hasDate && styles.datePickPlaceholder]} numberOfLines={2}>
+              {primaryText}
+            </Text>
+          </Pressable>
+          {badge ? (
+            <View style={[styles.badge, badge.bad ? styles.badgeBad : styles.badgeOk]}>
+              <Text style={[styles.badgeTxt, badge.bad ? styles.badgeTxtBad : styles.badgeTxtOk]}>{badge.t}</Text>
+            </View>
+          ) : null}
+        </View>
+      </>
+    )
+  }
 
   if (loading) {
     return (
@@ -325,69 +463,23 @@ export default function MypageTab() {
               </View>
             </View>
             <View style={styles.divider} />
-            <View style={styles.syringeRow}>
-              <IconSyringe />
-              <Text style={styles.vLbl}>狂犬病ワクチン接種日</Text>
-            </View>
-            {editingDog ? (
-              <TextInput style={styles.inp} value={editRabiesDate} onChangeText={setEditRabiesDate} placeholder="YYYY-MM-DD" placeholderTextColor="#aaa" />
-            ) : dog.rabies_vaccinated_at ? (
-              <View style={styles.vacRow}>
-                <Text style={styles.vacDate}>
-                  {new Date(dog.rabies_vaccinated_at).toLocaleDateString('ja-JP', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                  （最後）
-                </Text>
-                <View style={[styles.badge, isExpired(dog.rabies_vaccinated_at) ? styles.badgeBad : styles.badgeOk]}>
-                  <Text style={[styles.badgeTxt, isExpired(dog.rabies_vaccinated_at) ? styles.badgeTxtBad : styles.badgeTxtOk]}>
-                    {isExpired(dog.rabies_vaccinated_at) ? '要接種' : '接種済'}
-                  </Text>
-                </View>
-              </View>
-            ) : dog.rabies_vaccinated ? (
-              <View style={styles.vacRow}>
-                <Text style={styles.warnSm}>接種日が未登録です</Text>
-                <View style={[styles.badge, styles.badgeOk]}>
-                  <Text style={styles.badgeTxtOk}>接種済</Text>
-                </View>
-              </View>
-            ) : (
-              <Text style={styles.muted}>未登録</Text>
-            )}
+            {renderVaccineSection({
+              label: '狂犬病ワクチン接種日',
+              kind: 'rabies',
+              editYmd: editRabiesDate,
+              storedAt: dog.rabies_vaccinated_at,
+              vaccinatedFlag: dog.rabies_vaccinated,
+              showRabiesExpiry: true,
+            })}
             <View style={[styles.divider, { marginTop: 12 }]} />
-            <View style={styles.syringeRow}>
-              <IconSyringe />
-              <Text style={styles.vLbl}>混合ワクチン接種日</Text>
-            </View>
-            {editingDog ? (
-              <TextInput style={styles.inp} value={editVaccineDate} onChangeText={setEditVaccineDate} placeholder="YYYY-MM-DD" placeholderTextColor="#aaa" />
-            ) : dog.vaccine_vaccinated_at ? (
-              <View style={styles.vacRow}>
-                <Text style={styles.vacDate}>
-                  {new Date(dog.vaccine_vaccinated_at).toLocaleDateString('ja-JP', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                  （最後）
-                </Text>
-                <View style={[styles.badge, styles.badgeOk]}>
-                  <Text style={styles.badgeTxtOk}>接種済</Text>
-                </View>
-              </View>
-            ) : dog.vaccine_vaccinated ? (
-              <View style={styles.vacRow}>
-                <Text style={styles.warnSm}>接種日が未登録です</Text>
-                <View style={[styles.badge, styles.badgeOk]}>
-                  <Text style={styles.badgeTxtOk}>接種済</Text>
-                </View>
-              </View>
-            ) : (
-              <Text style={styles.muted}>未登録</Text>
-            )}
+            {renderVaccineSection({
+              label: '混合ワクチン接種日',
+              kind: 'mixed',
+              editYmd: editVaccineDate,
+              storedAt: dog.vaccine_vaccinated_at,
+              vaccinatedFlag: dog.vaccine_vaccinated,
+              showRabiesExpiry: false,
+            })}
             {editingDog ? (
               <View style={styles.btnRow}>
                 <Pressable style={styles.btnGhost} onPress={() => setEditingDog(false)}>
@@ -477,40 +569,81 @@ export default function MypageTab() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardLbl}>イベント</Text>
+          <Text style={styles.evTitle}>いいねしたスポット</Text>
+          <Text style={styles.evDesc}>
+            お気に入りにしたスポットの一覧を確認できます{likeCount > 0 ? `（現在 ${likeCount} 件）` : ''}
+          </Text>
+          <Pressable style={styles.evCta} onPress={() => router.push('/likes')} accessibilityLabel="いいね一覧へ">
+            <Text style={styles.evCtaTxt}>いいね一覧へ</Text>
+          </Pressable>
+          <View style={styles.listSplitDivider} />
+          <Text style={styles.evTitle}>行ったスポット</Text>
+          <Text style={styles.evDesc}>
+            チェックインしたスポットの一覧を確認できます{checkInCount > 0 ? `（現在 ${checkInCount} 件）` : ''}
+          </Text>
+          <Pressable style={styles.evCta} onPress={() => router.push('/checkins')} accessibilityLabel="行った一覧へ">
+            <Text style={styles.evCtaTxt}>行った一覧へ</Text>
+          </Pressable>
+          <View style={styles.listSplitDivider} />
           <Text style={styles.evTitle}>主催したイベント</Text>
           <Text style={styles.evDesc}>作成したイベントの一覧・編集はこちらから</Text>
           <Pressable style={styles.evCta} onPress={() => router.push('/mypage/events')}>
             <Text style={styles.evCtaTxt}>イベント管理へ</Text>
           </Pressable>
         </View>
+      </ScrollView>
 
-        <View style={styles.card}>
-          <Text style={styles.cardLbl}>STATS</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statBox}>
-              <View style={styles.statHead}>
-                <IconHeart />
-                <Text style={styles.statLbl}>いいね</Text>
+      {vaccinePickerKind !== null && Platform.OS === 'ios' ? (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setVaccinePickerKind(null)}>
+          <View style={styles.pickerOverlay}>
+            <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setVaccinePickerKind(null)} />
+            <View style={styles.pickerCard}>
+              <Text style={styles.pickerTitle}>
+                {vaccinePickerKind === 'rabies' ? '狂犬病ワクチン接種日' : '混合ワクチン接種日'}
+              </Text>
+              <Text style={styles.pickerGregLine}>西暦 {formatDateJaGregorian(formatYmd(vaccinePickerTemp))}</Text>
+              <DateTimePicker
+                value={vaccinePickerTemp}
+                mode="date"
+                display="spinner"
+                locale="ja_JP@calendar=gregorian"
+                themeVariant="light"
+                onChange={(_, d) => {
+                  if (d) setVaccinePickerTemp(d)
+                }}
+              />
+              <View style={styles.pickerActions}>
+                <Pressable style={styles.pickerGhost} onPress={() => setVaccinePickerKind(null)}>
+                  <Text style={styles.pickerGhostTxt}>キャンセル</Text>
+                </Pressable>
+                <Pressable style={styles.pickerPri} onPress={confirmVaccinePicker}>
+                  <Text style={styles.pickerPriTxt}>決定</Text>
+                </Pressable>
               </View>
-              <Text style={styles.statNum}>{likeCount}</Text>
-              <Pressable style={styles.statChev} onPress={() => router.push('/likes')} accessibilityLabel="いいね一覧を見る">
-                <Ionicons name="chevron-forward" size={22} color="#FFD84D" />
-              </Pressable>
-            </View>
-            <View style={styles.statBox}>
-              <View style={styles.statHead}>
-                <IconPaw size={16} color="#1a1a1a" />
-                <Text style={styles.statLbl}>行った</Text>
-              </View>
-              <Text style={styles.statNum}>{checkInCount}</Text>
-              <Pressable style={styles.statChev} onPress={() => router.push('/checkins')} accessibilityLabel="行った一覧を見る">
-                <Ionicons name="chevron-forward" size={22} color="#FFD84D" />
-              </Pressable>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </Modal>
+      ) : null}
+      {vaccinePickerKind !== null && Platform.OS === 'android' ? (
+        <DateTimePicker
+          value={vaccinePickerTemp}
+          mode="date"
+          display="default"
+          locale="ja_JP@calendar=gregorian"
+          onChange={(event, date) => {
+            const k = vaccinePickerKind
+            if (k === null) return
+            if (event.type === 'dismissed') {
+              setVaccinePickerKind(null)
+              return
+            }
+            if (event.type === 'set' && date) {
+              void persistVaccineDate(k, formatYmd(date))
+              setVaccinePickerKind(null)
+            }
+          }}
+        />
+      ) : null}
     </View>
   )
 }
@@ -565,16 +698,14 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#f5f5f5', marginTop: 16 },
   syringeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, marginBottom: 4 },
   vLbl: { fontSize: 12, fontWeight: '800', color: '#aaa' },
-  vacRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
-  vacDate: { fontSize: 14, color: '#555', flex: 1 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  vacDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  vacDateBtnFlex: { flex: 1, minWidth: 0 },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, flexShrink: 0 },
   badgeOk: { backgroundColor: '#F0FDF4' },
   badgeBad: { backgroundColor: '#FEE2E2' },
   badgeTxt: { fontSize: 12, fontWeight: '800' },
   badgeTxtOk: { color: '#34A853' },
   badgeTxtBad: { color: '#E84335' },
-  warnSm: { fontSize: 12, fontWeight: '800', color: '#F87171' },
-  muted: { fontSize: 14, color: '#ccc', marginTop: 4 },
   inp: {
     borderRadius: 10,
     backgroundColor: '#f7f6f3',
@@ -583,6 +714,48 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1a1a1a',
   },
+  datePickBtn: {
+    borderRadius: 10,
+    backgroundColor: '#f7f6f3',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#ebebeb',
+  },
+  datePickTxt: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
+  datePickPlaceholder: { fontWeight: '500', color: '#aaa' },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  pickerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#ebebeb',
+  },
+  pickerTitle: { fontSize: 14, fontWeight: '800', color: '#1a1a1a', marginBottom: 6, textAlign: 'center' },
+  pickerGregLine: { fontSize: 13, fontWeight: '700', color: '#555', textAlign: 'center', marginBottom: 8 },
+  pickerActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  pickerGhost: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+  },
+  pickerGhostTxt: { fontSize: 14, fontWeight: '800', color: '#888' },
+  pickerPri: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: colors.brandButton,
+    alignItems: 'center',
+  },
+  pickerPriTxt: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
   miniLbl: { fontSize: 12, color: '#aaa', marginBottom: 4 },
   btnRow: { flexDirection: 'row', gap: 8, marginTop: 16 },
   btnGhost: {
@@ -597,7 +770,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 16,
-    backgroundColor: '#FFD84D',
+    backgroundColor: colors.brandButton,
     alignItems: 'center',
   },
   btnPriTxt: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
@@ -633,7 +806,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#f5f5f5',
   },
-  parentChipOn: { backgroundColor: '#FFD84D' },
+  parentChipOn: { backgroundColor: colors.brandButton },
   parentChipTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
   parentChipTxtOn: { color: '#1a1a1a' },
   bio: { fontSize: 14, color: '#555', lineHeight: 22, marginTop: 12 },
@@ -643,20 +816,11 @@ const styles = StyleSheet.create({
   evCta: {
     paddingVertical: 14,
     borderRadius: 16,
-    backgroundColor: '#FFD84D',
+    backgroundColor: colors.brandButton,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.brandDark,
   },
   evCtaTxt: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
-  statsGrid: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  statBox: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 12,
-    backgroundColor: '#f7f6f3',
-    gap: 4,
-  },
-  statHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statLbl: { fontSize: 12, fontWeight: '800', color: '#aaa' },
-  statNum: { fontSize: 24, fontWeight: '800', color: '#1a1a1a' },
-  statChev: { alignSelf: 'flex-end', padding: 4, marginTop: -8 },
+  listSplitDivider: { height: 1, backgroundColor: '#f5f5f5', marginTop: 20, marginBottom: 4 },
 })

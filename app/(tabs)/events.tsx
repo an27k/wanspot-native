@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Animated,
+  Dimensions,
   FlatList,
   Linking,
   Modal,
@@ -138,6 +140,12 @@ export default function EventsTab() {
   const [showVaccineBanner, setShowVaccineBanner] = useState(false)
   const [fabMenuOpen, setFabMenuOpen] = useState(false)
   const [externalError, setExternalError] = useState(false)
+  const [eventsContentW, setEventsContentW] = useState(() => Dimensions.get('window').width)
+
+  const fabRotate = useRef(new Animated.Value(0)).current
+  const fabScale = useRef(new Animated.Value(1)).current
+  const fabMenuAnim = useRef(new Animated.Value(0)).current
+  const tabSlideX = useRef(new Animated.Value(0)).current
 
   const fetchExternalEvents = useCallback(() => {
     setExternalLoading(true)
@@ -206,6 +214,39 @@ export default function EventsTab() {
     if (showSort) setFabMenuOpen(false)
   }, [showSort])
 
+  useEffect(() => {
+    Animated.spring(fabRotate, {
+      toValue: fabMenuOpen ? 1 : 0,
+      useNativeDriver: true,
+      friction: 9,
+      tension: 56,
+      restDisplacementThreshold: 0.01,
+      restSpeedThreshold: 0.01,
+    }).start()
+  }, [fabMenuOpen, fabRotate])
+
+  useEffect(() => {
+    Animated.spring(fabMenuAnim, {
+      toValue: fabMenuOpen ? 1 : 0,
+      useNativeDriver: true,
+      friction: 10,
+      tension: 70,
+    }).start()
+  }, [fabMenuOpen, fabMenuAnim])
+
+  useEffect(() => {
+    if (eventsContentW <= 0) return
+    const idx = tab === 'scheduled' ? 0 : tab === 'joined' ? 1 : 2
+    Animated.spring(tabSlideX, {
+      toValue: -idx * eventsContentW,
+      useNativeDriver: true,
+      friction: 14,
+      tension: 68,
+      restDisplacementThreshold: 0.5,
+      restSpeedThreshold: 0.5,
+    }).start()
+  }, [tab, eventsContentW, tabSlideX])
+
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return ''
     return new Date(dateStr).toLocaleDateString('ja-JP', {
@@ -223,8 +264,45 @@ export default function EventsTab() {
   const currentSort = WANSPOT_SORT_OPTIONS.find((o) => o.value === eventSort)!
 
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 100
-  const fabBottom = TAB_BAR_HEIGHT + insets.bottom + 16
-  const fabMenuBottom = TAB_BAR_HEIGHT + insets.bottom + 16 + 56 + 12
+  const fabRight = 16 + insets.right
+  /** タブバー（フッター）のすぐ上に寄せる */
+  const fabBottom = TAB_BAR_HEIGHT + insets.bottom + 8
+  const fabMenuBottom = TAB_BAR_HEIGHT + insets.bottom + 8 + 56 + 10
+
+  const fabIconSpin = fabRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '45deg'],
+  })
+  const menuOpacity = fabMenuAnim
+  const menuTranslateY = fabMenuAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [14, 0],
+  })
+  const menuScale = fabMenuAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.92, 1],
+  })
+  const overlayOpacity = fabMenuAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  })
+
+  const onFabPressIn = () => {
+    Animated.spring(fabScale, {
+      toValue: 0.9,
+      useNativeDriver: true,
+      friction: 6,
+      tension: 120,
+    }).start()
+  }
+  const onFabPressOut = () => {
+    Animated.spring(fabScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 5,
+      tension: 140,
+    }).start()
+  }
 
   return (
     <View style={styles.root}>
@@ -263,121 +341,135 @@ export default function EventsTab() {
         </View>
       ) : null}
 
-      <View style={{ flex: 1 }}>
-        {tab === 'scheduled' ? (
-          loading ? (
-            <RunningDog label="イベントを読み込み中..." />
-          ) : events.length === 0 ? (
-            <View style={styles.emptyBlock}>
-              <PowState label="現在開催中のイベントはありません" />
-              <Text style={styles.emptyHint}>右下の＋からイベントを作成できます</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={sortedWanspotEvents}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
-              refreshControl={
-                <RefreshControl
-                  refreshing={false}
-                  onRefresh={async () => {
-                    const { data } = await supabase.from('events').select('*').order('event_at', { ascending: true })
-                    setEvents((data ?? []) as WanspotEventRow[])
-                  }}
-                />
-              }
-              renderItem={({ item }) => (
-                <EventCard event={item} onPressDetail={() => router.push(`/events/${item.id}`)} />
-              )}
-            />
-          )
-        ) : null}
-
-        {tab === 'joined' ? (
-          joinedLoading ? (
-            <RunningDog label="参加予定のイベントを読み込み中..." />
-          ) : joinedEvents.length === 0 ? (
-            <View style={styles.emptyJoined}>
-              <IconPaw size={40} color="#aaa" />
-              <Text style={styles.emptyJoinedTxt}>参加予定のイベントはありません</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={sortedJoinedEvents}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
-              renderItem={({ item }) => (
-                <EventCard event={item} variant="joined" onPressDetail={() => router.push(`/events/${item.id}`)} />
-              )}
-            />
-          )
-        ) : null}
-
-        {tab === 'external' ? (
-          externalLoading ? (
-            <RunningDog label="外部イベントを読み込み中..." />
-          ) : externalError ? (
-            <View style={styles.emptyJoined}>
-              <IconPaw size={40} color="#aaa" />
-              <Text style={styles.extErrTxt}>しばらくしてから再度お試しください</Text>
-              <Pressable style={styles.retryBtn} onPress={fetchExternalEvents}>
-                <Text style={styles.retryTxt}>再読み込み</Text>
-              </Pressable>
-            </View>
-          ) : externalEvents.length === 0 ? (
-            <View style={styles.emptyJoined}>
-              <IconPaw size={40} color="#aaa" />
-              <Text style={styles.extErrTxt}>外部イベントが見つかりませんでした</Text>
-              <Pressable style={styles.retryBtn} onPress={fetchExternalEvents}>
-                <Text style={styles.retryTxt}>再読み込み</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <FlatList
-              data={sortedExternalEvents}
-              keyExtractor={(item, index) => (item.id ? String(item.id) : `ext-${index}`)}
-              contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
-              renderItem={({ item }) => (
-                <View style={styles.extCard}>
-                  <View style={styles.extHead}>
-                    {item.source ? (
-                      <View style={styles.srcPill}>
-                        <Text style={styles.srcTxt}>{item.source}</Text>
+      <View
+        style={styles.eventsPagerHost}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width
+          if (w > 0 && w !== eventsContentW) setEventsContentW(w)
+        }}
+      >
+        <Animated.View
+          style={[
+            styles.eventsPagerRow,
+            {
+              width: eventsContentW * 3,
+              transform: [{ translateX: tabSlideX }],
+            },
+          ]}
+        >
+          <View style={[styles.eventsPage, { width: eventsContentW }]}>
+            {loading ? (
+              <RunningDog label="イベントを読み込み中..." />
+            ) : events.length === 0 ? (
+              <View style={styles.emptyBlock}>
+                <PowState label="現在開催中のイベントはありません" />
+                <Text style={styles.emptyHint}>右下の＋からイベントを作成できます</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={sortedWanspotEvents}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={false}
+                    onRefresh={async () => {
+                      const { data } = await supabase.from('events').select('*').order('event_at', { ascending: true })
+                      setEvents((data ?? []) as WanspotEventRow[])
+                    }}
+                  />
+                }
+                renderItem={({ item }) => (
+                  <EventCard event={item} onPressDetail={() => router.push(`/events/${item.id}`)} />
+                )}
+              />
+            )}
+          </View>
+          <View style={[styles.eventsPage, { width: eventsContentW }]}>
+            {joinedLoading ? (
+              <RunningDog label="参加予定のイベントを読み込み中..." />
+            ) : joinedEvents.length === 0 ? (
+              <View style={styles.emptyJoined}>
+                <IconPaw size={40} color="#aaa" />
+                <Text style={styles.emptyJoinedTxt}>参加予定のイベントはありません</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={sortedJoinedEvents}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
+                renderItem={({ item }) => (
+                  <EventCard event={item} variant="joined" onPressDetail={() => router.push(`/events/${item.id}`)} />
+                )}
+              />
+            )}
+          </View>
+          <View style={[styles.eventsPage, { width: eventsContentW }]}>
+            {externalLoading ? (
+              <RunningDog label="外部イベントを読み込み中..." />
+            ) : externalError ? (
+              <View style={styles.emptyJoined}>
+                <IconPaw size={40} color="#aaa" />
+                <Text style={styles.extErrTxt}>しばらくしてから再度お試しください</Text>
+                <Pressable style={styles.retryBtn} onPress={fetchExternalEvents}>
+                  <Text style={styles.retryTxt}>再読み込み</Text>
+                </Pressable>
+              </View>
+            ) : externalEvents.length === 0 ? (
+              <View style={styles.emptyJoined}>
+                <IconPaw size={40} color="#aaa" />
+                <Text style={styles.extErrTxt}>外部イベントが見つかりませんでした</Text>
+                <Pressable style={styles.retryBtn} onPress={fetchExternalEvents}>
+                  <Text style={styles.retryTxt}>再読み込み</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <FlatList
+                data={sortedExternalEvents}
+                keyExtractor={(item, index) => (item.id ? String(item.id) : `ext-${index}`)}
+                contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
+                renderItem={({ item }) => (
+                  <View style={styles.extCard}>
+                    <View style={styles.extHead}>
+                      {item.source ? (
+                        <View style={styles.srcPill}>
+                          <Text style={styles.srcTxt}>{item.source}</Text>
+                        </View>
+                      ) : (
+                        <View />
+                      )}
+                      {item.area ? <Text style={styles.areaTxt}>{item.area}</Text> : null}
+                    </View>
+                    <View style={styles.extBody}>
+                      <Text style={styles.extTitle}>{item.title}</Text>
+                      {item.description ? <Text style={styles.extDesc}>{item.description}</Text> : null}
+                      <View style={styles.extMeta}>
+                        {item.event_at ? (
+                          <View style={styles.metaLine}>
+                            <IconCalendar />
+                            <Text style={styles.metaSmall}>{formatDate(item.event_at)}</Text>
+                          </View>
+                        ) : null}
+                        {item.location_name ? (
+                          <View style={styles.metaLine}>
+                            <IconPin />
+                            <Text style={styles.metaSmall}>{item.location_name}</Text>
+                          </View>
+                        ) : null}
                       </View>
-                    ) : (
-                      <View />
-                    )}
-                    {item.area ? <Text style={styles.areaTxt}>{item.area}</Text> : null}
-                  </View>
-                  <View style={styles.extBody}>
-                    <Text style={styles.extTitle}>{item.title}</Text>
-                    {item.description ? <Text style={styles.extDesc}>{item.description}</Text> : null}
-                    <View style={styles.extMeta}>
-                      {item.event_at ? (
-                        <View style={styles.metaLine}>
-                          <IconCalendar />
-                          <Text style={styles.metaSmall}>{formatDate(item.event_at)}</Text>
-                        </View>
-                      ) : null}
-                      {item.location_name ? (
-                        <View style={styles.metaLine}>
-                          <IconPin />
-                          <Text style={styles.metaSmall}>{item.location_name}</Text>
-                        </View>
+                      {item.url ? (
+                        <Pressable style={styles.extLink} onPress={() => Linking.openURL(item.url!)}>
+                          <IconExternalLink />
+                          <Text style={styles.extLinkTxt}> 詳細を見る</Text>
+                        </Pressable>
                       ) : null}
                     </View>
-                    {item.url ? (
-                      <Pressable style={styles.extLink} onPress={() => Linking.openURL(item.url!)}>
-                        <IconExternalLink />
-                        <Text style={styles.extLinkTxt}> 詳細を見る</Text>
-                      </Pressable>
-                    ) : null}
                   </View>
-                </View>
-              )}
-            />
-          )
-        ) : null}
+                )}
+              />
+            )}
+          </View>
+        </Animated.View>
       </View>
 
       <Modal visible={showSort} transparent animationType="fade" onRequestClose={() => setShowSort(false)}>
@@ -405,12 +497,28 @@ export default function EventsTab() {
         </Pressable>
       </Modal>
 
-      {fabMenuOpen ? (
-        <Pressable style={styles.fabOverlay} onPress={() => setFabMenuOpen(false)} />
+      {tab === 'scheduled' ? (
+        <Animated.View
+          pointerEvents={fabMenuOpen ? 'auto' : 'none'}
+          style={[styles.fabOverlayAnim, { opacity: overlayOpacity }]}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setFabMenuOpen(false)} />
+        </Animated.View>
       ) : null}
 
-      {tab === 'scheduled' && fabMenuOpen ? (
-        <View style={[styles.fabMenu, { bottom: fabMenuBottom, right: 16 }]}>
+      {tab === 'scheduled' ? (
+        <Animated.View
+          pointerEvents={fabMenuOpen ? 'auto' : 'none'}
+          style={[
+            styles.fabMenu,
+            {
+              bottom: fabMenuBottom,
+              right: fabRight,
+              opacity: menuOpacity,
+              transform: [{ translateY: menuTranslateY }, { scale: menuScale }],
+            },
+          ]}
+        >
           <Pressable
             style={styles.fabMenuPrimary}
             onPress={() => {
@@ -429,14 +537,19 @@ export default function EventsTab() {
           >
             <Text style={styles.fabMenuSecTxt}>イベントを編集</Text>
           </Pressable>
-        </View>
+        </Animated.View>
       ) : null}
 
       {tab === 'scheduled' ? (
-        <Pressable style={[styles.fab, { bottom: fabBottom, right: 16 }]} onPress={() => setFabMenuOpen((o) => !o)}>
-          <View style={{ transform: [{ rotate: fabMenuOpen ? '45deg' : '0deg' }] }}>
+        <Pressable
+          style={[styles.fab, { bottom: fabBottom, right: fabRight }]}
+          onPress={() => setFabMenuOpen((o) => !o)}
+          onPressIn={onFabPressIn}
+          onPressOut={onFabPressOut}
+        >
+          <Animated.View style={{ transform: [{ scale: fabScale }, { rotate: fabIconSpin }] }}>
             <IconPlusLarge />
-          </View>
+          </Animated.View>
         </Pressable>
       ) : null}
     </View>
@@ -534,8 +647,11 @@ const styles = StyleSheet.create({
   sortItemOn: { backgroundColor: '#FFF9E0' },
   sortItemTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
   sortItemTxtOn: { color: '#1a1a1a' },
-  fabOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 38 },
+  fabOverlayAnim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 38 },
   fabMenu: { position: 'absolute', zIndex: 42, width: 280, maxWidth: '100%', gap: 8 },
+  eventsPagerHost: { flex: 1, overflow: 'hidden' },
+  eventsPagerRow: { flexDirection: 'row', flex: 1 },
+  eventsPage: { flex: 1 },
   fabMenuPrimary: {
     paddingVertical: 14,
     borderRadius: 16,

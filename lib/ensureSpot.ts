@@ -12,6 +12,8 @@ export async function ensureSpotId(spot: PlaceResult): Promise<string | null> {
         address: spot.address,
         lat: spot.lat,
         lng: spot.lng,
+        rating: spot.rating,
+        price_level: spot.price_level,
       },
       { onConflict: 'place_id' }
     )

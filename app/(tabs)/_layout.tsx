@@ -8,8 +8,15 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets()
   return (
     <Tabs
+      /** 非表示タブを切り離さず、切替時の空白・遅延を減らす */
+      detachInactiveScreens={false}
       screenOptions={{
         headerShown: false,
+        /** shift は両画面が一瞬 opacity 0 付近を通り「真っ白」に見えやすいのでオフ */
+        animation: 'none',
+        /** 初回タブでも中身を即表示（マウント済みにする） */
+        lazy: false,
+        freezeOnBlur: false,
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {

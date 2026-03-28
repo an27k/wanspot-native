@@ -62,7 +62,19 @@ export function SearchDiscoverResultCard({ spot, userLocation, onOpen, onLikesCh
   const handleOpen = async () => {
     const { data: spotRow, error } = await supabase
       .from('spots')
-      .upsert({ place_id: spot.place_id, name: spot.name, category: spot.category }, { onConflict: 'place_id' })
+      .upsert(
+        {
+          place_id: spot.place_id,
+          name: spot.name,
+          category: spot.category,
+          address: spot.address,
+          lat: spot.lat,
+          lng: spot.lng,
+          rating: spot.rating,
+          price_level: spot.price_level,
+        },
+        { onConflict: 'place_id' }
+      )
       .select('id')
       .single()
     if (!error && spotRow) {
@@ -82,7 +94,19 @@ export function SearchDiscoverResultCard({ spot, userLocation, onOpen, onLikesCh
     }
     const { data: spotRow } = await supabase
       .from('spots')
-      .upsert({ place_id: spot.place_id, name: spot.name, category: spot.category }, { onConflict: 'place_id' })
+      .upsert(
+        {
+          place_id: spot.place_id,
+          name: spot.name,
+          category: spot.category,
+          address: spot.address,
+          lat: spot.lat,
+          lng: spot.lng,
+          rating: spot.rating,
+          price_level: spot.price_level,
+        },
+        { onConflict: 'place_id' }
+      )
       .select('id')
       .single()
     if (!spotRow) {
