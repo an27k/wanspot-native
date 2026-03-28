@@ -105,37 +105,52 @@ export default function SizePage() {
             const birthday =
               dog.year && dog.month ? `${dog.year}-${String(dog.month).padStart(2, '0')}-01` : null
             const today = new Date().toISOString().slice(0, 10)
-            const { error: userUpsertError } = await supabase.from('users').upsert(
-              {
-                id: user.id,
-                name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'ユーザー',
-                parent_type: ownerParsed?.parent_type ?? 'papa',
-                birthday: userBirthday,
-              },
-              { onConflict: 'id' }
-            )
+            const displayName = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'ユーザー'
+            const { error: userUpsertError } = await supabase.from('users').upsert({
+              id: user.id,
+              name: displayName,
+              parent_type: ownerParsed?.parent_type ?? 'papa',
+              birthday: userBirthday,
+            })
             if (userUpsertError) {
-              Alert.alert('保存に失敗しました', userUpsertError.message)
+              Alert.alert('保存に失敗しました（オーナー）', userUpsertError.message)
               return
             }
-            const { error: dogUpsertError } = await supabase.from('dogs').upsert(
-              {
-                user_id: user.id,
-                name: dog.name ?? '',
-                birthday,
-                breed: dog.breed ?? null,
-                gender: dog.gender ?? null,
-                photo_url: dog.dogPhotoUrl ?? null,
-                rabies_vaccinated: dog.vaccineRabies === true,
-                vaccine_vaccinated: dog.vaccineCombo === true,
-                rabies_vaccinated_at: dog.vaccineRabies ? today : null,
-                vaccine_vaccinated_at: dog.vaccineCombo ? today : null,
-              },
-              { onConflict: 'user_id' }
-            )
-            if (dogUpsertError) {
-              Alert.alert('保存に失敗しました', dogUpsertError.message)
+
+            const dogPayload = {
+              name: dog.name ?? '',
+              birthday,
+              breed: dog.breed ?? null,
+              gender: dog.gender ?? null,
+              photo_url: dog.dogPhotoUrl ?? null,
+              rabies_vaccinated: dog.vaccineRabies === true,
+              vaccine_vaccinated: dog.vaccineCombo === true,
+              rabies_vaccinated_at: dog.vaccineRabies ? today : null,
+              vaccine_vaccinated_at: dog.vaccineCombo ? today : null,
+            }
+            const { data: existingDog, error: dogSelErr } = await supabase
+              .from('dogs')
+              .select('id')
+              .eq('user_id', user.id)
+              .maybeSingle()
+            if (dogSelErr) {
+              Alert.alert('保存に失敗しました（愛犬）', dogSelErr.message)
               return
+            }
+            if (existingDog?.id) {
+              const { error: dogUpErr } = await supabase.from('dogs').update(dogPayload).eq('id', existingDog.id)
+              if (dogUpErr) {
+                Alert.alert('保存に失敗しました（愛犬）', dogUpErr.message)
+                return
+              }
+            } else {
+              const { error: dogInsErr } = await supabase
+                .from('dogs')
+                .insert({ user_id: user.id, ...dogPayload })
+              if (dogInsErr) {
+                Alert.alert('保存に失敗しました（愛犬）', dogInsErr.message)
+                return
+              }
             }
             await AsyncStorage.multiRemove(['ob_dog', 'ob_size', 'ob_owner'])
           } catch (e) {

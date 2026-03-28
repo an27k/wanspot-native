@@ -53,12 +53,26 @@ const PARENT_OPTIONS = [
   { value: 'mama', label: 'ママ' },
 ]
 
-const IconCamera = () => (
-  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round">
+const IconCamera = ({ size = 18 }: { size?: number }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
     <Path d="M12 13a4 4 0 100-8 4 4 0 000 8z" />
   </Svg>
 )
+
+function AvatarCameraFab({ onPress, accessibilityLabel }: { onPress: () => void; accessibilityLabel: string }) {
+  return (
+    <Pressable
+      style={styles.camFabOnAvatar}
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+    >
+      <IconCamera size={18} />
+    </Pressable>
+  )
+}
 
 const IconEditSmall = () => (
   <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
@@ -260,7 +274,7 @@ export default function MypageTab() {
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
         dogPhotoUrl = urlData.publicUrl
       }
-      await supabase
+      const { error: dogUpdateError } = await supabase
         .from('dogs')
         .update({
           name: editDogName.trim(),
@@ -272,6 +286,10 @@ export default function MypageTab() {
           photo_url: dogPhotoUrl,
         })
         .eq('id', dog.id)
+      if (dogUpdateError) {
+        Alert.alert('保存に失敗しました（愛犬）', dogUpdateError.message)
+        return
+      }
       setDog((prev) =>
         prev
           ? {
@@ -312,18 +330,16 @@ export default function MypageTab() {
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
         photoUrl = urlData.publicUrl
       }
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          name: editName.trim(),
-          parent_type: editParentType,
-          bio: editBio.trim() || null,
-          birthday: birthdayYmd,
-          photo_url: photoUrl,
-        })
-        .eq('id', profile.id)
-      if (updateError) {
-        Alert.alert('保存に失敗しました', updateError.message)
+      const { error: ownerSaveError } = await supabase.from('users').upsert({
+        id: profile.id,
+        name: editName.trim(),
+        parent_type: editParentType,
+        bio: editBio.trim() || null,
+        birthday: birthdayYmd,
+        photo_url: photoUrl,
+      })
+      if (ownerSaveError) {
+        Alert.alert('保存に失敗しました（オーナー）', ownerSaveError.message)
         return
       }
       setProfile((prev) =>
@@ -367,6 +383,9 @@ export default function MypageTab() {
   const parentLabel = (type: string | null) => PARENT_OPTIONS.find((o) => o.value === type)?.label ?? 'パパ'
 
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
+  /** 右下FABと被らないよう可動エリアの下余白 */
+  const scrollPadBottom = padBottom + 64
+  const eventFabBottom = TAB_BAR_HEIGHT + insets.bottom + 12
   const avatarSrc = avatarPreview ?? profile?.photo_url
 
   const persistVaccineDate = useCallback((kind: 'rabies' | 'mixed', ymd: string) => {
@@ -475,7 +494,7 @@ export default function MypageTab() {
   return (
     <View style={styles.root}>
       <AppHeader />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: scrollPadBottom, gap: 12 }}>
         {dog ? (
           <View style={styles.profileCard}>
             <View style={styles.profileCardHeader}>
@@ -488,7 +507,7 @@ export default function MypageTab() {
               ) : null}
             </View>
             <View style={styles.profileMainCol}>
-              <View style={styles.avatar80Wrap}>
+              <View style={[styles.avatar80Wrap, editingDog && styles.avatar80WrapEditing]}>
                 <View style={[styles.avatar80, styles.avatar80Dog]}>
                   {dogPhotoPreview ?? dog.photo_url ? (
                     <Image source={{ uri: dogPhotoPreview ?? dog.photo_url! }} style={styles.avatar80Img} resizeMode="cover" />
@@ -497,13 +516,11 @@ export default function MypageTab() {
                   )}
                 </View>
                 {editingDog ? (
-                  <Pressable style={styles.camFabOnAvatar} onPress={() => void pickDogPhoto()}>
-                    <IconCamera />
-                  </Pressable>
+                  <AvatarCameraFab onPress={() => void pickDogPhoto()} accessibilityLabel="愛犬の写真を変更" />
                 ) : null}
               </View>
               {editingDog ? (
-                <View style={styles.profileEditFields}>
+                <View style={[styles.profileEditFields, styles.profileEditFieldsAfterAvatar]}>
                   <TextInput
                     style={styles.inp}
                     value={editDogName}
@@ -660,7 +677,7 @@ export default function MypageTab() {
             ) : null}
           </View>
           <View style={styles.profileMainCol}>
-            <View style={styles.avatar80Wrap}>
+            <View style={[styles.avatar80Wrap, editingOwner && styles.avatar80WrapEditing]}>
               <View style={[styles.avatar80, styles.avatar80Owner]}>
                 {avatarSrc ? (
                   <Image source={{ uri: avatarSrc }} style={styles.avatar80Img} resizeMode="cover" />
@@ -669,13 +686,11 @@ export default function MypageTab() {
                 )}
               </View>
               {editingOwner ? (
-                <Pressable style={styles.camFabOnAvatar} onPress={() => void pickAvatar()}>
-                  <IconCamera />
-                </Pressable>
+                <AvatarCameraFab onPress={() => void pickAvatar()} accessibilityLabel="プロフィール写真を変更" />
               ) : null}
             </View>
             {editingOwner ? (
-              <View style={styles.profileEditFields}>
+              <View style={[styles.profileEditFields, styles.profileEditFieldsAfterAvatar]}>
                 <TextInput
                   style={styles.inp}
                   value={editName}
@@ -780,6 +795,15 @@ export default function MypageTab() {
         </View>
       </ScrollView>
 
+      <Pressable
+        style={[styles.eventNewFab, { bottom: eventFabBottom }]}
+        onPress={() => router.push('/events/new')}
+        accessibilityRole="button"
+        accessibilityLabel="イベントを新規作成"
+      >
+        <Ionicons name="add" size={30} color={colors.text} />
+      </Pressable>
+
       {vaccinePickerKind !== null ? (
         <Modal visible transparent animationType="fade" onRequestClose={() => setVaccinePickerKind(null)}>
           <View style={styles.pickerOverlay}>
@@ -816,6 +840,25 @@ export default function MypageTab() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cardBg },
+  /** タブバー直上・画面右下（マイページの可動エリア基準） */
+  eventNewFab: {
+    position: 'absolute',
+    right: 16,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: colors.brandButton,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.brandDark,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 6,
+    zIndex: 20,
+  },
   loadRoot: { flex: 1, backgroundColor: colors.cardBg, alignItems: 'center', justifyContent: 'center' },
   profileCard: {
     backgroundColor: colors.background,
@@ -835,7 +878,7 @@ const styles = StyleSheet.create({
   profileCardTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: colors.textMuted,
+    color: colors.text,
     letterSpacing: 3,
   },
   profileEditBtn: {
@@ -882,6 +925,9 @@ const styles = StyleSheet.create({
   genderPickChipLbl: { fontSize: 12, fontWeight: '700', color: colors.text },
   genderPickChipLblMuted: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
   profileEditFields: { alignSelf: 'stretch', width: '100%', gap: 8, marginTop: 4 },
+  /** 編集時（愛犬・オーナー共通）：カメラFABがはみ出す分、先頭入力との間を空ける */
+  avatar80WrapEditing: { marginBottom: 12 },
+  profileEditFieldsAfterAvatar: { marginTop: 14 },
   avatar80Wrap: { position: 'relative', width: 80, height: 80, marginTop: 4 },
   avatar80: {
     width: 80,
@@ -896,14 +942,24 @@ const styles = StyleSheet.create({
   avatar80Img: { width: '100%', height: '100%' },
   camFabOnAvatar: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    minWidth: 32,
+    minHeight: 32,
+    borderRadius: 16,
     backgroundColor: colors.text,
+    borderWidth: 2,
+    borderColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.18,
+    shadowRadius: 2.5,
+    elevation: 4,
   },
   profileName: {
     marginTop: 12,

@@ -4,6 +4,7 @@ import {
   Image,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -310,46 +311,51 @@ export default function SearchTab() {
     }
   }, [aiLoading, aiResults.length, location])
 
-  const handleHot = useCallback(async () => {
-    if (hotLoading || hotResults.length > 0) return
-    setHotLoading(true)
-    try {
-      const prefecture = location ? await getPrefecture(location.lat, location.lng) : '東京'
-      const [result] = await Promise.all([
-        wanspotFetchJson<{ queries?: string[]; label?: string }>('/api/spots/hot', {
-          method: 'POST',
-          json: { lat: location?.lat, lng: location?.lng, prefecture },
-        }),
-        new Promise((r) => setTimeout(r, 1500)),
-      ])
-      const queries = result.queries ?? []
-      setHotLabel(result.label ?? null)
-      const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
-      const allResults = await Promise.all(
-        queries.map((q) =>
-          wanspotFetch(`/api/spots/search?q=${encodeURIComponent(q)}${locationParam}`)
-            .then((r) => r.json())
-            .then((d) => (d as { spots?: PlaceResult[] }).spots ?? [])
-            .catch(() => [] as PlaceResult[])
+  const handleHot = useCallback(
+    async (opts?: { force?: boolean }) => {
+      const force = opts?.force === true
+      if (hotLoading) return
+      if (!force && hotResults.length > 0) return
+      setHotLoading(true)
+      try {
+        const prefecture = location ? await getPrefecture(location.lat, location.lng) : '東京'
+        const [result] = await Promise.all([
+          wanspotFetchJson<{ queries?: string[]; label?: string }>('/api/spots/hot', {
+            method: 'POST',
+            json: { lat: location?.lat, lng: location?.lng, prefecture },
+          }),
+          new Promise((r) => setTimeout(r, force ? 0 : 1500)),
+        ])
+        const queries = result.queries ?? []
+        setHotLabel(result.label ?? null)
+        const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
+        const allResults = await Promise.all(
+          queries.map((q) =>
+            wanspotFetch(`/api/spots/search?q=${encodeURIComponent(q)}${locationParam}`)
+              .then((r) => r.json())
+              .then((d) => (d as { spots?: PlaceResult[] }).spots ?? [])
+              .catch(() => [] as PlaceResult[])
+          )
         )
-      )
-      const seen = new Set<string>()
-      const merged: PlaceResult[] = []
-      for (const spots of allResults) {
-        for (const spot of spots) {
-          if (!seen.has(spot.place_id)) {
-            seen.add(spot.place_id)
-            merged.push(spot)
+        const seen = new Set<string>()
+        const merged: PlaceResult[] = []
+        for (const spots of allResults) {
+          for (const spot of spots) {
+            if (!seen.has(spot.place_id)) {
+              seen.add(spot.place_id)
+              merged.push(spot)
+            }
           }
         }
+        setHotResults(filterHotSpotResults(merged))
+      } catch {
+        setHotResults([])
+      } finally {
+        setHotLoading(false)
       }
-      setHotResults(filterHotSpotResults(merged))
-    } catch {
-      setHotResults([])
-    } finally {
-      setHotLoading(false)
-    }
-  }, [hotLoading, hotResults.length, location])
+    },
+    [hotLoading, hotResults.length, location]
+  )
 
   const handleArticles = useCallback(async () => {
     if (articlesLoading || articlesList.length > 0) return
@@ -452,6 +458,16 @@ export default function SearchTab() {
         contentContainerStyle={{ paddingBottom: padBottom }}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
+        refreshControl={
+          !searched && discoverMode === 'hot' ? (
+            <RefreshControl
+              refreshing={hotLoading}
+              onRefresh={() => void handleHot({ force: true })}
+              tintColor={colors.textMuted}
+              colors={[colors.text]}
+            />
+          ) : undefined
+        }
         onScroll={(e) => {
           scrollYRef.current = e.nativeEvent.contentOffset.y
         }}
@@ -529,7 +545,7 @@ export default function SearchTab() {
                   onPress={() => setDiscoverMode('hot')}
                 >
                   <IconHot fill={discoverMode === 'hot' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'hot' && styles.discTabTxtOn]}>ホット</Text>
+                  <Text style={[styles.discTabTxt, discoverMode === 'hot' && styles.discTabTxtOn]}>トレンド</Text>
                 </Pressable>
               </View>
             </>
@@ -690,7 +706,7 @@ const styles = StyleSheet.create({
   sortWrap: { position: 'relative' },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#1a1a1a' },
   sortBtnTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
-  /** キーワードタグ行と（まとめ記事／AI／ホット）の間の区切り */
+  /** キーワードタグ行と（まとめ記事／AI／トレンド）の間の区切り */
   discoverTabs: {
     flexDirection: 'row',
     gap: 8,
