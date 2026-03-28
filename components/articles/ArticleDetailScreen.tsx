@@ -211,7 +211,7 @@ function ArticleSpotCard({
   onOpen: () => void
 }) {
   const photoRef = enrichment?.photo_ref ?? null
-  const photoUrl = spotPhotoUrl(photoRef, 400)
+  const photoUrl = spotPhotoUrl(photoRef, 320)
   const displayRating = enrichment?.rating ?? null
   const priceLevel = enrichment?.price_level ?? null
   const address =

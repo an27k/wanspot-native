@@ -63,7 +63,7 @@ export async function wanspotFetch(path: string, init: WanspotFetchInit = {}): P
   return fetch(url, { ...init, headers, body })
 }
 
-export function spotPhotoUrl(photoRef: string | null, maxWidth = 400): string | null {
+export function spotPhotoUrl(photoRef: string | null, maxWidth = 320): string | null {
   if (!photoRef) return null
   const base = getWanspotApiBase()
   if (!base) return null

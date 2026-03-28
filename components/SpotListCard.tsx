@@ -97,7 +97,7 @@ export function SpotListCard({
   unlikeLoading,
 }: SpotListCardProps) {
   const photoRef = enrichment?.photo_ref ?? null
-  const uri = spotPhotoUrl(photoRef, 400)
+  const uri = spotPhotoUrl(photoRef, 288)
   const displayRating = enrichment?.rating ?? null
   const priceLevel = enrichment?.price_level ?? null
 

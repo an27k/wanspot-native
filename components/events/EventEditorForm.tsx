@@ -1,9 +1,12 @@
+import DateTimePicker from '@react-native-community/datetimepicker'
 import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -68,6 +71,33 @@ export function toDatetimeLocalValue(iso: string | null | undefined): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+function defaultNextDayTenAm(): Date {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  d.setHours(10, 0, 0, 0)
+  return d
+}
+
+function dateToDatetimeLocalString(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function formatEventAtJa(d: Date): string {
+  try {
+    return new Intl.DateTimeFormat('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(d)
+  } catch {
+    return dateToDatetimeLocalString(d)
+  }
+}
+
 export function EventEditorForm({
   mode,
   eventId,
@@ -81,7 +111,9 @@ export function EventEditorForm({
   const [description, setDescription] = useState('')
   const [locationName, setLocationName] = useState('')
   const [area, setArea] = useState('')
-  const [eventAt, setEventAt] = useState('')
+  const [eventAtDate, setEventAtDate] = useState<Date>(() => defaultNextDayTenAm())
+  const [eventPickerOpen, setEventPickerOpen] = useState(false)
+  const [eventPickerTemp, setEventPickerTemp] = useState<Date>(() => defaultNextDayTenAm())
   const [capacity, setCapacity] = useState<number | null>(mode === 'create' ? null : Math.max(minCapacity, 3))
   const [price, setPrice] = useState('0')
   const [tags, setTags] = useState<string[]>([])
@@ -98,13 +130,18 @@ export function EventEditorForm({
 
   const drumMin = mode === 'edit' ? Math.max(minCapacity ?? 0, 3) : 3
 
+  const eventAt = useMemo(() => dateToDatetimeLocalString(eventAtDate), [eventAtDate])
+
   useEffect(() => {
     if (mode !== 'edit' || !initial) return
     setTitle(initial.title ?? '')
     setDescription(initial.description ?? '')
     setLocationName(initial.location_name ?? '')
     setArea(initial.area ?? '')
-    setEventAt(toDatetimeLocalValue(initial.event_at))
+    if (initial.event_at) {
+      const d = new Date(initial.event_at)
+      if (!Number.isNaN(d.getTime())) setEventAtDate(d)
+    }
     const mc = Math.max(minCapacity ?? 0, 3)
     const cap = initial.capacity ?? null
     setCapacity(cap == null ? mc : cap < mc ? mc : cap)
@@ -352,6 +389,7 @@ export function EventEditorForm({
   }
 
   return (
+    <>
     <ScrollView contentContainerStyle={[styles.container, { paddingBottom: padBottom }]}>
       <View style={[styles.card, titleInvalid && styles.cardErr]}>
         <Text style={styles.lbl}>タイトル *</Text>
@@ -422,14 +460,16 @@ export function EventEditorForm({
 
       <View style={[styles.card, eventAtInvalid && styles.cardErr]}>
         <Text style={styles.lbl}>開催日時 *</Text>
-        <TextInput
-          style={styles.inputBare}
-          value={eventAt}
-          onChangeText={setEventAt}
-          placeholder="2026-04-01T10:00"
-          placeholderTextColor="#aaa"
-        />
-        <Text style={styles.hint}>形式: YYYY-MM-DDTHH:mm（端末のタイムゾーンで解釈されます）</Text>
+        <Pressable
+          style={styles.eventPickBtn}
+          onPress={() => {
+            setEventPickerTemp(eventAtDate)
+            setEventPickerOpen(true)
+          }}
+        >
+          <Text style={styles.eventPickMain}>{formatEventAtJa(eventAtDate)}</Text>
+          <Text style={styles.eventPickSub}>タップして日付と時刻を選択</Text>
+        </Pressable>
       </View>
 
       <View style={[styles.card, locationInvalid && styles.cardErr]}>
@@ -530,6 +570,60 @@ export function EventEditorForm({
         </Text>
       </Pressable>
     </ScrollView>
+
+    {eventPickerOpen && Platform.OS === 'ios' ? (
+      <Modal visible transparent animationType="fade" onRequestClose={() => setEventPickerOpen(false)}>
+        <View style={styles.pickerOverlay}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setEventPickerOpen(false)} />
+          <View style={styles.pickerCard}>
+            <Text style={styles.pickerTitle}>開催日時</Text>
+            <DateTimePicker
+              value={eventPickerTemp}
+              mode="datetime"
+              display="spinner"
+              locale="ja_JP@calendar=gregorian"
+              themeVariant="light"
+              onChange={(_, d) => {
+                if (d) setEventPickerTemp(d)
+              }}
+            />
+            <View style={styles.pickerActions}>
+              <Pressable style={styles.pickerGhost} onPress={() => setEventPickerOpen(false)}>
+                <Text style={styles.pickerGhostTxt}>キャンセル</Text>
+              </Pressable>
+              <Pressable
+                style={styles.pickerPri}
+                onPress={() => {
+                  setEventAtDate(eventPickerTemp)
+                  setEventPickerOpen(false)
+                }}
+              >
+                <Text style={styles.pickerPriTxt}>決定</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    ) : null}
+    {eventPickerOpen && Platform.OS === 'android' ? (
+      <DateTimePicker
+        value={eventPickerTemp}
+        mode="datetime"
+        display="default"
+        locale="ja_JP@calendar=gregorian"
+        onChange={(ev, d) => {
+          if (ev.type === 'dismissed') {
+            setEventPickerOpen(false)
+            return
+          }
+          if (ev.type === 'set' && d) {
+            setEventAtDate(d)
+            setEventPickerOpen(false)
+          }
+        }}
+      />
+    ) : null}
+    </>
   )
 }
 
@@ -544,6 +638,47 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
   },
   cardErr: { borderColor: '#E84335' },
+  eventPickBtn: {
+    borderRadius: 12,
+    backgroundColor: '#f7f6f3',
+    borderWidth: 1,
+    borderColor: '#ebebeb',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+  },
+  eventPickMain: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
+  eventPickSub: { fontSize: 12, color: '#888', marginTop: 6, fontWeight: '600' },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  pickerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#ebebeb',
+  },
+  pickerTitle: { fontSize: 14, fontWeight: '800', color: '#1a1a1a', marginBottom: 8, textAlign: 'center' },
+  pickerActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  pickerGhost: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+  },
+  pickerGhostTxt: { fontSize: 14, fontWeight: '800', color: '#888' },
+  pickerPri: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#FFD84D',
+    alignItems: 'center',
+  },
+  pickerPriTxt: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
   lbl: { fontSize: 12, fontWeight: '800', color: '#aaa', marginBottom: 8, letterSpacing: 0.5 },
   lblSub: { fontWeight: '400', color: '#888' },
   hint: { fontSize: 12, color: '#888', marginTop: 8, lineHeight: 18 },

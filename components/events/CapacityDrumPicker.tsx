@@ -53,7 +53,8 @@ export function CapacityDrumPicker({
     (y: number) => {
       const i = Math.round(y / ITEM_H)
       const clamped = Math.max(0, Math.min(i, items.length - 1))
-      scrollToIndex(clamped, true)
+      /** 慣性終了後の補正はアニメ無し（snap と animated の競合で収束しないことがある） */
+      scrollToIndex(clamped, false)
       const next = items[clamped]?.v ?? null
       if (next !== value) onChange(next)
     },
@@ -81,7 +82,7 @@ export function CapacityDrumPicker({
               style={[styles.item, { height: ITEM_H }]}
               onPress={() => {
                 onChange(it.v)
-                scrollToIndex(idx, true)
+                scrollToIndex(idx, false)
               }}
             >
               <Text style={[styles.itemTxt, sel && styles.itemTxtSel]}>{it.label}</Text>

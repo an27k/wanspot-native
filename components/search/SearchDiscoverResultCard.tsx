@@ -52,7 +52,7 @@ type Props = {
 export function SearchDiscoverResultCard({ spot, userLocation, onOpen, onLikesChange, onBeforeNavigate }: Props) {
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
-  const photoUrl = spotPhotoUrl(spot.photo_ref, 400)
+  const photoUrl = spotPhotoUrl(spot.photo_ref, 288)
 
   const dist =
     userLocation && spot.lat && spot.lng

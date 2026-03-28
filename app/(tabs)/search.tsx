@@ -496,6 +496,19 @@ export default function SearchTab() {
 
           {!searched ? (
             <>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginTop: 8, opacity: suggestionsReady ? 1 : 0.6 }}
+              >
+                <View style={styles.sugRow}>
+                  {suggestions.map((s) => (
+                    <Pressable key={s} style={styles.sug} onPress={() => void handleSearch(s)}>
+                      <Text style={styles.sugTxt}>{s}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
               <View style={styles.discoverTabs}>
                 <Pressable
                   style={[styles.discTab, discoverMode === 'articles' && styles.discTabOn]}
@@ -519,15 +532,6 @@ export default function SearchTab() {
                   <Text style={[styles.discTabTxt, discoverMode === 'hot' && styles.discTabTxtOn]}>ホット</Text>
                 </Pressable>
               </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ opacity: suggestionsReady ? 1 : 0.6 }}>
-                <View style={styles.sugRow}>
-                  {suggestions.map((s) => (
-                    <Pressable key={s} style={styles.sug} onPress={() => void handleSearch(s)}>
-                      <Text style={styles.sugTxt}>{s}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
             </>
           ) : null}
         </View>

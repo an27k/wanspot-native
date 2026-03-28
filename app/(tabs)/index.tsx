@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Image,
@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native'
 import * as Location from 'expo-location'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { AppHeader } from '@/components/AppHeader'
@@ -24,6 +24,8 @@ import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
+
+const ICON_FILTER_FUNNEL = require('@/assets/icon-filter-funnel.png')
 
 const GENRES = [
   { key: 'cafe', label: 'カフェ' },
@@ -126,6 +128,8 @@ export default function NearbyPage() {
   const [showSort, setShowSort] = useState(false)
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({})
   const [spotsFetchError, setSpotsFetchError] = useState('')
+  const [likedOnlyFilter, setLikedOnlyFilter] = useState(false)
+  const [likedPlaceIds, setLikedPlaceIds] = useState<Set<string>>(() => new Set())
 
   useEffect(() => {
     void (async () => {
@@ -202,6 +206,37 @@ export default function NearbyPage() {
     void fetchLikes()
   }, [spots])
 
+  const reloadUserLikedPlaceIds = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setLikedPlaceIds(new Set())
+      return
+    }
+    const { data: likes } = await supabase.from('spot_likes').select('spot_id').eq('user_id', user.id)
+    if (!likes?.length) {
+      setLikedPlaceIds(new Set())
+      return
+    }
+    const spotIds = [...new Set(likes.map((l) => l.spot_id).filter(Boolean))]
+    const { data: rows } = await supabase.from('spots').select('place_id').in('id', spotIds)
+    setLikedPlaceIds(new Set((rows ?? []).map((r) => r.place_id).filter(Boolean)))
+  }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      void reloadUserLikedPlaceIds()
+    }, [reloadUserLikedPlaceIds])
+  )
+
+  const handleSpotLikeChange = useCallback((placeId: string, liked: boolean) => {
+    setLikedPlaceIds((prev) => {
+      const next = new Set(prev)
+      if (liked) next.add(placeId)
+      else next.delete(placeId)
+      return next
+    })
+  }, [])
+
   const sortedSpots = useMemo(() => {
     const loc = location
     return [...spots].sort((a, b) => {
@@ -213,6 +248,11 @@ export default function NearbyPage() {
       )
     })
   }, [spots, sortKey, likeCounts, location])
+
+  const displayedSpots = useMemo(() => {
+    if (!likedOnlyFilter) return sortedSpots
+    return sortedSpots.filter((s) => likedPlaceIds.has(s.place_id))
+  }, [sortedSpots, likedOnlyFilter, likedPlaceIds])
 
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
 
@@ -251,6 +291,20 @@ export default function NearbyPage() {
               </TouchableOpacity>
             ))}
           </ScrollView>
+          <TouchableOpacity
+            style={[styles.likeFilterBtn, likedOnlyFilter ? styles.likeFilterBtnOn : styles.likeFilterBtnOff]}
+            onPress={() => setLikedOnlyFilter((v) => !v)}
+            accessibilityLabel={likedOnlyFilter ? 'いいねしたお店のみ表示中。タップで全件表示' : 'いいねしたお店のみ表示'}
+            accessibilityRole="button"
+          >
+            <Image
+              source={ICON_FILTER_FUNNEL}
+              style={[styles.likeFilterIcon, likedOnlyFilter && styles.likeFilterIconOn]}
+              resizeMode="contain"
+              accessibilityIgnoresInvertColors
+            />
+            <Text style={[styles.likeFilterTxt, likedOnlyFilter && styles.likeFilterTxtOn]}>いいね</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.sortBtn} onPress={() => setShowSort(true)}>
             <IconSort />
             <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
@@ -264,13 +318,22 @@ export default function NearbyPage() {
           {!loading && !error && !spotsFetchError && spots.length === 0 && location ? (
             <PowState label="近くにスポットが見つかりませんでした" />
           ) : null}
-          {sortedSpots.map((spot) => (
+          {!loading &&
+          !error &&
+          !spotsFetchError &&
+          spots.length > 0 &&
+          likedOnlyFilter &&
+          displayedSpots.length === 0 ? (
+            <PowState label="この条件ではいいねしたお店がありません" />
+          ) : null}
+          {displayedSpots.map((spot) => (
             <SpotCard
               key={spot.place_id}
               spot={spot}
               likeCount={likeCounts[spot.place_id] ?? 0}
               userLocation={location}
               onOpenDetail={(id) => router.push(`/spots/${id}`)}
+              onLikeStateChange={handleSpotLikeChange}
             />
           ))}
         </View>
@@ -306,11 +369,13 @@ function SpotCard({
   likeCount,
   userLocation,
   onOpenDetail,
+  onLikeStateChange,
 }: {
   spot: PlaceResult
   likeCount: number
   userLocation: { lat: number; lng: number } | null
   onOpenDetail: (id: string) => void
+  onLikeStateChange?: (placeId: string, liked: boolean) => void
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current
   const [spotId, setSpotId] = useState<string | null>(null)
@@ -319,7 +384,7 @@ function SpotCard({
   const [likeLoading, setLikeLoading] = useState(false)
   const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
-  const uri = spotPhotoUrl(spot.photo_ref, 400)
+  const uri = spotPhotoUrl(spot.photo_ref, 288)
 
   useEffect(() => {
     setLocalLikeCount(likeCount)
@@ -407,12 +472,14 @@ function SpotCard({
       await supabase.from('spot_likes').insert({ user_id: user.id, spot_id: spotRow.id })
       setLiked(true)
       setLocalLikeCount((c) => c + 1)
+      onLikeStateChange?.(spot.place_id, true)
     } else {
       const { data: spotRow } = await supabase.from('spots').select('id').eq('place_id', spot.place_id).single()
       if (spotRow)
         await supabase.from('spot_likes').delete().eq('user_id', user.id).eq('spot_id', spotRow.id)
       setLiked(false)
       setLocalLikeCount((c) => Math.max(0, c - 1))
+      onLikeStateChange?.(spot.place_id, false)
     }
     setLikeLoading(false)
   }
@@ -541,6 +608,28 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
   },
   distScroll: { flex: 1, maxHeight: 40 },
+  likeFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginRight: 8,
+    borderWidth: 1,
+  },
+  likeFilterIcon: { width: 12, height: 12 },
+  likeFilterIconOn: { tintColor: '#fff' },
+  likeFilterBtnOff: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#e8e8e8',
+  },
+  likeFilterBtnOn: {
+    backgroundColor: '#1a1a1a',
+    borderColor: '#1a1a1a',
+  },
+  likeFilterTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
+  likeFilterTxtOn: { color: '#fff' },
   distChip: {
     paddingHorizontal: 12,
     paddingVertical: 4,
