@@ -382,10 +382,12 @@ export default function MypageTab() {
 
   const parentLabel = (type: string | null) => PARENT_OPTIONS.find((o) => o.value === type)?.label ?? 'パパ'
 
+  /** スクロール末尾がタブバーに隠れないよう（タブ画面の高さは既にタブバー上まで） */
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
   /** 右下FABと被らないよう可動エリアの下余白 */
   const scrollPadBottom = padBottom + 64
-  const eventFabBottom = TAB_BAR_HEIGHT + insets.bottom + 12
+  /** FAB はコンテンツ領域の下端＝タブバー直上なので、タブ高を足さない（二重で空きができる） */
+  const eventFabBottom = 14
   const avatarSrc = avatarPreview ?? profile?.photo_url
 
   const persistVaccineDate = useCallback((kind: 'rabies' | 'mixed', ymd: string) => {
