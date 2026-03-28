@@ -1,0 +1,25 @@
+wanspot 記事シードの取り込み手順
+================================
+
+1. spot_id について
+   各ブロック type: "spot" の spot_id には、Google の place_id（通常 ChIJ で始まる文字列）を入れてください。
+   - Google Maps で施設を開き → 共有 → 地図を埋め込む、または Place ID ツールで取得
+   - または Supabase の spots テーブルに既にある行の place_id をコピー
+
+2. place-id-overrides.json（任意）
+   seed-articles.json 内の "REPLACE_ME" で始まる spot_id を、place-id-overrides.json の
+   article_slug + spot_order で実際の place_id に差し替えてから取り込むと楽です。
+   （差し替えスクリプトは未同梱の場合、エディタの一括置換でも可）
+
+3. Supabase へ入れる列（articles テーブル想定）
+   - title, slug, body, summary, keywords (text[] または jsonb), blocks (jsonb),
+     spot_links (jsonb, 空配列可), category, image_url (nullable), status = 'published'
+
+4. 一覧用
+   アプリの検索タブ「まとめ記事」は title, summary, slug, keywords, image_url 等を参照します。
+   blocks に spot が入っていれば記事本文内にスポットカードが並びます。
+
+命名ルール（本シード）
+====================
+タイトル形: 【地方エリア】犬サイズ・テーマのおすすめN選（N は 5〜10）
+keywords には [地方, 犬区分, テーマ, おすすめ] 系を含めています。
