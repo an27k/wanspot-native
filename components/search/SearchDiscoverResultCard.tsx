@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Path, Polygon } from 'react-native-svg'
 import { HEART_ICON } from '@/lib/constants'
+import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
@@ -52,6 +53,7 @@ type Props = {
 export function SearchDiscoverResultCard({ spot, userLocation, onOpen, onLikesChange, onBeforeNavigate }: Props) {
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
+  const likeScale = useRef(new Animated.Value(1)).current
   const photoUrl = spotPhotoUrl(spot.photo_ref, 288)
 
   const dist =
@@ -86,6 +88,7 @@ export function SearchDiscoverResultCard({ spot, userLocation, onOpen, onLikesCh
   const handleLike = async (e?: { stopPropagation?: () => void }) => {
     e?.stopPropagation?.()
     if (likeLoading) return
+    playLikeHeartAnimation(likeScale)
     setLikeLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
@@ -130,8 +133,14 @@ export function SearchDiscoverResultCard({ spot, userLocation, onOpen, onLikesCh
     <Pressable style={styles.card} onPress={() => void handleOpen()}>
       <View style={styles.thumbWrap}>
         {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.thumb} resizeMode="cover" /> : <View style={[styles.thumb, styles.ph]} />}
-        <Pressable style={styles.heartFab} onPress={() => void handleLike()} disabled={likeLoading}>
-          <IconHeart filled={liked} />
+        <Pressable
+          style={styles.heartFab}
+          onPress={(ev) => void handleLike(ev)}
+          disabled={likeLoading}
+        >
+          <Animated.View style={{ transform: [{ scale: likeScale }] }}>
+            <IconHeart filled={liked} />
+          </Animated.View>
         </Pressable>
       </View>
       <View style={styles.body}>
