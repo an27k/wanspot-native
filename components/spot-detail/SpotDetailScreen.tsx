@@ -875,14 +875,14 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                 <>
                   <Text style={styles.aiBody}>{ownerAdviceText}</Text>
                   <Text style={styles.adviceFoot}>
-                    コメントは任意ですが、AIがワンちゃんオーナーへのアドバイスとして参考にさせていただきます🐾
+                    コメントは任意ですが、AIがワンちゃんオーナーへのアドバイスとして参考にさせていただきます。
                   </Text>
                 </>
               ) : (
                 <PowState label="まとめを生成できませんでした" />
               )
             ) : (
-              <Text style={styles.revHint}>みんなの声をコメントで聞かせてね🐾</Text>
+              <Text style={styles.revHint}>みんなの声をコメントで聞かせてね。</Text>
             )}
           </View>
         </View>
@@ -914,7 +914,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                   multiline
                   editable={!checkInSubmitting}
                 />
-                <Text style={styles.taFoot}>AIが学習に活用しますが、外部に公開されることはありません🐾</Text>
+                <Text style={styles.taFoot}>AIが学習に活用しますが、外部に公開されることはありません。</Text>
                 {checkedIn ? (
                   <>
                     <Pressable

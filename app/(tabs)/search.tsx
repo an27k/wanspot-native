@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Image,
+  Keyboard,
   Modal,
   Pressable,
   RefreshControl,
@@ -158,9 +159,19 @@ export default function SearchTab() {
   const [spotLikesCount, setSpotLikesCount] = useState<number | null>(null)
   const restoredRef = useRef(false)
   const scrollYRef = useRef(0)
+  const [keyboardOpen, setKeyboardOpen] = useState(false)
 
   useEffect(() => {
     Location.getCurrentPositionAsync({}).then((p) => setLocation({ lat: p.coords.latitude, lng: p.coords.longitude })).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true))
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false))
+    return () => {
+      show.remove()
+      hide.remove()
+    }
   }, [])
 
   useFocusEffect(
@@ -394,6 +405,7 @@ export default function SearchTab() {
   }, [location, searched, spotLikesCount, discoverMode, handleAiRecommend])
 
   const handleSearch = async (q: string) => {
+    Keyboard.dismiss()
     const trimmed = q.trim()
     if (!trimmed) return
     setQuery(trimmed)
@@ -457,6 +469,8 @@ export default function SearchTab() {
         ref={scrollRef}
         contentContainerStyle={{ paddingBottom: padBottom }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        onScrollBeginDrag={() => Keyboard.dismiss()}
         scrollEventThrottle={16}
         refreshControl={
           !searched && discoverMode === 'hot' ? (
@@ -484,10 +498,12 @@ export default function SearchTab() {
                 placeholderTextColor="#aaa"
                 onSubmitEditing={() => void handleSearch(query)}
                 returnKeyType="search"
+                blurOnSubmit
               />
               {query ? (
                 <Pressable
                   onPress={() => {
+                    Keyboard.dismiss()
                     setQuery('')
                     setResults([])
                     setSearched(false)
@@ -502,13 +518,25 @@ export default function SearchTab() {
             </View>
             {searched ? (
               <View style={styles.sortWrap}>
-                <Pressable style={styles.sortBtn} onPress={() => setShowSort(true)}>
+                <Pressable
+                  style={styles.sortBtn}
+                  onPress={() => {
+                    Keyboard.dismiss()
+                    setShowSort(true)
+                  }}
+                >
                   <IconSort />
                   <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
                 </Pressable>
               </View>
             ) : null}
           </View>
+
+          {keyboardOpen ? (
+            <Pressable style={styles.kbDismissBar} onPress={() => Keyboard.dismiss()} hitSlop={8}>
+              <Text style={styles.kbDismissTxt}>キーボードを閉じる</Text>
+            </Pressable>
+          ) : null}
 
           {!searched ? (
             <>
@@ -528,21 +556,30 @@ export default function SearchTab() {
               <View style={styles.discoverTabs}>
                 <Pressable
                   style={[styles.discTab, discoverMode === 'articles' && styles.discTabOn]}
-                  onPress={() => setDiscoverMode('articles')}
+                  onPress={() => {
+                    Keyboard.dismiss()
+                    setDiscoverMode('articles')
+                  }}
                 >
                   <IconBulb fill={discoverMode === 'articles' ? '#fff' : '#888'} />
                   <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>まとめ記事</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.discTab, discoverMode === 'ai' && styles.discTabOn]}
-                  onPress={() => setDiscoverMode('ai')}
+                  onPress={() => {
+                    Keyboard.dismiss()
+                    setDiscoverMode('ai')
+                  }}
                 >
                   <IconThumbUp fill={discoverMode === 'ai' ? '#fff' : '#888'} />
                   <Text style={[styles.discTabTxt, discoverMode === 'ai' && styles.discTabTxtOn]}>AIレコメンド</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.discTab, discoverMode === 'hot' && styles.discTabOn]}
-                  onPress={() => setDiscoverMode('hot')}
+                  onPress={() => {
+                    Keyboard.dismiss()
+                    setDiscoverMode('hot')
+                  }}
                 >
                   <IconHot fill={discoverMode === 'hot' ? '#fff' : '#888'} />
                   <Text style={[styles.discTabTxt, discoverMode === 'hot' && styles.discTabTxtOn]}>トレンド</Text>
@@ -660,13 +697,20 @@ export default function SearchTab() {
       </ScrollView>
 
       <Modal visible={showSort} transparent animationType="fade" onRequestClose={() => setShowSort(false)}>
-        <Pressable style={styles.sortModalRoot} onPress={() => setShowSort(false)}>
+        <Pressable
+          style={styles.sortModalRoot}
+          onPress={() => {
+            Keyboard.dismiss()
+            setShowSort(false)
+          }}
+        >
           <View style={styles.sortMenu}>
             {SORT_OPTIONS.map((opt) => (
               <Pressable
                 key={opt.key}
                 style={[styles.sortItem, sortKey === opt.key && styles.sortItemOn]}
                 onPress={() => {
+                  Keyboard.dismiss()
                   setSortKey(opt.key)
                   setShowSort(false)
                 }}
@@ -703,6 +747,13 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 12, color: '#1a1a1a', paddingVertical: 4 },
   searchGo: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#FFD84D' },
   searchGoTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  kbDismissBar: {
+    alignSelf: 'center',
+    marginTop: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+  },
+  kbDismissTxt: { fontSize: 12, fontWeight: '700', color: '#2563eb' },
   sortWrap: { position: 'relative' },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#1a1a1a' },
   sortBtnTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
