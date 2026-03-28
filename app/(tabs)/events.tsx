@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f7f6f3' },
   subHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'space-between',
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -571,11 +571,12 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   tabsScroll: { flex: 1, marginRight: 8 },
-  tabsInner: { flexDirection: 'row', alignItems: 'center', gap: 20 },
-  tabTxt: { fontSize: 14, fontWeight: '800', color: '#aaa' },
+  /** サブヘッダー内でタブ行を縦方向中央に（並び替えボタンと高さ揃え） */
+  tabsInner: { flexDirection: 'row', alignItems: 'center', gap: 20, flexGrow: 1 },
+  tabTxt: { fontSize: 14, lineHeight: 18, fontWeight: '800', color: '#aaa' },
   tabTxtOn: { color: '#1a1a1a' },
-  tabUnd: { marginTop: 8, height: 2, backgroundColor: '#1a1a1a', borderRadius: 1 },
-  tabUndPh: { marginTop: 8, height: 2, opacity: 0 },
+  tabUnd: { marginTop: 11, height: 2, backgroundColor: '#1a1a1a', borderRadius: 1 },
+  tabUndPh: { marginTop: 11, height: 2, opacity: 0 },
   sortWrap: { justifyContent: 'center' },
   sortBtn: {
     flexDirection: 'row',
