@@ -157,14 +157,22 @@ function PriceLevel({ level }: { level: number | null }) {
     return <Text style={styles.priceQ}>?</Text>
   }
   const px = META_STAR_PX
-  const yenFs = Math.round((12 * px) / 10)
-  const yenY = Math.round((16 * px) / 10)
+  /** viewBox 24 内の円 (r=10) に収まる文字サイズ（デバイス px に比例） */
+  const yenFs = Math.round((11 * px) / 10)
   return (
     <View style={styles.priceLevelRow}>
       {[1, 2, 3, 4].map((i) => (
         <Svg key={i} width={px} height={px} viewBox="0 0 24 24">
           <Circle cx={12} cy={12} r={10} fill={i <= level ? '#FFD84D' : '#e8e8e8'} />
-          <SvgTextNode x={12} y={yenY} textAnchor="middle" fontSize={yenFs} fill={i <= level ? '#1a1a1a' : '#bbb'} fontWeight="bold">
+          <SvgTextNode
+            x={12}
+            y={12}
+            textAnchor="middle"
+            alignmentBaseline="central"
+            fontSize={yenFs}
+            fill={i <= level ? '#1a1a1a' : '#bbb'}
+            fontWeight="bold"
+          >
             ¥
           </SvgTextNode>
         </Svg>
@@ -769,33 +777,37 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
 
           <View style={styles.metaCard}>
             <View style={[styles.metaSeg, { flex: 1.5 }]}>
-              <View style={styles.metaHead}>
-                <IconGoogle />
-                <Text style={styles.metaLbl}>レビュー</Text>
-              </View>
-              <View style={styles.rateRow}>
-                {displayRating != null && Number.isFinite(displayRating) ? (
-                  <>
-                    <Text style={styles.rateNum}>{displayRating.toFixed(1)}</Text>
-                    <View style={{ flexDirection: 'row', gap: 2 }}>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <IconStarSm key={s} filled={s <= Math.round(displayRating)} />
-                      ))}
-                    </View>
-                  </>
-                ) : (
-                  <Text style={styles.rateDash}>—</Text>
-                )}
+              <View style={styles.metaStackReview}>
+                <View style={styles.metaReviewTopRow}>
+                  <IconGoogle />
+                  <Text style={styles.metaLbl}>レビュー</Text>
+                </View>
+                <View style={styles.rateRow}>
+                  {displayRating != null && Number.isFinite(displayRating) ? (
+                    <>
+                      <Text style={styles.rateNum}>{displayRating.toFixed(1)}</Text>
+                      <View style={{ flexDirection: 'row', gap: 2 }}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <IconStarSm key={s} filled={s <= Math.round(displayRating)} />
+                        ))}
+                      </View>
+                    </>
+                  ) : (
+                    <Text style={styles.rateDash}>—</Text>
+                  )}
+                </View>
               </View>
             </View>
             <View style={[styles.metaSeg, { flex: 1 }]}>
-              <Text style={styles.metaLbl}>価格帯</Text>
-              <View style={styles.rateRow}>
-                {googlePriceLevel != null ? (
-                  <PriceLevel level={googlePriceLevel} />
-                ) : (
-                  <Text style={styles.rateDash}>—</Text>
-                )}
+              <View style={styles.metaStackPrice}>
+                <Text style={[styles.metaLbl, styles.metaLblOverRate]}>価格帯</Text>
+                <View style={styles.rateRow}>
+                  {googlePriceLevel != null ? (
+                    <PriceLevel level={googlePriceLevel} />
+                  ) : (
+                    <Text style={styles.rateDash}>—</Text>
+                  )}
+                </View>
               </View>
             </View>
             <View style={[styles.metaSegIcons, { flex: 1.5 }]}>
@@ -1075,18 +1087,49 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#ebebeb',
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  /** G の左端＝下段の点数の左端。「レビュー」は G の右隣 */
+  metaStackReview: {
+    width: '100%',
+    minHeight: 48,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+  },
+  metaReviewTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 6,
+    alignSelf: 'stretch',
+  },
+  /** 価格帯: ラベルと円マーク列の左端を揃える（高さは metaStackReview と同じ minHeight） */
+  metaStackPrice: {
+    width: '100%',
+    minHeight: 48,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
   },
   metaSegIcons: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 10,
   },
-  metaHead: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
-  metaLbl: { fontSize: 10, fontWeight: '700', color: '#aaa', letterSpacing: 0.6 },
-  rateRow: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 28 },
+  /** 点数・円行の直上ラベル（左端を下段の先頭に合わせる） */
+  metaLblOverRate: { marginBottom: 6, textAlign: 'left', alignSelf: 'stretch' },
+  metaLbl: { fontSize: 10, lineHeight: 14, fontWeight: '700', color: '#aaa', letterSpacing: 0.6 },
+  rateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 6,
+    minHeight: 28,
+    alignSelf: 'stretch',
+  },
   rateNum: { fontSize: 20, fontWeight: '800', color: '#1a1a1a' },
   rateDash: { fontSize: 18, fontWeight: '800', color: '#ccc' },
   priceLevelRow: { flexDirection: 'row', gap: 2, alignItems: 'center', flexShrink: 0 },
