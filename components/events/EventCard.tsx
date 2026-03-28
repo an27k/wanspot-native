@@ -98,20 +98,15 @@ export function EventCard({ event, onPressDetail, variant = 'default' }: Props) 
             )}
           </View>
         ) : null}
-        {(event.is_official || (event.tags && event.tags.length > 0)) && (
+        {event.tags && event.tags.length > 0 ? (
           <View style={styles.tagRow}>
-            {event.is_official ? (
-              <View style={styles.officialPill}>
-                <Text style={styles.officialTxt}>公式</Text>
-              </View>
-            ) : null}
-            {event.tags?.slice(0, 3).map((tag) => (
+            {event.tags.slice(0, 3).map((tag) => (
               <View key={tag} style={styles.tagPill}>
                 <Text style={styles.tagTxt}>{tag}</Text>
               </View>
             ))}
           </View>
-        )}
+        ) : null}
         <Text style={styles.title}>{event.title}</Text>
         <View style={styles.meta}>
           {event.price != null ? (
@@ -172,15 +167,6 @@ const styles = StyleSheet.create({
   paidPillTxt: { fontSize: 10, fontWeight: '800', color: '#15803d' },
   joinedLbl: { fontSize: 12, fontWeight: '800', color: '#888' },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  officialPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#FFD84D',
-    borderWidth: 1,
-    borderColor: '#e8c84a',
-  },
-  officialTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
   tagPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: '#FFF9E0' },
   tagTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
   title: { fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 8 },

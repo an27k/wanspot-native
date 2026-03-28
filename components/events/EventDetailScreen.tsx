@@ -14,6 +14,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import Svg, { Circle, Ellipse, Line, Path } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
@@ -69,11 +70,6 @@ const IconShare = () => (
 const IconX = () => (
   <Svg width={18} height={18} viewBox="0 0 24 24" fill="#fff">
     <Path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </Svg>
-)
-const IconLine = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24">
-    <Path fill="#06C755" d="M12 2C6.48 2 2 6.03 2 11c0 3.52 2.1 6.59 5.27 8.37-.23.85-.88 3.08-.1 3.49.83.44 3.52-1.22 4.84-2.05.33.04.66.06 1 .06 5.52 0 10-4.03 10-9S17.52 2 12 2zm-3 12H7V9h2v5zm4 0h-2V9h2v5zm4 0h-2V9h2v5z" />
   </Svg>
 )
 const IconCopy = () => (
@@ -284,11 +280,6 @@ export default function EventDetailScreen({ eventId }: { eventId: string }) {
                   <DogPh />
                 </View>
               )}
-              {event.is_official ? (
-                <View style={styles.officialBadge}>
-                  <Text style={styles.officialBadgeTxt}>公式</Text>
-                </View>
-              ) : null}
             </View>
           </View>
         </View>
@@ -385,7 +376,7 @@ export default function EventDetailScreen({ eventId }: { eventId: string }) {
                 <Text style={styles.shareLblW}>X</Text>
               </Pressable>
               <Pressable style={styles.shareLine} onPress={() => void share('line')}>
-                <IconLine />
+                <FontAwesome5 name="line" size={22} color="#fff" brand />
                 <Text style={styles.shareLblW}>LINE</Text>
               </Pressable>
               <Pressable style={styles.shareCopy} onPress={() => void share('copy')}>
@@ -452,16 +443,6 @@ const styles = StyleSheet.create({
   thumbInner: { height: 224, position: 'relative' },
   thumbImg: { width: '100%', height: '100%' },
   thumbPh: { alignItems: 'center', justifyContent: 'center' },
-  officialBadge: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#FFD84D',
-  },
-  officialBadgeTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
   pad: { padding: 16, gap: 12 },
   card: {
     backgroundColor: '#fff',

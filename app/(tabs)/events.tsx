@@ -310,17 +310,23 @@ export default function EventsTab() {
       <AppHeader />
       <View style={styles.subHeader}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabsInner}>
-          <Pressable onPress={() => setTab('scheduled')}>
-            <Text style={[styles.tabTxt, tab === 'scheduled' && styles.tabTxtOn]}>開催予定</Text>
-            {tab === 'scheduled' ? <View style={styles.tabUnd} /> : <View style={styles.tabUndPh} />}
+          <Pressable
+            onPress={() => setTab('scheduled')}
+            style={[styles.eventTabChip, tab === 'scheduled' ? styles.eventTabChipOn : styles.eventTabChipOff]}
+          >
+            <Text style={[styles.eventTabTxt, tab === 'scheduled' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>開催予定</Text>
           </Pressable>
-          <Pressable onPress={() => setTab('joined')}>
-            <Text style={[styles.tabTxt, tab === 'joined' && styles.tabTxtOn]}>参加予定</Text>
-            {tab === 'joined' ? <View style={styles.tabUnd} /> : <View style={styles.tabUndPh} />}
+          <Pressable
+            onPress={() => setTab('joined')}
+            style={[styles.eventTabChip, tab === 'joined' ? styles.eventTabChipOn : styles.eventTabChipOff]}
+          >
+            <Text style={[styles.eventTabTxt, tab === 'joined' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>参加予定</Text>
           </Pressable>
-          <Pressable onPress={() => setTab('external')}>
-            <Text style={[styles.tabTxt, tab === 'external' && styles.tabTxtOn]}>外部イベント</Text>
-            {tab === 'external' ? <View style={styles.tabUnd} /> : <View style={styles.tabUndPh} />}
+          <Pressable
+            onPress={() => setTab('external')}
+            style={[styles.eventTabChip, tab === 'external' ? styles.eventTabChipOn : styles.eventTabChipOff]}
+          >
+            <Text style={[styles.eventTabTxt, tab === 'external' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>外部イベント</Text>
           </Pressable>
         </ScrollView>
         <View style={styles.sortWrap}>
@@ -572,11 +578,18 @@ const styles = StyleSheet.create({
   },
   tabsScroll: { flex: 1, marginRight: 8 },
   /** サブヘッダー内でタブ行を縦方向中央に（並び替えボタンと高さ揃え） */
-  tabsInner: { flexDirection: 'row', alignItems: 'center', gap: 20, flexGrow: 1 },
-  tabTxt: { fontSize: 14, lineHeight: 18, fontWeight: '800', color: '#aaa' },
-  tabTxtOn: { color: '#1a1a1a' },
-  tabUnd: { marginTop: 11, height: 2, backgroundColor: '#1a1a1a', borderRadius: 1 },
-  tabUndPh: { marginTop: 11, height: 2, opacity: 0 },
+  tabsInner: { flexDirection: 'row', alignItems: 'center', gap: 8, flexGrow: 1 },
+  /** 現在地ジャンル（genreChip）と同形状：未選択グレー、選択のみ黄 */
+  eventTabChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  eventTabChipOn: { backgroundColor: '#FFD84D' },
+  eventTabChipOff: { backgroundColor: '#f5f5f5' },
+  eventTabTxt: { fontSize: 12, fontWeight: '800' },
+  eventTabTxtOn: { color: '#1a1a1a' },
+  eventTabTxtOff: { color: '#888' },
   sortWrap: { justifyContent: 'center' },
   sortBtn: {
     flexDirection: 'row',

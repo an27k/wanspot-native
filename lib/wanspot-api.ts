@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 
 type Extra = {
   wanspotApiUrl?: string
+  wanspotSiteUrl?: string
 }
 
 function firstNonEmpty(...vals: (string | undefined)[]): string {
@@ -13,16 +14,31 @@ function firstNonEmpty(...vals: (string | undefined)[]): string {
   return ''
 }
 
-/** Next.js wanspot のオリジン（末尾スラッシュなし）。実機では localhost ではなく本番 or LAN の URL を .env に。 */
+/** Next.js wanspot の API オリジン（末尾スラッシュなし）。実機では localhost ではなく本番 or LAN の URL を .env に。 */
 export function getWanspotApiBase(): string {
   const extra = Constants.expoConfig?.extra as Extra | undefined
   const raw = firstNonEmpty(process.env.EXPO_PUBLIC_WANSPOT_API_URL, extra?.wanspotApiUrl)
   return raw.replace(/\/$/, '')
 }
 
-/** シェア用の公開ページURL（API と同一オリジン想定） */
+/**
+ * シェア・コピー用の公開サイトオリジン（末尾スラッシュなし）。
+ * EXPO_PUBLIC_WANSPOT_SITE_URL を指定すると API が Vercel のままでも本番ドメイン（.app 等）の URL を出せる。
+ */
+export function getWanspotPublicBase(): string {
+  const extra = Constants.expoConfig?.extra as Extra | undefined
+  const raw = firstNonEmpty(
+    process.env.EXPO_PUBLIC_WANSPOT_SITE_URL,
+    extra?.wanspotSiteUrl,
+    process.env.EXPO_PUBLIC_WANSPOT_API_URL,
+    extra?.wanspotApiUrl
+  )
+  return raw.replace(/\/$/, '')
+}
+
+/** シェア用の公開ページ URL（getWanspotPublicBase を使用） */
 export function wanspotPublicUrl(path: string): string {
-  const base = getWanspotApiBase()
+  const base = getWanspotPublicBase()
   const p = path.startsWith('/') ? path : `/${path}`
   return `${base}${p}`
 }

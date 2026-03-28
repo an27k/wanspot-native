@@ -16,6 +16,11 @@ module.exports = ({ config }) => {
     process.env.NEXT_PUBLIC_WANSPOT_API_URL ||
     ''
 
+  const wanspotSiteUrl =
+    process.env.EXPO_PUBLIC_WANSPOT_SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    ''
+
   return {
     ...config,
     plugins: [...(config.plugins ?? []), '@react-native-community/datetimepicker'],
@@ -24,6 +29,7 @@ module.exports = ({ config }) => {
       supabaseUrl,
       supabaseAnonKey,
       wanspotApiUrl,
+      wanspotSiteUrl,
     },
   }
 }
