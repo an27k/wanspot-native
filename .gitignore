@@ -32,6 +32,8 @@ yarn-error.*
 
 # local env files
 .env*.local
+# macOS drag-drop artifact (colon-prefixed folder name)
+:.env.local/
 
 # typescript
 *.tsbuildinfo
