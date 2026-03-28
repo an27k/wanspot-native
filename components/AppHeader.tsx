@@ -41,7 +41,7 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
         {variant === 'back' ? (
           <View style={styles.row}>
             <Pressable onPress={onBack} hitSlop={12} style={styles.side}>
-              <Ionicons name="chevron-back" size={26} color={colors.text} />
+              <Ionicons name="chevron-back-outline" size={26} color={colors.text} />
             </Pressable>
             <Text style={styles.titleMid} numberOfLines={1}>
               {title ?? ''}
@@ -57,7 +57,7 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
             <View style={styles.sideRight}>
               {rightSlot}
               <Pressable onPress={() => setMenuOpen(true)} hitSlop={8}>
-                <Ionicons name="menu" size={26} color={colors.text} />
+                <Ionicons name="menu-outline" size={26} color={colors.text} />
               </Pressable>
             </View>
           </View>
@@ -71,7 +71,7 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
             <View style={styles.drawerHead}>
               <Text style={styles.drawerTitle}>メニュー</Text>
               <Pressable onPress={() => setMenuOpen(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
+                <Ionicons name="close-outline" size={24} color={colors.text} />
               </Pressable>
             </View>
             <Pressable style={styles.menuRow} onPress={() => openWeb('/contact')}>

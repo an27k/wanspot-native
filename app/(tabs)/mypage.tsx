@@ -74,15 +74,15 @@ function AvatarCameraFab({ onPress, accessibilityLabel }: { onPress: () => void;
   )
 }
 
-const IconEditSmall = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
+const IconEditSmall = ({ size = 11 }: { size?: number }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
     <Path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
     <Path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
   </Svg>
 )
 
 const IconSyringe = () => (
-  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
+  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
     <Path d="M18 2l4 4M17 7l1-1M3 21l6-6M9 15l2-2M12 12l2-2M6 21c0-2 2-4 4-4M15 3l-6 6M15 3l3 3-7 7-3-3 7-7z" />
   </Svg>
 )
@@ -496,15 +496,23 @@ export default function MypageTab() {
   return (
     <View style={styles.root}>
       <AppHeader />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 12 }}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 6,
+          paddingBottom: padBottom,
+          gap: 12,
+        }}
+      >
         {dog ? (
           <View style={styles.profileCard}>
             <View style={styles.profileCardHeader}>
               <Text style={styles.profileCardTitle}>愛犬</Text>
+            </View>
+            <View style={styles.profileEditAboveAvatar}>
               {!editingDog ? (
                 <Pressable style={styles.profileEditBtn} onPress={startEditDog} hitSlop={8} accessibilityLabel="愛犬プロフィールを編集">
-                  <IconEditSmall />
-                  <Text style={styles.profileEditBtnTxt}>編集</Text>
+                  <IconEditSmall size={22} />
                 </Pressable>
               ) : null}
             </View>
@@ -679,10 +687,11 @@ export default function MypageTab() {
         <View style={styles.profileCard}>
           <View style={styles.profileCardHeader}>
             <Text style={styles.profileCardTitle}>オーナー</Text>
+          </View>
+          <View style={styles.profileEditAboveAvatar}>
             {!editingOwner ? (
               <Pressable style={styles.profileEditBtn} onPress={startEditOwner} hitSlop={8} accessibilityLabel="オーナープロフィールを編集">
-                <IconEditSmall />
-                <Text style={styles.profileEditBtnTxt}>編集</Text>
+                <IconEditSmall size={22} />
               </Pressable>
             ) : null}
           </View>
@@ -845,32 +854,47 @@ const styles = StyleSheet.create({
   profileCard: {
     backgroundColor: colors.background,
     borderRadius: 16,
-    paddingVertical: 24,
+    paddingTop: 4,
+    paddingBottom: 24,
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: colors.border,
   },
+  /** 見出しのみ。下線までの高さを愛犬・オーナーで揃える */
   profileCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-    minHeight: 28,
+    alignSelf: 'stretch',
+    width: '100%',
+    minHeight: 34,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   profileCardTitle: {
     fontSize: 13,
     fontWeight: '800',
     color: colors.text,
     letterSpacing: 3,
+    lineHeight: 18,
   },
-  profileEditBtn: {
+  /** 写真の直上。編集中も同じ高さでアバター位置がずれない */
+  profileEditAboveAvatar: {
+    alignSelf: 'stretch',
+    width: '100%',
+    minHeight: 38,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    justifyContent: 'flex-end',
+    paddingTop: 8,
+    paddingBottom: 4,
   },
-  profileEditBtnTxt: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
+  profileEditBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+    paddingHorizontal: 2,
+  },
   profileMainCol: { alignItems: 'center', width: '100%' },
   profileAgeGenderRow: {
     flexDirection: 'row',
@@ -910,7 +934,7 @@ const styles = StyleSheet.create({
   /** 編集時（愛犬・オーナー共通）：カメラFABがはみ出す分、先頭入力との間を空ける */
   avatar80WrapEditing: { marginBottom: 12 },
   profileEditFieldsAfterAvatar: { marginTop: 14 },
-  avatar80Wrap: { position: 'relative', width: 80, height: 80, marginTop: 4 },
+  avatar80Wrap: { position: 'relative', width: 80, height: 80, marginTop: 0 },
   avatar80: {
     width: 80,
     height: 80,
@@ -959,12 +983,12 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   profileDivider: { height: 1, backgroundColor: colors.border, marginTop: 20, alignSelf: 'stretch', width: '100%' },
-  vaccineBlocksWrap: { gap: 10, marginTop: 4, alignSelf: 'stretch', width: '100%' },
+  vaccineBlocksWrap: { gap: 8, marginTop: 4, alignSelf: 'stretch', width: '100%' },
   vaccineBlock: {
     position: 'relative',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     backgroundColor: colors.cardBg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -972,10 +996,10 @@ const styles = StyleSheet.create({
   /** 針＋ラベルはカード幅の真ん中。接種済スタンプはカード最右上 */
   vaccineBlockTop: {
     width: '100%',
-    minHeight: 40,
+    minHeight: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 2,
+    paddingVertical: 0,
   },
   vaccineBlockTitleCenter: {
     flexDirection: 'row',
@@ -993,21 +1017,23 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   vaccineSummaryLbl: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textMuted,
     fontWeight: '700',
     flexShrink: 1,
     textAlign: 'center',
   },
   vaccineBlockDateBtn: {
-    marginTop: 10,
+    marginTop: 6,
     alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   vaccineBlockDateReadonly: {
-    marginTop: 10,
-    fontSize: 14,
+    marginTop: 6,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.textLight,
     textAlign: 'center',
@@ -1016,14 +1042,14 @@ const styles = StyleSheet.create({
   vaccineDateSingleLine: { flexShrink: 1 },
   vaccineDateCenter: { textAlign: 'center', alignSelf: 'stretch', width: '100%' },
   vaxStamp: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 999,
     backgroundColor: colors.successMutedBg,
     flexShrink: 0,
   },
   vaxStampTxt: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.success,
   },

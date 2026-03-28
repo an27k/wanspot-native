@@ -34,28 +34,36 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: '現在地',
-          tabBarIcon: ({ color, size }) => <Ionicons name="location" color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'location' : 'location-outline'} color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
           title: '検索',
-          tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'search' : 'search-outline'} color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="events"
         options={{
           title: 'イベント',
-          tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="mypage"
         options={{
           title: 'マイページ',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} color={color} size={size} />
+          ),
         }}
       />
     </Tabs>

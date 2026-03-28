@@ -262,12 +262,12 @@ export default function NearbyPage() {
 
   return (
     <View style={styles.main}>
+      <AppHeader />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24 }]}
         keyboardShouldPersistTaps="handled"
       >
-        <AppHeader />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.genreBar}>
           {GENRES.map((g) => (
             <TouchableOpacity

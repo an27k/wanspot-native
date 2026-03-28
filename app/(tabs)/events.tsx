@@ -310,15 +310,15 @@ export default function EventsTab() {
       <AppHeader />
       <View style={styles.subHeader}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabsInner}>
-          <Pressable style={styles.tabBtn} onPress={() => setTab('scheduled')}>
+          <Pressable onPress={() => setTab('scheduled')}>
             <Text style={[styles.tabTxt, tab === 'scheduled' && styles.tabTxtOn]}>開催予定</Text>
             {tab === 'scheduled' ? <View style={styles.tabUnd} /> : <View style={styles.tabUndPh} />}
           </Pressable>
-          <Pressable style={styles.tabBtn} onPress={() => setTab('joined')}>
+          <Pressable onPress={() => setTab('joined')}>
             <Text style={[styles.tabTxt, tab === 'joined' && styles.tabTxtOn]}>参加予定</Text>
             {tab === 'joined' ? <View style={styles.tabUnd} /> : <View style={styles.tabUndPh} />}
           </Pressable>
-          <Pressable style={styles.tabBtn} onPress={() => setTab('external')}>
+          <Pressable onPress={() => setTab('external')}>
             <Text style={[styles.tabTxt, tab === 'external' && styles.tabTxtOn]}>外部イベント</Text>
             {tab === 'external' ? <View style={styles.tabUnd} /> : <View style={styles.tabUndPh} />}
           </Pressable>
@@ -561,22 +561,22 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f7f6f3' },
   subHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#ebebeb',
     paddingHorizontal: 16,
     paddingTop: 12,
+    paddingBottom: 12,
   },
   tabsScroll: { flex: 1, marginRight: 8 },
-  tabsInner: { flexDirection: 'row', gap: 20, paddingBottom: 0 },
-  tabBtn: { paddingBottom: 12 },
+  tabsInner: { flexDirection: 'row', alignItems: 'center', gap: 20 },
   tabTxt: { fontSize: 14, fontWeight: '800', color: '#aaa' },
   tabTxtOn: { color: '#1a1a1a' },
   tabUnd: { marginTop: 8, height: 2, backgroundColor: '#1a1a1a', borderRadius: 1 },
   tabUndPh: { marginTop: 8, height: 2, opacity: 0 },
-  sortWrap: { paddingBottom: 12 },
+  sortWrap: { justifyContent: 'center' },
   sortBtn: {
     flexDirection: 'row',
     alignItems: 'center',
