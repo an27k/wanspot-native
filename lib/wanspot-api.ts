@@ -5,6 +5,13 @@ export function getWanspotApiBase(): string {
   return raw.replace(/\/$/, '')
 }
 
+/** シェア用の公開ページURL（API と同一オリジン想定） */
+export function wanspotPublicUrl(path: string): string {
+  const base = getWanspotApiBase()
+  const p = path.startsWith('/') ? path : `/${path}`
+  return `${base}${p}`
+}
+
 export type WanspotFetchInit = RequestInit & { json?: unknown }
 
 /**

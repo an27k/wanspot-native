@@ -15,6 +15,9 @@ type EventRow = {
   area: string | null
   price: number | null
   capacity: number | null
+  current_count: number | null
+  tags: string[] | null
+  thumbnail_url: string | null
   creator_id: string
 }
 
@@ -80,6 +83,8 @@ export default function EditEventScreen() {
       <EventEditorForm
         mode="edit"
         eventId={ev.id}
+        minCapacity={ev.current_count ?? 0}
+        priceReadOnly
         initial={{
           title: ev.title,
           description: ev.description,
@@ -88,6 +93,8 @@ export default function EditEventScreen() {
           area: ev.area,
           price: ev.price,
           capacity: ev.capacity,
+          tags: ev.tags,
+          thumbnail_url: ev.thumbnail_url,
         }}
         onSuccess={() => router.back()}
       />

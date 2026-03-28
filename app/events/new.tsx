@@ -8,8 +8,8 @@ export default function NewEventScreen() {
   const router = useRouter()
   return (
     <View style={styles.root}>
-      <AppHeader variant="back" title="イベント作成" onBack={() => router.back()} />
-      <EventEditorForm mode="create" onSuccess={(evId) => router.replace(`/events/${evId}`)} />
+      <AppHeader variant="back" title="イベントを作成" onBack={() => router.back()} />
+      <EventEditorForm mode="create" onSuccess={(evId) => router.replace(`/events/${evId}?created=1`)} />
     </View>
   )
 }

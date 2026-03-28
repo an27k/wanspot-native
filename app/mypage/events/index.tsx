@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AppHeader } from '@/components/AppHeader'
-import { EventCard, type WanspotEventRow } from '@/components/events/EventCard'
+import Svg, { Path } from 'react-native-svg'
+import { type WanspotEventRow } from '@/components/events/EventCard'
+import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
+
+const IconChevronLeft = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+    <Path d="M15 18l-6-6 6-6" />
+  </Svg>
+)
 
 export default function MyHostedEventsScreen() {
   const router = useRouter()
@@ -26,50 +25,97 @@ export default function MyHostedEventsScreen() {
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
+      router.replace('/(auth)/login')
       setRows([])
       setLoading(false)
       setRefreshing(false)
       return
     }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('events')
-      .select('*')
+      .select('id, title, event_at, location_name, thumbnail_url, capacity, current_count, creator_id, tags, is_official, description, area, price')
       .eq('creator_id', user.id)
       .order('event_at', { ascending: false })
-    setRows((data ?? []) as WanspotEventRow[])
+    if (error) {
+      console.error('[mypage/events]', error)
+      setRows([])
+    } else {
+      setRows((data ?? []) as WanspotEventRow[])
+    }
     setLoading(false)
     setRefreshing(false)
-  }, [])
+  }, [router])
 
   useEffect(() => {
-    load()
+    void load()
   }, [load])
 
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
 
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '日時未定'
+    return new Date(dateStr).toLocaleDateString('ja-JP', {
+      month: 'short',
+      day: 'numeric',
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
   if (loading) {
     return (
       <View style={styles.root}>
-        <AppHeader variant="back" title="主催イベント" onBack={() => router.back()} />
-        <ActivityIndicator style={{ marginTop: 40 }} size="large" />
+        <View style={[styles.sticky, { paddingTop: Math.max(12, insets.top) }]}>
+          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backHit}>
+            <IconChevronLeft />
+          </Pressable>
+          <Text style={styles.pageTitle}>主催したイベント</Text>
+        </View>
+        <RunningDog label="イベントを読み込み中..." />
       </View>
     )
   }
 
   return (
     <View style={styles.root}>
-      <AppHeader variant="back" title="主催イベント" onBack={() => router.back()} />
+      <View style={[styles.sticky, { paddingTop: Math.max(12, insets.top) }]}>
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backHit}>
+          <IconChevronLeft />
+        </Pressable>
+        <Text style={styles.pageTitle}>主催したイベント</Text>
+      </View>
       <FlatList
         data={rows}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} />}
-        contentContainerStyle={{ padding: 12, paddingBottom: padBottom, gap: 10 }}
-        ListEmptyComponent={<Text style={styles.empty}>主催イベントはまだありません</Text>}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load() }} />}
+        contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 12 }}
+        ListEmptyComponent={<Text style={styles.empty}>まだ作成したイベントはありません</Text>}
         renderItem={({ item }) => (
-          <View>
-            <EventCard event={item} onPress={() => router.push(`/events/${item.id}`)} />
-            <Pressable style={styles.edit} onPress={() => router.push(`/mypage/events/${item.id}/edit`)}>
-              <Text style={styles.editTxt}>編集</Text>
+          <View style={styles.cardWrap}>
+            <Pressable
+              onPress={() => router.push(`/events/${item.id}`)}
+              style={styles.rowCard}
+            >
+              <View style={styles.thumb}>
+                {item.thumbnail_url ? (
+                  <Image source={{ uri: item.thumbnail_url }} style={styles.thumbImg} resizeMode="cover" />
+                ) : (
+                  <View style={styles.thumbPh}>
+                    <Text style={styles.noImg}>No img</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={styles.evTitle} numberOfLines={2}>{item.title}</Text>
+                <Text style={styles.evDate}>{formatDate(item.event_at)}</Text>
+                {item.location_name ? (
+                  <Text style={styles.evLoc} numberOfLines={1}>{item.location_name}</Text>
+                ) : null}
+              </View>
+            </Pressable>
+            <Pressable style={styles.editFab} onPress={() => router.push(`/mypage/events/${item.id}/edit`)}>
+              <Text style={styles.editFabTxt}>編集</Text>
             </Pressable>
           </View>
         )}
@@ -79,17 +125,35 @@ export default function MyHostedEventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.cardBg },
-  empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40 },
-  edit: {
-    marginTop: 6,
-    alignSelf: 'flex-end',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
+  root: { flex: 1, backgroundColor: '#f7f6f3' },
+  sticky: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ebebeb',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
-  editTxt: { fontWeight: '700', fontSize: 13, color: colors.text },
+  backHit: { alignSelf: 'flex-start', marginBottom: 8 },
+  pageTitle: { fontSize: 20, fontWeight: '800', color: '#1a1a1a', paddingLeft: 4 },
+  empty: { textAlign: 'center', fontSize: 14, color: '#aaa', paddingVertical: 48 },
+  cardWrap: { position: 'relative', borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: '#ebebeb' },
+  rowCard: { flexDirection: 'row', gap: 12, padding: 12, paddingRight: 88 },
+  thumb: { width: 80, height: 80, borderRadius: 12, overflow: 'hidden', backgroundColor: '#FFF9E0' },
+  thumbImg: { width: '100%', height: '100%' },
+  thumbPh: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  noImg: { fontSize: 10, fontWeight: '800', color: '#ccc' },
+  rowBody: { flex: 1, minWidth: 0 },
+  evTitle: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
+  evDate: { fontSize: 12, color: '#888', marginTop: 4 },
+  evLoc: { fontSize: 12, color: '#aaa', marginTop: 2 },
+  editFab: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: '#1a1a1a',
+  },
+  editFabTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
 })
