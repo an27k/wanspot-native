@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useEffect, useState } from 'react'
 import {
+  Alert,
   Image,
   Modal,
   Pressable,
@@ -174,6 +175,9 @@ export default function MypageTab() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarUri, setAvatarUri] = useState<string | null>(null)
 
+  const ownerEditBirthdayYmd = ownerBirthdayToYmd(editOwnerYear, editOwnerMonth, editOwnerDay)
+  const ownerEditBirthdayOk = ownerEditBirthdayYmd !== null
+
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
@@ -292,6 +296,11 @@ export default function MypageTab() {
 
   const saveOwner = async () => {
     if (!profile) return
+    const birthdayYmd = ownerEditBirthdayYmd
+    if (!birthdayYmd) {
+      Alert.alert('入力エラー', '生年月日は年・月・日すべて必須です。')
+      return
+    }
     setSavingOwner(true)
     try {
       let photoUrl = profile.photo_url
@@ -303,16 +312,20 @@ export default function MypageTab() {
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
         photoUrl = urlData.publicUrl
       }
-      await supabase
+      const { error: updateError } = await supabase
         .from('users')
         .update({
           name: editName.trim(),
           parent_type: editParentType,
           bio: editBio.trim() || null,
-          birthday: ownerBirthdayToYmd(editOwnerYear, editOwnerMonth, editOwnerDay),
+          birthday: birthdayYmd,
           photo_url: photoUrl,
         })
         .eq('id', profile.id)
+      if (updateError) {
+        Alert.alert('保存に失敗しました', updateError.message)
+        return
+      }
       setProfile((prev) =>
         prev
           ? {
@@ -320,7 +333,7 @@ export default function MypageTab() {
               name: editName.trim(),
               parent_type: editParentType,
               bio: editBio.trim() || null,
-              birthday: ownerBirthdayToYmd(editOwnerYear, editOwnerMonth, editOwnerDay),
+              birthday: birthdayYmd,
               photo_url: photoUrl,
             }
           : prev
@@ -735,9 +748,13 @@ export default function MypageTab() {
               <Pressable style={styles.btnGhost} onPress={() => setEditingOwner(false)}>
                 <Text style={styles.btnGhostTxt}>キャンセル</Text>
               </Pressable>
-              <Pressable style={styles.btnPri} onPress={() => void saveOwner()} disabled={savingOwner}>
-                <Text style={styles.btnPriTxt}>{savingOwner ? '保存中...' : '保存する'}</Text>
-              </Pressable>
+                <Pressable
+                  style={[styles.btnPri, !ownerEditBirthdayOk && styles.btnPriDis]}
+                  onPress={() => void saveOwner()}
+                  disabled={savingOwner || !ownerEditBirthdayOk}
+                >
+                  <Text style={styles.btnPriTxt}>{savingOwner ? '保存中...' : '保存する'}</Text>
+                </Pressable>
             </View>
           ) : null}
         </View>
@@ -1038,6 +1055,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brandButton,
     alignItems: 'center',
   },
+  btnPriDis: { opacity: 0.45 },
   btnPriTxt: { fontSize: 14, fontWeight: '800', color: colors.text },
   parentRow: { flexDirection: 'row', gap: 8 },
   parentChip: {

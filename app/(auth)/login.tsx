@@ -13,7 +13,7 @@ import { colors } from '@/constants/colors'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 
-const LOGO = require('@/assets/images/wanspot_icon.png')
+import { brandLogoSource } from '@/assets/brandLogo'
 
 export default function LoginScreen() {
   const router = useRouter()
@@ -41,7 +41,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.root}>
-      <Image source={LOGO} style={styles.logo} resizeMode="contain" />
+      <Image source={brandLogoSource} style={styles.logo} resizeMode="contain" />
       <Text style={styles.title}>wanspot</Text>
       <Text style={styles.sub}>ログイン</Text>
       <TextInput

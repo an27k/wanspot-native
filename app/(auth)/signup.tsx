@@ -9,10 +9,9 @@ import {
   View,
 } from 'react-native'
 import { Link, useRouter } from 'expo-router'
+import { brandLogoSource } from '@/assets/brandLogo'
 import { colors } from '@/constants/colors'
 import { useAuth } from '@/context/AuthContext'
-
-const LOGO = require('@/assets/images/wanspot_icon.png')
 
 export default function SignupScreen() {
   const router = useRouter()
@@ -36,7 +35,7 @@ export default function SignupScreen() {
 
   return (
     <View style={styles.root}>
-      <Image source={LOGO} style={styles.logo} resizeMode="contain" />
+      <Image source={brandLogoSource} style={styles.logo} resizeMode="contain" />
       <Text style={styles.title}>wanspot</Text>
       <Text style={styles.sub}>アカウント作成</Text>
       <TextInput

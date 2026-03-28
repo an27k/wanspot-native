@@ -10,11 +10,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as Linking from 'expo-linking'
+import { brandLogoSource } from '@/assets/brandLogo'
 import { colors } from '@/constants/colors'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
 import { useAuth } from '@/context/AuthContext'
-
-const LOGO = require('@/assets/images/wanspot_icon.png')
 
 type AppHeaderProps = {
   variant?: 'default' | 'back'
@@ -52,7 +51,7 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
         ) : (
           <View style={styles.row}>
             <View style={styles.brand}>
-              <Image source={LOGO} style={styles.logo} resizeMode="contain" />
+              <Image source={brandLogoSource} style={styles.logo} resizeMode="contain" />
               <Text style={styles.brandText}>wanspot</Text>
             </View>
             <View style={styles.sideRight}>

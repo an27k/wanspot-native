@@ -81,14 +81,17 @@ export default function SizePage() {
                 ownerParsed = null
               }
             }
-            const userBirthday =
-              ownerParsed?.ownerYear && ownerParsed?.ownerMonth && ownerParsed?.ownerDay
-                ? ownerBirthdayToYmd(
-                    String(ownerParsed.ownerYear),
-                    String(ownerParsed.ownerMonth),
-                    String(ownerParsed.ownerDay)
-                  )
-                : null
+            const userBirthday = ownerParsed
+              ? ownerBirthdayToYmd(
+                  String(ownerParsed.ownerYear ?? ''),
+                  String(ownerParsed.ownerMonth ?? ''),
+                  String(ownerParsed.ownerDay ?? '')
+                )
+              : null
+            if (!userBirthday) {
+              Alert.alert('入力エラー', 'オーナーの生年月日（年・月・日すべて）を選択してください。')
+              return
+            }
             const dog = JSON.parse(raw) as {
               name?: string
               year?: string
@@ -102,13 +105,20 @@ export default function SizePage() {
             const birthday =
               dog.year && dog.month ? `${dog.year}-${String(dog.month).padStart(2, '0')}-01` : null
             const today = new Date().toISOString().slice(0, 10)
-            await supabase.from('users').upsert({
-              id: user.id,
-              name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'ユーザー',
-              parent_type: ownerParsed?.parent_type ?? 'papa',
-              birthday: userBirthday,
-            })
-            await supabase.from('dogs').upsert(
+            const { error: userUpsertError } = await supabase.from('users').upsert(
+              {
+                id: user.id,
+                name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'ユーザー',
+                parent_type: ownerParsed?.parent_type ?? 'papa',
+                birthday: userBirthday,
+              },
+              { onConflict: 'id' }
+            )
+            if (userUpsertError) {
+              Alert.alert('保存に失敗しました', userUpsertError.message)
+              return
+            }
+            const { error: dogUpsertError } = await supabase.from('dogs').upsert(
               {
                 user_id: user.id,
                 name: dog.name ?? '',
@@ -123,6 +133,10 @@ export default function SizePage() {
               },
               { onConflict: 'user_id' }
             )
+            if (dogUpsertError) {
+              Alert.alert('保存に失敗しました', dogUpsertError.message)
+              return
+            }
             await AsyncStorage.multiRemove(['ob_dog', 'ob_size', 'ob_owner'])
           } catch (e) {
             Alert.alert('エラー', e instanceof Error ? e.message : String(e))

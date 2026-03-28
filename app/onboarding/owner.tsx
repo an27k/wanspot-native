@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
-import { OwnerBirthdayPickers } from '@/components/OwnerBirthdayPickers'
+import { OwnerBirthdayPickers, ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 
@@ -22,7 +22,8 @@ export default function OwnerOnboardingPage() {
   const [ownerDay, setOwnerDay] = useState('')
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
 
-  const canNext = parentType !== null
+  const ownerBirthdayYmd = ownerBirthdayToYmd(ownerYear, ownerMonth, ownerDay)
+  const canNext = parentType !== null && ownerBirthdayYmd !== null
 
   const goNext = async () => {
     if (!canNext) return
@@ -30,9 +31,9 @@ export default function OwnerOnboardingPage() {
       'ob_owner',
       JSON.stringify({
         parent_type: parentType,
-        ownerYear: ownerYear || null,
-        ownerMonth: ownerMonth || null,
-        ownerDay: ownerDay || null,
+        ownerYear,
+        ownerMonth,
+        ownerDay,
       })
     )
     router.push('/onboarding/size')

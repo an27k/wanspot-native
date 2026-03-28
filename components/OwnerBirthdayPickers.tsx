@@ -17,6 +17,10 @@ export function ownerBirthdayToYmd(year: string, month: string, day: string): st
   return `${yi}-${String(mi).padStart(2, '0')}-${String(di).padStart(2, '0')}`
 }
 
+export function isOwnerBirthdayComplete(year: string, month: string, day: string): boolean {
+  return ownerBirthdayToYmd(year, month, day) !== null
+}
+
 export function splitYmdToParts(ymd: string | null | undefined): { y: string; m: string; d: string } {
   const t = typeof ymd === 'string' ? ymd.trim() : ''
   if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return { y: '', m: '', d: '' }
@@ -28,8 +32,8 @@ function daysInMonth(y: number, m: number): number {
   return new Date(y, m, 0).getDate()
 }
 
-const DEFAULT_FIELD_LABEL = '生年月日（任意）'
-const DEFAULT_HINT = '未選択の項目は「-」です。未記載のままにできます。'
+const DEFAULT_FIELD_LABEL = '生年月日（必須）'
+const DEFAULT_HINT = '年・月・日をすべて選択してください。'
 
 type Props = {
   year: string
