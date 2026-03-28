@@ -166,7 +166,10 @@ export function EventEditorForm({
     try {
       const data = await wanspotFetchJson<{ url?: string; error?: string }>(
         '/api/events/unsplash-thumbnail',
-        { method: 'POST', json: { title: t } }
+        {
+          method: 'POST',
+          json: { title: t, description: description.trim() || undefined },
+        }
       )
       if (data.error && !data.url) {
         setError(typeof data.error === 'string' ? data.error : '画像の取得に失敗しました')

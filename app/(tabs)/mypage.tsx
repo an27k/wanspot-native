@@ -170,6 +170,10 @@ export default function MypageTab() {
     void load()
   }, [load])
 
+  useEffect(() => {
+    if (!editingDog) setVaccinePickerKind(null)
+  }, [editingDog])
+
   const startEditDog = () => {
     if (!dog) return
     setEditDogName(dog.name ?? '')
@@ -311,31 +315,15 @@ export default function MypageTab() {
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
   const avatarSrc = avatarPreview ?? profile?.photo_url
 
-  const persistVaccineDate = useCallback(
-    async (kind: 'rabies' | 'mixed', ymd: string) => {
-      if (!dog) return
-      if (editingDog) {
-        if (kind === 'rabies') setEditRabiesDate(ymd)
-        else setEditVaccineDate(ymd)
-        return
-      }
-      const patch =
-        kind === 'rabies'
-          ? { rabies_vaccinated_at: ymd || null }
-          : { vaccine_vaccinated_at: ymd || null }
-      const { error } = await supabase.from('dogs').update(patch).eq('id', dog.id)
-      if (error) {
-        console.error(error)
-        return
-      }
-      setDog((prev) => (prev ? { ...prev, ...patch } : prev))
-    },
-    [dog, editingDog]
-  )
+  const persistVaccineDate = useCallback((kind: 'rabies' | 'mixed', ymd: string) => {
+    if (!editingDog) return
+    if (kind === 'rabies') setEditRabiesDate(ymd)
+    else setEditVaccineDate(ymd)
+  }, [editingDog])
 
   const openVaccinePicker = useCallback(
     (kind: 'rabies' | 'mixed') => {
-      if (!dog) return
+      if (!dog || !editingDog) return
       const stored =
         kind === 'rabies'
           ? (editingDog ? editRabiesDate : dog.rabies_vaccinated_at)
@@ -348,8 +336,8 @@ export default function MypageTab() {
   )
 
   const confirmVaccinePicker = () => {
-    if (vaccinePickerKind === null) return
-    void persistVaccineDate(vaccinePickerKind, formatYmd(vaccinePickerTemp))
+    if (vaccinePickerKind === null || !editingDog) return
+    persistVaccineDate(vaccinePickerKind, formatYmd(vaccinePickerTemp))
     setVaccinePickerKind(null)
   }
 
@@ -377,8 +365,25 @@ export default function MypageTab() {
     const primaryText = hasDate
       ? `${formatDateJaGregorian(ymd)}（最後）`
       : flag
-        ? '接種日が未登録です（タップして登録）'
-        : '未登録（タップして登録）'
+        ? editingDog
+          ? '接種日が未登録です（タップして登録）'
+          : '接種日が未登録です'
+        : editingDog
+          ? '未登録（タップして登録）'
+          : '未登録'
+
+    const dateContent = (
+      <Text
+        style={[
+          styles.datePickTxt,
+          !hasDate && editingDog && styles.datePickPlaceholder,
+          !editingDog && (hasDate ? styles.vacDateReadonlyTxt : styles.vacDateReadonlyTxtMuted),
+        ]}
+        numberOfLines={2}
+      >
+        {primaryText}
+      </Text>
+    )
 
     return (
       <>
@@ -387,16 +392,20 @@ export default function MypageTab() {
           <Text style={styles.vLbl}>{row.label}</Text>
         </View>
         <View style={styles.vacDateRow}>
-          <Pressable
-            style={[styles.datePickBtn, styles.vacDateBtnFlex]}
-            onPress={() => openVaccinePicker(row.kind)}
-            accessibilityRole="button"
-            accessibilityLabel={`${row.label}を選択`}
-          >
-            <Text style={[styles.datePickTxt, !hasDate && styles.datePickPlaceholder]} numberOfLines={2}>
-              {primaryText}
-            </Text>
-          </Pressable>
+          {editingDog ? (
+            <Pressable
+              style={[styles.datePickBtn, styles.vacDateBtnFlex]}
+              onPress={() => openVaccinePicker(row.kind)}
+              accessibilityRole="button"
+              accessibilityLabel={`${row.label}を選択`}
+            >
+              {dateContent}
+            </Pressable>
+          ) : (
+            <View style={[styles.datePickBtn, styles.vacDateBtnFlex, styles.vacDateReadonly]}>
+              {dateContent}
+            </View>
+          )}
           {badge ? (
             <View style={[styles.badge, badge.bad ? styles.badgeBad : styles.badgeOk]}>
               <Text style={[styles.badgeTxt, badge.bad ? styles.badgeTxtBad : styles.badgeTxtOk]}>{badge.t}</Text>
@@ -482,7 +491,13 @@ export default function MypageTab() {
             })}
             {editingDog ? (
               <View style={styles.btnRow}>
-                <Pressable style={styles.btnGhost} onPress={() => setEditingDog(false)}>
+                <Pressable
+                  style={styles.btnGhost}
+                  onPress={() => {
+                    setVaccinePickerKind(null)
+                    setEditingDog(false)
+                  }}
+                >
                   <Text style={styles.btnGhostTxt}>キャンセル</Text>
                 </Pressable>
                 <Pressable style={styles.btnPri} onPress={() => void saveDog()} disabled={savingDog}>
@@ -724,6 +739,10 @@ const styles = StyleSheet.create({
   },
   datePickTxt: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
   datePickPlaceholder: { fontWeight: '500', color: '#aaa' },
+  /** 編集モード外：タップ不可の見た目（枠・文字を弱く） */
+  vacDateReadonly: { borderColor: '#f2f2f2', backgroundColor: '#fafafa' },
+  vacDateReadonlyTxt: { color: '#a8a8a8', fontWeight: '500' },
+  vacDateReadonlyTxtMuted: { color: '#c4c4c4', fontWeight: '500' },
   pickerOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
