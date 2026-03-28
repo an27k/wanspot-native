@@ -14,7 +14,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.wanspot.native",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "app.wanspot.native",
@@ -31,6 +34,17 @@
     "plugins": [
       "expo-router",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "supabaseUrl": "",
+      "supabaseAnonKey": "",
+      "wanspotApiUrl": "",
+      "wanspotSiteUrl": "",
+      "router": {},
+      "eas": {
+        "projectId": "8b297e38-b0be-4eb7-86d1-e3f36c90b6f2"
+      }
+    },
+    "owner": "atsu_nemoto"
   }
 }
