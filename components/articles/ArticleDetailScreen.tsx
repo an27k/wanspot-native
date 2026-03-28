@@ -14,13 +14,128 @@ import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
-import { spotPhotoUrl, wanspotFetchJson } from '@/lib/wanspot-api'
+import { spotPhotoUrl, wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
 import type { PlaceCardEnrichment } from '@/lib/user-spot-list-utils'
 
 type Block =
   | { type: 'text'; content: string }
   | { type: 'image'; url: string; caption?: string }
   | { type: 'spot'; spot_id: string; spot_name: string; description: string }
+
+type SpotRow = {
+  id: string
+  place_id: string
+  name: string
+  category: string
+  address: string | null
+}
+
+function isUuid(s: string): boolean {
+  return /^[0-9a-f-]{36}$/i.test(s.trim())
+}
+
+function normalizePriceLevel(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === '') return null
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isFinite(n)) return null
+  return Math.max(0, Math.min(4, Math.round(n)))
+}
+
+/** `/api/spots/detail` のレスポンス（フラット or result）から spots 行用ペイロードを組み立てる */
+function buildSpotUpsertFromDetailJson(json: unknown, placeId: string, fallbackName: string): Record<string, unknown> | null {
+  if (!json || typeof json !== 'object') return null
+  const root = json as Record<string, unknown>
+  if (typeof root.error === 'string' && root.error.length > 0) return null
+  const o = (root.result && typeof root.result === 'object' ? root.result : root) as Record<string, unknown>
+  const name =
+    (typeof o.name === 'string' && o.name.trim()) ||
+    (fallbackName.trim() || 'スポット')
+  const addr =
+    (typeof o.formatted_address === 'string' && o.formatted_address.trim()) ||
+    (typeof o.vicinity === 'string' && o.vicinity.trim()) ||
+    null
+  const geom = o.geometry as { location?: { lat?: number; lng?: number } } | undefined
+  const lat = typeof geom?.location?.lat === 'number' ? geom.location.lat : null
+  const lng = typeof geom?.location?.lng === 'number' ? geom.location.lng : null
+  const rating = typeof o.rating === 'number' && Number.isFinite(o.rating) ? o.rating : null
+  const price_level = normalizePriceLevel(o.price_level ?? o.priceLevel)
+  let category = 'establishment'
+  const types = o.types
+  if (Array.isArray(types)) {
+    const first = types.find((t) => typeof t === 'string')
+    if (typeof first === 'string') category = first
+  }
+  return {
+    place_id: placeId,
+    name,
+    category,
+    address: addr,
+    lat,
+    lng,
+    rating,
+    price_level,
+  }
+}
+
+async function ensureSpotRowFromPlaceId(placeId: string, fallbackName: string): Promise<SpotRow | null> {
+  const res = await wanspotFetch(`/api/spots/detail?place_id=${encodeURIComponent(placeId)}`)
+  if (!res.ok) return null
+  let json: unknown
+  try {
+    json = await res.json()
+  } catch {
+    return null
+  }
+  const payload = buildSpotUpsertFromDetailJson(json, placeId, fallbackName)
+  if (!payload) return null
+  const { data, error } = await supabase
+    .from('spots')
+    .upsert(payload, { onConflict: 'place_id' })
+    .select('id, place_id, name, category, address')
+    .single()
+  if (error || !data) return null
+  return data as SpotRow
+}
+
+/** CMS 由来の JSON で camelCase や表記ゆれを吸収 */
+function normalizeArticleBlocks(raw: unknown): Block[] {
+  if (!Array.isArray(raw)) return []
+  const out: Block[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const o = item as Record<string, unknown>
+    const typeRaw = String(o.type ?? '').toLowerCase()
+    if (typeRaw === 'spot') {
+      const sid =
+        (typeof o.spot_id === 'string' && o.spot_id.trim()) ||
+        (typeof o.spotId === 'string' && o.spotId.trim()) ||
+        ''
+      const name =
+        (typeof o.spot_name === 'string' && o.spot_name) ||
+        (typeof o.spotName === 'string' && o.spotName) ||
+        ''
+      const desc = typeof o.description === 'string' ? o.description : ''
+      if (!sid) continue
+      out.push({ type: 'spot', spot_id: sid.trim(), spot_name: name, description: desc })
+      continue
+    }
+    if (typeRaw === 'image') {
+      const url = typeof o.url === 'string' ? o.url : ''
+      if (!url) continue
+      out.push({
+        type: 'image',
+        url,
+        caption: typeof o.caption === 'string' ? o.caption : undefined,
+      })
+      continue
+    }
+    if (typeRaw === 'text') {
+      const content = typeof o.content === 'string' ? o.content : ''
+      if (content) out.push({ type: 'text', content })
+    }
+  }
+  return out
+}
 
 type SpotLink = { spot_name: string; spot_id: string | null; description: string }
 
@@ -35,14 +150,6 @@ type Article = {
   spot_links: SpotLink[] | null
   category: string
   image_url: string | null
-}
-
-type SpotRow = {
-  id: string
-  place_id: string
-  name: string
-  category: string
-  address: string | null
 }
 
 const IconChevron = () => (
@@ -172,7 +279,7 @@ function BlockRenderer({
         description={block.description}
         row={spotRow}
         enrichment={enrichment}
-        onOpen={() => onOpenSpot(block.spot_id)}
+        onOpen={() => onOpenSpot(spotRow.id)}
       />
     )
   }
@@ -216,9 +323,20 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
 
   const blocks: Block[] = useMemo(() => {
     if (!article) return []
-    return Array.isArray(article.blocks) && article.blocks.length > 0
-      ? article.blocks
-      : [{ type: 'text' as const, content: article.body }]
+    let list: Block[]
+    const normalized = normalizeArticleBlocks(article.blocks)
+    if (normalized.length > 0) {
+      list = normalized
+    } else if (Array.isArray(article.blocks) && article.blocks.length > 0) {
+      list = article.blocks as Block[]
+    } else {
+      list = [{ type: 'text' as const, content: article.body }]
+    }
+    return list.map((b) => {
+      if (b.type !== 'spot') return b
+      const sid = (b.spot_id || (b as unknown as { spotId?: string }).spotId || '').trim()
+      return { ...b, spot_id: sid }
+    })
   }, [article])
 
   const spotIds = useMemo(() => {
@@ -229,6 +347,16 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
     return [...ids]
   }, [blocks])
 
+  const spotNameByKey = useMemo(() => {
+    const m: Record<string, string> = {}
+    for (const b of blocks) {
+      if (b.type === 'spot' && b.spot_id) m[b.spot_id] = b.spot_name ?? ''
+    }
+    return m
+  }, [blocks])
+
+  const spotHydrateKey = useMemo(() => `${spotIds.join('\u001e')}\u001e${JSON.stringify(spotNameByKey)}`, [spotIds, spotNameByKey])
+
   useEffect(() => {
     if (spotIds.length === 0) {
       setSpotRowsById({})
@@ -237,28 +365,73 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
     }
     let cancelled = false
     void (async () => {
-      const { data: rows } = await supabase.from('spots').select('id, place_id, name, category, address').in('id', spotIds)
+      const uuidKeys = spotIds.filter((s) => isUuid(s))
+      const placeKeys = spotIds.filter((s) => !isUuid(s) && s.trim().length > 0)
+
+      const [byUuidRes, byPlaceRes] = await Promise.all([
+        uuidKeys.length > 0
+          ? supabase.from('spots').select('id, place_id, name, category, address').in('id', uuidKeys)
+          : Promise.resolve({ data: [] as SpotRow[] }),
+        placeKeys.length > 0
+          ? supabase.from('spots').select('id, place_id, name, category, address').in('place_id', placeKeys)
+          : Promise.resolve({ data: [] as SpotRow[] }),
+      ])
+
       if (cancelled) return
-      const byId: Record<string, SpotRow> = {}
-      for (const r of rows ?? []) {
-        byId[r.id] = r as SpotRow
+
+      const merged = new Map<string, SpotRow>()
+      for (const r of [...(byUuidRes.data ?? []), ...(byPlaceRes.data ?? [])]) {
+        const row = r as SpotRow
+        merged.set(row.id, row)
+        if (row.place_id) merged.set(row.place_id, row)
       }
-      setSpotRowsById(byId)
-      const placeIds = [...new Set((rows ?? []).map((r) => r.place_id).filter(Boolean))]
-      if (placeIds.length === 0) {
+
+      const byBlockKey: Record<string, SpotRow> = {}
+      for (const key of spotIds) {
+        const row = merged.get(key)
+        if (row) byBlockKey[key] = row
+      }
+
+      const missingPlaceIds = spotIds.filter((k) => !byBlockKey[k] && !isUuid(k))
+      if (missingPlaceIds.length > 0) {
+        const ensured = await Promise.all(
+          missingPlaceIds.map((pid) => ensureSpotRowFromPlaceId(pid, spotNameByKey[pid] ?? ''))
+        )
+        if (cancelled) return
+        for (let i = 0; i < missingPlaceIds.length; i++) {
+          const row = ensured[i]
+          const key = missingPlaceIds[i]
+          if (row) {
+            byBlockKey[key] = row
+            byBlockKey[row.id] = row
+            if (row.place_id) byBlockKey[row.place_id] = row
+          }
+        }
+      }
+
+      setSpotRowsById(byBlockKey)
+
+      const placeIdsForEnrich = [
+        ...new Set(
+          Object.values(byBlockKey)
+            .map((r) => r.place_id)
+            .filter(Boolean)
+        ),
+      ] as string[]
+      if (placeIdsForEnrich.length === 0) {
         setEnrichmentByPlaceId({})
         return
       }
       const json = (await wanspotFetchJson<{ details?: Record<string, PlaceCardEnrichment> }>(
         '/api/spots/batch-details',
-        { method: 'POST', json: { place_ids: placeIds } }
+        { method: 'POST', json: { place_ids: placeIdsForEnrich } }
       ).catch(() => ({}))) as { details?: Record<string, PlaceCardEnrichment> }
       if (!cancelled) setEnrichmentByPlaceId(json.details ?? {})
     })()
     return () => {
       cancelled = true
     }
-  }, [spotIds.join(',')])
+  }, [spotHydrateKey])
 
   const onOpenSpot = useCallback(
     (id: string) => {
