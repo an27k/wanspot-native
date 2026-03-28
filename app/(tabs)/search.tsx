@@ -22,6 +22,8 @@ import { PowState, RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
+import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
+import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { filterHotSpotResults } from '@/lib/hot-exclusions'
 import { wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
@@ -160,10 +162,20 @@ export default function SearchTab() {
   const restoredRef = useRef(false)
   const scrollYRef = useRef(0)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
+  const [userWalkTags, setUserWalkTags] = useState<string[]>([])
 
   useEffect(() => {
     Location.getCurrentPositionAsync({}).then((p) => setLocation({ lat: p.coords.latitude, lng: p.coords.longitude })).catch(() => {})
   }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      void (async () => {
+        const tags = await fetchUserWalkAreaTags(supabase)
+        setUserWalkTags(tags)
+      })()
+    }, [])
+  )
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true))
@@ -302,17 +314,27 @@ export default function SearchTab() {
         setAiLoading(false)
         return
       }
+      const walkTags = await fetchUserWalkAreaTags(supabase)
       const [result] = await Promise.all([
         wanspotFetchJson<{ query?: string; reason?: string }>('/api/spots/recommend', {
           method: 'POST',
-          json: { userId: user.id, lat: location?.lat, lng: location?.lng },
+          json: {
+            userId: user.id,
+            lat: location?.lat,
+            lng: location?.lng,
+            walkAreaTags: walkTags,
+          },
         }),
         new Promise((r) => setTimeout(r, 1500)),
       ])
       const aiQuery = result.query ?? 'ドッグラン'
       setAiReason(result.reason ?? null)
       const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
-      const searchRes = await wanspotFetch(`/api/spots/search?q=${encodeURIComponent(aiQuery)}${locationParam}`)
+      const areaParam =
+        walkTags.length > 0 ? `&walkAreas=${encodeURIComponent(JSON.stringify(walkTags))}` : ''
+      const searchRes = await wanspotFetch(
+        `/api/spots/search?q=${encodeURIComponent(aiQuery)}${locationParam}${areaParam}`
+      )
       const data = (await searchRes.json()) as { spots?: PlaceResult[] }
       setAiResults(data.spots ?? [])
     } catch {
@@ -329,20 +351,28 @@ export default function SearchTab() {
       if (!force && hotResults.length > 0) return
       setHotLoading(true)
       try {
+        const walkTags = await fetchUserWalkAreaTags(supabase)
         const prefecture = location ? await getPrefecture(location.lat, location.lng) : '東京'
         const [result] = await Promise.all([
           wanspotFetchJson<{ queries?: string[]; label?: string }>('/api/spots/hot', {
             method: 'POST',
-            json: { lat: location?.lat, lng: location?.lng, prefecture },
+            json: {
+              lat: location?.lat,
+              lng: location?.lng,
+              prefecture,
+              walkAreaTags: walkTags,
+            },
           }),
           new Promise((r) => setTimeout(r, force ? 0 : 1500)),
         ])
         const queries = result.queries ?? []
         setHotLabel(result.label ?? null)
         const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
+        const areaParam =
+          walkTags.length > 0 ? `&walkAreas=${encodeURIComponent(JSON.stringify(walkTags))}` : ''
         const allResults = await Promise.all(
           queries.map((q) =>
-            wanspotFetch(`/api/spots/search?q=${encodeURIComponent(q)}${locationParam}`)
+            wanspotFetch(`/api/spots/search?q=${encodeURIComponent(q)}${locationParam}${areaParam}`)
               .then((r) => r.json())
               .then((d) => (d as { spots?: PlaceResult[] }).spots ?? [])
               .catch(() => [] as PlaceResult[])
@@ -446,7 +476,11 @@ export default function SearchTab() {
   }, [results, sortKey, location])
 
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
-  const discoverResults = discoverMode === 'ai' ? aiResults : hotResults
+  /** 取得済み結果に対し、タグ・現在地で再ランク（fetch 内でも適用済みだが、タブ復帰後のタグ更新に追従） */
+  const discoverResults = useMemo(() => {
+    const raw = discoverMode === 'ai' ? aiResults : hotResults
+    return rankSpotsByWalkContext(raw, location, userWalkTags)
+  }, [discoverMode, aiResults, hotResults, location, userWalkTags])
   const discoverLoading = discoverMode === 'ai' ? aiLoading : discoverMode === 'hot' ? hotLoading : articlesLoading
 
   const openSpot = (id: string) => {

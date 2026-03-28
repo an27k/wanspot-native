@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { colors } from '@/constants/colors'
 import { catalogEntryByLabel, searchWalkAreaCatalog, suggestedWalkAreasNear } from '@/lib/walk-area-catalog'
 import { MAX_WALK_AREA_TAGS } from '@/lib/walk-area-tags'
@@ -75,7 +75,7 @@ export function WalkAreaTagPicker({ anchor, value, onChange, maxTags = MAX_WALK_
           {searchToShow.length === 0 ? (
             <Text style={styles.emptySel}>一致する主要エリアがありません。</Text>
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+            <View style={styles.chipGrid}>
               {searchToShow.map((e) => (
                 <Pressable
                   key={e.id}
@@ -86,7 +86,7 @@ export function WalkAreaTagPicker({ anchor, value, onChange, maxTags = MAX_WALK_
                   <Text style={styles.chipOffTxt}>{e.label}</Text>
                 </Pressable>
               ))}
-            </ScrollView>
+            </View>
           )}
         </>
       ) : null}
@@ -149,8 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBg,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  chipScroll: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 8 },
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   chipOn: {
     flexDirection: 'row',
     alignItems: 'center',

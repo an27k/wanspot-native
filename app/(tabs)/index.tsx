@@ -19,6 +19,7 @@ import { AppHeader } from '@/components/AppHeader'
 import { IconPaw } from '@/components/IconPaw'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { HEART_ICON } from '@/lib/constants'
+import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
@@ -133,6 +134,7 @@ export default function NearbyPage() {
   const [likedOnlyFilter, setLikedOnlyFilter] = useState(false)
   const [likedPlaceIds, setLikedPlaceIds] = useState<Set<string>>(() => new Set())
   const [showObTutorial, setShowObTutorial] = useState(false)
+  const [userWalkTags, setUserWalkTags] = useState<string[]>([])
 
   useFocusEffect(
     useCallback(() => {
@@ -143,6 +145,8 @@ export default function NearbyPage() {
         } catch {
           /* ignore */
         }
+        const tags = await fetchUserWalkAreaTags(supabase)
+        setUserWalkTags(tags)
       })()
     }, [])
   )
@@ -378,6 +382,7 @@ export default function NearbyPage() {
               spot={spot}
               likeCount={likeCounts[spot.place_id] ?? 0}
               userLocation={location}
+              userWalkTags={userWalkTags}
               onOpenDetail={(id) => router.push(`/spots/${id}`)}
               onLikeStateChange={handleSpotLikeChange}
             />
@@ -434,12 +439,14 @@ function SpotCard({
   spot,
   likeCount,
   userLocation,
+  userWalkTags,
   onOpenDetail,
   onLikeStateChange,
 }: {
   spot: PlaceResult
   likeCount: number
   userLocation: { lat: number; lng: number } | null
+  userWalkTags: string[]
   onOpenDetail: (id: string) => void
   onLikeStateChange?: (placeId: string, liked: boolean) => void
 }) {
@@ -562,6 +569,11 @@ function SpotCard({
         rating: spot.rating,
         address: spot.address,
         reviews: [],
+        userContext: {
+          walkAreaTags: userWalkTags,
+          lat: userLocation?.lat ?? null,
+          lng: userLocation?.lng ?? null,
+        },
       },
     })
     const data = (await res.json()) as { keywords?: string[]; summary?: string }

@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import * as Location from 'expo-location'
 import Svg, { Circle, Path, Polygon, Text as SvgTextNode } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
@@ -30,6 +31,7 @@ import { IconInstagram } from '@/components/IconInstagram'
 import { IconPaw } from '@/components/IconPaw'
 import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
+import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 
@@ -321,6 +323,13 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       setGoogleAddress(detailRes?.formatted_address ?? detailRes?.vicinity ?? null)
       setLoading(false)
 
+      const [walkTags, posCtx] = await Promise.all([
+        user?.id ? fetchUserWalkAreaTagsByUserId(supabase, user.id) : Promise.resolve([] as string[]),
+        Location.getCurrentPositionAsync({})
+          .then((p) => ({ lat: p.coords.latitude, lng: p.coords.longitude }))
+          .catch((): null => null),
+      ])
+
       wanspotFetchJson<{ keywords?: string[]; summary?: string }>('/api/ai-summary', {
         method: 'POST',
         json: {
@@ -330,6 +339,11 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
           rating: spotData.rating,
           address: spotData.address,
           reviews: detailRes?.reviews?.slice(0, 5).map((r) => r.text).filter(Boolean) ?? [],
+          userContext: {
+            walkAreaTags: walkTags,
+            lat: posCtx?.lat ?? null,
+            lng: posCtx?.lng ?? null,
+          },
         },
       })
         .then((json) => {
