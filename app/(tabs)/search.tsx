@@ -20,6 +20,7 @@ import { PowState, RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
+import { filterHotSpotResults } from '@/lib/hot-exclusions'
 import { wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -342,7 +343,7 @@ export default function SearchTab() {
           }
         }
       }
-      setHotResults(merged)
+      setHotResults(filterHotSpotResults(merged))
     } catch {
       setHotResults([])
     } finally {
