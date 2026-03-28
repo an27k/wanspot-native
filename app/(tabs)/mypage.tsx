@@ -384,10 +384,6 @@ export default function MypageTab() {
 
   /** スクロール末尾がタブバーに隠れないよう（タブ画面の高さは既にタブバー上まで） */
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
-  /** 右下FABと被らないよう可動エリアの下余白 */
-  const scrollPadBottom = padBottom + 64
-  /** FAB はコンテンツ領域の下端＝タブバー直上なので、タブ高を足さない（二重で空きができる） */
-  const eventFabBottom = 14
   const avatarSrc = avatarPreview ?? profile?.photo_url
 
   const persistVaccineDate = useCallback((kind: 'rabies' | 'mixed', ymd: string) => {
@@ -462,12 +458,16 @@ export default function MypageTab() {
 
     return (
       <View style={styles.vaccineBlock}>
+        {stampKind ? (
+          <View style={styles.vaccineStampAbs} pointerEvents="box-none">
+            <VaccineStampMark />
+          </View>
+        ) : null}
         <View style={styles.vaccineBlockTop}>
-          <View style={styles.vaccineBlockTitleRow}>
+          <View style={styles.vaccineBlockTitleCenter}>
             <IconSyringe />
             <Text style={styles.vLbl}>{row.label}</Text>
           </View>
-          {stampKind ? <VaccineStampMark /> : null}
         </View>
         {editingDog ? (
           <Pressable
@@ -496,7 +496,7 @@ export default function MypageTab() {
   return (
     <View style={styles.root}>
       <AppHeader />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: scrollPadBottom, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 12 }}>
         {dog ? (
           <View style={styles.profileCard}>
             <View style={styles.profileCardHeader}>
@@ -615,12 +615,16 @@ export default function MypageTab() {
                   const dateM = ymdM ? `${formatDateJaGregorian(ymdM)}（前回）` : '未登録'
                   return (
                     <View style={styles.vaccineBlock}>
+                      {stampM ? (
+                        <View style={styles.vaccineStampAbs} pointerEvents="box-none">
+                          <VaccineStampMark />
+                        </View>
+                      ) : null}
                       <View style={styles.vaccineBlockTop}>
-                        <View style={styles.vaccineBlockTitleRow}>
+                        <View style={styles.vaccineBlockTitleCenter}>
                           <IconSyringe />
                           <Text style={styles.vaccineSummaryLbl}>混合ワクチン</Text>
                         </View>
-                        {stampM ? <VaccineStampMark /> : null}
                       </View>
                       <Text style={styles.vaccineBlockDateReadonly} numberOfLines={1} ellipsizeMode="tail">
                         {dateM}
@@ -634,12 +638,16 @@ export default function MypageTab() {
                   const dateR = ymdR ? `${formatDateJaGregorian(ymdR)}（前回）` : '未登録'
                   return (
                     <View style={styles.vaccineBlock}>
+                      {stampR ? (
+                        <View style={styles.vaccineStampAbs} pointerEvents="box-none">
+                          <VaccineStampMark />
+                        </View>
+                      ) : null}
                       <View style={styles.vaccineBlockTop}>
-                        <View style={styles.vaccineBlockTitleRow}>
+                        <View style={styles.vaccineBlockTitleCenter}>
                           <IconSyringe />
                           <Text style={styles.vaccineSummaryLbl}>狂犬病ワクチン</Text>
                         </View>
-                        {stampR ? <VaccineStampMark /> : null}
                       </View>
                       <Text style={styles.vaccineBlockDateReadonly} numberOfLines={1} ellipsizeMode="tail">
                         {dateR}
@@ -797,15 +805,6 @@ export default function MypageTab() {
         </View>
       </ScrollView>
 
-      <Pressable
-        style={[styles.eventNewFab, { bottom: eventFabBottom }]}
-        onPress={() => router.push('/events/new')}
-        accessibilityRole="button"
-        accessibilityLabel="イベントを新規作成"
-      >
-        <Ionicons name="add" size={30} color={colors.text} />
-      </Pressable>
-
       {vaccinePickerKind !== null ? (
         <Modal visible transparent animationType="fade" onRequestClose={() => setVaccinePickerKind(null)}>
           <View style={styles.pickerOverlay}>
@@ -842,25 +841,6 @@ export default function MypageTab() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cardBg },
-  /** タブバー直上・画面右下（マイページの可動エリア基準） */
-  eventNewFab: {
-    position: 'absolute',
-    right: 16,
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: colors.brandButton,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.brandDark,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    elevation: 6,
-    zIndex: 20,
-  },
   loadRoot: { flex: 1, backgroundColor: colors.cardBg, alignItems: 'center', justifyContent: 'center' },
   profileCard: {
     backgroundColor: colors.background,
@@ -981,6 +961,7 @@ const styles = StyleSheet.create({
   profileDivider: { height: 1, backgroundColor: colors.border, marginTop: 20, alignSelf: 'stretch', width: '100%' },
   vaccineBlocksWrap: { gap: 10, marginTop: 4, alignSelf: 'stretch', width: '100%' },
   vaccineBlock: {
+    position: 'relative',
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: 12,
@@ -988,15 +969,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  /** 針＋ラベルはカード幅の真ん中。接種済スタンプはカード最右上 */
   vaccineBlockTop: {
+    width: '100%',
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+  },
+  vaccineBlockTitleCenter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
     flexWrap: 'wrap',
+    /** カード中央に配置したまま、右のスタンプ帯と重なりにくくする */
+    maxWidth: '72%',
   },
-  vaccineBlockTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  vaccineSummaryLbl: { fontSize: 13, color: colors.textMuted, fontWeight: '700', flexShrink: 1 },
+  vaccineStampAbs: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 1,
+  },
+  vaccineSummaryLbl: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontWeight: '700',
+    flexShrink: 1,
+    textAlign: 'center',
+  },
   vaccineBlockDateBtn: {
     marginTop: 10,
     alignSelf: 'stretch',
@@ -1042,7 +1044,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   divider: { height: 1, backgroundColor: colors.border, marginTop: 16 },
-  vLbl: { fontSize: 12, fontWeight: '800', color: colors.textMuted, flexShrink: 1 },
+  vLbl: { fontSize: 12, fontWeight: '800', color: colors.textMuted, flexShrink: 1, textAlign: 'center' },
   inp: {
     borderRadius: 10,
     backgroundColor: colors.cardBg,
@@ -1059,7 +1061,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  datePickTxt: { fontSize: 15, fontWeight: '600', color: colors.text },
+  datePickTxt: { fontSize: 15, fontWeight: '600', color: colors.text, textAlign: 'center' },
   datePickPlaceholder: { fontWeight: '500', color: colors.textMuted },
   /** 編集モード外：タップ不可の見た目（枠・文字を弱く） */
   vacDateReadonly: { borderColor: '#f2f2f2', backgroundColor: '#fafafa' },

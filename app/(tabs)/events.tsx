@@ -263,11 +263,12 @@ export default function EventsTab() {
   const sortedExternalEvents = useMemo(() => sortExternalEvents(externalEvents, eventSort), [externalEvents, eventSort])
   const currentSort = WANSPOT_SORT_OPTIONS.find((o) => o.value === eventSort)!
 
+  /** リスト末尾がFABに隠れないよう（コンテンツ領域は既にタブバー上まで） */
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 100
   const fabRight = 16 + insets.right
-  /** タブバー（フッター）のすぐ上に寄せる */
-  const fabBottom = TAB_BAR_HEIGHT + insets.bottom + 8
-  const fabMenuBottom = TAB_BAR_HEIGHT + insets.bottom + 8 + 56 + 10
+  /** コンテンツ下端＝タブバー直上のため、タブ高は足さない（下に空きができる） */
+  const fabBottom = 10
+  const fabMenuBottom = fabBottom + 56 + 10
 
   const fabIconSpin = fabRotate.interpolate({
     inputRange: [0, 1],
