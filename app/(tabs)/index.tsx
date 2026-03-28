@@ -38,10 +38,9 @@ const GENRES = [
 ] as const
 
 const DISTANCES = [
-  { key: 500, label: '500m' },
   { key: 1000, label: '1km' },
-  { key: 2000, label: '2km' },
   { key: 3000, label: '3km' },
+  { key: 5000, label: '5km' },
 ] as const
 
 type SortKey = 'distance' | 'rating' | 'likes'
@@ -130,6 +129,11 @@ export default function NearbyPage() {
   const [spotsFetchError, setSpotsFetchError] = useState('')
   const [likedOnlyFilter, setLikedOnlyFilter] = useState(false)
   const [likedPlaceIds, setLikedPlaceIds] = useState<Set<string>>(() => new Set())
+
+  useEffect(() => {
+    const valid = new Set(DISTANCES.map((d) => d.key))
+    if (!valid.has(distance)) setDistance(1000)
+  }, [distance])
 
   useEffect(() => {
     void (async () => {
@@ -278,7 +282,12 @@ export default function NearbyPage() {
           ))}
         </ScrollView>
         <View style={styles.distRow}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.distScroll}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.distScroll}
+            contentContainerStyle={styles.distScrollContent}
+          >
             {DISTANCES.map((d) => (
               <TouchableOpacity
                 key={d.key}
@@ -291,24 +300,27 @@ export default function NearbyPage() {
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <TouchableOpacity
-            style={[styles.likeFilterBtn, likedOnlyFilter ? styles.likeFilterBtnOn : styles.likeFilterBtnOff]}
-            onPress={() => setLikedOnlyFilter((v) => !v)}
-            accessibilityLabel={likedOnlyFilter ? 'いいねしたお店のみ表示中。タップで全件表示' : 'いいねしたお店のみ表示'}
-            accessibilityRole="button"
-          >
-            <Image
-              source={ICON_FILTER_FUNNEL}
-              style={[styles.likeFilterIcon, likedOnlyFilter && styles.likeFilterIconOn]}
-              resizeMode="contain"
-              accessibilityIgnoresInvertColors
-            />
-            <Text style={[styles.likeFilterTxt, likedOnlyFilter && styles.likeFilterTxtOn]}>いいね</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sortBtn} onPress={() => setShowSort(true)}>
-            <IconSort />
-            <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
-          </TouchableOpacity>
+          <View style={styles.distRowSpacer} />
+          <View style={styles.distRowActions}>
+            <TouchableOpacity
+              style={[styles.likeFilterBtn, likedOnlyFilter ? styles.likeFilterBtnOn : styles.likeFilterBtnOff]}
+              onPress={() => setLikedOnlyFilter((v) => !v)}
+              accessibilityLabel={likedOnlyFilter ? 'いいねしたお店のみ表示中。タップで全件表示' : 'いいねしたお店のみ表示'}
+              accessibilityRole="button"
+            >
+              <Image
+                source={ICON_FILTER_FUNNEL}
+                style={[styles.likeFilterIcon, likedOnlyFilter && styles.likeFilterIconOn]}
+                resizeMode="contain"
+                accessibilityIgnoresInvertColors
+              />
+              <Text style={[styles.likeFilterTxt, likedOnlyFilter && styles.likeFilterTxtOn]}>いいね</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.sortBtn} onPress={() => setShowSort(true)}>
+              <IconSort />
+              <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.list}>
@@ -605,9 +617,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ebebeb',
     paddingVertical: 8,
-    paddingLeft: 16,
+    paddingHorizontal: 16,
   },
-  distScroll: { flex: 1, maxHeight: 40 },
+  /** 距離チップは内容幅で左詰め（flex:1 しない） */
+  distScroll: { flexGrow: 0, flexShrink: 1, maxHeight: 40 },
+  distScrollContent: { flexDirection: 'row', alignItems: 'center', flexGrow: 0 },
+  distRowSpacer: { flex: 1, minWidth: 8 },
+  distRowActions: { flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
   likeFilterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -618,7 +634,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderWidth: 1,
   },
-  likeFilterIcon: { width: 12, height: 12 },
+  likeFilterIcon: { width: 12, height: 12, tintColor: '#888' },
   likeFilterIconOn: { tintColor: '#fff' },
   likeFilterBtnOff: {
     backgroundColor: '#f5f5f5',
@@ -649,7 +665,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 999,
     backgroundColor: '#1a1a1a',
-    marginRight: 12,
   },
   sortBtnTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
   list: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },

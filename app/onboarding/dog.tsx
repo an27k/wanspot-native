@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
 import { IconPaw } from '@/components/IconPaw'
+import { colors } from '@/constants/colors'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 
@@ -128,7 +129,7 @@ export default function DogPage() {
         ...(dogPhotoUrl ? { dogPhotoUrl } : {}),
       })
       await AsyncStorage.setItem('ob_dog', obDogPayload)
-      router.push('/onboarding/size')
+      router.push('/onboarding/owner')
     } finally {
       setSubmitting(false)
     }
@@ -225,7 +226,14 @@ export default function DogPage() {
               style={[styles.half, gender === g ? styles.halfOn : styles.halfOff]}
               onPress={() => setGender(g)}
             >
-              <Text style={[styles.halfTxt, gender === g && { color: '#1a1a1a' }]}>{g === 'male' ? '♂' : '♀'}</Text>
+              <Text
+                style={[
+                  styles.halfTxt,
+                  gender === g && { color: g === 'male' ? colors.genderMale : colors.genderFemale },
+                ]}
+              >
+                {g === 'male' ? '♂' : '♀'}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>

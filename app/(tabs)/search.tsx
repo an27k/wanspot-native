@@ -690,7 +690,16 @@ const styles = StyleSheet.create({
   sortWrap: { position: 'relative' },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#1a1a1a' },
   sortBtnTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
-  discoverTabs: { flexDirection: 'row', gap: 8, marginTop: 8, marginBottom: 8 },
+  /** キーワードタグ行と（まとめ記事／AI／ホット）の間の区切り */
+  discoverTabs: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   discTab: {
     flexDirection: 'row',
     alignItems: 'center',

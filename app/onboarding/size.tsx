@@ -4,6 +4,7 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
+import { ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 
@@ -32,7 +33,7 @@ export default function SizePage() {
         </View>
         <View style={styles.dots}>
           {[0, 1, 2, 3, 4].map((i) => (
-            <View key={i} style={[styles.dot, { backgroundColor: i <= 1 ? '#FFD84D' : '#e0e0e0' }]} />
+            <View key={i} style={[styles.dot, { backgroundColor: i <= 2 ? '#FFD84D' : '#e0e0e0' }]} />
           ))}
         </View>
       </View>
@@ -61,16 +62,39 @@ export default function SizePage() {
           await AsyncStorage.setItem('ob_size', JSON.stringify({ size: selected }))
           try {
             const raw = await AsyncStorage.getItem('ob_dog')
+            const rawOwner = await AsyncStorage.getItem('ob_owner')
             const { data: { user } } = await supabase.auth.getUser()
             if (!user || !raw) {
               router.replace('/(tabs)')
               return
             }
+            let ownerParsed: {
+              parent_type?: 'papa' | 'mama'
+              ownerYear?: string | null
+              ownerMonth?: string | null
+              ownerDay?: string | null
+            } | null = null
+            if (rawOwner) {
+              try {
+                ownerParsed = JSON.parse(rawOwner) as typeof ownerParsed
+              } catch {
+                ownerParsed = null
+              }
+            }
+            const userBirthday =
+              ownerParsed?.ownerYear && ownerParsed?.ownerMonth && ownerParsed?.ownerDay
+                ? ownerBirthdayToYmd(
+                    String(ownerParsed.ownerYear),
+                    String(ownerParsed.ownerMonth),
+                    String(ownerParsed.ownerDay)
+                  )
+                : null
             const dog = JSON.parse(raw) as {
               name?: string
               year?: string
               month?: string
               breed?: string
+              gender?: 'male' | 'female'
               vaccineCombo?: boolean
               vaccineRabies?: boolean
               dogPhotoUrl?: string | null
@@ -81,6 +105,8 @@ export default function SizePage() {
             await supabase.from('users').upsert({
               id: user.id,
               name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'ユーザー',
+              parent_type: ownerParsed?.parent_type ?? 'papa',
+              birthday: userBirthday,
             })
             await supabase.from('dogs').upsert(
               {
@@ -88,6 +114,7 @@ export default function SizePage() {
                 name: dog.name ?? '',
                 birthday,
                 breed: dog.breed ?? null,
+                gender: dog.gender ?? null,
                 photo_url: dog.dogPhotoUrl ?? null,
                 rabies_vaccinated: dog.vaccineRabies === true,
                 vaccine_vaccinated: dog.vaccineCombo === true,
@@ -96,7 +123,7 @@ export default function SizePage() {
               },
               { onConflict: 'user_id' }
             )
-            await AsyncStorage.multiRemove(['ob_dog', 'ob_size'])
+            await AsyncStorage.multiRemove(['ob_dog', 'ob_size', 'ob_owner'])
           } catch (e) {
             Alert.alert('エラー', e instanceof Error ? e.message : String(e))
             return
