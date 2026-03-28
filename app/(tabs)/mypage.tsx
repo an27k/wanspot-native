@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker'
+import * as Location from 'expo-location'
 import { useCallback, useEffect, useState } from 'react'
 import {
   Alert,
@@ -21,8 +22,11 @@ import { IconPaw } from '@/components/IconPaw'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { OwnerBirthdayPickers, ownerBirthdayToYmd, splitYmdToParts } from '@/components/OwnerBirthdayPickers'
+import { mergeUnknownWalkTags, WalkAreaTagPicker } from '@/components/walk-area/WalkAreaTagPicker'
 import { defaultBioFromDog } from '@/lib/default-bio'
 import { supabase } from '@/lib/supabase'
+import { updateUserWithWalkAreas } from '@/lib/persist-user-walk-area'
+import { walkAreaTagsForUpsert, walkTagsFromUserRow } from '@/lib/walk-area-tags'
 
 type UserProfile = {
   id: string
@@ -32,6 +36,9 @@ type UserProfile = {
   bio: string | null
   /** あれば「パパ・31歳」形式に利用 */
   birthday?: string | null
+  walk_area_tags?: unknown
+  /** 未マイグレーション環境の旧カラム */
+  walk_area?: string | null
 }
 
 type Dog = {
@@ -132,19 +139,12 @@ function isVaccineYearExpired(ymd: string): boolean {
 
 type VaccineStampKind = 'vaccinated' | 'due'
 
-function computeVaccineStamp(
-  ymd: string,
-  flag: boolean,
-  showRabiesExpiry: boolean
-): VaccineStampKind | null {
+/** 接種日が登録されている場合のみスタンプ表示（オンボーディングで YES でも日付は未入力のまま） */
+function computeVaccineStamp(ymd: string, showRabiesExpiry: boolean): VaccineStampKind | null {
   const hasDate = !!ymd
-  if (showRabiesExpiry) {
-    if (hasDate) return isVaccineYearExpired(ymd) ? 'due' : 'vaccinated'
-    if (flag) return 'vaccinated'
-    return null
-  }
-  if (hasDate || flag) return 'vaccinated'
-  return null
+  if (!hasDate) return null
+  if (showRabiesExpiry) return isVaccineYearExpired(ymd) ? 'due' : 'vaccinated'
+  return 'vaccinated'
 }
 
 /** 緑の「接種済」スタンプ（要更新の場合も同じ見た目） */
@@ -186,8 +186,12 @@ export default function MypageTab() {
   const [editOwnerYear, setEditOwnerYear] = useState('')
   const [editOwnerMonth, setEditOwnerMonth] = useState('')
   const [editOwnerDay, setEditOwnerDay] = useState('')
+  const [editWalkAreaTags, setEditWalkAreaTags] = useState<string[]>([])
+  const [ownerAreaAnchor, setOwnerAreaAnchor] = useState<{ lat: number; lng: number } | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarUri, setAvatarUri] = useState<string | null>(null)
+  const [dogPhotoRemoved, setDogPhotoRemoved] = useState(false)
+  const [ownerPhotoRemoved, setOwnerPhotoRemoved] = useState(false)
 
   const ownerEditBirthdayYmd = ownerBirthdayToYmd(editOwnerYear, editOwnerMonth, editOwnerDay)
   const ownerEditBirthdayOk = ownerEditBirthdayYmd !== null
@@ -215,6 +219,26 @@ export default function MypageTab() {
     if (!editingDog) setVaccinePickerKind(null)
   }, [editingDog])
 
+  useEffect(() => {
+    if (!editingOwner) {
+      setOwnerAreaAnchor(null)
+      return
+    }
+    void (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync()
+      if (status !== 'granted') {
+        setOwnerAreaAnchor(null)
+        return
+      }
+      try {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+        setOwnerAreaAnchor({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+      } catch {
+        setOwnerAreaAnchor(null)
+      }
+    })()
+  }, [editingOwner])
+
   const startEditDog = () => {
     if (!dog) return
     setEditDogName(dog.name ?? '')
@@ -225,6 +249,7 @@ export default function MypageTab() {
     setEditVaccineDate(dog.vaccine_vaccinated_at ?? '')
     setDogPhotoPreview(null)
     setDogPhotoUri(null)
+    setDogPhotoRemoved(false)
     setEditingDog(true)
   }
 
@@ -236,8 +261,10 @@ export default function MypageTab() {
     setEditOwnerYear(p.y)
     setEditOwnerMonth(p.m)
     setEditOwnerDay(p.d)
+    setEditWalkAreaTags(mergeUnknownWalkTags(walkTagsFromUserRow(profile)))
     setAvatarPreview(null)
     setAvatarUri(null)
+    setOwnerPhotoRemoved(false)
     setEditingOwner(true)
   }
 
@@ -248,6 +275,7 @@ export default function MypageTab() {
     if (!r.canceled && r.assets[0]?.uri) {
       setDogPhotoUri(r.assets[0].uri)
       setDogPhotoPreview(r.assets[0].uri)
+      setDogPhotoRemoved(false)
     }
   }
 
@@ -258,6 +286,7 @@ export default function MypageTab() {
     if (!r.canceled && r.assets[0]?.uri) {
       setAvatarUri(r.assets[0].uri)
       setAvatarPreview(r.assets[0].uri)
+      setOwnerPhotoRemoved(false)
     }
   }
 
@@ -265,7 +294,7 @@ export default function MypageTab() {
     if (!dog || !profile) return
     setSavingDog(true)
     try {
-      let dogPhotoUrl = dog.photo_url
+      let dogPhotoUrl: string | null = dog.photo_url
       if (dogPhotoUri) {
         const resFetch = await fetch(dogPhotoUri)
         const buf = await resFetch.arrayBuffer()
@@ -273,6 +302,8 @@ export default function MypageTab() {
         await supabase.storage.from('avatars').upload(path, buf, { upsert: true, contentType: 'image/jpeg' })
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
         dogPhotoUrl = urlData.publicUrl
+      } else if (dogPhotoRemoved) {
+        dogPhotoUrl = null
       }
       const { error: dogUpdateError } = await supabase
         .from('dogs')
@@ -307,6 +338,7 @@ export default function MypageTab() {
       setEditingDog(false)
       setDogPhotoPreview(null)
       setDogPhotoUri(null)
+      setDogPhotoRemoved(false)
     } finally {
       setSavingDog(false)
     }
@@ -321,7 +353,7 @@ export default function MypageTab() {
     }
     setSavingOwner(true)
     try {
-      let photoUrl = profile.photo_url
+      let photoUrl: string | null = profile.photo_url
       if (avatarUri) {
         const resFetch = await fetch(avatarUri)
         const buf = await resFetch.arrayBuffer()
@@ -329,15 +361,22 @@ export default function MypageTab() {
         await supabase.storage.from('avatars').upload(path, buf, { upsert: true, contentType: 'image/jpeg' })
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
         photoUrl = urlData.publicUrl
+      } else if (ownerPhotoRemoved) {
+        photoUrl = null
       }
-      const { error: ownerSaveError } = await supabase.from('users').upsert({
-        id: profile.id,
-        name: editName.trim(),
-        parent_type: editParentType,
-        bio: editBio.trim() || null,
-        birthday: birthdayYmd,
-        photo_url: photoUrl,
-      })
+      const persistedTags = walkAreaTagsForUpsert(editWalkAreaTags)
+      const { error: ownerSaveError } = await updateUserWithWalkAreas(
+        supabase,
+        profile.id,
+        {
+          name: editName.trim(),
+          parent_type: editParentType,
+          bio: editBio.trim() || null,
+          birthday: birthdayYmd,
+          photo_url: photoUrl,
+        },
+        editWalkAreaTags
+      )
       if (ownerSaveError) {
         Alert.alert('保存に失敗しました（オーナー）', ownerSaveError.message)
         return
@@ -351,12 +390,15 @@ export default function MypageTab() {
               bio: editBio.trim() || null,
               birthday: birthdayYmd,
               photo_url: photoUrl,
+              walk_area_tags: persistedTags,
+              walk_area: persistedTags.length > 0 ? JSON.stringify(persistedTags) : null,
             }
           : prev
       )
       setEditingOwner(false)
       setAvatarPreview(null)
       setAvatarUri(null)
+      setOwnerPhotoRemoved(false)
     } finally {
       setSavingOwner(false)
     }
@@ -384,7 +426,7 @@ export default function MypageTab() {
 
   /** スクロール末尾がタブバーに隠れないよう（タブ画面の高さは既にタブバー上まで） */
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
-  const avatarSrc = avatarPreview ?? profile?.photo_url
+  const avatarSrc = ownerPhotoRemoved ? null : (avatarPreview ?? profile?.photo_url)
 
   const persistVaccineDate = useCallback((kind: 'rabies' | 'mixed', ymd: string) => {
     if (!editingDog) return
@@ -428,14 +470,12 @@ export default function MypageTab() {
     const ymd = ymdFromDogField(stored)
     const hasDate = !!ymd
     const flag = !!row.vaccinatedFlag
-    const stampKind = computeVaccineStamp(ymd, flag, row.showRabiesExpiry)
+    const stampKind = computeVaccineStamp(ymd, row.showRabiesExpiry)
 
     const primaryText = hasDate
       ? `${formatDateJaGregorian(ymd)}（前回）`
       : flag
-        ? editingDog
-          ? '接種日が未登録です（タップして登録）'
-          : '接種日が未登録です'
+        ? '接種日を登録してください。'
         : editingDog
           ? '未登録（タップして登録）'
           : '未登録'
@@ -519,7 +559,9 @@ export default function MypageTab() {
             <View style={styles.profileMainCol}>
               <View style={[styles.avatar80Wrap, editingDog && styles.avatar80WrapEditing]}>
                 <View style={[styles.avatar80, styles.avatar80Dog]}>
-                  {dogPhotoPreview ?? dog.photo_url ? (
+                  {dogPhotoRemoved && !dogPhotoUri ? (
+                    <IconPaw size={36} color={colors.textMuted} />
+                  ) : dogPhotoPreview ?? dog.photo_url ? (
                     <Image source={{ uri: dogPhotoPreview ?? dog.photo_url! }} style={styles.avatar80Img} resizeMode="cover" />
                   ) : (
                     <IconPaw size={36} color={colors.textMuted} />
@@ -529,6 +571,19 @@ export default function MypageTab() {
                   <AvatarCameraFab onPress={() => void pickDogPhoto()} accessibilityLabel="愛犬の写真を変更" />
                 ) : null}
               </View>
+              {editingDog && (dogPhotoPreview ?? dog.photo_url) && !dogPhotoRemoved ? (
+                <Pressable
+                  style={styles.photoRemoveBtn}
+                  onPress={() => {
+                    setDogPhotoRemoved(true)
+                    setDogPhotoPreview(null)
+                    setDogPhotoUri(null)
+                  }}
+                  accessibilityLabel="愛犬の写真を削除"
+                >
+                  <Text style={styles.photoRemoveTxt}>写真を削除</Text>
+                </Pressable>
+              ) : null}
               {editingDog ? (
                 <View style={[styles.profileEditFields, styles.profileEditFieldsAfterAvatar]}>
                   <TextInput
@@ -619,8 +674,12 @@ export default function MypageTab() {
               <View style={styles.vaccineBlocksWrap}>
                 {(() => {
                   const ymdM = ymdFromDogField(dog.vaccine_vaccinated_at ?? '')
-                  const stampM = computeVaccineStamp(ymdM, !!dog.vaccine_vaccinated, false)
-                  const dateM = ymdM ? `${formatDateJaGregorian(ymdM)}（前回）` : '未登録'
+                  const stampM = computeVaccineStamp(ymdM, false)
+                  const dateM = ymdM
+                    ? `${formatDateJaGregorian(ymdM)}（前回）`
+                    : dog.vaccine_vaccinated
+                      ? '接種日を登録してください。'
+                      : '未登録'
                   return (
                     <View style={styles.vaccineBlock}>
                       {stampM ? (
@@ -642,8 +701,12 @@ export default function MypageTab() {
                 })()}
                 {(() => {
                   const ymdR = ymdFromDogField(dog.rabies_vaccinated_at ?? '')
-                  const stampR = computeVaccineStamp(ymdR, !!dog.rabies_vaccinated, true)
-                  const dateR = ymdR ? `${formatDateJaGregorian(ymdR)}（前回）` : '未登録'
+                  const stampR = computeVaccineStamp(ymdR, true)
+                  const dateR = ymdR
+                    ? `${formatDateJaGregorian(ymdR)}（前回）`
+                    : dog.rabies_vaccinated
+                      ? '接種日を登録してください。'
+                      : '未登録'
                   return (
                     <View style={styles.vaccineBlock}>
                       {stampR ? (
@@ -671,6 +734,7 @@ export default function MypageTab() {
                   style={styles.btnGhost}
                   onPress={() => {
                     setVaccinePickerKind(null)
+                    setDogPhotoRemoved(false)
                     setEditingDog(false)
                   }}
                 >
@@ -708,6 +772,19 @@ export default function MypageTab() {
                 <AvatarCameraFab onPress={() => void pickAvatar()} accessibilityLabel="プロフィール写真を変更" />
               ) : null}
             </View>
+            {editingOwner && (avatarPreview ?? profile?.photo_url) && !ownerPhotoRemoved ? (
+              <Pressable
+                style={styles.photoRemoveBtn}
+                onPress={() => {
+                  setOwnerPhotoRemoved(true)
+                  setAvatarPreview(null)
+                  setAvatarUri(null)
+                }}
+                accessibilityLabel="プロフィール写真を削除"
+              >
+                <Text style={styles.photoRemoveTxt}>写真を削除</Text>
+              </Pressable>
+            ) : null}
             {editingOwner ? (
               <View style={[styles.profileEditFields, styles.profileEditFieldsAfterAvatar]}>
                 <TextInput
@@ -736,6 +813,9 @@ export default function MypageTab() {
                     onChangeMonth={setEditOwnerMonth}
                     onChangeDay={setEditOwnerDay}
                   />
+                  <Text style={styles.walkAreaEditLbl}>よく散歩するエリア</Text>
+                  <Text style={styles.walkAreaEditHint}>近くの候補は位置情報オンで表示されます。検索で全国の主要エリアから選べます。</Text>
+                  <WalkAreaTagPicker anchor={ownerAreaAnchor} value={editWalkAreaTags} onChange={setEditWalkAreaTags} />
                 </View>
               ) : (
               <>
@@ -754,6 +834,24 @@ export default function MypageTab() {
                   ) : (
                     <Text style={[styles.ownerProfilePairText, styles.ownerProfileAgeText]}>-</Text>
                   )}
+                </View>
+                <View style={styles.walkAreaReadonly}>
+                  <Text style={styles.walkAreaLbl}>よく散歩するエリア</Text>
+                  {(() => {
+                    const areaTags = walkAreaTagsForUpsert(walkTagsFromUserRow(profile))
+                    if (areaTags.length === 0) {
+                      return <Text style={styles.walkAreaEmpty}>未設定</Text>
+                    }
+                    return (
+                      <View style={styles.walkAreaTagRow}>
+                        {areaTags.map((tag) => (
+                          <View key={tag} style={styles.walkAreaTagPill} accessibilityLabel={`散歩エリア ${tag}`}>
+                            <Text style={styles.walkAreaTagTxt}>{tag}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )
+                  })()}
                 </View>
               </>
             )}
@@ -779,7 +877,13 @@ export default function MypageTab() {
           )}
           {editingOwner ? (
             <View style={styles.btnRow}>
-              <Pressable style={styles.btnGhost} onPress={() => setEditingOwner(false)}>
+              <Pressable
+                style={styles.btnGhost}
+                onPress={() => {
+                  setOwnerPhotoRemoved(false)
+                  setEditingOwner(false)
+                }}
+              >
                 <Text style={styles.btnGhostTxt}>キャンセル</Text>
               </Pressable>
                 <Pressable
@@ -896,6 +1000,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   profileMainCol: { alignItems: 'center', width: '100%' },
+  photoRemoveBtn: { marginTop: 8, paddingVertical: 6 },
+  photoRemoveTxt: { fontSize: 13, fontWeight: '700', color: '#E84335' },
   profileAgeGenderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -905,6 +1011,27 @@ const styles = StyleSheet.create({
     marginTop: 4,
     alignSelf: 'stretch',
   },
+  walkAreaReadonly: { marginTop: 12, alignSelf: 'stretch', width: '100%', paddingHorizontal: 4 },
+  walkAreaLbl: { fontSize: 12, fontWeight: '700', color: colors.textMuted, marginBottom: 6, textAlign: 'center' },
+  /** イベントのジャンルタグ（EventCard tagRow / tagPill）と同系統のスタンプピル */
+  walkAreaTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    marginTop: 2,
+  },
+  walkAreaTagPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#FFF9E0',
+  },
+  walkAreaTagTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  walkAreaEmpty: { fontSize: 13, fontWeight: '600', color: colors.textMuted, textAlign: 'center', marginTop: 4 },
+  walkAreaEditLbl: { marginTop: 10, fontSize: 13, fontWeight: '700', color: colors.text },
+  walkAreaEditHint: { marginTop: 4, fontSize: 12, color: colors.textMuted, lineHeight: 17 },
   /** 編集チップ内の ♂♀（大きめ） */
   genderSymMale: { fontSize: 17, fontWeight: '800', color: colors.genderMale },
   genderSymFemale: { fontSize: 17, fontWeight: '800', color: colors.genderFemale },

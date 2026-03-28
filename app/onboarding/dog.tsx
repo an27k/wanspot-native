@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as ImagePicker from 'expo-image-picker'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Image,
   ScrollView,
@@ -12,9 +12,11 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { CenterSnapPicker } from '@/components/CenterSnapPicker'
 import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
 import { IconPaw } from '@/components/IconPaw'
 import { colors } from '@/constants/colors'
+import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 
@@ -55,10 +57,18 @@ const BREEDS = [
 const currentYear = new Date().getFullYear()
 const YEARS = Array.from({ length: 20 }, (_, i) => currentYear - i)
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
+const STEP_DOTS = 5
 
 export default function DogPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+
+  useEffect(() => {
+    void (async () => {
+      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
+      if (!raw) router.replace('/onboarding/location')
+    })()
+  }, [router])
   const [name, setName] = useState('')
   const [year, setYear] = useState('')
   const [month, setMonth] = useState('')
@@ -129,24 +139,34 @@ export default function DogPage() {
         ...(dogPhotoUrl ? { dogPhotoUrl } : {}),
       })
       await AsyncStorage.setItem('ob_dog', obDogPayload)
-      router.push('/onboarding/owner')
+      router.push('/onboarding/size')
     } finally {
       setSubmitting(false)
     }
   }
 
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
+  const padTop = insets.top + 16
+
+  const yearRows = [{ value: '', label: '—' }, ...YEARS.map((y) => ({ value: String(y), label: `${y}年` }))]
+  const monthRows = [{ value: '', label: '—' }, ...MONTHS.map((m) => ({ value: String(m), label: `${m}月` }))]
+  const breedRows = [{ value: '', label: '—' }, ...BREEDS.map((b) => ({ value: b, label: b }))]
 
   return (
-    <ScrollView style={styles.main} contentContainerStyle={{ paddingBottom: padBottom, paddingHorizontal: 20, paddingTop: 40, gap: 20 }}>
+    <ScrollView
+      style={styles.main}
+      contentContainerStyle={{ paddingBottom: padBottom, paddingHorizontal: 20, paddingTop: padTop, gap: 20 }}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+    >
       <View style={styles.headRow}>
         <View style={styles.brandRow}>
-          <OnboardingBrand width={20} height={23} />
+          <OnboardingBrand />
           <Text style={styles.brandTxt}>wanspot</Text>
         </View>
         <View style={styles.dots}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <View key={i} style={[styles.dot, { backgroundColor: i === 0 ? '#FFD84D' : '#e0e0e0' }]} />
+          {Array.from({ length: STEP_DOTS }, (_, i) => (
+            <View key={i} style={[styles.dot, { backgroundColor: i <= 1 ? '#FFD84D' : '#e0e0e0' }]} />
           ))}
         </View>
       </View>
@@ -186,35 +206,17 @@ export default function DogPage() {
       <View style={styles.grid2}>
         <View style={{ flex: 1 }}>
           <Text style={styles.label}>誕生年</Text>
-          <ScrollView style={styles.selectBox} nestedScrollEnabled>
-            {YEARS.map((y) => (
-              <TouchableOpacity key={y} onPress={() => setYear(String(y))} style={[styles.opt, year === String(y) && styles.optOn]}>
-                <Text style={styles.optTxt}>{y}年</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <CenterSnapPicker listKey="dog-y" data={yearRows} value={year} onChange={setYear} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.label}>誕生月</Text>
-          <ScrollView style={styles.selectBox} nestedScrollEnabled>
-            {MONTHS.map((m) => (
-              <TouchableOpacity key={m} onPress={() => setMonth(String(m))} style={[styles.opt, month === String(m) && styles.optOn]}>
-                <Text style={styles.optTxt}>{m}月</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <CenterSnapPicker listKey="dog-m" data={monthRows} value={month} onChange={setMonth} />
         </View>
       </View>
 
       <View>
         <Text style={styles.label}>犬種</Text>
-        <ScrollView style={[styles.selectBox, { maxHeight: 160 }]} nestedScrollEnabled>
-          {BREEDS.map((b) => (
-            <TouchableOpacity key={b} onPress={() => setBreed(b)} style={[styles.opt, breed === b && styles.optOn]}>
-              <Text style={styles.optTxt}>{b}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <CenterSnapPicker listKey="dog-breed" data={breedRows} value={breed} onChange={setBreed} />
       </View>
 
       <View>
@@ -310,16 +312,6 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
   grid2: { flexDirection: 'row', gap: 12 },
-  selectBox: {
-    maxHeight: 120,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ebebeb',
-    backgroundColor: '#f7f6f3',
-  },
-  opt: { paddingVertical: 8, paddingHorizontal: 12 },
-  optOn: { backgroundColor: '#FFF9E0' },
-  optTxt: { fontSize: 14, color: '#1a1a1a' },
   row2: { flexDirection: 'row', gap: 8 },
   half: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   halfOn: { backgroundColor: '#FFD84D' },

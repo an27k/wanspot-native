@@ -3,6 +3,7 @@ import {
   Image,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -10,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as Linking from 'expo-linking'
+import { useRouter } from 'expo-router'
 import { brandLogoSource } from '@/assets/brandLogo'
 import { colors } from '@/constants/colors'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
@@ -24,6 +26,7 @@ type AppHeaderProps = {
 
 export function AppHeader({ variant = 'default', title, onBack, rightSlot }: AppHeaderProps) {
   const insets = useSafeAreaInsets()
+  const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const { signOut } = useAuth()
   const base = getWanspotApiBase()
@@ -67,28 +70,35 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <View style={styles.modalRoot}>
           <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)} />
-          <View style={[styles.drawer, { paddingTop: insets.top + 12 }]}>
+          <View style={[styles.drawer, { paddingTop: insets.top + 12, paddingBottom: Math.max(24, insets.bottom + 16) }]}>
             <View style={styles.drawerHead}>
               <Text style={styles.drawerTitle}>メニュー</Text>
               <Pressable onPress={() => setMenuOpen(false)}>
                 <Ionicons name="close-outline" size={24} color={colors.text} />
               </Pressable>
             </View>
-            <Pressable style={styles.menuRow} onPress={() => openWeb('/contact')}>
-              <Text style={styles.menuText}>お問い合わせ</Text>
-            </Pressable>
-            <Pressable style={styles.menuRow} onPress={() => openWeb('/privacy')}>
-              <Text style={styles.menuText}>プライバシーポリシー</Text>
-            </Pressable>
-            <Pressable style={styles.menuRow} onPress={() => openWeb('/terms')}>
-              <Text style={styles.menuText}>利用規約</Text>
-            </Pressable>
-            <View style={{ flex: 1 }} />
+            <ScrollView
+              style={styles.drawerScroll}
+              contentContainerStyle={styles.drawerScrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Pressable style={styles.menuRow} onPress={() => openWeb('/contact')}>
+                <Text style={styles.menuText}>お問い合わせ</Text>
+              </Pressable>
+              <Pressable style={styles.menuRow} onPress={() => openWeb('/privacy')}>
+                <Text style={styles.menuText}>プライバシーポリシー</Text>
+              </Pressable>
+              <Pressable style={styles.menuRow} onPress={() => openWeb('/terms')}>
+                <Text style={styles.menuText}>利用規約</Text>
+              </Pressable>
+            </ScrollView>
             <Pressable
               style={styles.logoutBtn}
               onPress={async () => {
                 setMenuOpen(false)
                 await signOut()
+                router.replace('/')
               }}
             >
               <Text style={styles.logoutText}>ログアウト</Text>
@@ -128,12 +138,14 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
   drawer: {
     width: 280,
+    alignSelf: 'stretch',
     backgroundColor: colors.background,
     paddingHorizontal: 16,
-    paddingBottom: 24,
     borderLeftWidth: 1,
     borderLeftColor: colors.border,
   },
+  drawerScroll: { flex: 1 },
+  drawerScrollContent: { flexGrow: 1, paddingBottom: 8 },
   drawerHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -147,7 +159,7 @@ const styles = StyleSheet.create({
   menuRow: { paddingVertical: 14 },
   menuText: { fontSize: 15, fontWeight: '700', color: colors.text },
   logoutBtn: {
-    marginTop: 16,
+    marginTop: 8,
     paddingVertical: 14,
     borderRadius: 14,
     backgroundColor: colors.cardBg,

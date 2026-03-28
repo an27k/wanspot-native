@@ -22,6 +22,7 @@
     "android": {
       "package": "app.wanspot.native",
       "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/wanspot_image.png",
         "backgroundColor": "#FFD84D"
@@ -33,7 +34,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "近くの散歩エリアの候補を表示するために位置情報を使います。"
+        }
+      ]
     ],
     "extra": {
       "supabaseUrl": "",

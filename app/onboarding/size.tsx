@@ -1,12 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
-import { ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { supabase } from '@/lib/supabase'
+import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
 
 const SIZES = [
   { key: 'XS', label: 'XS', desc: '〜4kg · 〜25cm' },
@@ -18,21 +17,41 @@ const SIZES = [
 
 type Size = (typeof SIZES)[number]['key']
 
+const STEP_DOTS = 5
+
 export default function SizePage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const [selected, setSelected] = useState<Size | null>(null)
+
+  useEffect(() => {
+    void (async () => {
+      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
+      if (!raw) router.replace('/onboarding/location')
+    })()
+  }, [router])
+  const padTop = insets.top + 16
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
 
+  const goNext = async () => {
+    if (!selected) return
+    await AsyncStorage.setItem('ob_size', JSON.stringify({ size: selected }))
+    router.push('/onboarding/area')
+  }
+
   return (
-    <ScrollView style={styles.main} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 40, paddingBottom: padBottom, gap: 20 }}>
+    <ScrollView
+      style={styles.main}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingTop: padTop, paddingBottom: padBottom, gap: 20 }}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.headRow}>
         <View style={styles.brandRow}>
-          <OnboardingBrand width={20} height={23} />
+          <OnboardingBrand />
           <Text style={styles.brandTxt}>wanspot</Text>
         </View>
         <View style={styles.dots}>
-          {[0, 1, 2, 3, 4].map((i) => (
+          {Array.from({ length: STEP_DOTS }, (_, i) => (
             <View key={i} style={[styles.dot, { backgroundColor: i <= 2 ? '#FFD84D' : '#e0e0e0' }]} />
           ))}
         </View>
@@ -54,112 +73,7 @@ export default function SizePage() {
           )
         })}
       </View>
-      <TouchableOpacity
-        style={[styles.next, !selected && styles.nextOff]}
-        disabled={!selected}
-        onPress={async () => {
-          if (!selected) return
-          await AsyncStorage.setItem('ob_size', JSON.stringify({ size: selected }))
-          try {
-            const raw = await AsyncStorage.getItem('ob_dog')
-            const rawOwner = await AsyncStorage.getItem('ob_owner')
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user || !raw) {
-              router.replace('/(tabs)')
-              return
-            }
-            let ownerParsed: {
-              parent_type?: 'papa' | 'mama'
-              ownerYear?: string | null
-              ownerMonth?: string | null
-              ownerDay?: string | null
-            } | null = null
-            if (rawOwner) {
-              try {
-                ownerParsed = JSON.parse(rawOwner) as typeof ownerParsed
-              } catch {
-                ownerParsed = null
-              }
-            }
-            const userBirthday = ownerParsed
-              ? ownerBirthdayToYmd(
-                  String(ownerParsed.ownerYear ?? ''),
-                  String(ownerParsed.ownerMonth ?? ''),
-                  String(ownerParsed.ownerDay ?? '')
-                )
-              : null
-            if (!userBirthday) {
-              Alert.alert('入力エラー', 'オーナーの生年月日（年・月・日すべて）を選択してください。')
-              return
-            }
-            const dog = JSON.parse(raw) as {
-              name?: string
-              year?: string
-              month?: string
-              breed?: string
-              gender?: 'male' | 'female'
-              vaccineCombo?: boolean
-              vaccineRabies?: boolean
-              dogPhotoUrl?: string | null
-            }
-            const birthday =
-              dog.year && dog.month ? `${dog.year}-${String(dog.month).padStart(2, '0')}-01` : null
-            const today = new Date().toISOString().slice(0, 10)
-            const displayName = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'ユーザー'
-            const { error: userUpsertError } = await supabase.from('users').upsert({
-              id: user.id,
-              name: displayName,
-              parent_type: ownerParsed?.parent_type ?? 'papa',
-              birthday: userBirthday,
-            })
-            if (userUpsertError) {
-              Alert.alert('保存に失敗しました（オーナー）', userUpsertError.message)
-              return
-            }
-
-            const dogPayload = {
-              name: dog.name ?? '',
-              birthday,
-              breed: dog.breed ?? null,
-              gender: dog.gender ?? null,
-              photo_url: dog.dogPhotoUrl ?? null,
-              rabies_vaccinated: dog.vaccineRabies === true,
-              vaccine_vaccinated: dog.vaccineCombo === true,
-              rabies_vaccinated_at: dog.vaccineRabies ? today : null,
-              vaccine_vaccinated_at: dog.vaccineCombo ? today : null,
-            }
-            const { data: existingDog, error: dogSelErr } = await supabase
-              .from('dogs')
-              .select('id')
-              .eq('user_id', user.id)
-              .maybeSingle()
-            if (dogSelErr) {
-              Alert.alert('保存に失敗しました（愛犬）', dogSelErr.message)
-              return
-            }
-            if (existingDog?.id) {
-              const { error: dogUpErr } = await supabase.from('dogs').update(dogPayload).eq('id', existingDog.id)
-              if (dogUpErr) {
-                Alert.alert('保存に失敗しました（愛犬）', dogUpErr.message)
-                return
-              }
-            } else {
-              const { error: dogInsErr } = await supabase
-                .from('dogs')
-                .insert({ user_id: user.id, ...dogPayload })
-              if (dogInsErr) {
-                Alert.alert('保存に失敗しました（愛犬）', dogInsErr.message)
-                return
-              }
-            }
-            await AsyncStorage.multiRemove(['ob_dog', 'ob_size', 'ob_owner'])
-          } catch (e) {
-            Alert.alert('エラー', e instanceof Error ? e.message : String(e))
-            return
-          }
-          router.replace('/(tabs)')
-        }}
-      >
+      <TouchableOpacity style={[styles.next, !selected && styles.nextOff]} disabled={!selected} onPress={() => void goNext()}>
         <Text style={[styles.nextTxt, !selected && { color: '#ccc' }]}>次へ →</Text>
       </TouchableOpacity>
     </ScrollView>

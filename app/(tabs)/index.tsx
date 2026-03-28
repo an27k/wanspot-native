@@ -22,6 +22,7 @@ import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -42,6 +43,8 @@ const DISTANCES = [
   { key: 3000, label: '3km' },
   { key: 5000, label: '5km' },
 ] as const
+
+type DistanceKey = (typeof DISTANCES)[number]['key']
 
 type SortKey = 'distance' | 'rating' | 'likes'
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -118,7 +121,7 @@ export default function NearbyPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const [genre, setGenre] = useState('cafe')
-  const [distance, setDistance] = useState(1000)
+  const [distance, setDistance] = useState<DistanceKey>(1000)
   const [spots, setSpots] = useState<PlaceResult[]>([])
   const [loading, setLoading] = useState(false)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -129,19 +132,50 @@ export default function NearbyPage() {
   const [spotsFetchError, setSpotsFetchError] = useState('')
   const [likedOnlyFilter, setLikedOnlyFilter] = useState(false)
   const [likedPlaceIds, setLikedPlaceIds] = useState<Set<string>>(() => new Set())
+  const [showObTutorial, setShowObTutorial] = useState(false)
+
+  useFocusEffect(
+    useCallback(() => {
+      void (async () => {
+        try {
+          const v = await AsyncStorage.getItem(POST_ONBOARDING_TUTORIAL_KEY)
+          if (v === '1') setShowObTutorial(true)
+        } catch {
+          /* ignore */
+        }
+      })()
+    }, [])
+  )
+
+  const dismissObTutorial = useCallback(async () => {
+    try {
+      await AsyncStorage.removeItem(POST_ONBOARDING_TUTORIAL_KEY)
+    } catch {
+      /* ignore */
+    }
+    setShowObTutorial(false)
+  }, [])
 
   useEffect(() => {
     const valid = new Set(DISTANCES.map((d) => d.key))
-    if (!valid.has(distance)) setDistance(1000)
+    if (!valid.has(distance)) setDistance(DISTANCES[0].key)
   }, [distance])
 
   useEffect(() => {
     void (async () => {
       try {
         const raw = await AsyncStorage.getItem('ob_area')
-        if (!raw) return
-        const parsed = JSON.parse(raw) as { useLocationBased?: boolean }
-        if (parsed?.useLocationBased) setDistance(3000)
+        const prefWide = await AsyncStorage.getItem('pref_nearby_wide')
+        let wide = prefWide === '1'
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw) as { useLocationBased?: boolean }
+            if (parsed?.useLocationBased) wide = true
+          } catch {
+            /* ignore */
+          }
+        }
+        if (wide) setDistance(3000)
       } catch {
         /* ignore */
       }
@@ -370,6 +404,26 @@ export default function NearbyPage() {
               </TouchableOpacity>
             ))}
           </View>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={showObTutorial} transparent animationType="fade" onRequestClose={() => void dismissObTutorial()}>
+        <Pressable style={styles.obTutOverlay} onPress={() => void dismissObTutorial()}>
+          <Pressable style={styles.obTutCard} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.obTutTitle}>さあ、一緒に探そう！</Text>
+            <Text style={styles.obTutBody}>
+              ワンちゃんと行きたいカフェや公園を見つけたら、
+              <Text style={styles.obTutEm}>ハートでいいね</Text>
+              してみてください。いいねが増えるほど「好き」の傾向が伝わり、
+              <Text style={styles.obTutEm}>専属AIのおすすめやまとめの精度が上がります。</Text>
+              {'\n\n'}
+              まずは気軽に<Text style={styles.obTutEm}>5件以上</Text>
+              いいねして、ワクワクするスポット探しのスタートを切りましょう。お気に入りはマイページの「いいね一覧」からいつでも見られます。
+            </Text>
+            <TouchableOpacity style={styles.obTutBtn} onPress={() => void dismissObTutorial()}>
+              <Text style={styles.obTutBtnTxt}>OK</Text>
+            </TouchableOpacity>
+          </Pressable>
         </Pressable>
       </Modal>
     </View>
@@ -755,4 +809,28 @@ const styles = StyleSheet.create({
   sortItemOn: { backgroundColor: '#FFF9E0' },
   sortItemTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
   sortItemTxtOn: { color: '#1a1a1a' },
+  obTutOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  obTutCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: '#ebebeb',
+  },
+  obTutTitle: { fontSize: 17, fontWeight: '800', color: '#1a1a1a', marginBottom: 12 },
+  obTutBody: { fontSize: 15, lineHeight: 24, color: '#555' },
+  obTutEm: { fontWeight: '800', color: '#1a1a1a' },
+  obTutBtn: {
+    marginTop: 18,
+    backgroundColor: '#FFD84D',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  obTutBtnTxt: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
 })

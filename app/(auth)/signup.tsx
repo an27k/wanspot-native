@@ -30,7 +30,7 @@ export default function SignupScreen() {
       setError(e.message)
       return
     }
-    router.replace('/onboarding/dog')
+    router.replace('/onboarding/location')
   }
 
   return (

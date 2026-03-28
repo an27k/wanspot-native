@@ -6,10 +6,12 @@ import {
   Dimensions,
   FlatList,
   Image,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -31,7 +33,7 @@ import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 
-const { width: WIN_W } = Dimensions.get('window')
+const { width: WIN_W, height: WIN_H } = Dimensions.get('window')
 
 type IgStatus = 'unprocessed' | 'registered' | 'verified' | 'fetching' | 'not_found'
 
@@ -849,16 +851,18 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
               <Text style={styles.revHint}>「行った」ボタンを押すとレビューを残せます</Text>
             ) : (
               reviews.map((r, i) => (
-                <View key={r.user_id} style={[styles.revItem, i < reviews.length - 1 && styles.revBorder]}>
+                <View key={r.id} style={[styles.revItem, i < reviews.length - 1 && styles.revBorder]}>
                   <View style={styles.revTop}>
                     <View style={styles.revStarsWrap}>
                       {[1, 2, 3, 4, 5].map((s) => (
                         <IconStarSm key={s} filled={s <= r.rating} />
                       ))}
                     </View>
-                    <Text style={styles.revDate} numberOfLines={1}>
-                      {formatDate(r.created_at)}
-                    </Text>
+                    <View style={styles.revDateCol}>
+                      <Text style={styles.revDate} numberOfLines={1}>
+                        {formatDate(r.created_at)}
+                      </Text>
+                    </View>
                   </View>
                   {r.comment ? <Text style={styles.revComment}>{r.comment}</Text> : null}
                 </View>
@@ -889,58 +893,73 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       </ScrollView>
 
       <Modal visible={showCheckInModal} transparent animationType="slide" onRequestClose={tryCloseCheckInModal}>
-        <Pressable style={styles.modalBg} onPress={tryCloseCheckInModal}>
-          <Pressable style={[styles.sheet, { paddingBottom: bottomInset }]} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.sheetGrab} />
-            <Text style={styles.sheetTitle}>{spot.name}</Text>
-            <Text style={styles.sheetHint}>評価をお願いします</Text>
-            {checkInPrefillLoading && checkedIn ? (
-              <RunningDog label="読み込み中..." />
-            ) : (
-              <>
-                <View style={styles.starsRow}>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Pressable key={s} onPress={() => setCheckInRating(s)} disabled={checkInSubmitting}>
-                      <IconStar filled={s <= checkInRating} />
-                    </Pressable>
-                  ))}
-                </View>
-                <TextInput
-                  style={styles.ta}
-                  value={checkInComment}
-                  onChangeText={setCheckInComment}
-                  placeholder="コメント（任意）"
-                  placeholderTextColor="#aaa"
-                  multiline
-                  editable={!checkInSubmitting}
-                />
-                <Text style={styles.taFoot}>AIが学習に活用しますが、外部に公開されることはありません。</Text>
-                {checkedIn ? (
-                  <>
-                    <Pressable
-                      style={styles.primaryBtn}
-                      onPress={() => void saveCheckInEdits()}
-                      disabled={checkInSubmitting || checkInPrefillLoading || checkInRating < 1}
-                    >
-                      <Text style={styles.primaryBtnTxt}>{checkInSubmitting ? '保存中...' : '保存する'}</Text>
-                    </Pressable>
-                    <Pressable style={styles.secondaryBtn} onPress={removeCheckInWithConfirm} disabled={checkInSubmitting}>
-                      <Text style={styles.secondaryBtnTxt}>{checkInSubmitting ? '処理中...' : '行ったを取り消す'}</Text>
-                    </Pressable>
-                  </>
+        <KeyboardAvoidingView
+          style={styles.checkInKeyboardRoot}
+          enabled={Platform.OS === 'ios'}
+          behavior="padding"
+          keyboardVerticalOffset={0}
+        >
+          <Pressable style={styles.modalBg} onPress={tryCloseCheckInModal}>
+            <Pressable style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 12) }]} onPress={(e) => e.stopPropagation()}>
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                contentContainerStyle={styles.checkInSheetScrollContent}
+              >
+                <View style={styles.sheetGrab} />
+                <Text style={styles.sheetTitle}>{spot.name}</Text>
+                <Text style={styles.sheetHint}>評価をお願いします</Text>
+                {checkInPrefillLoading && checkedIn ? (
+                  <RunningDog label="読み込み中..." />
                 ) : (
-                  <Pressable
-                    style={styles.primaryBtn}
-                    onPress={() => void submitNewCheckIn()}
-                    disabled={checkInSubmitting || checkInRating < 1}
-                  >
-                    <Text style={styles.primaryBtnTxt}>{checkInSubmitting ? '記録中...' : '行った！'}</Text>
-                  </Pressable>
+                  <>
+                    <View style={styles.starsRow}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Pressable key={s} onPress={() => setCheckInRating(s)} disabled={checkInSubmitting}>
+                          <IconStar filled={s <= checkInRating} />
+                        </Pressable>
+                      ))}
+                    </View>
+                    <TextInput
+                      style={styles.ta}
+                      value={checkInComment}
+                      onChangeText={setCheckInComment}
+                      placeholder="コメント（任意）"
+                      placeholderTextColor="#aaa"
+                      multiline
+                      editable={!checkInSubmitting}
+                    />
+                    <Text style={styles.taFoot}>AIが学習に活用しますが、外部に公開されることはありません。</Text>
+                    {checkedIn ? (
+                      <>
+                        <Pressable
+                          style={styles.primaryBtn}
+                          onPress={() => void saveCheckInEdits()}
+                          disabled={checkInSubmitting || checkInPrefillLoading || checkInRating < 1}
+                        >
+                          <Text style={styles.primaryBtnTxt}>{checkInSubmitting ? '保存中...' : '保存する'}</Text>
+                        </Pressable>
+                        <Pressable style={styles.secondaryBtn} onPress={removeCheckInWithConfirm} disabled={checkInSubmitting}>
+                          <Text style={styles.secondaryBtnTxt}>{checkInSubmitting ? '処理中...' : '行ったを取り消す'}</Text>
+                        </Pressable>
+                      </>
+                    ) : (
+                      <Pressable
+                        style={styles.primaryBtn}
+                        onPress={() => void submitNewCheckIn()}
+                        disabled={checkInSubmitting || checkInRating < 1}
+                      >
+                        <Text style={styles.primaryBtnTxt}>{checkInSubmitting ? '記録中...' : '行った！'}</Text>
+                      </Pressable>
+                    )}
+                  </>
                 )}
-              </>
-            )}
+              </ScrollView>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={showShareSheet} transparent animationType="fade" onRequestClose={() => setShowShareSheet(false)}>
@@ -1150,22 +1169,30 @@ const styles = StyleSheet.create({
   revBorder: { borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
   revTop: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
     gap: 8,
     marginBottom: 6,
   },
-  revStarsWrap: { flexDirection: 'row', gap: 2, flexShrink: 0 },
-  revDate: { fontSize: 12, color: '#bbb', flexShrink: 0, marginTop: 1, marginLeft: 8, textAlign: 'right' },
-  revComment: { fontSize: 14, lineHeight: 22, color: '#555', flexShrink: 1 },
+  revStarsWrap: { flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 0 },
+  revDateCol: { flex: 1, minWidth: 0, justifyContent: 'center' },
+  revDate: { fontSize: 12, color: '#bbb', textAlign: 'right' },
+  revComment: { fontSize: 14, lineHeight: 22, color: '#555', marginTop: 2, alignSelf: 'stretch' },
   adviceFoot: { fontSize: 12, color: '#bbb', marginTop: 12, lineHeight: 18 },
+  checkInKeyboardRoot: { flex: 1 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    maxHeight: WIN_H * 0.88,
+  },
+  checkInSheetScrollContent: {
+    flexGrow: 1,
     gap: 12,
+    paddingBottom: 8,
   },
   sheetGrab: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#e8e8e8', alignSelf: 'center', marginBottom: 8 },
   sheetTitle: { fontSize: 18, fontWeight: '800', color: '#1a1a1a' },

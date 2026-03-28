@@ -1,5 +1,6 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { colors } from '@/constants/colors'
+import { CenterSnapPicker } from '@/components/CenterSnapPicker'
 
 const currentYear = new Date().getFullYear()
 
@@ -44,11 +45,8 @@ type Props = {
   onChangeDay: (v: string) => void
   yearMin?: number
   yearMax?: number
-  /** コンパクト（オンボーディング） */
   compact?: boolean
-  /** 未指定時は「生年月日（任意）」。空文字でラベル行を出さない */
   fieldLabel?: string
-  /** null でヒント非表示。未指定時はデフォルト文言 */
   hint?: string | null
 }
 
@@ -61,7 +59,7 @@ export function OwnerBirthdayPickers({
   onChangeDay,
   yearMin = 1970,
   yearMax = currentYear,
-  compact = false,
+  compact: _compact = false,
   fieldLabel,
   hint,
 }: Props) {
@@ -76,7 +74,39 @@ export function OwnerBirthdayPickers({
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
   const days = Array.from({ length: maxDay }, (_, i) => i + 1)
 
-  const boxH = compact ? 120 : 100
+  const yearRows = [{ value: '', label: '—' }, ...years.map((y) => ({ value: String(y), label: `${y}年` }))]
+  const monthRows = [{ value: '', label: '—' }, ...months.map((m) => ({ value: String(m), label: `${m}月` }))]
+  const dayRows = [{ value: '', label: '—' }, ...days.map((d) => ({ value: String(d), label: `${d}日` }))]
+
+  const onPickYear = (v: string) => {
+    onChangeYear(v)
+    if (!v) {
+      onChangeDay('')
+      return
+    }
+    const yNum = parseInt(v, 10)
+    const mNum = month ? parseInt(month, 10) : NaN
+    const dNum = day ? parseInt(day, 10) : NaN
+    if (Number.isFinite(mNum) && Number.isFinite(dNum)) {
+      const cap = daysInMonth(yNum, mNum)
+      if (dNum > cap) onChangeDay(String(cap))
+    }
+  }
+
+  const onPickMonth = (v: string) => {
+    onChangeMonth(v)
+    if (!v) {
+      onChangeDay('')
+      return
+    }
+    const mNum = parseInt(v, 10)
+    const yNum = year ? parseInt(year, 10) : NaN
+    const dNum = day ? parseInt(day, 10) : NaN
+    if (Number.isFinite(yNum) && Number.isFinite(dNum)) {
+      const cap = daysInMonth(yNum, mNum)
+      if (dNum > cap) onChangeDay(String(cap))
+    }
+  }
 
   return (
     <View>
@@ -85,82 +115,15 @@ export function OwnerBirthdayPickers({
       <View style={styles.grid3}>
         <View style={styles.col}>
           <Text style={styles.colLbl}>年</Text>
-          <ScrollView style={[styles.selectBox, { maxHeight: boxH }]} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-            <TouchableOpacity
-              onPress={() => {
-                onChangeYear('')
-                onChangeDay('')
-              }}
-              style={[styles.opt, !year && styles.optOn]}
-            >
-              <Text style={styles.optTxt}>-</Text>
-            </TouchableOpacity>
-            {years.map((y) => (
-              <TouchableOpacity
-                key={y}
-                onPress={() => {
-                  onChangeYear(String(y))
-                  const mNum = month ? parseInt(month, 10) : NaN
-                  const dNum = day ? parseInt(day, 10) : NaN
-                  if (Number.isFinite(mNum) && Number.isFinite(dNum)) {
-                    const cap = daysInMonth(y, mNum)
-                    if (dNum > cap) onChangeDay(String(cap))
-                  }
-                }}
-                style={[styles.opt, year === String(y) && styles.optOn]}
-              >
-                <Text style={styles.optTxt}>{y}年</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <CenterSnapPicker listKey="y" data={yearRows} value={year} onChange={onPickYear} />
         </View>
         <View style={styles.col}>
           <Text style={styles.colLbl}>月</Text>
-          <ScrollView style={[styles.selectBox, { maxHeight: boxH }]} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-            <TouchableOpacity
-              onPress={() => {
-                onChangeMonth('')
-                onChangeDay('')
-              }}
-              style={[styles.opt, !month && styles.optOn]}
-            >
-              <Text style={styles.optTxt}>-</Text>
-            </TouchableOpacity>
-            {months.map((m) => (
-              <TouchableOpacity
-                key={m}
-                onPress={() => {
-                  onChangeMonth(String(m))
-                  const yNum = year ? parseInt(year, 10) : NaN
-                  const dNum = day ? parseInt(day, 10) : NaN
-                  if (Number.isFinite(yNum) && Number.isFinite(dNum)) {
-                    const cap = daysInMonth(yNum, m)
-                    if (dNum > cap) onChangeDay(String(cap))
-                  }
-                }}
-                style={[styles.opt, month === String(m) && styles.optOn]}
-              >
-                <Text style={styles.optTxt}>{m}月</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <CenterSnapPicker listKey="m" data={monthRows} value={month} onChange={onPickMonth} />
         </View>
         <View style={styles.col}>
           <Text style={styles.colLbl}>日</Text>
-          <ScrollView style={[styles.selectBox, { maxHeight: boxH }]} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-            <TouchableOpacity onPress={() => onChangeDay('')} style={[styles.opt, !day && styles.optOn]}>
-              <Text style={styles.optTxt}>-</Text>
-            </TouchableOpacity>
-            {days.map((d) => (
-              <TouchableOpacity
-                key={d}
-                onPress={() => onChangeDay(String(d))}
-                style={[styles.opt, day === String(d) && styles.optOn]}
-              >
-                <Text style={styles.optTxt}>{d}日</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <CenterSnapPicker listKey="d" data={dayRows} value={day} onChange={onChangeDay} />
         </View>
       </View>
     </View>
@@ -170,16 +133,7 @@ export function OwnerBirthdayPickers({
 const styles = StyleSheet.create({
   label: { fontSize: 12, color: colors.textMuted, marginBottom: 4 },
   hint: { fontSize: 11, color: colors.textMuted, lineHeight: 16, marginBottom: 8 },
-  grid3: { flexDirection: 'row', gap: 8 },
+  grid3: { flexDirection: 'row', gap: 10, marginTop: 2 },
   col: { flex: 1 },
-  colLbl: { fontSize: 11, color: colors.textMuted, marginBottom: 4, textAlign: 'center' },
-  selectBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  opt: { paddingVertical: 8, paddingHorizontal: 8, alignItems: 'center' },
-  optOn: { backgroundColor: '#FFF9E0' },
-  optTxt: { fontSize: 13, color: colors.text, fontWeight: '600' },
+  colLbl: { fontSize: 11, color: colors.textMuted, marginBottom: 8, textAlign: 'center' },
 })
