@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 
 export function getWanspotApiBase(): string {
-  const raw = process.env.EXPO_PUBLIC_WANSPOT_API_URL?.trim() ?? ''
+  const raw = String(process.env.EXPO_PUBLIC_WANSPOT_API_URL ?? '').trim()
   return raw.replace(/\/$/, '')
 }
 

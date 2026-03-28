@@ -1,6 +1,3 @@
-/**
- * Web の fetch-user-spot-lists.ts を移植。batch-details は wanspotFetch 経由。
- */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { wanspotFetch } from '@/lib/wanspot-api'
 
@@ -14,7 +11,9 @@ type BatchDetailEntry = {
   vicinity?: string | null
 }
 
-type BatchDetailsPayload = { details?: Record<string, BatchDetailEntry> }
+type BatchDetailsPayload = {
+  details?: Record<string, BatchDetailEntry>
+}
 
 function normalizeSpotAddress(row: Record<string, unknown>): string | null {
   const keys = ['address', 'formatted_address', 'vicinity'] as const
@@ -34,23 +33,10 @@ function addressFromBatchDetail(detail: BatchDetailEntry | undefined): string | 
   return null
 }
 
-export type UserSpotRow = {
-  id: string
-  place_id: string
-  name: string
-  category: string
-  address: string | null
-  lat: number | null
-  lng: number | null
-  likeCount: number
-  savedAt: string | null
-}
-
-type FetchResult = { ok: true; spots: UserSpotRow[] } | { ok: false; error: string; code?: string }
-
 async function fetchBatchDetailsMerged(placeIds: string[]): Promise<Record<string, BatchDetailEntry>> {
   const unique = [...new Set(placeIds.filter((id): id is string => typeof id === 'string' && id.length > 0))]
   const merged: Record<string, BatchDetailEntry> = {}
+
   for (let i = 0; i < unique.length; i += BATCH_DETAILS_CHUNK) {
     const chunk = unique.slice(i, i + BATCH_DETAILS_CHUNK)
     try {
@@ -62,9 +48,10 @@ async function fetchBatchDetailsMerged(placeIds: string[]): Promise<Record<strin
       const json = (await res.json()) as BatchDetailsPayload
       if (json.details) Object.assign(merged, json.details)
     } catch {
-      /* ignore */
+      /* ネットワーク失敗時はスキップ */
     }
   }
+
   return merged
 }
 
@@ -77,14 +64,35 @@ async function overrideAddressesFromBatchDetails(spots: UserSpotRow[]): Promise<
   })
 }
 
-export async function fetchLikedSpotsForUser(supabase: SupabaseClient, userId: string): Promise<FetchResult> {
+export type UserSpotRow = {
+  id: string
+  place_id: string
+  name: string
+  category: string
+  address: string | null
+  lat: number | null
+  lng: number | null
+  likeCount: number
+  savedAt: string | null
+}
+
+type FetchResult =
+  | { ok: true; spots: UserSpotRow[] }
+  | { ok: false; error: string; code?: string }
+
+export async function fetchLikedSpotsForUser(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<FetchResult> {
   const { data: likes, error: likesError } = await supabase
     .from('spot_likes')
     .select('spot_id, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
-  if (likesError) return { ok: false, error: likesError.message, code: likesError.code }
+  if (likesError) {
+    return { ok: false, error: likesError.message, code: likesError.code }
+  }
 
   const orderedIds: string[] = []
   const seen = new Set<string>()
@@ -99,10 +107,15 @@ export async function fetchLikedSpotsForUser(supabase: SupabaseClient, userId: s
     }
   }
 
-  if (orderedIds.length === 0) return { ok: true, spots: [] }
+  if (orderedIds.length === 0) {
+    return { ok: true, spots: [] }
+  }
 
   const { data: spotRows, error: spotsError } = await supabase.from('spots').select('*').in('id', orderedIds)
-  if (spotsError) return { ok: false, error: spotsError.message, code: spotsError.code }
+
+  if (spotsError) {
+    return { ok: false, error: spotsError.message, code: spotsError.code }
+  }
 
   const { data: likeRows } = await supabase.from('spot_likes').select('spot_id').in('spot_id', orderedIds)
   const likeCountBySpotId: Record<string, number> = {}
@@ -127,7 +140,7 @@ export async function fetchLikedSpotsForUser(supabase: SupabaseClient, userId: s
           lng: (raw.lng as number | null) ?? null,
           likeCount: likeCountBySpotId[id] ?? 0,
           savedAt: null as string | null,
-        },
+        } satisfies Omit<UserSpotRow, 'savedAt'> & { savedAt: string | null },
       ]
     })
   )
@@ -136,17 +149,24 @@ export async function fetchLikedSpotsForUser(supabase: SupabaseClient, userId: s
     const s = byId.get(id)
     if (s) spots.push({ ...s, savedAt: savedAtById.get(id) ?? null })
   }
-  return { ok: true, spots: await overrideAddressesFromBatchDetails(spots) }
+
+  const withPlacesAddress = await overrideAddressesFromBatchDetails(spots)
+  return { ok: true, spots: withPlacesAddress }
 }
 
-export async function fetchCheckedInSpotsForUser(supabase: SupabaseClient, userId: string): Promise<FetchResult> {
+export async function fetchCheckedInSpotsForUser(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<FetchResult> {
   const { data: rows, error: ciError } = await supabase
     .from('check_ins')
     .select('spot_id, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
-  if (ciError) return { ok: false, error: ciError.message, code: ciError.code }
+  if (ciError) {
+    return { ok: false, error: ciError.message, code: ciError.code }
+  }
 
   const orderedIds: string[] = []
   const seen = new Set<string>()
@@ -161,10 +181,15 @@ export async function fetchCheckedInSpotsForUser(supabase: SupabaseClient, userI
     }
   }
 
-  if (orderedIds.length === 0) return { ok: true, spots: [] }
+  if (orderedIds.length === 0) {
+    return { ok: true, spots: [] }
+  }
 
   const { data: spotRows, error: spotsError } = await supabase.from('spots').select('*').in('id', orderedIds)
-  if (spotsError) return { ok: false, error: spotsError.message, code: spotsError.code }
+
+  if (spotsError) {
+    return { ok: false, error: spotsError.message, code: spotsError.code }
+  }
 
   const { data: likeRows } = await supabase.from('spot_likes').select('spot_id').in('spot_id', orderedIds)
   const likeCountBySpotId: Record<string, number> = {}
@@ -189,7 +214,7 @@ export async function fetchCheckedInSpotsForUser(supabase: SupabaseClient, userI
           lng: (raw.lng as number | null) ?? null,
           likeCount: likeCountBySpotId[id] ?? 0,
           savedAt: null as string | null,
-        },
+        } satisfies Omit<UserSpotRow, 'savedAt'> & { savedAt: string | null },
       ]
     })
   )
@@ -198,5 +223,7 @@ export async function fetchCheckedInSpotsForUser(supabase: SupabaseClient, userI
     const s = byId.get(id)
     if (s) spots.push({ ...s, savedAt: savedAtById.get(id) ?? null })
   }
-  return { ok: true, spots: await overrideAddressesFromBatchDetails(spots) }
+
+  const withPlacesAddress = await overrideAddressesFromBatchDetails(spots)
+  return { ok: true, spots: withPlacesAddress }
 }

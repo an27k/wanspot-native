@@ -13,6 +13,8 @@ export default function RootLayout() {
             headerShown: false,
             animation: 'default',
             gestureEnabled: true,
+            gestureDirection: 'horizontal',
+            animationDuration: 350,
           }}
         />
       </AuthProvider>

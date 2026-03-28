@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Dimensions,
   FlatList,
   Image,
@@ -17,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { AppHeader } from '@/components/AppHeader'
+import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetchJson } from '@/lib/wanspot-api'
 
@@ -30,15 +32,24 @@ type SpotRow = {
   address: string | null
   lat: number | null
   lng: number | null
+  rating?: number | null
 }
 
 type DetailJson = {
   photos?: { photo_reference?: string }[]
   rating?: number
   formatted_address?: string
+  price_level?: number | null
+  reviews?: { text?: string }[]
 }
 
-type CheckInReviewRow = { rating: number | null; comment: string | null; created_at: string | null }
+type ReviewRow = {
+  id: string
+  rating: number
+  comment: string | null
+  created_at: string
+  user_id: string
+}
 
 export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   const router = useRouter()
@@ -50,7 +61,8 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   const [likeCount, setLikeCount] = useState(0)
   const [summary, setSummary] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
-  const [reviews, setReviews] = useState<CheckInReviewRow[]>([])
+  const [reviews, setReviews] = useState<ReviewRow[]>([])
+  const likeScale = useRef(new Animated.Value(1)).current
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -81,25 +93,28 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
         .maybeSingle()
       setLiked(!!mine)
     }
-    const ai = await wanspotFetchJson<{ summary?: string }>('/api/ai-summary', {
+    const ai = await wanspotFetchJson<{ keywords?: string[]; summary?: string }>('/api/ai-summary', {
       method: 'POST',
       json: {
         place_id: row.place_id,
         name: row.name,
         category: row.category,
-        rating: d?.rating ?? null,
-        address: (d?.formatted_address as string) ?? row.address ?? '',
+        rating: row.rating ?? d?.rating ?? null,
+        address: row.address ?? (d?.formatted_address as string) ?? '',
+        reviews: d?.reviews?.slice(0, 5).map((r) => r.text).filter(Boolean) ?? [],
       },
-    }).catch(() => ({}) as { summary?: string })
-    setSummary(typeof ai.summary === 'string' ? ai.summary : null)
+    }).catch(() => ({}) as { keywords?: string[]; summary?: string })
+    if (ai.keywords && ai.summary) {
+      setSummary([ai.keywords.map((k) => `#${k}`).join(' '), ai.summary].join('\n\n'))
+    } else {
+      setSummary(typeof ai.summary === 'string' ? ai.summary : null)
+    }
     const { data: rev } = await supabase
-      .from('check_ins')
-      .select('rating, comment, created_at')
+      .from('reviews')
+      .select('id, rating, comment, created_at, user_id')
       .eq('spot_id', spotId)
-      .not('comment', 'is', null)
       .order('created_at', { ascending: false })
-      .limit(30)
-    setReviews((rev ?? []) as CheckInReviewRow[])
+    setReviews((rev ?? []) as ReviewRow[])
     setLoading(false)
   }, [spotId])
 
@@ -112,6 +127,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       Alert.alert('ログインが必要です')
       return
     }
+    playLikeHeartAnimation(likeScale)
     if (liked) {
       await supabase.from('spot_likes').delete().eq('spot_id', spotId).eq('user_id', userId)
       setLiked(false)
@@ -193,8 +209,10 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
             <Text style={styles.rate}>Google ★ {detail.rating.toFixed(1)}</Text>
           ) : null}
           <View style={styles.actions}>
-            <Pressable style={styles.actBtn} onPress={toggleLike}>
-              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={22} color={colors.text} />
+            <Pressable style={styles.actBtn} onPress={() => void toggleLike()}>
+              <Animated.View style={{ transform: [{ scale: likeScale }] }}>
+                <Ionicons name={liked ? 'heart' : 'heart-outline'} size={22} color={colors.text} />
+              </Animated.View>
               <Text style={styles.actTxt}>いいね {likeCount}</Text>
             </Pressable>
             <Pressable style={styles.actBtn} onPress={checkIn}>
@@ -212,12 +230,10 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
           {reviews.length === 0 ? (
             <Text style={styles.revEmpty}>まだレビューがありません</Text>
           ) : (
-            reviews.map((r, i) => (
-              <View key={i} style={styles.revCard}>
-                {r.rating != null && r.rating > 0 ? (
-                  <Text style={styles.revRate}>★ {r.rating.toFixed(1)}</Text>
-                ) : null}
-                <Text style={styles.revBody}>{r.comment}</Text>
+            reviews.map((r) => (
+              <View key={r.id} style={styles.revCard}>
+                {r.rating > 0 ? <Text style={styles.revRate}>★ {r.rating.toFixed(1)}</Text> : null}
+                {r.comment ? <Text style={styles.revBody}>{r.comment}</Text> : null}
                 {r.created_at ? (
                   <Text style={styles.revDate}>{new Date(r.created_at).toLocaleDateString('ja-JP')}</Text>
                 ) : null}
