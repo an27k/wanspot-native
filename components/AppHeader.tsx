@@ -14,7 +14,7 @@ import { colors } from '@/constants/colors'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
 import { useAuth } from '@/context/AuthContext'
 
-const LOGO = require('@/assets/images/wanspot_icon_192.png')
+const LOGO = require('@/assets/images/wanspot_icon.png')
 
 type AppHeaderProps = {
   variant?: 'default' | 'back'
