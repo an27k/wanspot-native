@@ -1,6 +1,8 @@
+import Ionicons from '@expo/vector-icons/Ionicons'
 import { Stack } from 'expo-router'
+import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
-import { Platform } from 'react-native'
+import { Platform, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider } from '@/context/AuthContext'
 
@@ -19,6 +21,18 @@ const stackScreenOptions = {
 }
 
 export default function RootLayout() {
+  /** ヘッダー・タブの Ionicons が componentDidMount まで空表示になるのを防ぐ */
+  const [ioniconsLoaded, ioniconsError] = useFonts(Ionicons.font)
+
+  if (!ioniconsLoaded && !ioniconsError) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <View style={{ flex: 1, backgroundColor: '#ffffff' }} />
+      </SafeAreaProvider>
+    )
+  }
+
   return (
     <SafeAreaProvider>
       <AuthProvider>

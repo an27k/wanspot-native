@@ -12,17 +12,27 @@ export default function Index() {
 
   useEffect(() => {
     if (authLoading) return
-    if (!session) {
-      setGate('login')
-      return
-    }
+
     let cancelled = false
-    ;(async () => {
-      const { data } = await supabase.from('users').select('id').eq('id', session.user.id).maybeSingle()
+    void (async () => {
+      // ログアウト直後は Context の session がまだ残っている一方で API は未認証のため、
+      // users が取れずオンボーディングへ誤遷移する。getSession() を真実とする。
+      const {
+        data: { session: live },
+      } = await supabase.auth.getSession()
+      if (cancelled) return
+
+      if (!live) {
+        setGate('login')
+        return
+      }
+
+      const { data } = await supabase.from('users').select('id').eq('id', live.user.id).maybeSingle()
       if (cancelled) return
       if (!data) setGate('onboard')
       else setGate('tabs')
     })()
+
     return () => {
       cancelled = true
     }

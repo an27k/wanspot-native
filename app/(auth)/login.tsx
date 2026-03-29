@@ -62,7 +62,6 @@ export default function LoginScreen() {
           <View style={styles.inner}>
             <Image source={brandLogoSource} style={styles.logo} resizeMode="contain" />
             <Text style={styles.title}>wanspot</Text>
-            <Text style={styles.sub}>ログイン</Text>
             <TextInput
               style={styles.input}
               placeholder="メールアドレス"
@@ -117,8 +116,14 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, padding: 24, justifyContent: 'center' },
   inner: { width: '100%' },
   logo: { width: 72, height: 72, alignSelf: 'center' },
-  title: { fontSize: 28, fontWeight: '900', textAlign: 'center', color: colors.text, marginTop: 12 },
-  sub: { textAlign: 'center', color: colors.textMuted, marginBottom: 24 },
+  title: {
+    fontSize: 28,
+    fontWeight: '900',
+    textAlign: 'center',
+    color: colors.text,
+    marginTop: 12,
+    marginBottom: 24,
+  },
   input: {
     borderWidth: 1,
     borderColor: colors.border,

@@ -5,7 +5,6 @@ import {
   Keyboard,
   Modal,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -506,16 +505,6 @@ export default function SearchTab() {
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={() => Keyboard.dismiss()}
         scrollEventThrottle={16}
-        refreshControl={
-          !searched && discoverMode === 'hot' ? (
-            <RefreshControl
-              refreshing={hotLoading}
-              onRefresh={() => void handleHot({ force: true })}
-              tintColor={colors.textMuted}
-              colors={[colors.text]}
-            />
-          ) : undefined
-        }
         onScroll={(e) => {
           scrollYRef.current = e.nativeEvent.contentOffset.y
         }}

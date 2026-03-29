@@ -185,7 +185,7 @@ export default function DogPage() {
             {dogPhotoPreview ? (
               <Image source={{ uri: dogPhotoPreview }} style={styles.photoImg} resizeMode="cover" />
             ) : (
-              <IconPaw size={40} />
+              <IconPaw size={36} color={colors.textMuted} />
             )}
           </View>
           <Text style={styles.photoLbl}>写真を選ぶ</Text>
@@ -286,20 +286,17 @@ const styles = StyleSheet.create({
   hint: { fontSize: 11, color: '#aaa', lineHeight: 16, marginBottom: 8 },
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   photoRing: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#f7f6f3',
-    borderWidth: 1.5,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.dogPhotoPlaceholderBg,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   photoImg: { width: '100%', height: '100%' },
   photoLbl: { fontSize: 11, color: '#888' },
-  skip: { fontSize: 11, color: '#aaa', marginTop: 8, marginLeft: 76 },
+  skip: { fontSize: 11, color: '#aaa', marginTop: 8, marginLeft: 92 },
   err: { fontSize: 12, color: '#E84335', marginTop: 4 },
   input: {
     height: 44,

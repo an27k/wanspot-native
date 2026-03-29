@@ -24,6 +24,8 @@ import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { wanspotFetch } from '@/lib/wanspot-api'
 
+type ExternalEventLink = { label: string; url: string }
+
 type ExternalEvent = {
   id?: string
   title: string
@@ -33,6 +35,26 @@ type ExternalEvent = {
   area: string | null
   url: string | null
   source: string | null
+  links?: ExternalEventLink[] | null
+}
+
+function externalEventDetailLinks(ev: ExternalEvent): ExternalEventLink[] {
+  if (Array.isArray(ev.links)) {
+    const out: ExternalEventLink[] = []
+    for (const l of ev.links) {
+      if (!l || typeof l !== 'object') continue
+      const url = typeof l.url === 'string' && l.url.startsWith('http') ? l.url : null
+      if (!url) continue
+      const label = typeof l.label === 'string' && l.label.trim() ? l.label.trim() : '詳細'
+      out.push({ label, url })
+    }
+    if (out.length > 0) return out
+  }
+  if (ev.url && ev.url.startsWith('http')) {
+    const label = ev.source?.trim() || '詳細ページ'
+    return [{ label, url: ev.url }]
+  }
+  return []
 }
 
 const IconPlusLarge = () => (
@@ -154,9 +176,20 @@ export default function EventsTab() {
     const ac = new AbortController()
     const t = setTimeout(() => ac.abort(), 15_000)
     wanspotFetch('/api/events/external', { signal: ac.signal })
-      .then((r) => r.json())
-      .then((data: { events?: ExternalEvent[] }) => {
-        setExternalEvents(data.events ?? [])
+      .then(async (r) => {
+        let data: { events?: unknown; error?: string } = {}
+        try {
+          data = (await r.json()) as { events?: unknown; error?: string }
+        } catch {
+          /* ignore */
+        }
+        if (!r.ok) {
+          setExternalError(true)
+          setExternalLoading(false)
+          return
+        }
+        const list = Array.isArray(data.events) ? data.events : []
+        setExternalEvents(list as ExternalEvent[])
         setExternalLoading(false)
       })
       .catch(() => {
@@ -435,44 +468,55 @@ export default function EventsTab() {
                 data={sortedExternalEvents}
                 keyExtractor={(item, index) => (item.id ? String(item.id) : `ext-${index}`)}
                 contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
-                renderItem={({ item }) => (
-                  <View style={styles.extCard}>
-                    <View style={styles.extHead}>
-                      {item.source ? (
-                        <View style={styles.srcPill}>
-                          <Text style={styles.srcTxt}>{item.source}</Text>
-                        </View>
-                      ) : (
-                        <View />
-                      )}
-                      {item.area ? <Text style={styles.areaTxt}>{item.area}</Text> : null}
-                    </View>
-                    <View style={styles.extBody}>
-                      <Text style={styles.extTitle}>{item.title}</Text>
-                      {item.description ? <Text style={styles.extDesc}>{item.description}</Text> : null}
-                      <View style={styles.extMeta}>
-                        {item.event_at ? (
-                          <View style={styles.metaLine}>
-                            <IconCalendar />
-                            <Text style={styles.metaSmall}>{formatDate(item.event_at)}</Text>
+                renderItem={({ item }) => {
+                  const detailLinks = externalEventDetailLinks(item)
+                  return (
+                    <View style={styles.extCard}>
+                      <View style={styles.extHead}>
+                        {item.source ? (
+                          <View style={styles.srcPill}>
+                            <Text style={styles.srcTxt}>{item.source}</Text>
                           </View>
-                        ) : null}
-                        {item.location_name ? (
-                          <View style={styles.metaLine}>
-                            <IconPin />
-                            <Text style={styles.metaSmall}>{item.location_name}</Text>
+                        ) : (
+                          <View />
+                        )}
+                        {item.area ? <Text style={styles.areaTxt}>{item.area}</Text> : null}
+                      </View>
+                      <View style={styles.extBody}>
+                        <Text style={styles.extTitle}>{item.title}</Text>
+                        {item.description ? <Text style={styles.extDesc}>{item.description}</Text> : null}
+                        <View style={styles.extMeta}>
+                          {item.event_at ? (
+                            <View style={styles.metaLine}>
+                              <IconCalendar />
+                              <Text style={styles.metaSmall}>{formatDate(item.event_at)}</Text>
+                            </View>
+                          ) : null}
+                          {item.location_name ? (
+                            <View style={styles.metaLine}>
+                              <IconPin />
+                              <Text style={styles.metaSmall}>{item.location_name}</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        {detailLinks.length > 0 ? (
+                          <View style={styles.extLinksWrap}>
+                            {detailLinks.map((link) => (
+                              <Pressable
+                                key={link.url}
+                                style={styles.extLink}
+                                onPress={() => Linking.openURL(link.url)}
+                              >
+                                <IconExternalLink />
+                                <Text style={styles.extLinkTxt}> {link.label}</Text>
+                              </Pressable>
+                            ))}
                           </View>
                         ) : null}
                       </View>
-                      {item.url ? (
-                        <Pressable style={styles.extLink} onPress={() => Linking.openURL(item.url!)}>
-                          <IconExternalLink />
-                          <Text style={styles.extLinkTxt}> 詳細を見る</Text>
-                        </Pressable>
-                      ) : null}
                     </View>
-                  </View>
-                )}
+                  )
+                }}
               />
             )}
           </View>
@@ -645,6 +689,7 @@ const styles = StyleSheet.create({
   extMeta: { gap: 6, marginBottom: 12 },
   metaLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaSmall: { fontSize: 12, color: '#888' },
+  extLinksWrap: { gap: 8 },
   extLink: {
     flexDirection: 'row',
     alignItems: 'center',

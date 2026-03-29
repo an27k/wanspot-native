@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import {
   Image,
   Modal,
@@ -29,7 +29,7 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const { signOut } = useAuth()
-  const base = getWanspotApiBase()
+  const base = useMemo(() => getWanspotApiBase(), [])
   const paddingTop = insets.top + 12
 
   const openWeb = (path: string) => {
@@ -98,7 +98,7 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
               onPress={async () => {
                 setMenuOpen(false)
                 await signOut()
-                router.replace('/')
+                router.replace('/(auth)/login')
               }}
             >
               <Text style={styles.logoutText}>ログアウト</Text>
