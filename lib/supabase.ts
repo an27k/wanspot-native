@@ -1,6 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import Constants from 'expo-constants'
 import { createClient } from '@supabase/supabase-js'
+
+import { inMemoryStorage } from '@/lib/in-memory-storage'
 
 function firstNonEmpty(...vals: (string | undefined)[]): string {
   for (const v of vals) {
@@ -25,9 +26,9 @@ if (!url || !key) {
 
 export const supabase = createClient(url, key, {
   auth: {
-    storage: AsyncStorage,
+    storage: inMemoryStorage,
     autoRefreshToken: true,
-    persistSession: true,
+    persistSession: false,
     detectSessionInUrl: false,
   },
 })

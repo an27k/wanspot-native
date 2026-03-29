@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { inMemoryStorage } from '@/lib/in-memory-storage'
 import { useEffect, useState } from 'react'
 import {
   Alert,
@@ -46,7 +46,7 @@ export default function OwnerOnboardingPage() {
 
   useEffect(() => {
     void (async () => {
-      const raw = await AsyncStorage.getItem('ob_dog')
+      const raw = await inMemoryStorage.getItem('ob_dog')
       if (!raw) return
       try {
         const dog = JSON.parse(raw) as { name?: string; breed?: string }
@@ -59,7 +59,7 @@ export default function OwnerOnboardingPage() {
 
   useEffect(() => {
     void (async () => {
-      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
+      const raw = await inMemoryStorage.getItem(OB_LOCATION_KEY)
       if (!raw) router.replace('/onboarding/location')
     })()
   }, [router])
@@ -74,7 +74,7 @@ export default function OwnerOnboardingPage() {
   const goNext = async () => {
     if (!canNext || submitting) return
     setSubmitting(true)
-    await AsyncStorage.setItem(
+    await inMemoryStorage.setItem(
       'ob_owner',
       JSON.stringify({
         parent_type: parentType,
@@ -86,9 +86,9 @@ export default function OwnerOnboardingPage() {
       })
     )
     try {
-      const raw = await AsyncStorage.getItem('ob_dog')
-      const rawSize = await AsyncStorage.getItem('ob_size')
-      const rawOwner = await AsyncStorage.getItem('ob_owner')
+      const raw = await inMemoryStorage.getItem('ob_dog')
+      const rawSize = await inMemoryStorage.getItem('ob_size')
+      const rawOwner = await inMemoryStorage.getItem('ob_owner')
       const { data: { user } } = await supabase.auth.getUser()
       if (!user || !raw || !rawSize || !rawOwner) {
         Alert.alert('エラー', '入力データが見つかりません。最初からやり直してください。')
@@ -133,7 +133,7 @@ export default function OwnerOnboardingPage() {
       const birthday =
         dog.year && dog.month ? `${dog.year}-${String(dog.month).padStart(2, '0')}-01` : null
 
-      const rawArea = await AsyncStorage.getItem('ob_area')
+      const rawArea = await inMemoryStorage.getItem('ob_area')
       let walkAreaTags: string[] = []
       let useLocationBased = false
       if (rawArea) {
@@ -207,12 +207,12 @@ export default function OwnerOnboardingPage() {
         }
       }
       if (useLocationBased) {
-        await AsyncStorage.setItem('pref_nearby_wide', '1')
+        await inMemoryStorage.setItem('pref_nearby_wide', '1')
       } else {
-        await AsyncStorage.removeItem('pref_nearby_wide')
+        await inMemoryStorage.removeItem('pref_nearby_wide')
       }
-      await AsyncStorage.multiRemove(['ob_dog', 'ob_size', 'ob_owner', 'ob_area', OB_LOCATION_KEY])
-      await AsyncStorage.setItem(POST_ONBOARDING_TUTORIAL_KEY, '1')
+      await inMemoryStorage.multiRemove(['ob_dog', 'ob_size', 'ob_owner', 'ob_area', OB_LOCATION_KEY])
+      await inMemoryStorage.setItem(POST_ONBOARDING_TUTORIAL_KEY, '1')
     } catch (e) {
       Alert.alert('エラー', e instanceof Error ? e.message : String(e))
       setSubmitting(false)

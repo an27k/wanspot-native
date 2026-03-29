@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { inMemoryStorage } from '@/lib/in-memory-storage'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
@@ -141,7 +141,7 @@ export default function NearbyPage() {
     useCallback(() => {
       void (async () => {
         try {
-          const v = await AsyncStorage.getItem(POST_ONBOARDING_TUTORIAL_KEY)
+          const v = await inMemoryStorage.getItem(POST_ONBOARDING_TUTORIAL_KEY)
           if (v === '1') setShowObTutorial(true)
         } catch {
           /* ignore */
@@ -154,7 +154,7 @@ export default function NearbyPage() {
 
   const dismissObTutorial = useCallback(async () => {
     try {
-      await AsyncStorage.removeItem(POST_ONBOARDING_TUTORIAL_KEY)
+      await inMemoryStorage.removeItem(POST_ONBOARDING_TUTORIAL_KEY)
     } catch {
       /* ignore */
     }
@@ -169,8 +169,8 @@ export default function NearbyPage() {
   useEffect(() => {
     void (async () => {
       try {
-        const raw = await AsyncStorage.getItem('ob_area')
-        const prefWide = await AsyncStorage.getItem('pref_nearby_wide')
+        const raw = await inMemoryStorage.getItem('ob_area')
+        const prefWide = await inMemoryStorage.getItem('pref_nearby_wide')
         let wide = prefWide === '1'
         if (raw) {
           try {

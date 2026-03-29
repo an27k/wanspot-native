@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { inMemoryStorage } from '@/lib/in-memory-storage'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Image,
@@ -190,11 +190,11 @@ export default function SearchTab() {
     useCallback(() => {
       let active = true
       void (async () => {
-        const shouldRestore = (await AsyncStorage.getItem(SEARCH_RESTORE_FLAG)) === '1'
+        const shouldRestore = (await inMemoryStorage.getItem(SEARCH_RESTORE_FLAG)) === '1'
         if (shouldRestore) {
-          await AsyncStorage.removeItem(SEARCH_RESTORE_FLAG)
+          await inMemoryStorage.removeItem(SEARCH_RESTORE_FLAG)
           try {
-            const saved = await AsyncStorage.getItem(SEARCH_STORAGE_KEY)
+            const saved = await inMemoryStorage.getItem(SEARCH_STORAGE_KEY)
             if (saved && active) {
               const { query: q, results: r, sortKey: sk, scroll } = JSON.parse(saved) as {
                 query: string
@@ -215,7 +215,7 @@ export default function SearchTab() {
             /* ignore */
           }
         } else if (!shouldRestore) {
-          await AsyncStorage.removeItem(SEARCH_STORAGE_KEY)
+          await inMemoryStorage.removeItem(SEARCH_STORAGE_KEY)
         }
       })()
       return () => {
@@ -245,7 +245,7 @@ export default function SearchTab() {
 
   useEffect(() => {
     if (!searched) return
-    void AsyncStorage.setItem(
+    void inMemoryStorage.setItem(
       SEARCH_STORAGE_KEY,
       JSON.stringify({ query, results, sortKey, scroll: scrollYRef.current })
     )
@@ -488,7 +488,7 @@ export default function SearchTab() {
   }
 
   const beforeNavSearch = async () => {
-    await AsyncStorage.multiSet([
+    await inMemoryStorage.multiSet([
       [SEARCH_STORAGE_KEY, JSON.stringify({ query, results, sortKey, scroll: scrollYRef.current })],
       [SEARCH_RESTORE_FLAG, '1'],
     ])
@@ -704,7 +704,7 @@ export default function SearchTab() {
                         onOpen={openSpot}
                         onLikesChange={refreshSpotLikesCount}
                         onBeforeNavigate={async () => {
-                          await AsyncStorage.setItem(SEARCH_RESTORE_FLAG, '1')
+                          await inMemoryStorage.setItem(SEARCH_RESTORE_FLAG, '1')
                         }}
                       />
                     ))}
