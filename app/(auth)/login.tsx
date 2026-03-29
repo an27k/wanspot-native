@@ -20,6 +20,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 
 import { brandLogoSource } from '@/assets/brandLogo'
+import { track } from '@/lib/analytics'
 
 export default function LoginScreen() {
   const router = useRouter()
@@ -42,6 +43,7 @@ export default function LoginScreen() {
     const { data: { user } } = await supabase.auth.getUser()
     const { data: profile } = await supabase.from('users').select('id').eq('id', user!.id).maybeSingle()
     setLoading(false)
+    track('login_completed')
     if (!profile) router.replace('/onboarding/location')
     else router.replace('/(tabs)')
   }

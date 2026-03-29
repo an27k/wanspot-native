@@ -39,6 +39,42 @@ type ExternalEvent = {
   links?: ExternalEventLink[] | null
 }
 
+const EXTERNAL_EVENTS_MIN_DISPLAY = 30
+
+function primaryUrlForDedupe(ev: ExternalEvent): string | null {
+  if (ev.url && ev.url.startsWith('http')) return ev.url
+  const l = ev.links?.[0]
+  if (l?.url?.startsWith('http')) return l.url
+  return null
+}
+
+function dedupeKeyForMerge(ev: ExternalEvent): string {
+  const u = primaryUrlForDedupe(ev)
+  if (!u) return `title:${ev.title}`
+  try {
+    const x = new URL(u)
+    return `${x.hostname}${x.pathname}`.toLowerCase().replace(/\/$/, '') || u
+  } catch {
+    return u
+  }
+}
+
+/** API が30件未満のときキュレートで補完（サーバーと同じ考え方） */
+function mergeExternalWithCuratedClient(primary: ExternalEvent[]): ExternalEvent[] {
+  if (primary.length >= EXTERNAL_EVENTS_MIN_DISPLAY) return primary
+  const keys = new Set(primary.map(dedupeKeyForMerge))
+  const buf = [...primary]
+  const pool = EXTERNAL_EVENTS_EMPTY_FALLBACK as ExternalEvent[]
+  for (const row of pool) {
+    if (buf.length >= EXTERNAL_EVENTS_MIN_DISPLAY) break
+    const k = dedupeKeyForMerge(row)
+    if (keys.has(k)) continue
+    keys.add(k)
+    buf.push(row)
+  }
+  return buf
+}
+
 /** API の生配列を表示用に正規化。空・不正ならフォールバック一覧 */
 function normalizeExternalPayload(raw: unknown): ExternalEvent[] {
   const fallback = () => [...(EXTERNAL_EVENTS_EMPTY_FALLBACK as ExternalEvent[])]
@@ -75,8 +111,8 @@ function normalizeExternalPayload(raw: unknown): ExternalEvent[] {
       links,
     })
   }
-  if (out.length === 0) return fallback()
-  return out
+  if (out.length === 0) return mergeExternalWithCuratedClient(fallback())
+  return mergeExternalWithCuratedClient(out)
 }
 
 function externalEventDetailLinks(ev: ExternalEvent): ExternalEventLink[] {

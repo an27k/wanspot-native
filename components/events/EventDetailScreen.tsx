@@ -91,7 +91,14 @@ const DogPh = () => (
 const CANCEL_CONFIRM_MESSAGE =
   '参加をキャンセルしますか？\n\n※基本的に参加費の返金はできません。ご不明な点はメニューバーの「お問い合わせ」よりご連絡ください。'
 
-export default function EventDetailScreen({ eventId }: { eventId: string }) {
+export default function EventDetailScreen({
+  eventId,
+  onJoinedFree,
+}: {
+  eventId: string
+  /** 無料イベントで DB への参加登録が成功した直後（計測用） */
+  onJoinedFree?: () => void
+}) {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const params = useLocalSearchParams<{ payment?: string; created?: string }>()
@@ -179,6 +186,7 @@ export default function EventDetailScreen({ eventId }: { eventId: string }) {
       await supabase.from('event_participants').insert({ event_id: event.id, user_id: userId })
       setJoined(true)
       setParticipantCount((c) => c + 1)
+      onJoinedFree?.()
     } finally {
       setJoining(false)
     }

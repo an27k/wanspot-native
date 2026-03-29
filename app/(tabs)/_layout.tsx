@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { track } from '@/lib/analytics'
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets()
@@ -38,6 +39,7 @@ export default function TabsLayout() {
             <Ionicons name={focused ? 'location' : 'location-outline'} color={color} size={size} />
           ),
         }}
+        listeners={{ focus: () => track('tab_viewed', { tab_name: 'index' }) }}
       />
       <Tabs.Screen
         name="search"
@@ -47,6 +49,7 @@ export default function TabsLayout() {
             <Ionicons name={focused ? 'search' : 'search-outline'} color={color} size={size} />
           ),
         }}
+        listeners={{ focus: () => track('tab_viewed', { tab_name: 'search' }) }}
       />
       <Tabs.Screen
         name="events"
@@ -56,6 +59,7 @@ export default function TabsLayout() {
             <Ionicons name={focused ? 'calendar' : 'calendar-outline'} color={color} size={size} />
           ),
         }}
+        listeners={{ focus: () => track('tab_viewed', { tab_name: 'events' }) }}
       />
       <Tabs.Screen
         name="mypage"
@@ -65,6 +69,7 @@ export default function TabsLayout() {
             <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} color={color} size={size} />
           ),
         }}
+        listeners={{ focus: () => track('tab_viewed', { tab_name: 'mypage' }) }}
       />
     </Tabs>
   )

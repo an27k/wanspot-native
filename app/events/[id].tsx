@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router'
 import { View, Text, StyleSheet } from 'react-native'
 import EventDetailScreen from '@/components/events/EventDetailScreen'
 import { colors } from '@/constants/colors'
+import { track } from '@/lib/analytics'
 
 export default function EventDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -13,7 +14,12 @@ export default function EventDetailRoute() {
       </View>
     )
   }
-  return <EventDetailScreen eventId={eventId} />
+  return (
+    <EventDetailScreen
+      eventId={eventId}
+      onJoinedFree={() => track('event_joined', { event_id: eventId })}
+    />
+  )
 }
 
 const styles = StyleSheet.create({

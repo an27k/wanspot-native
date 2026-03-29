@@ -2,80 +2,485 @@
   {
     "id": "curated-interpets-tokyo-2026",
     "title": "第15回インターペット 東京",
-    "description": "国内最大級のペット向け国際見本市。東京ビッグサイトで開催。",
+    "description": "国内最大級のペット向け国際見本市。",
     "event_at": "2026-04-02T10:00:00+09:00",
     "location_name": "東京ビッグサイト",
     "area": "東京都",
     "url": "https://interpets.jp.messefrankfurt.com/tokyo/ja.html",
     "source": "interpets.jp",
     "links": [
-      { "label": "開催概要（公式）", "url": "https://interpets.jp.messefrankfurt.com/tokyo/ja.html" },
-      { "label": "おでかけわんこ部の紹介", "url": "https://odekake-wanko-bu.com/interpetstokyo2026/" }
+      {
+        "label": "開催概要（公式）",
+        "url": "https://interpets.jp.messefrankfurt.com/tokyo/ja.html"
+      },
+      {
+        "label": "おでかけわんこ部",
+        "url": "https://odekake-wanko-bu.com/interpetstokyo2026/"
+      }
     ]
   },
   {
     "id": "curated-interpets-osaka-2026",
     "title": "第4回インターペット大阪",
-    "description": "大阪・インテックス大阪で開催のペット向け国際見本市。",
+    "description": "大阪・インテックス大阪で開催。",
     "event_at": "2026-06-19T10:00:00+09:00",
     "location_name": "インテックス大阪",
     "area": "大阪府",
     "url": "https://interpets-osaka.jp.messefrankfurt.com/osaka/ja.html",
     "source": "interpets.jp",
     "links": [
-      { "label": "開催概要（公式）", "url": "https://interpets-osaka.jp.messefrankfurt.com/osaka/ja.html" }
+      {
+        "label": "開催概要（公式）",
+        "url": "https://interpets-osaka.jp.messefrankfurt.com/osaka/ja.html"
+      }
     ]
   },
   {
     "id": "curated-yorkiefes-2026-spring",
     "title": "ヨーキーフェスティバル 2026 SPRING",
-    "description": "ヨークシャーテリア向けのフェス。グッズマーケットやコンテンツあり。",
+    "description": "ヨーキー向けフェス。イーノの森Dog Garden。",
     "event_at": "2026-03-21T09:00:00+09:00",
     "location_name": "イーノの森Dog Garden",
     "area": "東京都",
     "url": "https://yorkiefes.com/event/2026-03-21/data/",
     "source": "yorkiefes.com",
     "links": [
-      { "label": "開催概要（公式）", "url": "https://yorkiefes.com/event/2026-03-21/data/" }
+      {
+        "label": "開催概要",
+        "url": "https://yorkiefes.com/event/2026-03-21/data/"
+      }
     ]
   },
   {
     "id": "curated-jrt-fest-2026-spring",
     "title": "ジャックラッセルテリアフェスティバル 2026 SPRING",
-    "description": "ジャックラッセルテリア向けフェス。イーノの森Dog Garden。",
+    "description": "JRT向けフェス。イーノの森Dog Garden。",
     "event_at": "2026-03-29T10:00:00+09:00",
     "location_name": "イーノの森Dog Garden",
     "area": "東京都",
     "url": "https://jackrussellterrier-festival.com/event/2026-03-29/",
     "source": "jackrussellterrier-festival.com",
     "links": [
-      { "label": "イベントページ（公式）", "url": "https://jackrussellterrier-festival.com/event/2026-03-29/" }
+      {
+        "label": "公式イベントページ",
+        "url": "https://jackrussellterrier-festival.com/event/2026-03-29/"
+      }
     ]
   },
   {
     "id": "curated-zipang-2026",
     "title": "ZIPANG 2026 ～日本犬の祭典～",
-    "description": "日本犬の祭典。ショッピング・体験コンテンツなど。",
+    "description": "日本犬の祭典。山中湖。",
     "event_at": "2026-04-19T09:30:00+09:00",
     "location_name": "山中湖交流プラザきらら",
     "area": "山梨県",
     "url": "https://zipang-dog.com/about/",
     "source": "zipang-dog.com",
     "links": [
-      { "label": "開催概要（公式）", "url": "https://zipang-dog.com/about/" }
+      {
+        "label": "開催概要",
+        "url": "https://zipang-dog.com/about/"
+      }
     ]
   },
   {
     "id": "curated-reiwa-nihonken-2026",
     "title": "令和日本犬博",
-    "description": "日本犬に特化したイベント。最新の開催情報は公式サイトで確認。",
+    "description": "日本犬に特化した大規模イベント。",
     "event_at": "2026-05-02T10:00:00+09:00",
-    "location_name": "会場は公式サイトに準ずる",
+    "location_name": "会場は公式に準ずる",
     "area": "東京都",
     "url": "https://reiwa-nihonken.com/",
     "source": "reiwa-nihonken.com",
     "links": [
-      { "label": "令和日本犬博 公式", "url": "https://reiwa-nihonken.com/" }
+      {
+        "label": "公式",
+        "url": "https://reiwa-nihonken.com/"
+      }
+    ]
+  },
+  {
+    "id": "curated-poodlefes-2026-spring",
+    "title": "プードルフェスティバル 2026 SPRING",
+    "description": "プードル向けフェス。イーノの森。",
+    "event_at": "2026-03-22T09:00:00+09:00",
+    "location_name": "イーノの森Dog Garden",
+    "area": "東京都",
+    "url": "https://poodlefes.com/event/2026-03-22/data/",
+    "source": "poodlefes.com",
+    "links": [
+      {
+        "label": "開催概要",
+        "url": "https://poodlefes.com/event/2026-03-22/data/"
+      }
+    ]
+  },
+  {
+    "id": "curated-chihuahua-expo-2026-spring",
+    "title": "チワワEXPO 2026 SPRING",
+    "description": "チワワ向け大規模イベント。",
+    "event_at": "2026-05-10T09:00:00+09:00",
+    "location_name": "イーノの森Dog Garden",
+    "area": "東京都",
+    "url": "https://chihuahua-expo.com/event/2026-05-10/data/",
+    "source": "chihuahua-expo.com",
+    "links": [
+      {
+        "label": "開催概要",
+        "url": "https://chihuahua-expo.com/event/2026-05-10/data/"
+      }
+    ]
+  },
+  {
+    "id": "curated-dachshund-2026-spring",
+    "title": "ダックスフントフェスティバル 2026 SPRING",
+    "description": "ダックス向けフェス。こもれび森のイバライド。",
+    "event_at": "2026-05-24T09:00:00+09:00",
+    "location_name": "こもれび森のイバライド",
+    "area": "茨城県",
+    "url": "https://dachshund-festival.com/event/2026-05-24/data/",
+    "source": "dachshund-festival.com",
+    "links": [
+      {
+        "label": "開催概要",
+        "url": "https://dachshund-festival.com/event/2026-05-24/data/"
+      }
+    ]
+  },
+  {
+    "id": "curated-shiba-2026-haru",
+    "title": "柴犬フェスティバル 2026 春まつり",
+    "description": "柴犬向けフェス。こもれび森のイバライド。",
+    "event_at": "2026-03-01T09:00:00+09:00",
+    "location_name": "こもれび森のイバライド",
+    "area": "茨城県",
+    "url": "https://shibainu-festival.com/event/2026-03-01/map/",
+    "source": "shibainu-festival.com",
+    "links": [
+      {
+        "label": "会場マップ・スケジュール",
+        "url": "https://shibainu-festival.com/event/2026-03-01/map/"
+      }
+    ]
+  },
+  {
+    "id": "curated-papillon-2026-spring",
+    "title": "パピヨンフェスティバル 2026 SPRING",
+    "description": "パピヨン向けフェス。イーノの森。",
+    "event_at": "2026-03-15T09:00:00+09:00",
+    "location_name": "イーノの森Dog Garden",
+    "area": "東京都",
+    "url": "https://papillon-festival.com/",
+    "source": "papillon-festival.com",
+    "links": [
+      {
+        "label": "公式サイト",
+        "url": "https://papillon-festival.com/"
+      }
+    ]
+  },
+  {
+    "id": "curated-frenchbulldog-2026",
+    "title": "フレブルフェス 2026",
+    "description": "フレンチブル向けフェス。公式で日程確認。",
+    "event_at": "2026-03-09T10:00:00+09:00",
+    "location_name": "こもれび森のイバライド",
+    "area": "茨城県",
+    "url": "https://frenchbulldog-festival.com/",
+    "source": "frenchbulldog-festival.com",
+    "links": [
+      {
+        "label": "公式サイト",
+        "url": "https://frenchbulldog-festival.com/"
+      }
+    ]
+  },
+  {
+    "id": "curated-corgi-2026-spring-418",
+    "title": "コーギーフェスティバル 2026 SPRING（4/18）",
+    "description": "コーギー向けフェス。イバライド。",
+    "event_at": "2026-04-18T09:00:00+09:00",
+    "location_name": "こもれび森のイバライド",
+    "area": "茨城県",
+    "url": "https://corgi-festival.com/event/2026-04-18/data/",
+    "source": "corgi-festival.com",
+    "links": [
+      {
+        "label": "開催概要",
+        "url": "https://corgi-festival.com/event/2026-04-18/data/"
+      }
+    ]
+  },
+  {
+    "id": "curated-boston-2026-haru",
+    "title": "ボストンテリアフェスティバル 2026春",
+    "description": "ボストン・テリアのオフ会系イベント。",
+    "event_at": "2026-03-20T10:00:00+09:00",
+    "location_name": "会場は公式に準ずる",
+    "area": "東京都",
+    "url": "https://bostonterrier-festival.com/",
+    "source": "bostonterrier-festival.com",
+    "links": [
+      {
+        "label": "公式サイト",
+        "url": "https://bostonterrier-festival.com/"
+      }
+    ]
+  },
+  {
+    "id": "curated-pethaku-makuhari-2026",
+    "title": "Pet博2026 幕張",
+    "description": "国内最大級ペット総合イベント。幕張メッセ。",
+    "event_at": "2026-05-03T10:00:00+09:00",
+    "location_name": "幕張メッセ",
+    "area": "千葉県",
+    "url": "https://www.pethaku.com/makuhari",
+    "source": "pethaku.com",
+    "links": [
+      {
+        "label": "幕張会場",
+        "url": "https://www.pethaku.com/makuhari"
+      }
+    ]
+  },
+  {
+    "id": "curated-pethaku-nagoya-2026",
+    "title": "Pet博2026 なごや in 四日市ドーム",
+    "description": "中部エリアのPet博。",
+    "event_at": "2026-07-18T10:00:00+09:00",
+    "location_name": "四日市ドーム",
+    "area": "三重県",
+    "url": "https://www.pethaku.com/nagoya",
+    "source": "pethaku.com",
+    "links": [
+      {
+        "label": "なごや会場",
+        "url": "https://www.pethaku.com/nagoya"
+      }
+    ]
+  },
+  {
+    "id": "curated-pethaku-osaka-2026",
+    "title": "Pet博2026 大阪",
+    "description": "関西エリアのPet博。インテックス大阪。",
+    "event_at": "2026-09-21T10:00:00+09:00",
+    "location_name": "インテックス大阪",
+    "area": "大阪府",
+    "url": "https://www.pethaku.com/osaka",
+    "source": "pethaku.com",
+    "links": [
+      {
+        "label": "大阪会場",
+        "url": "https://www.pethaku.com/osaka"
+      }
+    ]
+  },
+  {
+    "id": "curated-pethaku-fukuoka-2026",
+    "title": "Pet博2026 福岡",
+    "description": "九州エリアのPet博。",
+    "event_at": "2026-08-08T10:00:00+09:00",
+    "location_name": "みずほPayPayドーム福岡",
+    "area": "福岡県",
+    "url": "https://www.pethaku.com/fukuoka",
+    "source": "pethaku.com",
+    "links": [
+      {
+        "label": "福岡会場",
+        "url": "https://www.pethaku.com/fukuoka"
+      }
+    ]
+  },
+  {
+    "id": "curated-pethaku-yokohama-2026",
+    "title": "Pet博2026 横浜",
+    "description": "首都圏・横浜のPet博。パシフィコ横浜。",
+    "event_at": "2026-01-10T10:00:00+09:00",
+    "location_name": "パシフィコ横浜",
+    "area": "神奈川県",
+    "url": "https://www.pethaku.com/yokohama",
+    "source": "pethaku.com",
+    "links": [
+      {
+        "label": "横浜会場",
+        "url": "https://www.pethaku.com/yokohama"
+      }
+    ]
+  },
+  {
+    "id": "curated-malfes-2026",
+    "title": "マルフェス（Maltese Festa） 2026",
+    "description": "マルチーズ向けイベント。公式で最新日程を確認。",
+    "event_at": "2026-05-11T09:00:00+09:00",
+    "location_name": "会場は公式に準ずる",
+    "area": "東京都",
+    "url": "https://malfes.com/",
+    "source": "malfes.com",
+    "links": [
+      {
+        "label": "公式サイト",
+        "url": "https://malfes.com/"
+      }
+    ]
+  },
+  {
+    "id": "curated-bichon-tokyo-2026-320",
+    "title": "ビションフリーゼフェスティバル 2026 SPRING（東京）",
+    "description": "ビション向けフェス。イーノの森。",
+    "event_at": "2026-03-20T09:00:00+09:00",
+    "location_name": "イーノの森Dog Garden",
+    "area": "東京都",
+    "url": "https://bichonfrise-festival.com/event/2026-03-20/data/",
+    "source": "bichonfrise-festival.com",
+    "links": [
+      {
+        "label": "開催概要",
+        "url": "https://bichonfrise-festival.com/event/2026-03-20/data/"
+      }
+    ]
+  },
+  {
+    "id": "curated-bichon-osaka-2026-510",
+    "title": "ビションフリーゼフェスティバル 2026（大阪北港）",
+    "description": "ビション向けフェス。大阪北港マリーナ。",
+    "event_at": "2026-05-10T09:00:00+09:00",
+    "location_name": "大阪北港マリーナ",
+    "area": "大阪府",
+    "url": "https://bichonfrise-festival.com/event/2026-05-10/data/",
+    "source": "bichonfrise-festival.com",
+    "links": [
+      {
+        "label": "開催概要",
+        "url": "https://bichonfrise-festival.com/event/2026-05-10/data/"
+      }
+    ]
+  },
+  {
+    "id": "curated-pinfes-2026-spring",
+    "title": "ピンフェス 2026 SPRING（大阪北港）",
+    "description": "ミニチュア・ピンシャー向けフェス。",
+    "event_at": "2026-03-21T09:00:00+09:00",
+    "location_name": "大阪北港マリーナ",
+    "area": "大阪府",
+    "url": "https://pinfes.com/event/2026-03-21/data/",
+    "source": "pinfes.com",
+    "links": [
+      {
+        "label": "開催概要",
+        "url": "https://pinfes.com/event/2026-03-21/data/"
+      }
+    ]
+  },
+  {
+    "id": "curated-itafes-2026-spring",
+    "title": "イタリアングレーハウンドフェスタ 2026 SPRING",
+    "description": "イタグレ向けフェス。大阪北港マリーナ。",
+    "event_at": "2026-03-22T09:00:00+09:00",
+    "location_name": "大阪北港マリーナ",
+    "area": "大阪府",
+    "url": "https://italiangreyhound-festa.com/event/2026-03-22/",
+    "source": "italiangreyhound-festa.com",
+    "links": [
+      {
+        "label": "イベントTOP",
+        "url": "https://italiangreyhound-festa.com/event/2026-03-22/"
+      }
+    ]
+  },
+  {
+    "id": "curated-pomeranian-2026-hina",
+    "title": "ポメラニアンフェスティバル 2026 ひなまつり",
+    "description": "ポメ向けフェス。イーノの森。",
+    "event_at": "2026-03-01T09:00:00+09:00",
+    "location_name": "イーノの森Dog Garden",
+    "area": "東京都",
+    "url": "https://pomeranian-festival.com/event/2026%E2%80%9003%E2%80%9001/contents/",
+    "source": "pomeranian-festival.com",
+    "links": [
+      {
+        "label": "コンテンツ",
+        "url": "https://pomeranian-festival.com/event/2026%E2%80%9003%E2%80%9001/contents/"
+      }
+    ]
+  },
+  {
+    "id": "curated-sheltie-festival",
+    "title": "シェルティフェスティバル",
+    "description": "シェットランドシープドッグ向けイベント情報。",
+    "event_at": "2026-04-12T09:00:00+09:00",
+    "location_name": "会場は公式に準ずる",
+    "area": "東京都",
+    "url": "https://sheltie-festival.com/",
+    "source": "sheltie-festival.com",
+    "links": [
+      {
+        "label": "公式サイト",
+        "url": "https://sheltie-festival.com/"
+      }
+    ]
+  },
+  {
+    "id": "curated-retrieverfes-2026-spring",
+    "title": "レトリーバーフェスティバル 2026",
+    "description": "ゴールデン等レトリーバー向け大規模フェス。",
+    "event_at": "2026-04-19T09:00:00+09:00",
+    "location_name": "会場は公式に準ずる",
+    "area": "千葉県",
+    "url": "https://retrieverfes.com/event/2026-04-19/data",
+    "source": "retrieverfes.com",
+    "links": [
+      {
+        "label": "開催概要",
+        "url": "https://retrieverfes.com/event/2026-04-19/data"
+      }
+    ]
+  },
+  {
+    "id": "curated-freestitch-border-collie",
+    "title": "Border Collie MEET UP（フリーステッチ）",
+    "description": "ボーダーコリー向けミートアップ情報。",
+    "event_at": "2026-02-21T09:00:00+09:00",
+    "location_name": "関東近郊（例年・公式要確認）",
+    "area": "埼玉県",
+    "url": "https://www.freestitch.jp/meetup/dogs/bordercollie",
+    "source": "freestitch.jp",
+    "links": [
+      {
+        "label": "ミートアップ案内",
+        "url": "https://www.freestitch.jp/meetup/dogs/bordercollie"
+      }
+    ]
+  },
+  {
+    "id": "curated-freestitch-beagle",
+    "title": "Beagle MEET UP（フリーステッチ）",
+    "description": "ビーグル向けミートアップ情報。",
+    "event_at": "2026-11-01T09:00:00+09:00",
+    "location_name": "関東近郊（例年・公式要確認）",
+    "area": "埼玉県",
+    "url": "https://www.freestitch.jp/meetup/dogs/beagle",
+    "source": "freestitch.jp",
+    "links": [
+      {
+        "label": "ミートアップ案内",
+        "url": "https://www.freestitch.jp/meetup/dogs/beagle"
+      }
+    ]
+  },
+  {
+    "id": "curated-mameshiba-nasu-2026",
+    "title": "豆柴おもしろ４兄妹 in 那須ハイ＆柴犬フェス",
+    "description": "那須ハイランドパークでの豆柴・柴犬関連イベント。",
+    "event_at": "2026-03-21T13:00:00+09:00",
+    "location_name": "那須ハイランドパーク フォレストプラザドッグラン",
+    "area": "栃木県",
+    "url": "https://www.nasuhai.co.jp/hotnews/detail.php?n=1252",
+    "source": "nasuhai.co.jp",
+    "links": [
+      {
+        "label": "那須ハイ告知",
+        "url": "https://www.nasuhai.co.jp/hotnews/detail.php?n=1252"
+      }
     ]
   }
 ]

@@ -24,6 +24,7 @@ import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { filterHotSpotResults } from '@/lib/hot-exclusions'
+import { track } from '@/lib/analytics'
 import { wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -639,7 +640,10 @@ export default function SearchTab() {
                       <Pressable
                         key={article.id}
                         style={styles.artCard}
-                        onPress={() => router.push(`/articles/${article.slug}`)}
+                        onPress={() => {
+                          track('article_clicked', { article_id: article.id })
+                          router.push(`/articles/${article.slug}`)
+                        }}
                       >
                         {article.image_url ? (
                           <Image source={{ uri: article.image_url }} style={styles.artImg} resizeMode="cover" />

@@ -24,6 +24,7 @@ import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
+import { track } from '@/lib/analytics'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -546,6 +547,7 @@ function SpotCard({
       setLiked(true)
       setLocalLikeCount((c) => c + 1)
       onLikeStateChange?.(spot.place_id, true)
+      track('spot_liked', { spot_id: spotRow.id })
     } else {
       const { data: spotRow } = await supabase.from('spots').select('id').eq('place_id', spot.place_id).single()
       if (spotRow)

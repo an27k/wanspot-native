@@ -12,6 +12,7 @@ import { Link, useRouter } from 'expo-router'
 import { brandLogoSource } from '@/assets/brandLogo'
 import { colors } from '@/constants/colors'
 import { useAuth } from '@/context/AuthContext'
+import { track } from '@/lib/analytics'
 
 export default function SignupScreen() {
   const router = useRouter()
@@ -30,6 +31,7 @@ export default function SignupScreen() {
       setError(e.message)
       return
     }
+    track('signup_completed')
     router.replace('/onboarding/location')
   }
 

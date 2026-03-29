@@ -22,6 +22,8 @@ module.exports = ({ config }) => {
     process.env.NEXT_PUBLIC_APP_URL ||
     prodOrigin
 
+  const amplitudeApiKey = process.env.EXPO_PUBLIC_AMPLITUDE_API_KEY || ''
+
   return {
     ...config,
     plugins: [...(config.plugins ?? []), '@react-native-community/datetimepicker'],
@@ -31,6 +33,7 @@ module.exports = ({ config }) => {
       supabaseAnonKey,
       wanspotApiUrl,
       wanspotSiteUrl,
+      amplitudeApiKey,
     },
   }
 }

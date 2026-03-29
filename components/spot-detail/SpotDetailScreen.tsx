@@ -32,6 +32,7 @@ import { IconPaw } from '@/components/IconPaw'
 import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
+import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 
@@ -528,6 +529,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
         await supabase.from('spot_likes').insert({ spot_id: spot.id, user_id: userId })
         setLiked(true)
         setLikeCount((c) => c + 1)
+        track('spot_liked', { spot_id: spot.id })
       }
     } finally {
       setLikeLoading(false)
@@ -561,6 +563,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       setCheckInComment('')
       setShowCheckInModal(false)
       setCheckInToastMessage('行ったを記録しました')
+      track('spot_checked_in', { spot_id: spot.id })
     } finally {
       setCheckInSubmitting(false)
     }
