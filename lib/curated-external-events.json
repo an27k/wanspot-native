@@ -1,0 +1,81 @@
+[
+  {
+    "id": "curated-interpets-tokyo-2026",
+    "title": "第15回インターペット 東京",
+    "description": "国内最大級のペット向け国際見本市。東京ビッグサイトで開催。",
+    "event_at": "2026-04-02T10:00:00+09:00",
+    "location_name": "東京ビッグサイト",
+    "area": "東京都",
+    "url": "https://interpets.jp.messefrankfurt.com/tokyo/ja.html",
+    "source": "interpets.jp",
+    "links": [
+      { "label": "開催概要（公式）", "url": "https://interpets.jp.messefrankfurt.com/tokyo/ja.html" },
+      { "label": "おでかけわんこ部の紹介", "url": "https://odekake-wanko-bu.com/interpetstokyo2026/" }
+    ]
+  },
+  {
+    "id": "curated-interpets-osaka-2026",
+    "title": "第4回インターペット大阪",
+    "description": "大阪・インテックス大阪で開催のペット向け国際見本市。",
+    "event_at": "2026-06-19T10:00:00+09:00",
+    "location_name": "インテックス大阪",
+    "area": "大阪府",
+    "url": "https://interpets-osaka.jp.messefrankfurt.com/osaka/ja.html",
+    "source": "interpets.jp",
+    "links": [
+      { "label": "開催概要（公式）", "url": "https://interpets-osaka.jp.messefrankfurt.com/osaka/ja.html" }
+    ]
+  },
+  {
+    "id": "curated-yorkiefes-2026-spring",
+    "title": "ヨーキーフェスティバル 2026 SPRING",
+    "description": "ヨークシャーテリア向けのフェス。グッズマーケットやコンテンツあり。",
+    "event_at": "2026-03-21T09:00:00+09:00",
+    "location_name": "イーノの森Dog Garden",
+    "area": "東京都",
+    "url": "https://yorkiefes.com/event/2026-03-21/data/",
+    "source": "yorkiefes.com",
+    "links": [
+      { "label": "開催概要（公式）", "url": "https://yorkiefes.com/event/2026-03-21/data/" }
+    ]
+  },
+  {
+    "id": "curated-jrt-fest-2026-spring",
+    "title": "ジャックラッセルテリアフェスティバル 2026 SPRING",
+    "description": "ジャックラッセルテリア向けフェス。イーノの森Dog Garden。",
+    "event_at": "2026-03-29T10:00:00+09:00",
+    "location_name": "イーノの森Dog Garden",
+    "area": "東京都",
+    "url": "https://jackrussellterrier-festival.com/event/2026-03-29/",
+    "source": "jackrussellterrier-festival.com",
+    "links": [
+      { "label": "イベントページ（公式）", "url": "https://jackrussellterrier-festival.com/event/2026-03-29/" }
+    ]
+  },
+  {
+    "id": "curated-zipang-2026",
+    "title": "ZIPANG 2026 ～日本犬の祭典～",
+    "description": "日本犬の祭典。ショッピング・体験コンテンツなど。",
+    "event_at": "2026-04-19T09:30:00+09:00",
+    "location_name": "山中湖交流プラザきらら",
+    "area": "山梨県",
+    "url": "https://zipang-dog.com/about/",
+    "source": "zipang-dog.com",
+    "links": [
+      { "label": "開催概要（公式）", "url": "https://zipang-dog.com/about/" }
+    ]
+  },
+  {
+    "id": "curated-reiwa-nihonken-2026",
+    "title": "令和日本犬博",
+    "description": "日本犬に特化したイベント。最新の開催情報は公式サイトで確認。",
+    "event_at": "2026-05-02T10:00:00+09:00",
+    "location_name": "会場は公式サイトに準ずる",
+    "area": "東京都",
+    "url": "https://reiwa-nihonken.com/",
+    "source": "reiwa-nihonken.com",
+    "links": [
+      { "label": "令和日本犬博 公式", "url": "https://reiwa-nihonken.com/" }
+    ]
+  }
+]
