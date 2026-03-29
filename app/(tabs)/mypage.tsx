@@ -13,9 +13,9 @@ import {
   View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
-import Svg, { Path } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { UiIconCamera, UiIconPencil, UiIconSyringe } from '@/components/ui-icons'
 import { AppHeader } from '@/components/AppHeader'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
@@ -60,13 +60,6 @@ const PARENT_OPTIONS = [
   { value: 'mama', label: 'ママ' },
 ]
 
-const IconCamera = ({ size = 18 }: { size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-    <Path d="M12 13a4 4 0 100-8 4 4 0 000 8z" />
-  </Svg>
-)
-
 function AvatarCameraFab({ onPress, accessibilityLabel }: { onPress: () => void; accessibilityLabel: string }) {
   return (
     <Pressable
@@ -76,23 +69,10 @@ function AvatarCameraFab({ onPress, accessibilityLabel }: { onPress: () => void;
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
-      <IconCamera size={18} />
+      <UiIconCamera size={18} color="#fff" />
     </Pressable>
   )
 }
-
-const IconEditSmall = ({ size = 11 }: { size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
-    <Path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-    <Path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </Svg>
-)
-
-const IconSyringe = () => (
-  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
-    <Path d="M18 2l4 4M17 7l1-1M3 21l6-6M9 15l2-2M12 12l2-2M6 21c0-2 2-4 4-4M15 3l-6 6M15 3l3 3-7 7-3-3 7-7z" />
-  </Svg>
-)
 
 function formatYmd(d: Date): string {
   const y = d.getFullYear()
@@ -507,7 +487,7 @@ export default function MypageTab() {
         ) : null}
         <View style={styles.vaccineBlockTop}>
           <View style={styles.vaccineBlockTitleCenter}>
-            <IconSyringe />
+            <UiIconSyringe />
             <Text style={styles.vLbl}>{row.label}</Text>
           </View>
         </View>
@@ -554,7 +534,7 @@ export default function MypageTab() {
             <View style={styles.profileEditAboveAvatar}>
               {!editingDog ? (
                 <Pressable style={styles.profileEditBtn} onPress={startEditDog} hitSlop={8} accessibilityLabel="愛犬プロフィールを編集">
-                  <IconEditSmall size={22} />
+                  <UiIconPencil size={22} color={colors.textMuted} />
                 </Pressable>
               ) : null}
             </View>
@@ -691,7 +671,7 @@ export default function MypageTab() {
                       ) : null}
                       <View style={styles.vaccineBlockTop}>
                         <View style={styles.vaccineBlockTitleCenter}>
-                          <IconSyringe />
+                          <UiIconSyringe />
                           <Text style={styles.vaccineSummaryLbl}>混合ワクチン</Text>
                         </View>
                       </View>
@@ -718,7 +698,7 @@ export default function MypageTab() {
                       ) : null}
                       <View style={styles.vaccineBlockTop}>
                         <View style={styles.vaccineBlockTitleCenter}>
-                          <IconSyringe />
+                          <UiIconSyringe />
                           <Text style={styles.vaccineSummaryLbl}>狂犬病ワクチン</Text>
                         </View>
                       </View>
@@ -757,7 +737,7 @@ export default function MypageTab() {
           <View style={styles.profileEditAboveAvatar}>
             {!editingOwner ? (
               <Pressable style={styles.profileEditBtn} onPress={startEditOwner} hitSlop={8} accessibilityLabel="オーナープロフィールを編集">
-                <IconEditSmall size={22} />
+                <UiIconPencil size={22} color={colors.textMuted} />
               </Pressable>
             ) : null}
           </View>

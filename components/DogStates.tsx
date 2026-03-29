@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg'
 import { IconPaw } from '@/components/IconPaw'
 
-function RunningDogSvgAnimation() {
+function RunningDogEmojiAnimation() {
   const bounce = useRef(new Animated.Value(0)).current
   useEffect(() => {
     const loop = Animated.loop(
@@ -18,26 +17,16 @@ function RunningDogSvgAnimation() {
 
   return (
     <Animated.View style={{ transform: [{ translateY: bounce }] }}>
-      <Svg width={64} height={48} viewBox="0 0 64 48" aria-hidden>
-        <Ellipse cx="32" cy="28" rx="16" ry="10" fill="#FFD84D" />
-        <Circle cx="46" cy="20" r="10" fill="#FFD84D" />
-        <Ellipse cx="50" cy="12" rx="4" ry="6" fill="#1a1a1a" transform="rotate(15 50 12)" />
-        <Ellipse cx="42" cy="11" rx="3" ry="5" fill="#1a1a1a" transform="rotate(-10 42 11)" />
-        <Circle cx="49" cy="19" r="1.5" fill="#1a1a1a" />
-        <Ellipse cx="54" cy="22" rx="2" ry="1.5" fill="#1a1a1a" />
-        <Ellipse cx="14" cy="20" rx="3" ry="8" fill="#1a1a1a" transform="rotate(-30 14 20)" />
-        <Rect x="38" y="36" width="5" height="10" rx="2" fill="#1a1a1a" />
-        <Rect x="24" y="36" width="5" height="10" rx="2" fill="#1a1a1a" />
-        <Rect x="18" y="36" width="5" height="10" rx="2" fill="#FFD84D" />
-        <Rect x="32" y="36" width="5" height="10" rx="2" fill="#FFD84D" />
-      </Svg>
+      <Text style={styles.runEmoji} accessible={false}>
+        🐕
+      </Text>
     </Animated.View>
   )
 }
 
 export const RunningDog = ({ label = '読み込み中...' }: { label?: string }) => (
   <View style={styles.runWrap}>
-    <RunningDogSvgAnimation />
+    <RunningDogEmojiAnimation />
     <Text style={styles.runLabel}>{label}</Text>
   </View>
 )
@@ -62,6 +51,7 @@ export const PowState = ({
 
 const styles = StyleSheet.create({
   runWrap: { alignItems: 'center', gap: 12, paddingVertical: 32 },
+  runEmoji: { fontSize: 48, lineHeight: 52 },
   runLabel: { fontSize: 12, color: '#aaa' },
   powLabel: { fontSize: 14, color: '#aaa' },
   retryBtn: {

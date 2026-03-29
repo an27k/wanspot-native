@@ -12,9 +12,17 @@ import {
   View,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import Svg, { Circle, Ellipse, Line, Path } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
+import {
+  UiIconBrandX,
+  UiIconCalendar,
+  UiIconChevronLeft,
+  UiIconCopy,
+  UiIconPin,
+  UiIconShare,
+  UiIconUsers,
+} from '@/components/ui-icons'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
@@ -37,55 +45,10 @@ type EventRow = {
   creator_id: string
 }
 
-const IconChevronLeft = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
-    <Path d="M15 18l-6-6 6-6" />
-  </Svg>
-)
-const IconCalendar = () => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} strokeLinecap="round">
-    <Path d="M7 3v4M17 3v4M3 11h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
-  </Svg>
-)
-const IconPin = () => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} strokeLinecap="round">
-    <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-    <Path d="M12 10h.01" />
-  </Svg>
-)
-const IconUsers = () => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} strokeLinecap="round">
-    <Path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-  </Svg>
-)
-const IconShare = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round">
-    <Circle cx={18} cy={5} r={3} />
-    <Circle cx={6} cy={12} r={3} />
-    <Circle cx={18} cy={19} r={3} />
-    <Line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-    <Line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-  </Svg>
-)
-const IconX = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="#fff">
-    <Path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </Svg>
-)
-const IconCopy = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round">
-    <Path d="M9 9h10v10H9zM5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-  </Svg>
-)
-
 const DogPh = () => (
-  <Svg width={56} height={56} viewBox="0 0 100 100" fill="#FFD84D">
-    <Ellipse cx={20} cy={28} rx={10} ry={13} />
-    <Ellipse cx={40} cy={16} rx={10} ry={13} />
-    <Ellipse cx={60} cy={16} rx={10} ry={13} />
-    <Ellipse cx={80} cy={28} rx={10} ry={13} />
-    <Path d="M50 33 C26 33 14 54 17 70 C20 86 35 92 50 92 C65 92 80 86 83 70 C86 54 74 33 50 33Z" />
-  </Svg>
+  <Text style={{ fontSize: 56, lineHeight: 60 }} accessible={false}>
+    🐾
+  </Text>
 )
 
 const CANCEL_CONFIRM_MESSAGE =
@@ -270,10 +233,10 @@ export default function EventDetailScreen({
 
       <View style={[styles.topActions, { paddingTop: topBar }]}>
         <Pressable style={styles.circleBtn} onPress={() => router.back()}>
-          <IconChevronLeft />
+          <UiIconChevronLeft />
         </Pressable>
         <Pressable style={styles.circleBtnLight} onPress={() => setShowShareSheet(true)}>
-          <IconShare />
+          <UiIconShare />
         </Pressable>
       </View>
 
@@ -314,13 +277,13 @@ export default function EventDetailScreen({
           <View style={styles.card}>
             {event.event_at ? (
               <View style={styles.row}>
-                <IconCalendar />
+                <UiIconCalendar size={15} />
                 <Text style={styles.rowTxt}>{formatDate(event.event_at)}</Text>
               </View>
             ) : null}
             {event.location_name ? (
               <View style={styles.row}>
-                <IconPin />
+                <UiIconPin size={15} />
                 <View>
                   <Text style={styles.rowTxt}>{event.location_name}</Text>
                   {event.area ? <Text style={styles.areaSub}>{event.area}</Text> : null}
@@ -328,7 +291,7 @@ export default function EventDetailScreen({
               </View>
             ) : null}
             <View style={styles.row}>
-              <IconUsers />
+              <UiIconUsers size={15} />
               <Text style={styles.rowTxt}>
                 {participantCount}人参加{event.capacity != null ? ` / 定員${event.capacity}人` : ''}
               </Text>
@@ -380,7 +343,7 @@ export default function EventDetailScreen({
             <Text style={styles.shareSub}>友達を誘ってみよう🐾</Text>
             <View style={styles.shareGrid}>
               <Pressable style={styles.shareX} onPress={() => void share('x')}>
-                <IconX />
+                <UiIconBrandX />
                 <Text style={styles.shareLblW}>X</Text>
               </Pressable>
               <Pressable style={styles.shareLine} onPress={() => void share('line')}>
@@ -388,7 +351,7 @@ export default function EventDetailScreen({
                 <Text style={styles.shareLblW}>LINE</Text>
               </Pressable>
               <Pressable style={styles.shareCopy} onPress={() => void share('copy')}>
-                <IconCopy />
+                <UiIconCopy />
                 <Text style={styles.shareLbl}>コピー</Text>
               </Pressable>
             </View>

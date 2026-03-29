@@ -22,14 +22,22 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as Location from 'expo-location'
-import Svg, { Circle, Path, Polygon, Text as SvgTextNode } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import { colors } from '@/constants/colors'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { IconInstagram } from '@/components/IconInstagram'
 import { IconPaw } from '@/components/IconPaw'
-import { HEART_ICON } from '@/lib/constants'
+import {
+  UiIconBrandX,
+  UiIconChevronLeft,
+  UiIconCopy,
+  UiIconGoogle,
+  UiIconHeart,
+  UiIconShare,
+  UiIconStar,
+  UiPriceLevelYen,
+} from '@/components/ui-icons'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
 import { track } from '@/lib/analytics'
@@ -135,87 +143,15 @@ function dedupeReviewsLatestPerUser(rows: Review[]): Review[] {
   return Array.from(m.values()).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 
-const IconChevronLeft = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
-    <Path d="M15 18l-6-6 6-6" />
-  </Svg>
-)
-
-const IconHeart = ({ filled }: { filled: boolean }) => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill={filled ? HEART_ICON.filled : 'none'} stroke={filled ? HEART_ICON.filled : HEART_ICON.strokeEmpty} strokeWidth={2}>
-    <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </Svg>
-)
-
-const IconStar = ({ filled, size = 28 }: { filled: boolean; size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? '#FFD84D' : 'none'} stroke={filled ? '#FFD84D' : '#ddd'} strokeWidth={1.5}>
-    <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-  </Svg>
-)
-
 /** メタカード内のレビュー星と同じ表示サイズ */
 const META_STAR_PX = 14
-
-const IconStarSm = ({ filled }: { filled: boolean }) => <IconStar filled={filled} size={META_STAR_PX} />
 
 function PriceLevel({ level }: { level: number | null }) {
   if (level === null || level === undefined) {
     return <Text style={styles.priceQ}>?</Text>
   }
-  const px = META_STAR_PX
-  /** viewBox 24 内の円 (r=10) に収まる文字サイズ（デバイス px に比例） */
-  const yenFs = Math.round((11 * px) / 10)
-  return (
-    <View style={styles.priceLevelRow}>
-      {[1, 2, 3, 4].map((i) => (
-        <Svg key={i} width={px} height={px} viewBox="0 0 24 24">
-          <Circle cx={12} cy={12} r={10} fill={i <= level ? '#FFD84D' : '#e8e8e8'} />
-          <SvgTextNode
-            x={12}
-            y={12}
-            textAnchor="middle"
-            alignmentBaseline="central"
-            fontSize={yenFs}
-            fill={i <= level ? '#1a1a1a' : '#bbb'}
-            fontWeight="bold"
-          >
-            ¥
-          </SvgTextNode>
-        </Svg>
-      ))}
-    </View>
-  )
+  return <UiPriceLevelYen level={level} dotSize={META_STAR_PX} />
 }
-
-const IconGoogle = () => (
-  <Svg width={14} height={14} viewBox="0 0 24 24">
-    <Path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-    <Path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-    <Path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-    <Path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-  </Svg>
-)
-
-const IconShare = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round">
-    <Circle cx={18} cy={5} r={3} />
-    <Circle cx={6} cy={12} r={3} />
-    <Circle cx={18} cy={19} r={3} />
-    <Path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" />
-  </Svg>
-)
-
-const IconX = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="#fff">
-    <Path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </Svg>
-)
-
-const IconCopy = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round">
-    <Path d="M9 9h10v10H9zM5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-  </Svg>
-)
 
 export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   const router = useRouter()
@@ -677,7 +613,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
 
       <View style={[styles.backFab, { top: Math.max(16, insets.top) }]}>
         <Pressable style={styles.fabBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="戻る">
-          <IconChevronLeft />
+          <UiIconChevronLeft />
         </Pressable>
       </View>
 
@@ -706,7 +642,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                   }}
                   accessibilityLabel="前の写真"
                 >
-                  <IconChevronLeft />
+                  <UiIconChevronLeft />
                 </Pressable>
               ) : null}
               {currentPhoto < photoUris.length - 1 ? (
@@ -719,7 +655,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                   }}
                   accessibilityLabel="次の写真"
                 >
-                  <IconChevronLeft />
+                  <UiIconChevronLeft />
                 </Pressable>
               ) : null}
               {photoUris.length > 1 ? (
@@ -763,7 +699,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                 <View style={{ flex: 1 }} />
               )}
               <Pressable style={styles.shareSm} onPress={() => setShowShareSheet(true)} accessibilityLabel="シェア">
-                <IconShare />
+                <UiIconShare />
               </Pressable>
             </View>
           </View>
@@ -775,7 +711,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
               disabled={likeLoading || !userId}
             >
               <Animated.View style={{ transform: [{ scale: likeScale }] }}>
-                <IconHeart filled={liked} />
+                <UiIconHeart filled={liked} size={20} />
               </Animated.View>
               <Text style={styles.actLbl}>{likeCount > 0 ? String(likeCount) : 'いいね'}</Text>
             </Pressable>
@@ -793,7 +729,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
             <View style={[styles.metaSeg, { flex: 1.5 }]}>
               <View style={styles.metaStackReview}>
                 <View style={styles.metaReviewTopRow}>
-                  <IconGoogle />
+                  <UiIconGoogle size={14} />
                   <Text style={styles.metaLbl}>レビュー</Text>
                 </View>
                 <View style={styles.rateRow}>
@@ -802,7 +738,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                       <Text style={styles.rateNum}>{displayRating.toFixed(1)}</Text>
                       <View style={{ flexDirection: 'row', gap: 2 }}>
                         {[1, 2, 3, 4, 5].map((s) => (
-                          <IconStarSm key={s} filled={s <= Math.round(displayRating)} />
+                          <UiIconStar key={s} filled={s <= Math.round(displayRating)} size={META_STAR_PX} />
                         ))}
                       </View>
                     </>
@@ -872,7 +808,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                   <View style={styles.revTop}>
                     <View style={styles.revStarsWrap}>
                       {[1, 2, 3, 4, 5].map((s) => (
-                        <IconStarSm key={s} filled={s <= r.rating} />
+                        <UiIconStar key={s} filled={s <= r.rating} size={META_STAR_PX} />
                       ))}
                     </View>
                     <View style={styles.revDateCol}>
@@ -935,7 +871,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                     <View style={styles.starsRow}>
                       {[1, 2, 3, 4, 5].map((s) => (
                         <Pressable key={s} onPress={() => setCheckInRating(s)} disabled={checkInSubmitting}>
-                          <IconStar filled={s <= checkInRating} />
+                          <UiIconStar filled={s <= checkInRating} size={28} />
                         </Pressable>
                       ))}
                     </View>
@@ -985,7 +921,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
             <Text style={styles.shareTitle}>シェアする</Text>
             <View style={styles.shareGrid}>
               <Pressable style={styles.shareX} onPress={() => void share('x')}>
-                <IconX />
+                <UiIconBrandX />
                 <Text style={styles.shareLblW}>X</Text>
               </Pressable>
               <Pressable style={styles.shareLine} onPress={() => void share('line')}>
@@ -993,7 +929,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                 <Text style={styles.shareLblW}>LINE</Text>
               </Pressable>
               <Pressable style={styles.shareCopy} onPress={() => void share('copy')}>
-                <IconCopy />
+                <UiIconCopy />
                 <Text style={styles.shareLbl}>コピー</Text>
               </Pressable>
             </View>
