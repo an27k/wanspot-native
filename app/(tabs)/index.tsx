@@ -222,7 +222,7 @@ export default function NearbyPage() {
       })
       .catch(() => {
         setSpots([])
-        setSpotsFetchError('ネットワークエラーです。API の URL（NEXT_PUBLIC_APP_URL 等）を確認してください')
+        setSpotsFetchError('ネットワークエラーです。API の URL（EXPO_PUBLIC_WANSPOT_API_URL / https://www.wanspot.app）を確認してください')
       })
       .finally(() => setLoading(false))
   }, [location, genre, distance])

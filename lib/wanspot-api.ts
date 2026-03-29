@@ -23,7 +23,7 @@ export function getWanspotApiBase(): string {
 
 /**
  * シェア・コピー用の公開サイトオリジン（末尾スラッシュなし）。
- * EXPO_PUBLIC_WANSPOT_SITE_URL を指定すると API が Vercel のままでも本番ドメイン（.app 等）の URL を出せる。
+ * EXPO_PUBLIC_WANSPOT_SITE_URL でシェア用の公開オリジンを API オリジンと別にできる（既定は本番 https://www.wanspot.app 想定）。
  */
 export function getWanspotPublicBase(): string {
   const extra = Constants.expoConfig?.extra as Extra | undefined
@@ -54,7 +54,7 @@ export async function wanspotFetch(path: string, init: WanspotFetchInit = {}): P
     return new Response(
       JSON.stringify({
         error:
-          'API のベース URL が未設定です。.env.local に EXPO_PUBLIC_WANSPOT_API_URL（推奨）または NEXT_PUBLIC_APP_URL を書き、npx expo start を再起動してください。',
+          'API のベース URL が未設定です。.env.local に EXPO_PUBLIC_WANSPOT_API_URL（例: https://www.wanspot.app）を書き、npx expo start を再起動してください。',
       }),
       {
         status: 503,
