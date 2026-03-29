@@ -6,6 +6,9 @@ type Extra = {
   wanspotSiteUrl?: string
 }
 
+/** EAS 等で env 未設定でも本番 API に届くようにする（app.config の extra と二重化） */
+const DEFAULT_WANSPOT_ORIGIN = 'https://www.wanspot.app'
+
 function firstNonEmpty(...vals: (string | undefined)[]): string {
   for (const v of vals) {
     const t = typeof v === 'string' ? v.trim() : ''
@@ -17,7 +20,11 @@ function firstNonEmpty(...vals: (string | undefined)[]): string {
 /** Next.js wanspot の API オリジン（末尾スラッシュなし）。実機では localhost ではなく本番 or LAN の URL を .env に。 */
 export function getWanspotApiBase(): string {
   const extra = Constants.expoConfig?.extra as Extra | undefined
-  const raw = firstNonEmpty(process.env.EXPO_PUBLIC_WANSPOT_API_URL, extra?.wanspotApiUrl)
+  const raw = firstNonEmpty(
+    process.env.EXPO_PUBLIC_WANSPOT_API_URL,
+    extra?.wanspotApiUrl,
+    DEFAULT_WANSPOT_ORIGIN
+  )
   return raw.replace(/\/$/, '')
 }
 
@@ -31,7 +38,8 @@ export function getWanspotPublicBase(): string {
     process.env.EXPO_PUBLIC_WANSPOT_SITE_URL,
     extra?.wanspotSiteUrl,
     process.env.EXPO_PUBLIC_WANSPOT_API_URL,
-    extra?.wanspotApiUrl
+    extra?.wanspotApiUrl,
+    DEFAULT_WANSPOT_ORIGIN
   )
   return raw.replace(/\/$/, '')
 }

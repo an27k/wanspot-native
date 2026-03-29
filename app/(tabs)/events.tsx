@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
-  Dimensions,
   FlatList,
   Linking,
   Modal,
@@ -10,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -37,6 +37,46 @@ type ExternalEvent = {
   url: string | null
   source: string | null
   links?: ExternalEventLink[] | null
+}
+
+/** API の生配列を表示用に正規化。空・不正ならフォールバック一覧 */
+function normalizeExternalPayload(raw: unknown): ExternalEvent[] {
+  const fallback = () => [...(EXTERNAL_EVENTS_EMPTY_FALLBACK as ExternalEvent[])]
+  if (!Array.isArray(raw)) return fallback()
+  const out: ExternalEvent[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const o = item as Record<string, unknown>
+    const title = typeof o.title === 'string' ? o.title.trim() : ''
+    if (!title) continue
+    let links: ExternalEventLink[] | null = null
+    if (Array.isArray(o.links)) {
+      const acc: ExternalEventLink[] = []
+      for (const l of o.links) {
+        if (!l || typeof l !== 'object') continue
+        const x = l as Record<string, unknown>
+        const url = typeof x.url === 'string' && x.url.startsWith('http') ? x.url : null
+        if (!url) continue
+        const label = typeof x.label === 'string' && x.label.trim() ? x.label.trim() : 'リンク'
+        acc.push({ label, url })
+      }
+      if (acc.length > 0) links = acc
+    }
+    const url = typeof o.url === 'string' && o.url.startsWith('http') ? o.url : null
+    out.push({
+      id: typeof o.id === 'string' ? o.id : undefined,
+      title,
+      description: typeof o.description === 'string' ? o.description : null,
+      event_at: typeof o.event_at === 'string' ? o.event_at : null,
+      location_name: typeof o.location_name === 'string' ? o.location_name : null,
+      area: typeof o.area === 'string' ? o.area : null,
+      url,
+      source: typeof o.source === 'string' ? o.source : null,
+      links,
+    })
+  }
+  if (out.length === 0) return fallback()
+  return out
 }
 
 function externalEventDetailLinks(ev: ExternalEvent): ExternalEventLink[] {
@@ -142,8 +182,9 @@ function sortExternalEvents(list: ExternalEvent[], sort: WanspotSort): ExternalE
   copy.sort((a, b) => {
     const ta = externalEventAtTime(a)
     const tb = externalEventAtTime(b)
-    if (sort === 'price_desc') return tb - ta || a.title.localeCompare(b.title, 'ja')
-    return ta - tb || a.title.localeCompare(b.title, 'ja')
+    const tcmp = (a.title ?? '').localeCompare(b.title ?? '', 'ja')
+    if (sort === 'price_desc') return tb - ta || tcmp
+    return ta - tb || tcmp
   })
   return copy
 }
@@ -151,6 +192,7 @@ function sortExternalEvents(list: ExternalEvent[], sort: WanspotSort): ExternalE
 export default function EventsTab() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { width: windowWidth } = useWindowDimensions()
   const [events, setEvents] = useState<WanspotEventRow[]>([])
   const [joinedEvents, setJoinedEvents] = useState<WanspotEventRow[]>([])
   const [externalEvents, setExternalEvents] = useState<ExternalEvent[]>([])
@@ -163,7 +205,8 @@ export default function EventsTab() {
   const [showVaccineBanner, setShowVaccineBanner] = useState(false)
   const [fabMenuOpen, setFabMenuOpen] = useState(false)
   const [externalError, setExternalError] = useState(false)
-  const [eventsContentW, setEventsContentW] = useState(() => Dimensions.get('window').width)
+  const [pagerLayoutW, setPagerLayoutW] = useState<number | null>(null)
+  const eventsContentW = pagerLayoutW ?? windowWidth
 
   const fabRotate = useRef(new Animated.Value(0)).current
   const fabScale = useRef(new Animated.Value(1)).current
@@ -185,20 +228,18 @@ export default function EventsTab() {
           /* ignore */
         }
         if (!r.ok) {
-          setExternalError(true)
+          setExternalEvents(normalizeExternalPayload(null))
+          setExternalError(false)
           setExternalLoading(false)
           return
         }
-        let list = Array.isArray(data.events) ? data.events : []
-        // 本番が旧APIのまま「空キャッシュをTTL内で返す」等で [] になる場合の表示用
-        if (list.length === 0) {
-          list = EXTERNAL_EVENTS_EMPTY_FALLBACK as ExternalEvent[]
-        }
-        setExternalEvents(list as ExternalEvent[])
+        setExternalEvents(normalizeExternalPayload(data.events))
+        setExternalError(false)
         setExternalLoading(false)
       })
       .catch(() => {
-        setExternalError(true)
+        setExternalEvents(normalizeExternalPayload(null))
+        setExternalError(false)
         setExternalLoading(false)
       })
       .finally(() => clearTimeout(t))
@@ -390,7 +431,9 @@ export default function EventsTab() {
         style={styles.eventsPagerHost}
         onLayout={(e) => {
           const w = e.nativeEvent.layout.width
-          if (w > 0 && w !== eventsContentW) setEventsContentW(w)
+          if (w > 0 && (pagerLayoutW == null || Math.abs(w - pagerLayoutW) > 0.5)) {
+            setPagerLayoutW(w)
+          }
         }}
       >
         <Animated.View
@@ -716,7 +759,8 @@ const styles = StyleSheet.create({
   fabMenu: { position: 'absolute', zIndex: 42, width: 280, maxWidth: '100%', gap: 8 },
   eventsPagerHost: { flex: 1, overflow: 'hidden' },
   eventsPagerRow: { flexDirection: 'row', flex: 1 },
-  eventsPage: { flex: 1 },
+  /** 横ページャの各列: 幅は inline、縦は親に合わせ stretch（flex:1 幅と併用しない） */
+  eventsPage: { alignSelf: 'stretch' },
   fabMenuPrimary: {
     paddingVertical: 14,
     borderRadius: 16,
