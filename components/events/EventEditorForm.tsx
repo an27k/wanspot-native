@@ -1,12 +1,11 @@
-import DateTimePicker from '@react-native-community/datetimepicker'
-import * as ImagePicker from 'expo-image-picker'
+// import DateTimePicker from '@react-native-community/datetimepicker'
+// import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
   Image,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -157,20 +156,21 @@ export function EventEditorForm({
     setHydrated(true)
   }, [mode, initial, minCapacity])
 
-  const pickThumbnail = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!perm.granted) {
-      setError('画像ライブラリへのアクセスが必要です')
-      return
-    }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.85,
-    })
-    if (!res.canceled && res.assets[0]?.uri) {
-      setThumbnailUrlExternal(null)
-      setThumbnailUri(res.assets[0].uri)
-    }
+  const pickThumbnail = () => {
+    Alert.alert('準備中', '画像の選択は準備中です')
+    // const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    // if (!perm.granted) {
+    //   setError('画像ライブラリへのアクセスが必要です')
+    //   return
+    // }
+    // const res = await ImagePicker.launchImageLibraryAsync({
+    //   mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    //   quality: 0.85,
+    // })
+    // if (!res.canceled && res.assets[0]?.uri) {
+    //   setThumbnailUrlExternal(null)
+    //   setThumbnailUri(res.assets[0].uri)
+    // }
   }
 
   const handleAiDescription = async () => {
@@ -400,7 +400,9 @@ export function EventEditorForm({
           placeholder="例：代々木公園でお散歩会"
           placeholderTextColor="#aaa"
         />
-        <Text style={styles.hint}>タイトルを入力すると、下の「AIで説明を生成」「AIで画像を設定」が使えるようになります。</Text>
+        <Text style={styles.hint}>
+          タイトルを入力すると、下の「AIで説明を生成」「AIで画像を設定」が使えるようになります。ギャラリーからの画像選択は準備中です。
+        </Text>
       </View>
 
       <View style={styles.card}>
@@ -409,14 +411,14 @@ export function EventEditorForm({
             <View style={styles.thumbInner}>
               <Image source={{ uri: thumbnailUri }} style={styles.thumbImg} resizeMode="cover" />
               <View style={styles.thumbOverlay}>
-                <Text style={styles.thumbOverlayTxt}>タップして変更</Text>
+                <Text style={styles.thumbOverlayTxt}>ギャラリー選択は準備中</Text>
               </View>
             </View>
           ) : (
             <View style={styles.thumbEmpty}>
               <Ionicons name="camera-outline" size={28} color="#aaa" />
-              <Text style={styles.thumbEmptyMain}>サムネイルを追加</Text>
-              <Text style={styles.thumbEmptySub}>任意</Text>
+              <Text style={styles.thumbEmptyMain}>サムネイル（準備中）</Text>
+              <Text style={styles.thumbEmptySub}>下の「AIで画像を設定」は利用できます</Text>
             </View>
           )}
         </Pressable>
@@ -468,7 +470,7 @@ export function EventEditorForm({
           }}
         >
           <Text style={styles.eventPickMain}>{formatEventAtJa(eventAtDate)}</Text>
-          <Text style={styles.eventPickSub}>タップして日付と時刻を選択</Text>
+          <Text style={styles.eventPickSub}>タップして日付と時刻を選択（現在は準備中）</Text>
         </Pressable>
       </View>
 
@@ -571,25 +573,17 @@ export function EventEditorForm({
       </Pressable>
     </ScrollView>
 
-    {eventPickerOpen && Platform.OS === 'ios' ? (
+    {eventPickerOpen ? (
       <Modal visible transparent animationType="fade" onRequestClose={() => setEventPickerOpen(false)}>
         <View style={styles.pickerOverlay}>
           <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setEventPickerOpen(false)} />
           <View style={styles.pickerCard}>
             <Text style={styles.pickerTitle}>開催日時</Text>
-            <DateTimePicker
-              value={eventPickerTemp}
-              mode="datetime"
-              display="spinner"
-              locale="ja_JP@calendar=gregorian"
-              themeVariant="light"
-              onChange={(_, d) => {
-                if (d) setEventPickerTemp(d)
-              }}
-            />
+            <Text style={styles.pickerPlaceholder}>準備中</Text>
+            <Text style={styles.pickerPlaceholderSub}>日時の変更は今後の更新で利用できる予定です。現状は初期値のまま公開・保存されます。</Text>
             <View style={styles.pickerActions}>
               <Pressable style={styles.pickerGhost} onPress={() => setEventPickerOpen(false)}>
-                <Text style={styles.pickerGhostTxt}>キャンセル</Text>
+                <Text style={styles.pickerGhostTxt}>閉じる</Text>
               </Pressable>
               <Pressable
                 style={styles.pickerPri}
@@ -598,30 +592,12 @@ export function EventEditorForm({
                   setEventPickerOpen(false)
                 }}
               >
-                <Text style={styles.pickerPriTxt}>決定</Text>
+                <Text style={styles.pickerPriTxt}>そのまま使う</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
-    ) : null}
-    {eventPickerOpen && Platform.OS === 'android' ? (
-      <DateTimePicker
-        value={eventPickerTemp}
-        mode="datetime"
-        display="default"
-        locale="ja_JP@calendar=gregorian"
-        onChange={(ev, d) => {
-          if (ev.type === 'dismissed') {
-            setEventPickerOpen(false)
-            return
-          }
-          if (ev.type === 'set' && d) {
-            setEventAtDate(d)
-            setEventPickerOpen(false)
-          }
-        }}
-      />
     ) : null}
     </>
   )
@@ -662,6 +638,8 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
   },
   pickerTitle: { fontSize: 14, fontWeight: '800', color: '#1a1a1a', marginBottom: 8, textAlign: 'center' },
+  pickerPlaceholder: { fontSize: 16, fontWeight: '700', color: '#888', textAlign: 'center', paddingVertical: 12 },
+  pickerPlaceholderSub: { fontSize: 12, color: '#aaa', textAlign: 'center', lineHeight: 18, marginBottom: 4 },
   pickerActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
   pickerGhost: {
     flex: 1,

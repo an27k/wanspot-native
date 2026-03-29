@@ -26,7 +26,7 @@ module.exports = ({ config }) => {
 
   return {
     ...config,
-    plugins: [...(config.plugins ?? []), '@react-native-community/datetimepicker'],
+    plugins: [...(config.plugins ?? [])],
     extra: {
       ...config.extra,
       supabaseUrl,

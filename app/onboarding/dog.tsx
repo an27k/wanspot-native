@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import * as ImagePicker from 'expo-image-picker'
+// import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -83,17 +84,18 @@ export default function DogPage() {
   const canNext =
     name && year && month && breed && gender !== null && vaccineCombo !== null && vaccineRabies !== null
 
-  const pickPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!perm.granted) {
-      setPhotoError('画像ライブラリへのアクセスが必要です')
-      return
-    }
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 })
-    if (!res.canceled && res.assets[0]?.uri) {
-      setPhotoError('')
-      setDogPhotoPreview(res.assets[0].uri)
-    }
+  const pickPhoto = () => {
+    Alert.alert('準備中', '写真の選択は準備中です')
+    // const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    // if (!perm.granted) {
+    //   setPhotoError('画像ライブラリへのアクセスが必要です')
+    //   return
+    // }
+    // const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 })
+    // if (!res.canceled && res.assets[0]?.uri) {
+    //   setPhotoError('')
+    //   setDogPhotoPreview(res.assets[0].uri)
+    // }
   }
 
   const skipPhoto = () => {
@@ -179,7 +181,9 @@ export default function DogPage() {
         <Text style={styles.label}>
           愛犬の写真<Text style={{ color: '#c9a227' }}>（任意）</Text>
         </Text>
-        <Text style={styles.hint}>写真なしでも「次へ」で進めます。選んだあと取り消す場合は「スキップ（写真なし）」を押してください。</Text>
+        <Text style={styles.hint}>
+          写真の選択は準備中です。写真なしでも「次へ」で進めます。選んだあと取り消す場合は「スキップ（写真なし）」を押してください。
+        </Text>
         <TouchableOpacity style={styles.photoRow} onPress={pickPhoto}>
           <View style={styles.photoRing}>
             {dogPhotoPreview ? (

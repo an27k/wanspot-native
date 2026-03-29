@@ -1,4 +1,4 @@
-import * as ImagePicker from 'expo-image-picker'
+// import * as ImagePicker from 'expo-image-picker'
 import * as Location from 'expo-location'
 import { useCallback, useEffect, useState } from 'react'
 import {
@@ -268,26 +268,28 @@ export default function MypageTab() {
     setEditingOwner(true)
   }
 
-  const pickDogPhoto = async () => {
-    const p = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!p.granted) return
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 })
-    if (!r.canceled && r.assets[0]?.uri) {
-      setDogPhotoUri(r.assets[0].uri)
-      setDogPhotoPreview(r.assets[0].uri)
-      setDogPhotoRemoved(false)
-    }
+  const pickDogPhoto = () => {
+    Alert.alert('準備中', '写真の選択は準備中です')
+    // const p = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    // if (!p.granted) return
+    // const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 })
+    // if (!r.canceled && r.assets[0]?.uri) {
+    //   setDogPhotoUri(r.assets[0].uri)
+    //   setDogPhotoPreview(r.assets[0].uri)
+    //   setDogPhotoRemoved(false)
+    // }
   }
 
-  const pickAvatar = async () => {
-    const p = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!p.granted) return
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 })
-    if (!r.canceled && r.assets[0]?.uri) {
-      setAvatarUri(r.assets[0].uri)
-      setAvatarPreview(r.assets[0].uri)
-      setOwnerPhotoRemoved(false)
-    }
+  const pickAvatar = () => {
+    Alert.alert('準備中', '写真の選択は準備中です')
+    // const p = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    // if (!p.granted) return
+    // const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 })
+    // if (!r.canceled && r.assets[0]?.uri) {
+    //   setAvatarUri(r.assets[0].uri)
+    //   setAvatarPreview(r.assets[0].uri)
+    //   setOwnerPhotoRemoved(false)
+    // }
   }
 
   const saveDog = async () => {
