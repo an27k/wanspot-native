@@ -21,6 +21,7 @@ import { PowState, RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { EXTERNAL_EVENTS_EMPTY_FALLBACK } from '@/lib/external-events-fallback'
 import { supabase } from '@/lib/supabase'
 import { wanspotFetch } from '@/lib/wanspot-api'
 
@@ -188,7 +189,11 @@ export default function EventsTab() {
           setExternalLoading(false)
           return
         }
-        const list = Array.isArray(data.events) ? data.events : []
+        let list = Array.isArray(data.events) ? data.events : []
+        // 本番が旧APIのまま「空キャッシュをTTL内で返す」等で [] になる場合の表示用
+        if (list.length === 0) {
+          list = EXTERNAL_EVENTS_EMPTY_FALLBACK as ExternalEvent[]
+        }
         setExternalEvents(list as ExternalEvent[])
         setExternalLoading(false)
       })
