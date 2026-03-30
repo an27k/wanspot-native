@@ -563,9 +563,10 @@ export default function MypageTab() {
         }}
       >
         {dog ? (
-          <>
-            <Text style={styles.sectionTitle}>愛犬</Text>
             <View style={styles.profileCard}>
+            <Text style={styles.cardSectionLabel} accessibilityRole="header">
+              愛犬
+            </Text>
             {!editingDog ? (
               <Pressable
                 style={styles.cardEditTopRight}
@@ -774,11 +775,12 @@ export default function MypageTab() {
               </View>
             ) : null}
           </View>
-          </>
         ) : null}
 
-        <Text style={styles.sectionTitle}>オーナー</Text>
         <View style={styles.profileCard}>
+          <Text style={styles.cardSectionLabel} accessibilityRole="header">
+            オーナー
+          </Text>
           {!editingOwner ? (
             <Pressable
               style={styles.cardEditTopRight}
@@ -861,9 +863,12 @@ export default function MypageTab() {
                     {parentLabel(profile?.parent_type ?? null)}
                   </Text>
                   {profile?.birthday?.trim() && /^\d{4}-\d{2}-\d{2}$/.test(profile.birthday.trim()) ? (
-                    <Text style={styles.ownerAgeMuted} numberOfLines={1}>
-                      ・{calcHumanAgeYears(profile.birthday)}
-                    </Text>
+                    <>
+                      <Text style={styles.ownerTitleSlash}> / </Text>
+                      <Text style={styles.ownerAgeMuted} numberOfLines={1}>
+                        {calcHumanAgeYears(profile.birthday)}
+                      </Text>
+                    </>
                   ) : null}
                 </View>
               </>
@@ -978,13 +983,13 @@ export default function MypageTab() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cardBg },
   loadRoot: { flex: 1, backgroundColor: colors.cardBg, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
-    alignSelf: 'stretch',
+  cardSectionLabel: {
+    position: 'absolute',
+    top: 12,
+    left: 16,
+    fontSize: 12,
+    color: colors.textMuted,
+    zIndex: 1,
   },
   profileCard: {
     position: 'relative',
@@ -1148,6 +1153,7 @@ const styles = StyleSheet.create({
   ownerRoleLabel: { fontSize: 14, fontWeight: '800' },
   ownerRolePapa: { color: colors.genderMale },
   ownerRoleMama: { color: colors.genderFemale },
+  ownerTitleSlash: { fontSize: 14, color: colors.textMuted },
   ownerAgeMuted: { fontSize: 14, color: colors.textMuted },
   walkAreaBelowBio: {
     marginTop: 16,
