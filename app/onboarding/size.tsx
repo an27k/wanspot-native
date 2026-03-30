@@ -1,4 +1,4 @@
-import { inMemoryStorage } from '@/lib/in-memory-storage'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -26,7 +26,7 @@ export default function SizePage() {
 
   useEffect(() => {
     void (async () => {
-      const raw = await inMemoryStorage.getItem(OB_LOCATION_KEY)
+      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
       if (!raw) router.replace('/onboarding/location')
     })()
   }, [router])
@@ -35,7 +35,7 @@ export default function SizePage() {
 
   const goNext = async () => {
     if (!selected) return
-    await inMemoryStorage.setItem('ob_size', JSON.stringify({ size: selected }))
+    await AsyncStorage.setItem('ob_size', JSON.stringify({ size: selected }))
     router.push('/onboarding/area')
   }
 

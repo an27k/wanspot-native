@@ -1,6 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import {
-  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -54,7 +53,7 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
         ) : (
           <View style={styles.row}>
             <View style={styles.brand}>
-              <Logo width={28} height={28} style={styles.logo} />
+              <Logo variant="yellow" width={28} height={32} />
               <Text style={styles.brandText}>wanspot</Text>
             </View>
             <View style={styles.sideRight}>
@@ -123,7 +122,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logo: { width: 28, height: 28 },
   brandText: { fontWeight: '800', fontSize: 16, color: colors.text },
   side: { width: 40, justifyContent: 'center' },
   sideRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },

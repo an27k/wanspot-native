@@ -1,4 +1,4 @@
-import { inMemoryStorage } from '@/lib/in-memory-storage'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useEffect, useState } from 'react'
 import {
   KeyboardAvoidingView,
@@ -32,7 +32,7 @@ export default function WalkAreaOnboardingPage() {
 
   useEffect(() => {
     void (async () => {
-      const raw = await inMemoryStorage.getItem(OB_LOCATION_KEY)
+      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
       if (!raw) {
         router.replace('/onboarding/location')
         return
@@ -53,7 +53,7 @@ export default function WalkAreaOnboardingPage() {
   const goNext = async () => {
     const normalized = walkAreaTagsForUpsert(tags)
     if (normalized.length === 0) return
-    await inMemoryStorage.setItem(
+    await AsyncStorage.setItem(
       'ob_area',
       JSON.stringify({
         tags: normalized,

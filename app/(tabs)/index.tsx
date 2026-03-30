@@ -1,7 +1,6 @@
-import { inMemoryStorage } from '@/lib/in-memory-storage'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Animated,
   Image,
   Modal,
   Pressable,
@@ -14,17 +13,16 @@ import {
 import * as Location from 'expo-location'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Svg, { Path } from 'react-native-svg'
 import { AppHeader } from '@/components/AppHeader'
-import { UiIconGoogle, UiIconHeart, UiIconMoneyDot, UiIconSort, UiIconStar } from '@/components/ui-icons'
-import { IconPaw } from '@/components/IconPaw'
+import { NearbySpotCard } from '@/components/nearby/NearbySpotCard'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
-import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
 import { track } from '@/lib/analytics'
-import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
+import { wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
 const ICON_FILTER_FUNNEL = require('@/assets/icon-filter-funnel.png')
@@ -64,16 +62,11 @@ function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-const PriceLevel = ({ level }: { level: number | null }) => {
-  if (level === null || level === undefined) return <Text style={styles.qMark}>?</Text>
-  return (
-    <View style={styles.priceRow}>
-      {[1, 2, 3, 4].map((i) => (
-        <UiIconMoneyDot key={i} filled={i <= level} size={10} />
-      ))}
-    </View>
-  )
-}
+const IconSort = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round">
+    <Path d="M3 6h18M3 12h12M3 18h6" />
+  </Svg>
+)
 
 export default function NearbyPage() {
   const router = useRouter()
@@ -97,7 +90,7 @@ export default function NearbyPage() {
     useCallback(() => {
       void (async () => {
         try {
-          const v = await inMemoryStorage.getItem(POST_ONBOARDING_TUTORIAL_KEY)
+          const v = await AsyncStorage.getItem(POST_ONBOARDING_TUTORIAL_KEY)
           if (v === '1') setShowObTutorial(true)
         } catch {
           /* ignore */
@@ -110,7 +103,7 @@ export default function NearbyPage() {
 
   const dismissObTutorial = useCallback(async () => {
     try {
-      await inMemoryStorage.removeItem(POST_ONBOARDING_TUTORIAL_KEY)
+      await AsyncStorage.removeItem(POST_ONBOARDING_TUTORIAL_KEY)
     } catch {
       /* ignore */
     }
@@ -125,8 +118,8 @@ export default function NearbyPage() {
   useEffect(() => {
     void (async () => {
       try {
-        const raw = await inMemoryStorage.getItem('ob_area')
-        const prefWide = await inMemoryStorage.getItem('pref_nearby_wide')
+        const raw = await AsyncStorage.getItem('ob_area')
+        const prefWide = await AsyncStorage.getItem('pref_nearby_wide')
         let wide = prefWide === '1'
         if (raw) {
           try {
@@ -260,7 +253,7 @@ export default function NearbyPage() {
       <AppHeader />
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom }]}
         keyboardShouldPersistTaps="handled"
       >
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.genreBar}>
@@ -312,7 +305,7 @@ export default function NearbyPage() {
               <Text style={[styles.likeFilterTxt, likedOnlyFilter && styles.likeFilterTxtOn]}>いいね</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.sortBtn} onPress={() => setShowSort(true)}>
-              <UiIconSort />
+              <IconSort />
               <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
             </TouchableOpacity>
           </View>
@@ -334,7 +327,7 @@ export default function NearbyPage() {
             <PowState label="この条件ではいいねしたお店がありません" />
           ) : null}
           {displayedSpots.map((spot) => (
-            <SpotCard
+            <NearbySpotCard
               key={spot.place_id}
               spot={spot}
               likeCount={likeCounts[spot.place_id] ?? 0}
@@ -389,225 +382,6 @@ export default function NearbyPage() {
         </Pressable>
       </Modal>
     </View>
-  )
-}
-
-function SpotCard({
-  spot,
-  likeCount,
-  userLocation,
-  userWalkTags,
-  onOpenDetail,
-  onLikeStateChange,
-}: {
-  spot: PlaceResult
-  likeCount: number
-  userLocation: { lat: number; lng: number } | null
-  userWalkTags: string[]
-  onOpenDetail: (id: string) => void
-  onLikeStateChange?: (placeId: string, liked: boolean) => void
-}) {
-  const scaleAnim = useRef(new Animated.Value(1)).current
-  const [spotId, setSpotId] = useState<string | null>(null)
-  const [liked, setLiked] = useState(false)
-  const [localLikeCount, setLocalLikeCount] = useState(likeCount)
-  const [likeLoading, setLikeLoading] = useState(false)
-  const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
-  const uri = spotPhotoUrl(spot.photo_ref, 288)
-
-  useEffect(() => {
-    setLocalLikeCount(likeCount)
-  }, [likeCount])
-
-  useEffect(() => {
-    const fetchLikeData = async () => {
-      const { data: spotRow } = await supabase.from('spots').select('id').eq('place_id', spot.place_id).single()
-      if (!spotRow) return
-      setSpotId(spotRow.id)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: myLike } = await supabase
-          .from('spot_likes')
-          .select('id')
-          .eq('spot_id', spotRow.id)
-          .eq('user_id', user.id)
-          .maybeSingle()
-        setLiked(!!myLike)
-      }
-    }
-    void fetchLikeData()
-  }, [spot.place_id])
-
-  const handleOpenDetail = async () => {
-    if (spotId) {
-      onOpenDetail(spotId)
-      return
-    }
-    const { data: spotRow, error } = await supabase
-      .from('spots')
-      .upsert(
-        {
-          place_id: spot.place_id,
-          name: spot.name,
-          category: spot.category,
-          address: spot.address,
-          lat: spot.lat,
-          lng: spot.lng,
-          rating: spot.rating,
-          price_level: spot.price_level,
-        },
-        { onConflict: 'place_id' }
-      )
-      .select('id')
-      .single()
-    if (!error && spotRow) {
-      setSpotId(spotRow.id)
-      onOpenDetail(spotRow.id)
-    }
-  }
-
-  const handleLike = async () => {
-    if (likeLoading) return
-    playLikeHeartAnimation(scaleAnim)
-    setLikeLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setLikeLoading(false)
-      return
-    }
-
-    if (!liked) {
-      const { data: spotRow, error: spotErr } = await supabase
-        .from('spots')
-        .upsert(
-          {
-            place_id: spot.place_id,
-            name: spot.name,
-            category: spot.category,
-            address: spot.address,
-            lat: spot.lat,
-            lng: spot.lng,
-            rating: spot.rating,
-            price_level: spot.price_level,
-          },
-          { onConflict: 'place_id' }
-        )
-        .select('id')
-        .single()
-      if (spotErr || !spotRow) {
-        setLikeLoading(false)
-        return
-      }
-      await supabase.from('spot_likes').insert({ user_id: user.id, spot_id: spotRow.id })
-      setLiked(true)
-      setLocalLikeCount((c) => c + 1)
-      onLikeStateChange?.(spot.place_id, true)
-      track('spot_liked', { spot_id: spotRow.id })
-    } else {
-      const { data: spotRow } = await supabase.from('spots').select('id').eq('place_id', spot.place_id).single()
-      if (spotRow)
-        await supabase.from('spot_likes').delete().eq('user_id', user.id).eq('spot_id', spotRow.id)
-      setLiked(false)
-      setLocalLikeCount((c) => Math.max(0, c - 1))
-      onLikeStateChange?.(spot.place_id, false)
-    }
-    setLikeLoading(false)
-  }
-
-  const handleAiSummary = async () => {
-    if (aiSummary || aiLoading) return
-    setAiLoading(true)
-    const res = await wanspotFetch('/api/ai-summary', {
-      method: 'POST',
-      json: {
-        place_id: spot.place_id,
-        name: spot.name,
-        category: spot.category,
-        rating: spot.rating,
-        address: spot.address,
-        reviews: [],
-        userContext: {
-          walkAreaTags: userWalkTags,
-          lat: userLocation?.lat ?? null,
-          lng: userLocation?.lng ?? null,
-        },
-      },
-    })
-    const data = (await res.json()) as { keywords?: string[]; summary?: string }
-    setAiSummary(
-      data.keywords && data.summary ? { keywords: data.keywords, summary: data.summary } : {
-        keywords: [],
-        summary: typeof data.summary === 'string' ? data.summary : '',
-      }
-    )
-    setAiLoading(false)
-  }
-
-  const distLabel =
-    userLocation &&
-    (() => {
-      const d = calcDistance(userLocation.lat, userLocation.lng, spot.lat, spot.lng)
-      return d >= 1000 ? `${(d / 1000).toFixed(1)}km` : `${Math.round(d)}m`
-    })()
-
-  return (
-    <TouchableOpacity style={styles.card} onPress={handleOpenDetail} activeOpacity={0.95}>
-      <View style={styles.cardPhoto}>
-        {uri ? <Image source={{ uri }} style={styles.cardImg} resizeMode="cover" /> : null}
-        <View style={styles.heartCol}>
-          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-            <TouchableOpacity
-              onPress={() => void handleLike()}
-              disabled={likeLoading}
-              style={styles.heartCircle}
-            >
-              <UiIconHeart filled={liked} size={16} />
-            </TouchableOpacity>
-          </Animated.View>
-          {localLikeCount > 0 ? (
-            <Text style={styles.likeCnt}>{localLikeCount}</Text>
-          ) : null}
-        </View>
-      </View>
-      <View style={styles.cardBody}>
-        <View style={styles.cardTop}>
-          <Text style={styles.spotCat}>{spot.category}</Text>
-          <View style={styles.cardMeta}>
-            {spot.rating ? (
-              <View style={styles.rateRow}>
-                <UiIconGoogle />
-                <UiIconStar />
-                <Text style={styles.rateSmall}>{spot.rating}</Text>
-                <PriceLevel level={spot.price_level} />
-              </View>
-            ) : null}
-            {distLabel ? <Text style={styles.distSmall}>{distLabel}</Text> : null}
-          </View>
-        </View>
-        <Text style={styles.spotName}>{spot.name}</Text>
-        <Text style={styles.spotAddr}>{spot.address}</Text>
-        {!aiSummary && !aiLoading ? (
-          <TouchableOpacity style={styles.aiBtn} onPress={() => void handleAiSummary()}>
-            <IconPaw size={11} color="#aaa" />
-            <Text style={styles.aiBtnTxt}> AIまとめを見る</Text>
-          </TouchableOpacity>
-        ) : null}
-        {aiLoading ? <RunningDog label="AIまとめを生成中..." /> : null}
-        {aiSummary && !aiLoading ? (
-          <View style={styles.aiBox}>
-            <View style={styles.kwRow}>
-              {aiSummary.keywords.map((kw) => (
-                <Text key={kw} style={styles.kw}>
-                  {kw}
-                </Text>
-              ))}
-            </View>
-            <Text style={styles.aiSum}>{aiSummary.summary}</Text>
-          </View>
-        ) : null}
-      </View>
-    </TouchableOpacity>
   )
 }
 
@@ -694,78 +468,6 @@ const styles = StyleSheet.create({
   sortBtnTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
   list: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
   err: { textAlign: 'center', paddingVertical: 32, color: '#aaa', fontSize: 14 },
-  card: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ebebeb',
-  },
-  cardPhoto: { height: 144, backgroundColor: '#e8e4de', position: 'relative' },
-  cardImg: { width: '100%', height: '100%' },
-  heartCol: { position: 'absolute', top: 8, right: 8, alignItems: 'center', gap: 4 },
-  heartCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  likeCnt: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#C9A227',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  cardBody: { padding: 12, gap: 4 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  spotCat: {
-    fontSize: 12,
-    fontWeight: '700',
-    backgroundColor: '#FFF9E0',
-    color: '#1a1a1a',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-  },
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rateSmall: { fontSize: 12, color: '#888' },
-  distSmall: { fontSize: 12, color: '#aaa' },
-  spotName: { fontWeight: '700', fontSize: 14, color: '#1a1a1a' },
-  spotAddr: { fontSize: 12, color: '#aaa' },
-  aiBtn: {
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
-  },
-  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
-  aiBox: { marginTop: 8, padding: 12, borderRadius: 12, backgroundColor: '#FFFBEC' },
-  kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  kw: {
-    fontSize: 12,
-    fontWeight: '700',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: '#FFD84D',
-    color: '#1a1a1a',
-  },
-  aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  qMark: { fontSize: 12, color: '#ccc' },
   sortOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 180, paddingRight: 16 },
   sortMenu: {
     backgroundColor: '#fff',

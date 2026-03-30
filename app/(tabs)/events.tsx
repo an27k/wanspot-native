@@ -13,15 +13,9 @@ import {
   View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import Svg, { Line, Path } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppHeader } from '@/components/AppHeader'
-import {
-  UiIconCalendar,
-  UiIconExternalLink,
-  UiIconPin,
-  UiIconPlus,
-  UiIconSort,
-} from '@/components/ui-icons'
 import { EventCard, type WanspotEventRow } from '@/components/events/EventCard'
 import { PowState, RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
@@ -139,6 +133,40 @@ function externalEventDetailLinks(ev: ExternalEvent): ExternalEventLink[] {
   }
   return []
 }
+
+const IconPlusLarge = () => (
+  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+    <Line x1={12} y1={5} x2={12} y2={19} />
+    <Line x1={5} y1={12} x2={19} y2={12} />
+  </Svg>
+)
+
+const IconSort = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round">
+    <Line x1={3} y1={6} x2={21} y2={6} />
+    <Line x1={3} y1={12} x2={15} y2={12} />
+    <Line x1={3} y1={18} x2={9} y2={18} />
+  </Svg>
+)
+
+const IconCalendar = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} strokeLinecap="round">
+    <Path d="M7 3v4M17 3v4M3 11h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
+  </Svg>
+)
+
+const IconPin = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} strokeLinecap="round">
+    <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+    <Path d="M12 10h.01" />
+  </Svg>
+)
+
+const IconExternalLink = () => (
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round">
+    <Path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+  </Svg>
+)
 
 type WanspotSort = 'event_at' | 'price_asc' | 'price_desc' | 'participants'
 
@@ -350,11 +378,10 @@ export default function EventsTab() {
   const sortedExternalEvents = useMemo(() => sortExternalEvents(externalEvents, eventSort), [externalEvents, eventSort])
   const currentSort = WANSPOT_SORT_OPTIONS.find((o) => o.value === eventSort)!
 
-  /** リスト末尾がFABに隠れないよう（コンテンツ領域は既にタブバー上まで） */
+  /** リスト末尾がFABに隠れないよう */
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 100
   const fabRight = 16 + insets.right
-  /** コンテンツ下端＝タブバー直上のため、タブ高は足さない（下に空きができる） */
-  const fabBottom = 10
+  const fabBottom = TAB_BAR_HEIGHT + insets.bottom + 16
   const fabMenuBottom = fabBottom + 56 + 10
 
   const fabIconSpin = fabRotate.interpolate({
@@ -418,7 +445,7 @@ export default function EventsTab() {
         </ScrollView>
         <View style={styles.sortWrap}>
           <Pressable style={styles.sortBtn} onPress={() => setShowSort(true)}>
-            <UiIconSort />
+            <IconSort />
             <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
           </Pressable>
         </View>
@@ -544,13 +571,13 @@ export default function EventsTab() {
                         <View style={styles.extMeta}>
                           {item.event_at ? (
                             <View style={styles.metaLine}>
-                              <UiIconCalendar />
+                              <IconCalendar />
                               <Text style={styles.metaSmall}>{formatDate(item.event_at)}</Text>
                             </View>
                           ) : null}
                           {item.location_name ? (
                             <View style={styles.metaLine}>
-                              <UiIconPin />
+                              <IconPin />
                               <Text style={styles.metaSmall}>{item.location_name}</Text>
                             </View>
                           ) : null}
@@ -563,7 +590,7 @@ export default function EventsTab() {
                                 style={styles.extLink}
                                 onPress={() => Linking.openURL(link.url)}
                               >
-                                <UiIconExternalLink />
+                                <IconExternalLink />
                                 <Text style={styles.extLinkTxt}> {link.label}</Text>
                               </Pressable>
                             ))}
@@ -655,7 +682,7 @@ export default function EventsTab() {
           onPressOut={onFabPressOut}
         >
           <Animated.View style={{ transform: [{ scale: fabScale }, { rotate: fabIconSpin }] }}>
-            <UiIconPlus />
+            <IconPlusLarge />
           </Animated.View>
         </Pressable>
       ) : null}

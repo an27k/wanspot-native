@@ -11,8 +11,8 @@ import {
 import * as Location from 'expo-location'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { UiIconChevronLeft, UiIconSort } from '@/components/ui-icons'
-import { SpotListCard } from '@/components/SpotListCard'
+import Svg, { Path } from 'react-native-svg'
+import { UserSpotsListScreen } from '@/components/lists/UserSpotsListScreen'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
 import { fetchCheckedInSpotsForUser, type UserSpotRow } from '@/lib/fetch-user-spot-lists'
@@ -24,6 +24,18 @@ import {
 } from '@/lib/user-spot-list-utils'
 import { wanspotFetch } from '@/lib/wanspot-api'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+
+const IconChevronLeft = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+    <Path d="M15 18l-6-6 6-6" />
+  </Svg>
+)
+
+const IconSort = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round">
+    <Path d="M3 6h18M3 12h12M3 18h6" />
+  </Svg>
+)
 
 const SORT_OPTIONS: { key: UserSpotSortKey; label: string }[] = [
   { key: 'date_desc', label: '追加日（新しい順）' },
@@ -116,7 +128,7 @@ export default function CheckinsPage() {
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
 
   const padTop = Math.max(12, insets.top)
-  const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
+  const padBottom = TAB_BAR_HEIGHT + insets.bottom
 
   if (loadState === 'loading' || loadState === 'idle') {
     return (
@@ -134,7 +146,7 @@ export default function CheckinsPage() {
     <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: padTop }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="戻る">
-          <UiIconChevronLeft size={22} />
+          <IconChevronLeft />
         </TouchableOpacity>
         <View style={styles.titleRow}>
           <View style={styles.titleLeft}>
@@ -144,7 +156,7 @@ export default function CheckinsPage() {
           </View>
           {loadState === 'success' && spots.length > 0 ? (
             <TouchableOpacity style={styles.sortPill} onPress={() => setShowSort(true)}>
-              <UiIconSort />
+              <IconSort />
               <Text style={styles.sortPillTxt}>{currentSort.label}</Text>
             </TouchableOpacity>
           ) : null}
@@ -167,17 +179,15 @@ export default function CheckinsPage() {
             <Text style={styles.emptyTxt}>まだ行ったスポットがありません</Text>
           </View>
         ) : null}
-        {loadState === 'success' &&
-          sortedSpots.map((spot) => (
-            <SpotListCard
-              key={spot.id}
-              row={spot}
-              enrichment={enrichment[spot.place_id]}
-              userLocation={userLocation}
-              heartMode="toggle"
-              onOpen={() => router.push(`/spots/${spot.id}`)}
-            />
-          ))}
+        {loadState === 'success' ? (
+          <UserSpotsListScreen
+            spots={sortedSpots}
+            enrichment={enrichment}
+            userLocation={userLocation}
+            heartMode="toggle"
+            onOpenSpot={(id) => router.push(`/spots/${id}`)}
+          />
+        ) : null}
       </ScrollView>
 
       <Modal visible={showSort} transparent animationType="fade" onRequestClose={() => setShowSort(false)}>

@@ -11,10 +11,11 @@ import {
 import * as Location from 'expo-location'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { UiIconChevronLeft, UiIconHeart, UiIconSort } from '@/components/ui-icons'
-import { SpotListCard } from '@/components/SpotListCard'
+import Svg, { Path } from 'react-native-svg'
+import { UserSpotsListScreen } from '@/components/lists/UserSpotsListScreen'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
+import { HEART_ICON } from '@/lib/constants'
 import { fetchLikedSpotsForUser, type UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import { supabase } from '@/lib/supabase'
 import {
@@ -24,6 +25,24 @@ import {
 } from '@/lib/user-spot-list-utils'
 import { wanspotFetch } from '@/lib/wanspot-api'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+
+const IconHeart = () => (
+  <Svg width={15} height={15} viewBox="0 0 24 24" fill={HEART_ICON.filled} stroke={HEART_ICON.filled} strokeWidth={2}>
+    <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+  </Svg>
+)
+
+const IconChevronLeft = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+    <Path d="M15 18l-6-6 6-6" />
+  </Svg>
+)
+
+const IconSort = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round">
+    <Path d="M3 6h18M3 12h12M3 18h6" />
+  </Svg>
+)
 
 const SORT_OPTIONS: { key: UserSpotSortKey; label: string }[] = [
   { key: 'date_desc', label: '追加日（新しい順）' },
@@ -116,10 +135,6 @@ export default function LikesPage() {
 
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
 
-  const handleOpen = (spot: UserSpotRow) => {
-    router.push(`/spots/${spot.id}`)
-  }
-
   const handleUnlike = async (spot: UserSpotRow) => {
     if (unlikeLoadingId) return
     setUnlikeLoadingId(spot.id)
@@ -134,7 +149,7 @@ export default function LikesPage() {
   }
 
   const padTop = Math.max(12, insets.top)
-  const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
+  const padBottom = TAB_BAR_HEIGHT + insets.bottom
 
   if (loadState === 'loading' || loadState === 'idle') {
     return (
@@ -152,11 +167,11 @@ export default function LikesPage() {
     <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: padTop }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="戻る">
-          <UiIconChevronLeft size={22} />
+          <IconChevronLeft />
         </TouchableOpacity>
         <View style={styles.titleRow}>
           <View style={styles.titleLeft}>
-            <UiIconHeart filled size={15} />
+            <IconHeart />
             <Text style={styles.h1}>いいね</Text>
             <Text style={styles.count}>
               （累計 {loadState === 'success' ? spots.length : '—'}）
@@ -164,7 +179,7 @@ export default function LikesPage() {
           </View>
           {loadState === 'success' && spots.length > 0 ? (
             <TouchableOpacity style={styles.sortPill} onPress={() => setShowSort(true)}>
-              <UiIconSort />
+              <IconSort />
               <Text style={styles.sortPillTxt}>{currentSort.label}</Text>
             </TouchableOpacity>
           ) : null}
@@ -187,19 +202,20 @@ export default function LikesPage() {
             <Text style={styles.emptyTxt}>いいねしたスポットがありません</Text>
           </View>
         ) : null}
-        {loadState === 'success' &&
-          sortedSpots.map((spot) => (
-            <SpotListCard
-              key={spot.id}
-              row={spot}
-              enrichment={enrichment[spot.place_id]}
-              userLocation={userLocation}
-              heartMode="likedOnly"
-              onOpen={() => handleOpen(spot)}
-              onUnlike={() => void handleUnlike(spot)}
-              unlikeLoading={unlikeLoadingId === spot.id}
-            />
-          ))}
+        {loadState === 'success' ? (
+          <UserSpotsListScreen
+            spots={sortedSpots}
+            enrichment={enrichment}
+            userLocation={userLocation}
+            heartMode="likedOnly"
+            onOpenSpot={(id) => router.push(`/spots/${id}`)}
+            onUnlike={(id) => {
+              const s = sortedSpots.find((x) => x.id === id)
+              if (s) void handleUnlike(s)
+            }}
+            unlikeLoadingId={unlikeLoadingId}
+          />
+        ) : null}
       </ScrollView>
 
       <Modal visible={showSort} transparent animationType="fade" onRequestClose={() => setShowSort(false)}>

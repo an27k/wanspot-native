@@ -1,5 +1,5 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import { UiIconCalendar, UiIconPin } from '@/components/ui-icons'
+import Svg, { Ellipse, Path } from 'react-native-svg'
 import { colors } from '@/constants/colors'
 
 export type WanspotEventRow = {
@@ -25,10 +25,32 @@ type Props = {
   variant?: 'default' | 'joined'
 }
 
-const DogPlaceholder = () => (
-  <Text style={{ fontSize: 34, lineHeight: 40 }} accessible={false}>
-    🐾
-  </Text>
+/** サムネなし・マイページ犬アバター等で共通利用 */
+export function DogPawPlaceholder({ size = 40, fill = '#FFD84D' }: { size?: number; fill?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100" fill={fill}>
+    <Ellipse cx={20} cy={28} rx={10} ry={13} />
+    <Ellipse cx={40} cy={16} rx={10} ry={13} />
+    <Ellipse cx={60} cy={16} rx={10} ry={13} />
+    <Ellipse cx={80} cy={28} rx={10} ry={13} />
+    <Path d="M50 33 C26 33 14 54 17 70 C20 86 35 92 50 92 C65 92 80 86 83 70 C86 54 74 33 50 33Z" />
+    </Svg>
+  )
+}
+
+const DogPlaceholder = () => <DogPawPlaceholder size={40} fill="#FFD84D" />
+
+const IconCalendar = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} strokeLinecap="round">
+    <Path d="M3 4h18v18H3zM16 2v4M8 2v4M3 10h18" />
+  </Svg>
+)
+
+const IconPin = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} strokeLinecap="round">
+    <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+    <Path d="M12 10h.01" />
+  </Svg>
 )
 
 export function isEventFull(event: Pick<WanspotEventRow, 'capacity' | 'current_count'>): boolean {
@@ -97,7 +119,7 @@ export function EventCard({ event, onPressDetail, variant = 'default' }: Props) 
           ) : null}
           {event.event_at ? (
             <View style={styles.metaLine}>
-              <UiIconCalendar />
+              <IconCalendar />
               <Text style={styles.metaTxt}>{formatDate(event.event_at)}</Text>
             </View>
           ) : null}
@@ -108,7 +130,7 @@ export function EventCard({ event, onPressDetail, variant = 'default' }: Props) 
           ) : null}
           {event.location_name ? (
             <View style={styles.metaLine}>
-              <UiIconPin />
+              <IconPin />
               <Text style={styles.metaTxt}>{event.location_name}</Text>
             </View>
           ) : null}

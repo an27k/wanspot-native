@@ -2,12 +2,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { UiIconChevronLeft } from '@/components/ui-icons'
+import Svg, { Path } from 'react-native-svg'
 import { type WanspotEventRow } from '@/components/events/EventCard'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
+
+const IconChevronLeft = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+    <Path d="M15 18l-6-6 6-6" />
+  </Svg>
+)
 
 export default function MyHostedEventsScreen() {
   const router = useRouter()
@@ -62,7 +68,7 @@ export default function MyHostedEventsScreen() {
       <View style={styles.root}>
         <View style={[styles.sticky, { paddingTop: Math.max(12, insets.top) }]}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backHit}>
-            <UiIconChevronLeft size={22} />
+            <IconChevronLeft />
           </Pressable>
           <Text style={styles.pageTitle}>主催したイベント</Text>
         </View>
@@ -75,7 +81,7 @@ export default function MyHostedEventsScreen() {
     <View style={styles.root}>
       <View style={[styles.sticky, { paddingTop: Math.max(12, insets.top) }]}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backHit}>
-          <UiIconChevronLeft size={22} />
+          <IconChevronLeft />
         </Pressable>
         <Text style={styles.pageTitle}>主催したイベント</Text>
       </View>

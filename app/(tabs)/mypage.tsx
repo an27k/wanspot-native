@@ -13,12 +13,12 @@ import {
   View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import Svg, { Path } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { UiIconCamera, UiIconPencil, UiIconSyringe } from '@/components/ui-icons'
 import { AppHeader } from '@/components/AppHeader'
+import { DogPawPlaceholder } from '@/components/events/EventCard'
 import { RunningDog } from '@/components/DogStates'
-import { IconPaw } from '@/components/IconPaw'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { OwnerBirthdayPickers, ownerBirthdayToYmd, splitYmdToParts } from '@/components/OwnerBirthdayPickers'
@@ -60,6 +60,13 @@ const PARENT_OPTIONS = [
   { value: 'mama', label: 'ママ' },
 ]
 
+const IconCamera = ({ size = 18 }: { size?: number }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+    <Path d="M12 13a4 4 0 100-8 4 4 0 000 8z" />
+  </Svg>
+)
+
 function AvatarCameraFab({ onPress, accessibilityLabel }: { onPress: () => void; accessibilityLabel: string }) {
   return (
     <Pressable
@@ -69,10 +76,23 @@ function AvatarCameraFab({ onPress, accessibilityLabel }: { onPress: () => void;
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
-      <UiIconCamera size={18} color="#fff" />
+      <IconCamera size={18} />
     </Pressable>
   )
 }
+
+const IconEditSmall = ({ size = 11 }: { size?: number }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
+    <Path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+    <Path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </Svg>
+)
+
+const IconSyringe = () => (
+  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
+    <Path d="M18 2l4 4M17 7l1-1M3 21l6-6M9 15l2-2M12 12l2-2M6 21c0-2 2-4 4-4M15 3l-6 6M15 3l3 3-7 7-3-3 7-7z" />
+  </Svg>
+)
 
 function formatYmd(d: Date): string {
   const y = d.getFullYear()
@@ -407,7 +427,7 @@ export default function MypageTab() {
   const parentLabel = (type: string | null) => PARENT_OPTIONS.find((o) => o.value === type)?.label ?? 'パパ'
 
   /** スクロール末尾がタブバーに隠れないよう（タブ画面の高さは既にタブバー上まで） */
-  const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
+  const padBottom = TAB_BAR_HEIGHT + insets.bottom
   const avatarSrc = ownerPhotoRemoved ? null : (avatarPreview ?? profile?.photo_url)
 
   const persistVaccineDate = useCallback((kind: 'rabies' | 'mixed', ymd: string) => {
@@ -487,7 +507,7 @@ export default function MypageTab() {
         ) : null}
         <View style={styles.vaccineBlockTop}>
           <View style={styles.vaccineBlockTitleCenter}>
-            <UiIconSyringe />
+            <IconSyringe />
             <Text style={styles.vLbl}>{row.label}</Text>
           </View>
         </View>
@@ -528,25 +548,25 @@ export default function MypageTab() {
       >
         {dog ? (
           <View style={styles.profileCard}>
-            <View style={styles.profileCardHeader}>
-              <Text style={styles.profileCardTitle}>愛犬</Text>
-            </View>
-            <View style={styles.profileEditAboveAvatar}>
-              {!editingDog ? (
-                <Pressable style={styles.profileEditBtn} onPress={startEditDog} hitSlop={8} accessibilityLabel="愛犬プロフィールを編集">
-                  <UiIconPencil size={22} color={colors.textMuted} />
-                </Pressable>
-              ) : null}
-            </View>
+            {!editingDog ? (
+              <Pressable
+                style={styles.cardEditTopRight}
+                onPress={startEditDog}
+                hitSlop={8}
+                accessibilityLabel="愛犬プロフィールを編集"
+              >
+                <IconEditSmall size={22} />
+              </Pressable>
+            ) : null}
             <View style={styles.profileMainCol}>
               <View style={[styles.avatar80Wrap, editingDog && styles.avatar80WrapEditing]}>
                 <View style={[styles.avatar80, styles.avatar80Dog]}>
                   {dogPhotoRemoved && !dogPhotoUri ? (
-                    <IconPaw size={36} color={colors.textMuted} />
+                    <DogPawPlaceholder size={36} fill="#FFD84D" />
                   ) : dogPhotoPreview ?? dog.photo_url ? (
                     <Image source={{ uri: dogPhotoPreview ?? dog.photo_url! }} style={styles.avatar80Img} resizeMode="cover" />
                   ) : (
-                    <IconPaw size={36} color={colors.textMuted} />
+                    <DogPawPlaceholder size={36} fill="#FFD84D" />
                   )}
                 </View>
                 {editingDog ? (
@@ -613,22 +633,16 @@ export default function MypageTab() {
                 </View>
               ) : (
                 <>
-                  <Text style={styles.profileName}>{dog.name}</Text>
-                  {dog.breed?.trim() ? (
-                    <Text style={styles.profileSub} numberOfLines={1}>
-                      {dog.breed.trim()}
-                    </Text>
-                  ) : null}
-                  {dog.birthday?.trim() || dog.gender ? (
-                    <View style={styles.profileAgeGenderRow}>
-                      {dog.gender === 'male' ? (
-                        <Text style={[styles.genderSymMale, styles.dogProfileGenderLine]}>♂</Text>
-                      ) : dog.gender === 'female' ? (
-                        <Text style={[styles.genderSymFemale, styles.dogProfileGenderLine]}>♀</Text>
-                      ) : null}
-                      {dog.birthday?.trim() ? <Text style={styles.dogProfileAgeLine}>{calcAge(dog.birthday)}</Text> : null}
-                    </View>
-                  ) : null}
+                  <Text style={styles.profileNameBold}>{dog.name}</Text>
+                  {(() => {
+                    const parts = [dog.breed?.trim(), dog.birthday?.trim() ? calcAge(dog.birthday) : null].filter(Boolean)
+                    if (parts.length === 0) return null
+                    return (
+                      <Text style={styles.profileSubOneLine} numberOfLines={1}>
+                        {parts.join(' · ')}
+                      </Text>
+                    )
+                  })()}
                 </>
               )}
             </View>
@@ -671,7 +685,7 @@ export default function MypageTab() {
                       ) : null}
                       <View style={styles.vaccineBlockTop}>
                         <View style={styles.vaccineBlockTitleCenter}>
-                          <UiIconSyringe />
+                          <IconSyringe />
                           <Text style={styles.vaccineSummaryLbl}>混合ワクチン</Text>
                         </View>
                       </View>
@@ -698,7 +712,7 @@ export default function MypageTab() {
                       ) : null}
                       <View style={styles.vaccineBlockTop}>
                         <View style={styles.vaccineBlockTitleCenter}>
-                          <UiIconSyringe />
+                          <IconSyringe />
                           <Text style={styles.vaccineSummaryLbl}>狂犬病ワクチン</Text>
                         </View>
                       </View>
@@ -731,16 +745,16 @@ export default function MypageTab() {
         ) : null}
 
         <View style={styles.profileCard}>
-          <View style={styles.profileCardHeader}>
-            <Text style={styles.profileCardTitle}>オーナー</Text>
-          </View>
-          <View style={styles.profileEditAboveAvatar}>
-            {!editingOwner ? (
-              <Pressable style={styles.profileEditBtn} onPress={startEditOwner} hitSlop={8} accessibilityLabel="オーナープロフィールを編集">
-                <UiIconPencil size={22} color={colors.textMuted} />
-              </Pressable>
-            ) : null}
-          </View>
+          {!editingOwner ? (
+            <Pressable
+              style={styles.cardEditTopRight}
+              onPress={startEditOwner}
+              hitSlop={8}
+              accessibilityLabel="オーナープロフィールを編集"
+            >
+              <IconEditSmall size={22} />
+            </Pressable>
+          ) : null}
           <View style={styles.profileMainCol}>
             <View style={[styles.avatar80Wrap, editingOwner && styles.avatar80WrapEditing]}>
               <View style={[styles.avatar80, styles.avatar80Owner]}>
@@ -801,40 +815,13 @@ export default function MypageTab() {
                 </View>
               ) : (
               <>
-                <Text style={styles.profileName}>{profile?.name ?? '名前未設定'}</Text>
-                <View style={styles.profileAgeGenderRow}>
-                  <Text
-                    style={[
-                      styles.ownerProfilePairText,
-                      profile?.parent_type === 'mama' ? styles.parentRoleMama : styles.parentRolePapa,
-                    ]}
-                  >
-                    {parentLabel(profile?.parent_type ?? null)}
-                  </Text>
-                  {profile?.birthday?.trim() && /^\d{4}-\d{2}-\d{2}$/.test(profile.birthday.trim()) ? (
-                    <Text style={[styles.ownerProfilePairText, styles.ownerProfileAgeText]}>{calcHumanAgeYears(profile.birthday)}</Text>
-                  ) : (
-                    <Text style={[styles.ownerProfilePairText, styles.ownerProfileAgeText]}>-</Text>
-                  )}
-                </View>
-                <View style={styles.walkAreaReadonly}>
-                  <Text style={styles.walkAreaLbl}>よく散歩するエリア</Text>
-                  {(() => {
-                    const areaTags = walkAreaTagsForUpsert(walkTagsFromUserRow(profile))
-                    if (areaTags.length === 0) {
-                      return <Text style={styles.walkAreaEmpty}>未設定</Text>
-                    }
-                    return (
-                      <View style={styles.walkAreaTagRow}>
-                        {areaTags.map((tag) => (
-                          <View key={tag} style={styles.walkAreaTagPill} accessibilityLabel={`散歩エリア ${tag}`}>
-                            <Text style={styles.walkAreaTagTxt}>{tag}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    )
-                  })()}
-                </View>
+                <Text style={styles.profileNameBold}>{profile?.name ?? '名前未設定'}</Text>
+                <Text style={styles.ownerTitleLine} numberOfLines={1}>
+                  {parentLabel(profile?.parent_type ?? null)}
+                  {profile?.birthday?.trim() && /^\d{4}-\d{2}-\d{2}$/.test(profile.birthday.trim())
+                    ? `・${calcHumanAgeYears(profile.birthday)}`
+                    : ''}
+                </Text>
               </>
             )}
           </View>
@@ -938,48 +925,21 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cardBg },
   loadRoot: { flex: 1, backgroundColor: colors.cardBg, alignItems: 'center', justifyContent: 'center' },
   profileCard: {
+    position: 'relative',
     backgroundColor: colors.background,
     borderRadius: 16,
-    paddingTop: 4,
+    paddingTop: 16,
     paddingBottom: 24,
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  /** 見出しのみ。下線までの高さを愛犬・オーナーで揃える */
-  profileCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    width: '100%',
-    minHeight: 34,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  profileCardTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: 3,
-    lineHeight: 18,
-  },
-  /** 写真の直上。編集中も同じ高さでアバター位置がずれない */
-  profileEditAboveAvatar: {
-    alignSelf: 'stretch',
-    width: '100%',
-    minHeight: 38,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  profileEditBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 2,
-    paddingHorizontal: 2,
+  cardEditTopRight: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 2,
+    padding: 4,
   },
   profileMainCol: { alignItems: 'center', width: '100%' },
   photoRemoveBtn: { marginTop: 8, paddingVertical: 6 },
@@ -1053,7 +1013,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   avatar80Dog: { backgroundColor: colors.dogPhotoPlaceholderBg },
-  avatar80Owner: { backgroundColor: colors.cardBg },
+  avatar80Owner: { backgroundColor: '#f7f6f3' },
   avatar80Img: { width: '100%', height: '100%' },
   camFabOnAvatar: {
     position: 'absolute',
@@ -1081,6 +1041,28 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
+    textAlign: 'center',
+    alignSelf: 'stretch',
+  },
+  profileNameBold: {
+    marginTop: 12,
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.text,
+    textAlign: 'center',
+    alignSelf: 'stretch',
+  },
+  profileSubOneLine: {
+    marginTop: 4,
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    alignSelf: 'stretch',
+  },
+  ownerTitleLine: {
+    marginTop: 4,
+    fontSize: 14,
+    color: colors.textMuted,
     textAlign: 'center',
     alignSelf: 'stretch',
   },
@@ -1163,7 +1145,7 @@ const styles = StyleSheet.create({
     color: colors.success,
   },
   ownerBioDisplay: {
-    marginTop: 16,
+    marginTop: 12,
     fontSize: 14,
     color: colors.textMuted,
     textAlign: 'center',

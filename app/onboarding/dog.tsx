@@ -1,4 +1,4 @@
-import { inMemoryStorage } from '@/lib/in-memory-storage'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 // import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
 import {
@@ -66,7 +66,7 @@ export default function DogPage() {
 
   useEffect(() => {
     void (async () => {
-      const raw = await inMemoryStorage.getItem(OB_LOCATION_KEY)
+      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
       if (!raw) router.replace('/onboarding/location')
     })()
   }, [router])
@@ -140,7 +140,7 @@ export default function DogPage() {
         vaccineRabies,
         ...(dogPhotoUrl ? { dogPhotoUrl } : {}),
       })
-      await inMemoryStorage.setItem('ob_dog', obDogPayload)
+      await AsyncStorage.setItem('ob_dog', obDogPayload)
       router.push('/onboarding/size')
     } finally {
       setSubmitting(false)

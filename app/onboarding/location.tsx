@@ -1,4 +1,4 @@
-import { inMemoryStorage } from '@/lib/in-memory-storage'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Linking from 'expo-linking'
 import * as Location from 'expo-location'
 import { useState } from 'react'
@@ -35,7 +35,7 @@ export default function OnboardingLocationPage() {
         return
       }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-      await inMemoryStorage.setItem(
+      await AsyncStorage.setItem(
         OB_LOCATION_KEY,
         JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })
       )
