@@ -652,18 +652,27 @@ export default function MypageTab() {
               ) : (
                 <>
                   <Text style={styles.profileNameBold}>{dog.name}</Text>
-                  {dog.gender === 'male' ? (
-                    <Text style={[styles.dogGenderLine, styles.dogGenderMale]}>オス</Text>
-                  ) : dog.gender === 'female' ? (
-                    <Text style={[styles.dogGenderLine, styles.dogGenderFemale]}>メス</Text>
+                  {dog.breed?.trim() ? (
+                    <Text style={styles.dogBreedOnlyLine} numberOfLines={1}>
+                      {dog.breed.trim()}
+                    </Text>
                   ) : null}
                   {(() => {
-                    const parts = [dog.breed?.trim(), dog.birthday?.trim() ? calcAge(dog.birthday) : null].filter(Boolean)
-                    if (parts.length === 0) return null
+                    const age = dog.birthday?.trim() ? calcAge(dog.birthday) : null
+                    const hasSym = dog.gender === 'male' || dog.gender === 'female'
+                    if (!hasSym && !age) return null
                     return (
-                      <Text style={styles.profileSubOneLine} numberOfLines={1}>
-                        {parts.join('・')}
-                      </Text>
+                      <View style={styles.dogGenderAgeRow}>
+                        {dog.gender === 'male' ? <Text style={styles.dogSymMale}>♂</Text> : null}
+                        {dog.gender === 'female' ? <Text style={styles.dogSymFemale}>♀</Text> : null}
+                        {hasSym && age ? (
+                          <>
+                            <Text style={styles.dogSlashBetween}> / </Text>
+                            <Text style={styles.dogAgeInline}>{age}</Text>
+                          </>
+                        ) : null}
+                        {!hasSym && age ? <Text style={styles.dogAgeInline}>{age}</Text> : null}
+                      </View>
                     )
                   })()}
                 </>
@@ -1108,15 +1117,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     alignSelf: 'stretch',
   },
-  dogGenderLine: {
+  dogBreedOnlyLine: {
     marginTop: 4,
     fontSize: 14,
-    fontWeight: '700',
+    color: colors.textMuted,
     textAlign: 'center',
     alignSelf: 'stretch',
   },
-  dogGenderMale: { color: colors.genderMale },
-  dogGenderFemale: { color: colors.genderFemale },
+  dogGenderAgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    alignSelf: 'stretch',
+    flexWrap: 'wrap',
+  },
+  dogSymMale: { fontSize: 14, fontWeight: '800', color: colors.genderMale },
+  dogSymFemale: { fontSize: 14, fontWeight: '800', color: colors.genderFemale },
+  dogSlashBetween: { fontSize: 14, color: colors.textMuted },
+  dogAgeInline: { fontSize: 14, color: colors.textMuted },
   ownerTitleRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
