@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react'
 import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Path, Polygon } from 'react-native-svg'
+import { RunningDog } from '@/components/DogStates'
+import { IconPaw } from '@/components/IconPaw'
 import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
-import { spotPhotoUrl } from '@/lib/wanspot-api'
+import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
 function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
@@ -45,14 +47,25 @@ const IconStar = () => (
 type Props = {
   spot: PlaceResult
   userLocation: { lat: number; lng: number } | null
+  /** 現在地タブのカードと同様、AIまとめの文脈に利用 */
+  userWalkTags?: string[]
   onOpen: (spotId: string) => void
   onLikesChange?: () => void
   onBeforeNavigate?: () => void
 }
 
-export function SearchDiscoverResultCard({ spot, userLocation, onOpen, onLikesChange, onBeforeNavigate }: Props) {
+export function SearchDiscoverResultCard({
+  spot,
+  userLocation,
+  userWalkTags = [],
+  onOpen,
+  onLikesChange,
+  onBeforeNavigate,
+}: Props) {
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
+  const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
   const likeScale = useRef(new Animated.Value(1)).current
   const photoUrl = spotPhotoUrl(spot.photo_ref, 288)
 
@@ -129,42 +142,96 @@ export function SearchDiscoverResultCard({ spot, userLocation, onOpen, onLikesCh
     setLikeLoading(false)
   }
 
+  const handleAiSummary = async () => {
+    if (aiSummary || aiLoading) return
+    setAiLoading(true)
+    const res = await wanspotFetch('/api/ai-summary', {
+      method: 'POST',
+      json: {
+        place_id: spot.place_id,
+        name: spot.name,
+        category: spot.category,
+        rating: spot.rating,
+        address: spot.address,
+        reviews: [],
+        userContext: {
+          walkAreaTags: userWalkTags,
+          lat: userLocation?.lat ?? null,
+          lng: userLocation?.lng ?? null,
+        },
+      },
+    })
+    const data = (await res.json()) as { keywords?: string[]; summary?: string }
+    setAiSummary(
+      data.keywords && data.summary
+        ? { keywords: data.keywords, summary: data.summary }
+        : {
+            keywords: [],
+            summary: typeof data.summary === 'string' ? data.summary : '',
+          }
+    )
+    setAiLoading(false)
+  }
+
   return (
-    <Pressable style={styles.card} onPress={() => void handleOpen()}>
-      <View style={styles.thumbWrap}>
-        {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.thumb} resizeMode="cover" /> : <View style={[styles.thumb, styles.ph]} />}
-        <Pressable
-          style={styles.heartFab}
-          onPress={(ev) => void handleLike(ev)}
-          disabled={likeLoading}
-        >
-          <Animated.View style={{ transform: [{ scale: likeScale }] }}>
-            <IconHeart filled={liked} />
-          </Animated.View>
-        </Pressable>
-      </View>
-      <View style={styles.body}>
-        <View style={styles.row1}>
-          <View style={styles.catPill}>
-            <Text style={styles.catTxt}>{spot.category}</Text>
-          </View>
-          <View style={styles.metaRight}>
-            {dist ? <Text style={styles.dist}>{dist}</Text> : null}
-            {spot.rating != null && spot.rating > 0 ? (
-              <View style={styles.rateRow}>
-                <IconGoogle />
-                <IconStar />
-                <Text style={styles.rateTxt}>{spot.rating}</Text>
-              </View>
-            ) : null}
-          </View>
+    <View style={styles.card}>
+      <Pressable onPress={() => void handleOpen()}>
+        <View style={styles.thumbWrap}>
+          {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.thumb} resizeMode="cover" /> : <View style={[styles.thumb, styles.ph]} />}
+          <Pressable
+            style={styles.heartFab}
+            onPress={(ev) => void handleLike(ev)}
+            disabled={likeLoading}
+          >
+            <Animated.View style={{ transform: [{ scale: likeScale }] }}>
+              <IconHeart filled={liked} />
+            </Animated.View>
+          </Pressable>
         </View>
-        <Text style={styles.name}>{spot.name}</Text>
-        <Text style={styles.addr} numberOfLines={2}>
-          {spot.address}
-        </Text>
+        <View style={styles.body}>
+          <View style={styles.row1}>
+            <View style={styles.catPill}>
+              <Text style={styles.catTxt}>{spot.category}</Text>
+            </View>
+            <View style={styles.metaRight}>
+              {dist ? <Text style={styles.dist}>{dist}</Text> : null}
+              {spot.rating != null && spot.rating > 0 ? (
+                <View style={styles.rateRow}>
+                  <IconGoogle />
+                  <IconStar />
+                  <Text style={styles.rateTxt}>{spot.rating}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+          <Text style={styles.name}>{spot.name}</Text>
+          <Text style={styles.addr} numberOfLines={2}>
+            {spot.address}
+          </Text>
+        </View>
+      </Pressable>
+      <View style={styles.aiFooter}>
+        {!aiSummary && !aiLoading ? (
+          <Pressable style={styles.aiBtn} onPress={() => void handleAiSummary()}>
+            <IconPaw size={11} color="#aaa" />
+            <Text style={styles.aiBtnTxt}> AIまとめを見る</Text>
+          </Pressable>
+        ) : null}
+        {aiLoading ? <RunningDog label="AIまとめを生成中..." /> : null}
+        {aiSummary && !aiLoading ? (
+          <View style={styles.aiBox}>
+            <View style={styles.kwRow}>
+              {aiSummary.keywords.map((kw) => (
+                <Text key={kw} style={styles.kw}>
+                  {kw}
+                </Text>
+              ))}
+            </View>
+            <Text style={styles.aiSum}>{aiSummary.summary}</Text>
+          </View>
+        ) : null}
       </View>
-    </Pressable>
+    </View>
   )
 }
 
@@ -198,4 +265,30 @@ const styles = StyleSheet.create({
   rateTxt: { fontSize: 12, color: '#888' },
   name: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
   addr: { fontSize: 12, color: '#aaa' },
+  aiFooter: { paddingHorizontal: 12, paddingBottom: 12, gap: 4 },
+  aiBtn: {
+    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
+  },
+  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
+  aiBox: { marginTop: 4, padding: 12, borderRadius: 12, backgroundColor: '#FFFBEC' },
+  kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  kw: {
+    fontSize: 12,
+    fontWeight: '700',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: '#FFD84D',
+    color: '#1a1a1a',
+  },
+  aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
 })

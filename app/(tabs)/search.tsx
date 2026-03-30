@@ -24,7 +24,7 @@ import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
-import { filterHotSpotResults } from '@/lib/hot-exclusions'
+import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
 import { wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
@@ -345,7 +345,7 @@ export default function SearchTab() {
         `/api/spots/search?q=${encodeURIComponent(aiQuery)}${locationParam}${areaParam}`
       )
       const data = (await searchRes.json()) as { spots?: PlaceResult[] }
-      setAiResults(data.spots ?? [])
+      setAiResults(filterDiscoverRecommendSpots(data.spots ?? []))
     } catch {
       setAiResults([])
     } finally {
@@ -395,7 +395,7 @@ export default function SearchTab() {
             }
           }
         }
-        setHotResults(filterHotSpotResults(merged))
+        setHotResults(filterDiscoverRecommendSpots(merged))
       } catch {
         setHotResults([])
       } finally {
@@ -679,6 +679,7 @@ export default function SearchTab() {
                 key={spot.place_id}
                 spot={spot}
                 userLocation={location}
+                userWalkTags={userWalkTags}
                 onOpen={openSpot}
                 onLikesChange={refreshSpotLikesCount}
                 onBeforeNavigate={beforeNavSearch}
@@ -757,6 +758,7 @@ export default function SearchTab() {
                         key={spot.place_id}
                         spot={spot}
                         userLocation={location}
+                        userWalkTags={userWalkTags}
                         onOpen={openSpot}
                         onLikesChange={refreshSpotLikesCount}
                         onBeforeNavigate={async () => {

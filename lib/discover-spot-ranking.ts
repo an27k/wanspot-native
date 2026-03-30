@@ -3,7 +3,7 @@ import { catalogEntryByLabel } from '@/lib/walk-area-catalog'
 import { calcDistanceMeters } from '@/lib/user-spot-list-utils'
 
 /**
- * AIレコメンド・トレンドの検索結果を、現在地距離＋登録エリア（住所一致・カタログ代表座標との距離）で並べ替え。
+ * 検索タブの AIレコメンド・トレンドの検索結果を、現在地距離＋登録エリア（住所一致・カタログ代表座標との距離）で並べ替え。
  * API が未対応でもクライアントだけで精度を上げられる。
  */
 export function rankSpotsByWalkContext(
