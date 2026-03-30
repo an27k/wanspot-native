@@ -26,7 +26,7 @@ import { mergeUnknownWalkTags, WalkAreaTagPicker } from '@/components/walk-area/
 import { defaultBioFromDog } from '@/lib/default-bio'
 import { supabase } from '@/lib/supabase'
 import { updateUserWithWalkAreas } from '@/lib/persist-user-walk-area'
-import { walkAreaTagsForUpsert, walkTagsFromUserRow } from '@/lib/walk-area-tags'
+import { normalizeWalkAreaTagsFromDb, walkAreaTagsForUpsert, walkTagsFromUserRow } from '@/lib/walk-area-tags'
 
 type UserProfile = {
   id: string
@@ -36,7 +36,8 @@ type UserProfile = {
   bio: string | null
   /** あれば「パパ・31歳」形式に利用 */
   birthday?: string | null
-  walk_area_tags?: unknown
+  /** Postgres text[] */
+  walk_area_tags?: string[] | null
   /** 未マイグレーション環境の旧カラム */
   walk_area?: string | null
 }
@@ -118,22 +119,6 @@ function formatDateJaGregorian(ymd: string): string {
   const m = d.getMonth() + 1
   const day = d.getDate()
   return `${y}年${m}月${day}日`
-}
-
-/** users.walk_area（JSON 配列またはプレーン文字）を表示用に整形。未設定は null */
-function formatWalkAreaForDisplay(raw: string | null | undefined): string | null {
-  const t = typeof raw === 'string' ? raw.trim() : ''
-  if (!t) return null
-  try {
-    const v = JSON.parse(t) as unknown
-    if (Array.isArray(v)) {
-      const strs = v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).map((x) => x.trim())
-      return strs.length > 0 ? strs.join('、') : null
-    }
-  } catch {
-    /* プレーン文字列 */
-  }
-  return t
 }
 
 /** DB の日付文字列を YYYY-MM-DD に正規化 */
@@ -219,10 +204,17 @@ export default function MypageTab() {
       return
     }
     const [{ data: userData }, { data: dogData }] = await Promise.all([
-      supabase.from('users').select('*').eq('id', user.id).single(),
+      supabase
+        .from('users')
+        .select('id, name, parent_type, photo_url, bio, birthday, walk_area_tags, walk_area')
+        .eq('id', user.id)
+        .single(),
       supabase.from('dogs').select('*').eq('user_id', user.id).maybeSingle(),
     ])
-    if (userData) setProfile(userData as UserProfile)
+    if (userData) {
+      console.log('walk_area:', userData.walk_area, 'walk_area_tags:', userData.walk_area_tags)
+      setProfile(userData as UserProfile)
+    }
     if (dogData) setDog({ ...(dogData as Dog), gender: (dogData as { gender?: 'male' | 'female' | null }).gender ?? null })
     setLoading(false)
   }, [router])
@@ -892,12 +884,23 @@ export default function MypageTab() {
                   : defaultBioFromDog({ name: dog?.name, breed: dog?.breed })}
               </Text>
               {(() => {
-                const walkDisp = formatWalkAreaForDisplay(profile?.walk_area)
-                if (!walkDisp) return null
+                const tags = normalizeWalkAreaTagsFromDb(profile?.walk_area_tags)
+                if (tags.length === 0) return null
                 return (
                   <View style={styles.walkAreaBelowBio}>
                     <Text style={styles.walkAreaBelowBioLbl}>よく散歩するエリア</Text>
-                    <Text style={styles.walkAreaBelowBioVal}>{walkDisp}</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.walkAreaTagsScrollContent}
+                      nestedScrollEnabled
+                    >
+                      {tags.map((tag) => (
+                        <View key={tag} style={styles.walkAreaReadTagPill} accessibilityLabel={`散歩エリア ${tag}`}>
+                          <Text style={styles.walkAreaReadTagTxt}>{tag}</Text>
+                        </View>
+                      ))}
+                    </ScrollView>
                   </View>
                 )
               })()}
@@ -1159,11 +1162,29 @@ const styles = StyleSheet.create({
     marginTop: 16,
     alignSelf: 'stretch',
     width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: 4,
+    alignItems: 'flex-start',
+    paddingHorizontal: 0,
   },
-  walkAreaBelowBioLbl: { fontSize: 12, color: colors.textMuted, textAlign: 'center' },
-  walkAreaBelowBioVal: { marginTop: 6, fontSize: 14, color: colors.text, textAlign: 'center', lineHeight: 20 },
+  walkAreaBelowBioLbl: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'left',
+    alignSelf: 'stretch',
+    marginBottom: 6,
+  },
+  walkAreaTagsScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingRight: 8,
+  },
+  walkAreaReadTagPill: {
+    backgroundColor: '#FFF8D6',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
+  walkAreaReadTagTxt: { fontSize: 12, color: colors.text },
   profileSub: {
     marginTop: 4,
     fontSize: 14,
