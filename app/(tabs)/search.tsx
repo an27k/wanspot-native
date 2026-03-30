@@ -353,18 +353,15 @@ export default function SearchTab() {
       try {
         const walkTags = await fetchUserWalkAreaTags(supabase)
         const prefecture = location ? await getPrefecture(location.lat, location.lng) : '東京'
-        const [result] = await Promise.all([
-          wanspotFetchJson<{ queries?: string[]; label?: string }>('/api/spots/hot', {
-            method: 'POST',
-            json: {
-              lat: location?.lat,
-              lng: location?.lng,
-              prefecture,
-              walkAreaTags: walkTags,
-            },
-          }),
-          new Promise((r) => setTimeout(r, force ? 0 : 1500)),
-        ])
+        const result = await wanspotFetchJson<{ queries?: string[]; label?: string }>('/api/spots/hot', {
+          method: 'POST',
+          json: {
+            lat: location?.lat,
+            lng: location?.lng,
+            prefecture,
+            walkAreaTags: walkTags,
+          },
+        })
         const queries = result.queries ?? []
         setHotLabel(result.label ?? null)
         const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
