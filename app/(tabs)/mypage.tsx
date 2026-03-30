@@ -6,6 +6,7 @@ import {
   Image,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -193,6 +194,7 @@ export default function MypageTab() {
   const [avatarUri, setAvatarUri] = useState<string | null>(null)
   const [dogPhotoRemoved, setDogPhotoRemoved] = useState(false)
   const [ownerPhotoRemoved, setOwnerPhotoRemoved] = useState(false)
+  const [pullRefreshing, setPullRefreshing] = useState(false)
 
   const ownerEditBirthdayYmd = ownerBirthdayToYmd(editOwnerYear, editOwnerMonth, editOwnerDay)
   const ownerEditBirthdayOk = ownerEditBirthdayYmd !== null
@@ -221,6 +223,15 @@ export default function MypageTab() {
 
   useEffect(() => {
     void load()
+  }, [load])
+
+  const onPullRefreshProfile = useCallback(async () => {
+    setPullRefreshing(true)
+    try {
+      await load()
+    } finally {
+      setPullRefreshing(false)
+    }
   }, [load])
 
   useEffect(() => {
@@ -553,6 +564,14 @@ export default function MypageTab() {
           paddingBottom: padBottom,
           gap: 12,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefreshProfile}
+            tintColor={colors.brand}
+            colors={[colors.brand]}
+          />
+        }
       >
         {dog ? (
             <View style={styles.profileCard}>

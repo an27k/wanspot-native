@@ -4,6 +4,7 @@ import {
   Image,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,6 +20,7 @@ import { NearbySpotCard } from '@/components/nearby/NearbySpotCard'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { supabase } from '@/lib/supabase'
+import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
 import { track } from '@/lib/analytics'
@@ -85,6 +87,7 @@ export default function NearbyPage() {
   const [likedPlaceIds, setLikedPlaceIds] = useState<Set<string>>(() => new Set())
   const [showObTutorial, setShowObTutorial] = useState(false)
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
+  const [pullRefreshing, setPullRefreshing] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -148,13 +151,17 @@ export default function NearbyPage() {
     })()
   }, [])
 
-  useEffect(() => {
-    if (!location) return
-    setLoading(true)
-    setSpotsFetchError('')
-    const q = `/api/spots/nearby?lat=${location.lat}&lng=${location.lng}&radius=${distance}&type=${genre}`
-    void wanspotFetch(q)
-      .then(async (r) => {
+  const fetchNearbySpots = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!location) return
+      const silent = opts?.silent === true
+      if (!silent) {
+        setLoading(true)
+        setSpotsFetchError('')
+      }
+      const q = `/api/spots/nearby?lat=${location.lat}&lng=${location.lng}&radius=${distance}&type=${genre}`
+      try {
+        const r = await wanspotFetch(q)
         let data: { spots?: PlaceResult[]; error?: string } = {}
         try {
           data = (await r.json()) as { spots?: PlaceResult[]; error?: string }
@@ -165,17 +172,27 @@ export default function NearbyPage() {
         }
         if (!r.ok) {
           setSpots([])
-          setSpotsFetchError(typeof data.error === 'string' ? data.error : `スポットの取得に失敗しました (${r.status})`)
+          setSpotsFetchError(
+            typeof data.error === 'string' ? data.error : `スポットの取得に失敗しました (${r.status})`
+          )
           return
         }
         setSpots(data.spots ?? [])
-      })
-      .catch(() => {
+      } catch {
         setSpots([])
-        setSpotsFetchError('ネットワークエラーです。API の URL（EXPO_PUBLIC_WANSPOT_API_URL / https://www.wanspot.app）を確認してください')
-      })
-      .finally(() => setLoading(false))
-  }, [location, genre, distance])
+        setSpotsFetchError(
+          'ネットワークエラーです。API の URL（EXPO_PUBLIC_WANSPOT_API_URL / https://www.wanspot.app）を確認してください'
+        )
+      } finally {
+        if (!silent) setLoading(false)
+      }
+    },
+    [location, genre, distance]
+  )
+
+  useEffect(() => {
+    void fetchNearbySpots()
+  }, [fetchNearbySpots])
 
   useEffect(() => {
     if (spots.length === 0) return
@@ -213,6 +230,18 @@ export default function NearbyPage() {
     const { data: rows } = await supabase.from('spots').select('place_id').in('id', spotIds)
     setLikedPlaceIds(new Set((rows ?? []).map((r) => r.place_id).filter(Boolean)))
   }, [])
+
+  const onPullRefreshNearby = useCallback(async () => {
+    setPullRefreshing(true)
+    try {
+      await reloadUserLikedPlaceIds()
+      await fetchNearbySpots({ silent: true })
+      const tags = await fetchUserWalkAreaTags(supabase)
+      setUserWalkTags(tags)
+    } finally {
+      setPullRefreshing(false)
+    }
+  }, [fetchNearbySpots, reloadUserLikedPlaceIds])
 
   useFocusEffect(
     useCallback(() => {
@@ -255,6 +284,14 @@ export default function NearbyPage() {
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom }]}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefreshNearby}
+            tintColor={colors.brand}
+            colors={[colors.brand]}
+          />
+        }
       >
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.genreBar}>
           {GENRES.map((g) => (

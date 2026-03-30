@@ -5,6 +5,7 @@ import {
   Keyboard,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -163,6 +164,7 @@ export default function SearchTab() {
   const scrollYRef = useRef(0)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
+  const [pullRefreshing, setPullRefreshing] = useState(false)
 
   useEffect(() => {
     Location.getCurrentPositionAsync({}).then((p) => setLocation({ lat: p.coords.latitude, lng: p.coords.longitude })).catch(() => {})
@@ -295,9 +297,16 @@ export default function SearchTab() {
     setSpotLikesCount(error ? 0 : (count ?? 0))
   }, [])
 
-  const handleAiRecommend = useCallback(async () => {
-    if (aiLoading || aiResults.length > 0) return
+  const handleAiRecommend = useCallback(async (opts?: { force?: boolean; locationOverride?: { lat: number; lng: number } | null }) => {
+    const force = opts?.force === true
+    const loc = opts?.locationOverride !== undefined ? opts.locationOverride : location
+    if (aiLoading) return
+    if (!force && aiResults.length > 0) return
     setAiLoading(true)
+    if (force) {
+      setAiResults([])
+      setAiReason(null)
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -320,8 +329,8 @@ export default function SearchTab() {
           method: 'POST',
           json: {
             userId: user.id,
-            lat: location?.lat,
-            lng: location?.lng,
+            lat: loc?.lat,
+            lng: loc?.lng,
             walkAreaTags: walkTags,
           },
         }),
@@ -329,7 +338,7 @@ export default function SearchTab() {
       ])
       const aiQuery = result.query ?? 'ドッグラン'
       setAiReason(result.reason ?? null)
-      const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
+      const locationParam = loc ? `&lat=${loc.lat}&lng=${loc.lng}` : ''
       const areaParam =
         walkTags.length > 0 ? `&walkAreas=${encodeURIComponent(JSON.stringify(walkTags))}` : ''
       const searchRes = await wanspotFetch(
@@ -345,26 +354,27 @@ export default function SearchTab() {
   }, [aiLoading, aiResults.length, location])
 
   const handleHot = useCallback(
-    async (opts?: { force?: boolean }) => {
+    async (opts?: { force?: boolean; locationOverride?: { lat: number; lng: number } | null }) => {
       const force = opts?.force === true
+      const loc = opts?.locationOverride !== undefined ? opts.locationOverride : location
       if (hotLoading) return
       if (!force && hotResults.length > 0) return
       setHotLoading(true)
       try {
         const walkTags = await fetchUserWalkAreaTags(supabase)
-        const prefecture = location ? await getPrefecture(location.lat, location.lng) : '東京'
+        const prefecture = loc ? await getPrefecture(loc.lat, loc.lng) : '東京'
         const result = await wanspotFetchJson<{ queries?: string[]; label?: string }>('/api/spots/hot', {
           method: 'POST',
           json: {
-            lat: location?.lat,
-            lng: location?.lng,
+            lat: loc?.lat,
+            lng: loc?.lng,
             prefecture,
             walkAreaTags: walkTags,
           },
         })
         const queries = result.queries ?? []
         setHotLabel(result.label ?? null)
-        const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
+        const locationParam = loc ? `&lat=${loc.lat}&lng=${loc.lng}` : ''
         const areaParam =
           walkTags.length > 0 ? `&walkAreas=${encodeURIComponent(JSON.stringify(walkTags))}` : ''
         const allResults = await Promise.all(
@@ -395,8 +405,10 @@ export default function SearchTab() {
     [hotLoading, hotResults.length, location]
   )
 
-  const handleArticles = useCallback(async () => {
-    if (articlesLoading || articlesList.length > 0) return
+  const handleArticles = useCallback(async (opts?: { force?: boolean }) => {
+    const force = opts?.force === true
+    if (articlesLoading) return
+    if (!force && articlesList.length > 0) return
     setArticlesLoading(true)
     try {
       const { data } = await supabase
@@ -431,12 +443,13 @@ export default function SearchTab() {
     void handleAiRecommend()
   }, [location, searched, spotLikesCount, discoverMode, handleAiRecommend])
 
-  const handleSearch = async (q: string) => {
+  const handleSearch = useCallback(async (q: string, opts?: { silent?: boolean }) => {
     Keyboard.dismiss()
     const trimmed = q.trim()
     if (!trimmed) return
+    const silent = opts?.silent === true
     setQuery(trimmed)
-    setLoading(true)
+    if (!silent) setLoading(true)
     setSearched(true)
     try {
       const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
@@ -453,9 +466,47 @@ export default function SearchTab() {
     } catch {
       setResults([])
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
-  }
+  }, [location])
+
+  const onPullRefreshSearch = useCallback(async () => {
+    setPullRefreshing(true)
+    try {
+      await refreshSpotLikesCount()
+      const tags = await fetchUserWalkAreaTags(supabase)
+      setUserWalkTags(tags)
+      let locFresh: { lat: number; lng: number } | null = location
+      try {
+        const pos = await Location.getCurrentPositionAsync({})
+        locFresh = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        setLocation(locFresh)
+      } catch {
+        /* ignore */
+      }
+      if (searched && query.trim()) {
+        await handleSearch(query, { silent: true })
+      } else if (discoverMode === 'articles') {
+        await handleArticles({ force: true })
+      } else if (discoverMode === 'hot') {
+        await handleHot({ force: true, locationOverride: locFresh })
+      } else {
+        await handleAiRecommend({ force: true, locationOverride: locFresh })
+      }
+    } finally {
+      setPullRefreshing(false)
+    }
+  }, [
+    searched,
+    query,
+    discoverMode,
+    location,
+    refreshSpotLikesCount,
+    handleSearch,
+    handleArticles,
+    handleHot,
+    handleAiRecommend,
+  ])
 
   const sortedResults = useMemo(() => {
     const copy = [...results]
@@ -506,6 +557,14 @@ export default function SearchTab() {
         onScroll={(e) => {
           scrollYRef.current = e.nativeEvent.contentOffset.y
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefreshSearch}
+            tintColor={colors.brand}
+            colors={[colors.brand]}
+          />
+        }
       >
         <View style={styles.searchHeader}>
           <View style={styles.searchRow}>

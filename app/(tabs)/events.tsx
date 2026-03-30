@@ -12,7 +12,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import Svg, { Line, Path } from 'react-native-svg'
 import { AppHeader } from '@/components/AppHeader'
 import { EventCard, type WanspotEventRow } from '@/components/events/EventCard'
@@ -223,6 +223,48 @@ function sortExternalEvents(list: ExternalEvent[], sort: WanspotSort): ExternalE
   return copy
 }
 
+/** 参加予定: 埋め込み select でイベントを一括取得（RLS／.in 制限の回避）。失敗時は event_id 経由にフォールバック */
+async function fetchJoinedEventsList(userId: string): Promise<WanspotEventRow[]> {
+  const { data: embedded, error: embErr } = await supabase
+    .from('event_participants')
+    .select('events(*)')
+    .eq('user_id', userId)
+  if (!embErr && embedded && embedded.length > 0) {
+    const acc: WanspotEventRow[] = []
+    const seen = new Set<string>()
+    for (const row of embedded) {
+      const raw = row.events as WanspotEventRow | WanspotEventRow[] | null | undefined
+      const ev = Array.isArray(raw) ? raw[0] : raw
+      if (ev && typeof ev === 'object' && 'id' in ev && typeof (ev as WanspotEventRow).id === 'string') {
+        const id = (ev as WanspotEventRow).id
+        if (!seen.has(id)) {
+          seen.add(id)
+          acc.push(ev as WanspotEventRow)
+        }
+      }
+    }
+    if (acc.length > 0) {
+      acc.sort((a, b) => eventAtTime(a) - eventAtTime(b))
+      return acc
+    }
+  }
+  const { data: parts } = await supabase.from('event_participants').select('event_id').eq('user_id', userId)
+  const ids = [
+    ...new Set(
+      (parts ?? [])
+        .map((p) => p.event_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    ),
+  ]
+  if (ids.length === 0) return []
+  const { data: joinedData } = await supabase
+    .from('events')
+    .select('*')
+    .in('id', ids)
+    .order('event_at', { ascending: true })
+  return (joinedData ?? []) as WanspotEventRow[]
+}
+
 export default function EventsTab() {
   const router = useRouter()
   const { width: windowWidth } = useWindowDimensions()
@@ -246,13 +288,13 @@ export default function EventsTab() {
   const fabMenuAnim = useRef(new Animated.Value(0)).current
   const tabSlideX = useRef(new Animated.Value(0)).current
 
-  const fetchExternalEvents = useCallback(() => {
+  const fetchExternalEvents = useCallback((): Promise<void> => {
     setExternalLoading(true)
     setExternalEvents([])
     setExternalError(false)
     const ac = new AbortController()
     const t = setTimeout(() => ac.abort(), 15_000)
-    wanspotFetch('/api/events/external', { signal: ac.signal })
+    return wanspotFetch('/api/events/external', { signal: ac.signal })
       .then(async (r) => {
         let data: { events?: unknown; error?: string } = {}
         try {
@@ -278,16 +320,72 @@ export default function EventsTab() {
       .finally(() => clearTimeout(t))
   }, [])
 
-  useEffect(() => {
-    const load = async () => {
-      const { data: eventsData } = await supabase.from('events').select('*').order('event_at', { ascending: true })
-      setEvents((eventsData ?? []) as WanspotEventRow[])
-      setLoading(false)
+  const [refreshScheduled, setRefreshScheduled] = useState(false)
+  const [refreshJoined, setRefreshJoined] = useState(false)
+  const [refreshExternal, setRefreshExternal] = useState(false)
 
+  const reloadScheduledEvents = useCallback(async () => {
+    const { data: eventsData } = await supabase.from('events').select('*').order('event_at', { ascending: true })
+    setEvents((eventsData ?? []) as WanspotEventRow[])
+  }, [])
+
+  useEffect(() => {
+    void (async () => {
+      await reloadScheduledEvents()
+      setLoading(false)
+    })()
+    void fetchExternalEvents()
+  }, [fetchExternalEvents, reloadScheduledEvents])
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true
+      setJoinedLoading(true)
+      void (async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!active) return
+        if (!user) {
+          setJoinedEvents([])
+          setShowVaccineBanner(false)
+          setJoinedLoading(false)
+          return
+        }
+        const { data: dogRow } = await supabase
+          .from('dogs')
+          .select('rabies_vaccinated_at, vaccine_vaccinated_at')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (!active) return
+        setShowVaccineBanner(
+          !!dogRow && (dogRow.rabies_vaccinated_at == null || dogRow.vaccine_vaccinated_at == null)
+        )
+        const list = await fetchJoinedEventsList(user.id)
+        if (!active) return
+        setJoinedEvents(list)
+        setJoinedLoading(false)
+      })()
+      return () => {
+        active = false
+        setJoinedLoading(false)
+      }
+    }, [])
+  )
+
+  const onRefreshScheduled = useCallback(async () => {
+    setRefreshScheduled(true)
+    try {
+      await reloadScheduledEvents()
+    } finally {
+      setRefreshScheduled(false)
+    }
+  }, [reloadScheduledEvents])
+
+  const onRefreshJoined = useCallback(async () => {
+    setRefreshJoined(true)
+    try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         setJoinedEvents([])
-        setJoinedLoading(false)
         setShowVaccineBanner(false)
         return
       }
@@ -299,23 +397,19 @@ export default function EventsTab() {
       setShowVaccineBanner(
         !!dogRow && (dogRow.rabies_vaccinated_at == null || dogRow.vaccine_vaccinated_at == null)
       )
-      const { data: parts } = await supabase.from('event_participants').select('event_id').eq('user_id', user.id)
-      const ids = [...new Set((parts ?? []).map((p) => p.event_id))]
-      if (ids.length === 0) {
-        setJoinedEvents([])
-        setJoinedLoading(false)
-        return
-      }
-      const { data: joinedData } = await supabase
-        .from('events')
-        .select('*')
-        .in('id', ids)
-        .order('event_at', { ascending: true })
-      setJoinedEvents((joinedData ?? []) as WanspotEventRow[])
-      setJoinedLoading(false)
+      setJoinedEvents(await fetchJoinedEventsList(user.id))
+    } finally {
+      setRefreshJoined(false)
     }
-    void load()
-    fetchExternalEvents()
+  }, [])
+
+  const onRefreshExternal = useCallback(async () => {
+    setRefreshExternal(true)
+    try {
+      await fetchExternalEvents()
+    } finally {
+      setRefreshExternal(false)
+    }
   }, [fetchExternalEvents])
 
   useEffect(() => {
@@ -480,24 +574,51 @@ export default function EventsTab() {
         >
           <View style={[styles.eventsPage, { width: eventsContentW }]}>
             {loading ? (
-              <RunningDog label="イベントを読み込み中..." />
+              <ScrollView
+                style={styles.pageScroll}
+                contentContainerStyle={styles.pageScrollContent}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshScheduled}
+                    onRefresh={onRefreshScheduled}
+                    tintColor={colors.brand}
+                    colors={[colors.brand]}
+                  />
+                }
+              >
+                <RunningDog label="イベントを読み込み中..." />
+              </ScrollView>
             ) : events.length === 0 ? (
-              <View style={styles.emptyBlock}>
-                <PowState label="現在開催中のイベントはありません" />
-                <Text style={styles.emptyHint}>右下の＋からイベントを作成できます</Text>
-              </View>
+              <ScrollView
+                style={styles.pageScroll}
+                contentContainerStyle={styles.pageScrollContent}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshScheduled}
+                    onRefresh={onRefreshScheduled}
+                    tintColor={colors.brand}
+                    colors={[colors.brand]}
+                  />
+                }
+              >
+                <View style={styles.emptyBlock}>
+                  <PowState label="現在開催中のイベントはありません" />
+                  <Text style={styles.emptyHint}>右下の＋からイベントを作成できます</Text>
+                </View>
+              </ScrollView>
             ) : (
               <FlatList
+                style={styles.pageFlex}
                 data={sortedWanspotEvents}
                 keyExtractor={(item) => item.id}
+                removeClippedSubviews={false}
                 contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
                 refreshControl={
                   <RefreshControl
-                    refreshing={false}
-                    onRefresh={async () => {
-                      const { data } = await supabase.from('events').select('*').order('event_at', { ascending: true })
-                      setEvents((data ?? []) as WanspotEventRow[])
-                    }}
+                    refreshing={refreshScheduled}
+                    onRefresh={onRefreshScheduled}
+                    tintColor={colors.brand}
+                    colors={[colors.brand]}
                   />
                 }
                 renderItem={({ item }) => (
@@ -508,17 +629,53 @@ export default function EventsTab() {
           </View>
           <View style={[styles.eventsPage, { width: eventsContentW }]}>
             {joinedLoading ? (
-              <RunningDog label="参加予定のイベントを読み込み中..." />
+              <ScrollView
+                style={styles.pageScroll}
+                contentContainerStyle={styles.pageScrollContent}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshJoined}
+                    onRefresh={onRefreshJoined}
+                    tintColor={colors.brand}
+                    colors={[colors.brand]}
+                  />
+                }
+              >
+                <RunningDog label="参加予定のイベントを読み込み中..." />
+              </ScrollView>
             ) : joinedEvents.length === 0 ? (
-              <View style={styles.emptyJoined}>
-                <IconPaw size={40} color="#aaa" />
-                <Text style={styles.emptyJoinedTxt}>参加予定のイベントはありません</Text>
-              </View>
+              <ScrollView
+                style={styles.pageScroll}
+                contentContainerStyle={styles.pageScrollContent}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshJoined}
+                    onRefresh={onRefreshJoined}
+                    tintColor={colors.brand}
+                    colors={[colors.brand]}
+                  />
+                }
+              >
+                <View style={styles.emptyJoined}>
+                  <IconPaw size={40} color="#aaa" />
+                  <Text style={styles.emptyJoinedTxt}>参加予定のイベントはありません</Text>
+                </View>
+              </ScrollView>
             ) : (
               <FlatList
+                style={styles.pageFlex}
                 data={sortedJoinedEvents}
                 keyExtractor={(item) => item.id}
+                removeClippedSubviews={false}
                 contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshJoined}
+                    onRefresh={onRefreshJoined}
+                    tintColor={colors.brand}
+                    colors={[colors.brand]}
+                  />
+                }
                 renderItem={({ item }) => (
                   <EventCard event={item} variant="joined" onPressDetail={() => router.push(`/events/${item.id}`)} />
                 )}
@@ -527,28 +684,77 @@ export default function EventsTab() {
           </View>
           <View style={[styles.eventsPage, { width: eventsContentW }]}>
             {externalLoading ? (
-              <RunningDog label="外部イベントを読み込み中..." />
+              <ScrollView
+                style={styles.pageScroll}
+                contentContainerStyle={styles.pageScrollContent}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshExternal}
+                    onRefresh={onRefreshExternal}
+                    tintColor={colors.brand}
+                    colors={[colors.brand]}
+                  />
+                }
+              >
+                <RunningDog label="外部イベントを読み込み中..." />
+              </ScrollView>
             ) : externalError ? (
-              <View style={styles.emptyJoined}>
-                <IconPaw size={40} color="#aaa" />
-                <Text style={styles.extErrTxt}>しばらくしてから再度お試しください</Text>
-                <Pressable style={styles.retryBtn} onPress={fetchExternalEvents}>
-                  <Text style={styles.retryTxt}>再読み込み</Text>
-                </Pressable>
-              </View>
+              <ScrollView
+                style={styles.pageScroll}
+                contentContainerStyle={styles.pageScrollContent}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshExternal}
+                    onRefresh={onRefreshExternal}
+                    tintColor={colors.brand}
+                    colors={[colors.brand]}
+                  />
+                }
+              >
+                <View style={styles.emptyJoined}>
+                  <IconPaw size={40} color="#aaa" />
+                  <Text style={styles.extErrTxt}>しばらくしてから再度お試しください</Text>
+                  <Pressable style={styles.retryBtn} onPress={() => void fetchExternalEvents()}>
+                    <Text style={styles.retryTxt}>再読み込み</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
             ) : externalEvents.length === 0 ? (
-              <View style={styles.emptyJoined}>
-                <IconPaw size={40} color="#aaa" />
-                <Text style={styles.extErrTxt}>外部イベントが見つかりませんでした</Text>
-                <Pressable style={styles.retryBtn} onPress={fetchExternalEvents}>
-                  <Text style={styles.retryTxt}>再読み込み</Text>
-                </Pressable>
-              </View>
+              <ScrollView
+                style={styles.pageScroll}
+                contentContainerStyle={styles.pageScrollContent}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshExternal}
+                    onRefresh={onRefreshExternal}
+                    tintColor={colors.brand}
+                    colors={[colors.brand]}
+                  />
+                }
+              >
+                <View style={styles.emptyJoined}>
+                  <IconPaw size={40} color="#aaa" />
+                  <Text style={styles.extErrTxt}>外部イベントが見つかりませんでした</Text>
+                  <Pressable style={styles.retryBtn} onPress={() => void fetchExternalEvents()}>
+                    <Text style={styles.retryTxt}>再読み込み</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
             ) : (
               <FlatList
+                style={styles.pageFlex}
                 data={sortedExternalEvents}
                 keyExtractor={(item, index) => (item.id ? String(item.id) : `ext-${index}`)}
+                removeClippedSubviews={false}
                 contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshExternal}
+                    onRefresh={onRefreshExternal}
+                    tintColor={colors.brand}
+                    colors={[colors.brand]}
+                  />
+                }
                 renderItem={({ item }) => {
                   const detailLinks = externalEventDetailLinks(item)
                   return (
@@ -794,6 +1000,10 @@ const styles = StyleSheet.create({
   eventsPagerRow: { flexDirection: 'row', flex: 1 },
   /** 横ページャの各列: 幅は inline、縦は親に合わせ stretch（flex:1 幅と併用しない） */
   eventsPage: { alignSelf: 'stretch' },
+  /** ページャ内でプル更新可能にする（空・ロード時も下方向に引ける） */
+  pageScroll: { flex: 1 },
+  pageScrollContent: { flexGrow: 1, justifyContent: 'center', minHeight: 360 },
+  pageFlex: { flex: 1 },
   fabMenuPrimary: {
     paddingVertical: 14,
     borderRadius: 16,
