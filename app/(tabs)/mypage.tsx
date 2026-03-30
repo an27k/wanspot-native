@@ -1164,7 +1164,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 12,
   },
-  walkAreaReadTagTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  walkAreaReadTagTxt: { fontSize: 12, fontWeight: '800', color: colors.textLight },
   profileSub: {
     marginTop: 4,
     fontSize: 14,

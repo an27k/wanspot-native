@@ -14,13 +14,11 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import Svg, { Line, Path } from 'react-native-svg'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppHeader } from '@/components/AppHeader'
 import { EventCard, type WanspotEventRow } from '@/components/events/EventCard'
 import { PowState, RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
 import { colors } from '@/constants/colors'
-import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { EXTERNAL_EVENTS_EMPTY_FALLBACK } from '@/lib/external-events-fallback'
 import { supabase } from '@/lib/supabase'
 import { wanspotFetch } from '@/lib/wanspot-api'
@@ -227,7 +225,6 @@ function sortExternalEvents(list: ExternalEvent[], sort: WanspotSort): ExternalE
 
 export default function EventsTab() {
   const router = useRouter()
-  const insets = useSafeAreaInsets()
   const { width: windowWidth } = useWindowDimensions()
   const [events, setEvents] = useState<WanspotEventRow[]>([])
   const [joinedEvents, setJoinedEvents] = useState<WanspotEventRow[]>([])
@@ -378,11 +375,12 @@ export default function EventsTab() {
   const sortedExternalEvents = useMemo(() => sortExternalEvents(externalEvents, eventSort), [externalEvents, eventSort])
   const currentSort = WANSPOT_SORT_OPTIONS.find((o) => o.value === eventSort)!
 
-  /** リスト末尾がFABに隠れないよう */
-  const padBottom = TAB_BAR_HEIGHT + insets.bottom + 100
-  const fabRight = 16
-  const fabBottom = TAB_BAR_HEIGHT + insets.bottom + 16
-  const fabMenuBottom = fabBottom + 56 + 10
+  /** タブシーンの下端は既にタブバー直上。FAB はそのすぐ上（マイページ列の中心に合わせる） */
+  const FAB_SIZE = 56
+  const padBottom = FAB_SIZE + 48
+  const fabBottom = 16
+  const fabRight = Math.max(12, Math.round(windowWidth / 8 - FAB_SIZE / 2))
+  const fabMenuBottom = fabBottom + FAB_SIZE + 10
 
   const fabIconSpin = fabRotate.interpolate({
     inputRange: [0, 1],
