@@ -868,19 +868,13 @@ export default function MypageTab() {
                   if (tags.length === 0) return null
                   return (
                     <View style={styles.walkAreaBelowBio}>
-                      <Text style={styles.walkAreaBelowBioLbl}>よく散歩するエリア</Text>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.walkAreaTagsScrollContent}
-                        nestedScrollEnabled
-                      >
+                      <View style={styles.walkAreaTagRow}>
                         {tags.map((tag) => (
                           <View key={tag} style={styles.walkAreaReadTagPill} accessibilityLabel={`散歩エリア ${tag}`}>
                             <Text style={styles.walkAreaReadTagTxt}>{tag}</Text>
                           </View>
                         ))}
-                      </ScrollView>
+                      </View>
                     </View>
                   )
                 })()}
@@ -1025,12 +1019,13 @@ const styles = StyleSheet.create({
   },
   walkAreaReadonly: { marginTop: 12, alignSelf: 'stretch', width: '100%', paddingHorizontal: 4 },
   walkAreaLbl: { fontSize: 12, fontWeight: '700', color: colors.textMuted, marginBottom: 6, textAlign: 'center' },
-  /** イベントのジャンルタグ（EventCard tagRow / tagPill）と同系統のスタンプピル */
+  /** 散歩エリアチップ行：中央寄せ・折り返し（まとめ記事 kwRow と同系） */
   walkAreaTagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
     justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
     alignSelf: 'stretch',
     marginTop: 2,
   },
@@ -1162,21 +1157,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     alignSelf: 'stretch',
     width: '100%',
-    alignItems: 'flex-start',
-    paddingHorizontal: 0,
-  },
-  walkAreaBelowBioLbl: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'left',
-    alignSelf: 'stretch',
-    marginBottom: 6,
-  },
-  walkAreaTagsScrollContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingRight: 8,
   },
   walkAreaReadTagPill: {
     backgroundColor: '#FFF8D6',
@@ -1184,7 +1164,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 12,
   },
-  walkAreaReadTagTxt: { fontSize: 12, color: colors.text },
+  walkAreaReadTagTxt: { fontSize: 12, fontWeight: '400', color: colors.text },
   profileSub: {
     marginTop: 4,
     fontSize: 14,
