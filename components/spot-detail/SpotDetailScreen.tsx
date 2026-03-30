@@ -98,10 +98,11 @@ function priceLevelFromDetail(d: DetailJson | null): number | null {
   return normalizePriceLevel(o.price_level ?? o.priceLevel)
 }
 
+/** reviews への upsert。エラー時は message を返す */
 async function syncUserSpotReview(
   client: SupabaseClient,
   params: { spotId: string; userId: string; rating: number; comment: string | null }
-) {
+): Promise<string | null> {
   const { spotId, userId, rating, comment } = params
   if (rating > 0) {
     const { data: rows } = await client
@@ -118,14 +119,17 @@ async function syncUserSpotReview(
       if (dupIds.length > 0) {
         await client.from('reviews').delete().in('id', dupIds)
       }
-      return client.from('reviews').update({ rating, comment }).eq('id', keepId)
+      const { error } = await client.from('reviews').update({ rating, comment }).eq('id', keepId)
+      return error?.message ?? null
     }
-    return client.from('reviews').insert(row)
+    const { error } = await client.from('reviews').insert(row)
+    return error?.message ?? null
   }
-  return client.from('reviews').delete().eq('spot_id', spotId).eq('user_id', userId)
+  const { error } = await client.from('reviews').delete().eq('spot_id', spotId).eq('user_id', userId)
+  return error?.message ?? null
 }
 
-/** 1ユーザー1件（DBに複製があっても最新のみ表示） */
+/** 1ユーザー1件（DBに複製があっても最新のみ） */
 function dedupeReviewsLatestPerUser(rows: Review[]): Review[] {
   const m = new Map<string, Review>()
   for (const r of rows) {
@@ -133,6 +137,48 @@ function dedupeReviewsLatestPerUser(rows: Review[]): Review[] {
     if (!prev || new Date(r.created_at).getTime() > new Date(prev.created_at).getTime()) m.set(r.user_id, r)
   }
   return Array.from(m.values()).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+}
+
+/** 同一コメント文の重複を除く（空コメントはユーザー単位の1件のみ残すのでそのまま通す） */
+function dedupeReviewsByCommentText(rows: Review[]): Review[] {
+  const seen = new Set<string>()
+  const out: Review[] = []
+  for (const r of rows) {
+    const key = (r.comment ?? '').trim()
+    if (key.length === 0) {
+      out.push(r)
+      continue
+    }
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(r)
+  }
+  return out
+}
+
+function dedupeReviewsForDisplay(rows: Review[]): Review[] {
+  return dedupeReviewsByCommentText(dedupeReviewsLatestPerUser(rows))
+}
+
+type CheckInCommentRow = { user_id: string; comment: string | null; created_at: string }
+
+/** 同一 user は最新1件、同一コメント文は1回だけ（パパ/ママの声用） */
+function dedupeCheckInCommentsForAdvice(rows: CheckInCommentRow[]): string[] {
+  const sorted = [...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  const byUser = new Map<string, string>()
+  for (const row of sorted) {
+    const c = typeof row.comment === 'string' ? row.comment.trim() : ''
+    if (!c || byUser.has(row.user_id)) continue
+    byUser.set(row.user_id, c)
+  }
+  const seenText = new Set<string>()
+  const out: string[] = []
+  for (const c of byUser.values()) {
+    if (seenText.has(c)) continue
+    seenText.add(c)
+    out.push(c)
+  }
+  return out
 }
 
 const IconChevronLeft = () => (
@@ -254,7 +300,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
 
   const loadReviews = useCallback(async (sId: string) => {
     const { data } = await supabase.from('reviews').select('*').eq('spot_id', sId).order('created_at', { ascending: false })
-    setReviews(dedupeReviewsLatestPerUser((data ?? []) as Review[]))
+    setReviews(dedupeReviewsForDisplay((data ?? []) as Review[]))
   }, [])
 
   useEffect(() => {
@@ -355,18 +401,16 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
 
       await loadReviews(spotId)
 
-      const { data: rawCheckInComments } = await supabase
+      const { data: rawCheckInRows } = await supabase
         .from('check_ins')
-        .select('comment')
+        .select('user_id, comment, created_at')
         .eq('spot_id', spotId)
         .not('comment', 'is', null)
 
-      const adviceComments = (rawCheckInComments ?? [])
-        .map((row: { comment: string | null }) => (typeof row.comment === 'string' ? row.comment.trim() : ''))
-        .filter((c: string) => c.length > 0)
+      const adviceComments = dedupeCheckInCommentsForAdvice((rawCheckInRows ?? []) as CheckInCommentRow[])
       setCheckInCommentsForOwnerAdvice(adviceComments)
 
-      if (adviceComments.length >= 3) {
+      if (adviceComments.length >= 1) {
         setOwnerAdviceLoading(true)
         wanspotFetchJson<{ advice?: string }>('/api/spots/owner-advice', {
           method: 'POST',
@@ -455,34 +499,32 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
     let cancelled = false
     setCheckInPrefillLoading(true)
     void (async () => {
-      const { data: ci } = await supabase
-        .from('check_ins')
-        .select('rating, comment')
-        .eq('spot_id', spot.id)
-        .eq('user_id', userId)
-        .maybeSingle()
-
-      let r = 0
-      let c = ''
-      if (ci) {
-        const row = ci as { rating?: number | null; comment?: string | null }
-        if (typeof row.rating === 'number' && row.rating > 0) r = row.rating
-        if (typeof row.comment === 'string') c = row.comment
-      }
-      if (r === 0 && !c.trim()) {
-        const { data: rev } = await supabase
+      const [{ data: ci }, { data: rev }] = await Promise.all([
+        supabase.from('check_ins').select('rating, comment').eq('spot_id', spot.id).eq('user_id', userId).maybeSingle(),
+        supabase
           .from('reviews')
           .select('rating, comment')
           .eq('spot_id', spot.id)
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
           .limit(1)
-          .maybeSingle()
-        if (rev) {
-          r = rev.rating ?? 0
-          c = rev.comment ?? ''
-        }
+          .maybeSingle(),
+      ])
+
+      let r = 0
+      let c = ''
+      const ciRow = ci as { rating?: number | null; comment?: string | null } | null
+      const revRow = rev as { rating?: number | null; comment?: string | null } | null
+      if (ciRow) {
+        if (typeof ciRow.rating === 'number' && ciRow.rating > 0) r = ciRow.rating
       }
+      if (revRow) {
+        const rr = typeof revRow.rating === 'number' ? revRow.rating : 0
+        if (rr > r) r = rr
+      }
+      const cFromCi = typeof ciRow?.comment === 'string' ? ciRow.comment.trim() : ''
+      const cFromRev = typeof revRow?.comment === 'string' ? revRow.comment.trim() : ''
+      c = cFromCi || cFromRev
       if (!cancelled) {
         setCheckInRating(r)
         setCheckInComment(c)
@@ -556,7 +598,11 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       if (insErr) {
         await supabase.from('check_ins').insert({ spot_id: spot.id, user_id: userId })
       }
-      await syncUserSpotReview(supabase, { spotId: spot.id, userId, rating, comment })
+      const reviewErr = await syncUserSpotReview(supabase, { spotId: spot.id, userId, rating, comment })
+      if (reviewErr) {
+        Alert.alert('レビュー保存エラー', reviewErr)
+        return
+      }
       await loadReviews(spot.id)
       setCheckedIn(true)
       setCheckInRating(0)
@@ -585,8 +631,20 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       const comment = checkInComment.trim() || null
       const rating = checkInRating > 0 ? checkInRating : 0
       const ratingVal = rating > 0 ? rating : null
-      await supabase.from('check_ins').update({ rating: ratingVal, comment }).eq('spot_id', spot.id).eq('user_id', userId)
-      await syncUserSpotReview(supabase, { spotId: spot.id, userId, rating, comment })
+      const { error: upCiErr } = await supabase
+        .from('check_ins')
+        .update({ rating: ratingVal, comment })
+        .eq('spot_id', spot.id)
+        .eq('user_id', userId)
+      if (upCiErr) {
+        Alert.alert('保存エラー', upCiErr.message)
+        return
+      }
+      const reviewErr = await syncUserSpotReview(supabase, { spotId: spot.id, userId, rating, comment })
+      if (reviewErr) {
+        Alert.alert('レビュー保存エラー', reviewErr)
+        return
+      }
       await loadReviews(spot.id)
       setShowCheckInModal(false)
       setCheckInToastMessage('記録を更新しました')
@@ -889,7 +947,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
 
           <View style={styles.card}>
             <Text style={styles.sectionLbl}>パパ/ママの声</Text>
-            {checkInCommentsForOwnerAdvice.length >= 3 ? (
+            {checkInCommentsForOwnerAdvice.length >= 1 ? (
               ownerAdviceLoading ? (
                 <RunningDog label="まとめを生成中..." />
               ) : ownerAdviceText ? (
