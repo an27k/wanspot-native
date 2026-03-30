@@ -136,12 +136,6 @@ function formatWalkAreaForDisplay(raw: string | null | undefined): string | null
   return t
 }
 
-function dogGenderLabelJa(g: 'male' | 'female' | null | undefined): string | null {
-  if (g === 'male') return 'オス'
-  if (g === 'female') return 'メス'
-  return null
-}
-
 /** DB の日付文字列を YYYY-MM-DD に正規化 */
 function ymdFromDogField(s: string | null | undefined): string {
   if (!s) return ''
@@ -569,7 +563,9 @@ export default function MypageTab() {
         }}
       >
         {dog ? (
-          <View style={styles.profileCard}>
+          <>
+            <Text style={styles.sectionTitle}>愛犬</Text>
+            <View style={styles.profileCard}>
             {!editingDog ? (
               <Pressable
                 style={styles.cardEditTopRight}
@@ -656,12 +652,13 @@ export default function MypageTab() {
               ) : (
                 <>
                   <Text style={styles.profileNameBold}>{dog.name}</Text>
+                  {dog.gender === 'male' ? (
+                    <Text style={[styles.dogGenderLine, styles.dogGenderMale]}>オス</Text>
+                  ) : dog.gender === 'female' ? (
+                    <Text style={[styles.dogGenderLine, styles.dogGenderFemale]}>メス</Text>
+                  ) : null}
                   {(() => {
-                    const parts = [
-                      dog.breed?.trim(),
-                      dogGenderLabelJa(dog.gender),
-                      dog.birthday?.trim() ? calcAge(dog.birthday) : null,
-                    ].filter(Boolean)
+                    const parts = [dog.breed?.trim(), dog.birthday?.trim() ? calcAge(dog.birthday) : null].filter(Boolean)
                     if (parts.length === 0) return null
                     return (
                       <Text style={styles.profileSubOneLine} numberOfLines={1}>
@@ -768,8 +765,10 @@ export default function MypageTab() {
               </View>
             ) : null}
           </View>
+          </>
         ) : null}
 
+        <Text style={styles.sectionTitle}>オーナー</Text>
         <View style={styles.profileCard}>
           {!editingOwner ? (
             <Pressable
@@ -843,7 +842,13 @@ export default function MypageTab() {
               <>
                 <Text style={styles.profileNameBold}>{profile?.name ?? '名前未設定'}</Text>
                 <View style={styles.ownerTitleRow}>
-                  <Text style={styles.ownerRoleBrand} numberOfLines={1}>
+                  <Text
+                    style={[
+                      styles.ownerRoleLabel,
+                      profile?.parent_type === 'mama' ? styles.ownerRoleMama : styles.ownerRolePapa,
+                    ]}
+                    numberOfLines={1}
+                  >
                     {parentLabel(profile?.parent_type ?? null)}
                   </Text>
                   {profile?.birthday?.trim() && /^\d{4}-\d{2}-\d{2}$/.test(profile.birthday.trim()) ? (
@@ -852,16 +857,6 @@ export default function MypageTab() {
                     </Text>
                   ) : null}
                 </View>
-                {(() => {
-                  const walkDisp = formatWalkAreaForDisplay(profile?.walk_area)
-                  if (!walkDisp) return null
-                  return (
-                    <View style={styles.walkAreaDisplayBlock}>
-                      <Text style={styles.walkAreaReadonlyLbl}>よく散歩するエリア</Text>
-                      <Text style={styles.walkAreaReadonlyVal}>{walkDisp}</Text>
-                    </View>
-                  )
-                })()}
               </>
             )}
           </View>
@@ -882,6 +877,16 @@ export default function MypageTab() {
                   ? profile.bio
                   : defaultBioFromDog({ name: dog?.name, breed: dog?.breed })}
               </Text>
+              {(() => {
+                const walkDisp = formatWalkAreaForDisplay(profile?.walk_area)
+                if (!walkDisp) return null
+                return (
+                  <View style={styles.walkAreaBelowBio}>
+                    <Text style={styles.walkAreaBelowBioLbl}>よく散歩するエリア</Text>
+                    <Text style={styles.walkAreaBelowBioVal}>{walkDisp}</Text>
+                  </View>
+                )
+              })()}
             </>
           )}
           {editingOwner ? (
@@ -964,6 +969,14 @@ export default function MypageTab() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cardBg },
   loadRoot: { flex: 1, backgroundColor: colors.cardBg, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+    alignSelf: 'stretch',
+  },
   profileCard: {
     position: 'relative',
     backgroundColor: colors.background,
@@ -1020,10 +1033,6 @@ const styles = StyleSheet.create({
   /** カード表示：年齢と同じ行高 */
   dogProfileGenderLine: { fontSize: 14, lineHeight: 20 },
   dogProfileAgeLine: { fontSize: 14, lineHeight: 20, fontWeight: '600', color: colors.textMuted },
-  parentRolePapa: { color: colors.genderMale },
-  parentRoleMama: { color: colors.genderFemale },
-  ownerProfilePairText: { fontSize: 14, lineHeight: 20, fontWeight: '700' },
-  ownerProfileAgeText: { color: colors.textMuted },
   genderPickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   genderPickChip: {
     flexDirection: 'row',
@@ -1099,6 +1108,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     alignSelf: 'stretch',
   },
+  dogGenderLine: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+    alignSelf: 'stretch',
+  },
+  dogGenderMale: { color: colors.genderMale },
+  dogGenderFemale: { color: colors.genderFemale },
   ownerTitleRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1108,11 +1126,19 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: 0,
   },
-  ownerRoleBrand: { fontSize: 14, fontWeight: '800', color: colors.brand },
+  ownerRoleLabel: { fontSize: 14, fontWeight: '800' },
+  ownerRolePapa: { color: colors.genderMale },
+  ownerRoleMama: { color: colors.genderFemale },
   ownerAgeMuted: { fontSize: 14, color: colors.textMuted },
-  walkAreaDisplayBlock: { marginTop: 14, alignSelf: 'stretch', width: '100%', alignItems: 'center' },
-  walkAreaReadonlyLbl: { fontSize: 12, fontWeight: '800', color: colors.textMuted },
-  walkAreaReadonlyVal: { marginTop: 6, fontSize: 14, color: colors.text, textAlign: 'center', lineHeight: 20 },
+  walkAreaBelowBio: {
+    marginTop: 16,
+    alignSelf: 'stretch',
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  walkAreaBelowBioLbl: { fontSize: 12, color: colors.textMuted, textAlign: 'center' },
+  walkAreaBelowBioVal: { marginTop: 6, fontSize: 14, color: colors.text, textAlign: 'center', lineHeight: 20 },
   profileSub: {
     marginTop: 4,
     fontSize: 14,

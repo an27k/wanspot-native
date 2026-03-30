@@ -16,8 +16,8 @@ export const colors = {
   successMutedBg: '#F0FDF4',
   /** マイページ・犬アイコンなし時の円形プレースホルダー背景 */
   dogPhotoPlaceholderBg: '#FFF8D6',
-  /** ♂・パパ表記用の薄い青 */
-  genderMale: '#5B8FD8',
-  /** ♀・ママ表記用の薄い赤 */
-  genderFemale: '#E8707A',
+  /** ♂・オス・パパ表記用の薄い青 */
+  genderMale: '#4A90D9',
+  /** ♀・メス・ママ表記用の赤 */
+  genderFemale: '#E84335',
 } as const

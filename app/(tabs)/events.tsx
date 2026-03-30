@@ -691,7 +691,7 @@ export default function EventsTab() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f7f6f3' },
+  root: { flex: 1, backgroundColor: '#f7f6f3', position: 'relative' },
   subHeader: {
     flexDirection: 'row',
     alignItems: 'stretch',
