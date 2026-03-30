@@ -863,6 +863,27 @@ export default function MypageTab() {
                     </>
                   ) : null}
                 </View>
+                {(() => {
+                  const tags = normalizeWalkAreaTagsFromDb(profile?.walk_area_tags)
+                  if (tags.length === 0) return null
+                  return (
+                    <View style={styles.walkAreaBelowBio}>
+                      <Text style={styles.walkAreaBelowBioLbl}>よく散歩するエリア</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.walkAreaTagsScrollContent}
+                        nestedScrollEnabled
+                      >
+                        {tags.map((tag) => (
+                          <View key={tag} style={styles.walkAreaReadTagPill} accessibilityLabel={`散歩エリア ${tag}`}>
+                            <Text style={styles.walkAreaReadTagTxt}>{tag}</Text>
+                          </View>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )
+                })()}
               </>
             )}
           </View>
@@ -883,27 +904,6 @@ export default function MypageTab() {
                   ? profile.bio
                   : defaultBioFromDog({ name: dog?.name, breed: dog?.breed })}
               </Text>
-              {(() => {
-                const tags = normalizeWalkAreaTagsFromDb(profile?.walk_area_tags)
-                if (tags.length === 0) return null
-                return (
-                  <View style={styles.walkAreaBelowBio}>
-                    <Text style={styles.walkAreaBelowBioLbl}>よく散歩するエリア</Text>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.walkAreaTagsScrollContent}
-                      nestedScrollEnabled
-                    >
-                      {tags.map((tag) => (
-                        <View key={tag} style={styles.walkAreaReadTagPill} accessibilityLabel={`散歩エリア ${tag}`}>
-                          <Text style={styles.walkAreaReadTagTxt}>{tag}</Text>
-                        </View>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )
-              })()}
             </>
           )}
           {editingOwner ? (
