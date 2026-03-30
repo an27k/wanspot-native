@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/wanspot_image.png",
     "userInterfaceStyle": "light",
+    "scheme": "wanspot",
     "splash": {
       "image": "./assets/images/wanspot_image.png",
       "resizeMode": "contain",
