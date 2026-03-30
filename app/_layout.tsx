@@ -1,12 +1,12 @@
+import { useEffect } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { Stack } from 'expo-router'
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
 import { Platform, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-// debug minimal: 認証まわりを切る（AuthProvider 内で onAuthStateChange 等）
-// import { AuthProvider } from '@/context/AuthContext'
-// import { initAnalytics } from '@/lib/analytics'
+import { AuthProvider } from '@/context/AuthContext'
+import { initAnalytics } from '@/lib/analytics'
 
 /** ルート Stack: ネイティブの UINavigationController / Android Fragment トランジションに寄せる */
 const stackScreenOptions = {
@@ -26,9 +26,9 @@ export default function RootLayout() {
   /** ヘッダー・タブの Ionicons が componentDidMount まで空表示になるのを防ぐ */
   const [ioniconsLoaded, ioniconsError] = useFonts(Ionicons.font)
 
-  // useEffect(() => {
-  //   initAnalytics()
-  // }, [])
+  useEffect(() => {
+    initAnalytics()
+  }, [])
 
   if (!ioniconsLoaded && !ioniconsError) {
     return (
@@ -41,10 +41,10 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      {/* <AuthProvider> */}
-      <StatusBar style="dark" />
-      <Stack screenOptions={stackScreenOptions} />
-      {/* </AuthProvider> */}
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <Stack screenOptions={stackScreenOptions} />
+      </AuthProvider>
     </SafeAreaProvider>
   )
 }
