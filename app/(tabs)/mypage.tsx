@@ -5,6 +5,7 @@ import {
   Alert,
   Image,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -22,7 +23,12 @@ import { DogPawPlaceholder } from '@/components/events/EventCard'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { OwnerBirthdayPickers, ownerBirthdayToYmd, splitYmdToParts } from '@/components/OwnerBirthdayPickers'
+import {
+  dogBirthdayYearBounds,
+  OwnerBirthdayPickers,
+  ownerBirthdayToYmd,
+  splitYmdToParts,
+} from '@/components/OwnerBirthdayPickers'
 import { mergeUnknownWalkTags, WalkAreaTagPicker } from '@/components/walk-area/WalkAreaTagPicker'
 import { defaultBioFromDog } from '@/lib/default-bio'
 import { supabase } from '@/lib/supabase'
@@ -171,7 +177,9 @@ export default function MypageTab() {
 
   const [editDogName, setEditDogName] = useState('')
   const [editDogBreed, setEditDogBreed] = useState('')
-  const [editDogBirthday, setEditDogBirthday] = useState('')
+  const [editDogYear, setEditDogYear] = useState('')
+  const [editDogMonth, setEditDogMonth] = useState('')
+  const [editDogDay, setEditDogDay] = useState('')
   const [editDogGender, setEditDogGender] = useState<'male' | 'female' | null>(null)
   const [editRabiesDate, setEditRabiesDate] = useState('')
   const [editVaccineDate, setEditVaccineDate] = useState('')
@@ -198,6 +206,8 @@ export default function MypageTab() {
 
   const ownerEditBirthdayYmd = ownerBirthdayToYmd(editOwnerYear, editOwnerMonth, editOwnerDay)
   const ownerEditBirthdayOk = ownerEditBirthdayYmd !== null
+  const dogEditBirthdayYmd = ownerBirthdayToYmd(editDogYear, editDogMonth, editDogDay)
+  const dogYBounds = dogBirthdayYearBounds()
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -262,7 +272,12 @@ export default function MypageTab() {
     if (!dog) return
     setEditDogName(dog.name ?? '')
     setEditDogBreed(dog.breed ?? '')
-    setEditDogBirthday(dog.birthday ?? '')
+    {
+      const p = splitYmdToParts(dog.birthday ?? null)
+      setEditDogYear(p.y)
+      setEditDogMonth(p.m)
+      setEditDogDay(p.d)
+    }
     setEditDogGender(dog.gender ?? null)
     setEditRabiesDate(dog.rabies_vaccinated_at ?? '')
     setEditVaccineDate(dog.vaccine_vaccinated_at ?? '')
@@ -331,7 +346,7 @@ export default function MypageTab() {
         .update({
           name: editDogName.trim(),
           breed: editDogBreed.trim() || null,
-          birthday: editDogBirthday || null,
+          birthday: dogEditBirthdayYmd,
           gender: editDogGender,
           rabies_vaccinated_at: editRabiesDate || null,
           vaccine_vaccinated_at: editVaccineDate || null,
@@ -348,7 +363,7 @@ export default function MypageTab() {
               ...prev,
               name: editDogName.trim(),
               breed: editDogBreed.trim() || null,
-              birthday: editDogBirthday || null,
+              birthday: dogEditBirthdayYmd,
               gender: editDogGender,
               rabies_vaccinated_at: editRabiesDate || null,
               vaccine_vaccinated_at: editVaccineDate || null,
@@ -632,14 +647,20 @@ export default function MypageTab() {
                     placeholder="犬種"
                     placeholderTextColor={colors.textMuted}
                   />
-                  <Text style={styles.miniLbl}>誕生日（YYYY-MM-DD）</Text>
-                  <TextInput
-                    style={styles.inp}
-                    value={editDogBirthday}
-                    onChangeText={setEditDogBirthday}
-                    placeholder="2020-01-01"
-                    placeholderTextColor={colors.textMuted}
-                  />
+                  <View style={styles.birthdayPickerCard}>
+                    <OwnerBirthdayPickers
+                      year={editDogYear}
+                      month={editDogMonth}
+                      day={editDogDay}
+                      onChangeYear={setEditDogYear}
+                      onChangeMonth={setEditDogMonth}
+                      onChangeDay={setEditDogDay}
+                      yearMin={dogYBounds.min}
+                      yearMax={dogYBounds.max}
+                      fieldLabel="生年月日（任意）"
+                      hint="年・月・日をすべて選ぶと年齢表示に使います。未選択のままなら未登録です。"
+                    />
+                  </View>
                   <Text style={styles.miniLbl}>性別</Text>
                   <View style={styles.genderPickRow}>
                     <Pressable
@@ -848,14 +869,16 @@ export default function MypageTab() {
                     </Pressable>
                     ))}
                   </View>
-                  <OwnerBirthdayPickers
-                    year={editOwnerYear}
-                    month={editOwnerMonth}
-                    day={editOwnerDay}
-                    onChangeYear={setEditOwnerYear}
-                    onChangeMonth={setEditOwnerMonth}
-                    onChangeDay={setEditOwnerDay}
-                  />
+                  <View style={styles.birthdayPickerCard}>
+                    <OwnerBirthdayPickers
+                      year={editOwnerYear}
+                      month={editOwnerMonth}
+                      day={editOwnerDay}
+                      onChangeYear={setEditOwnerYear}
+                      onChangeMonth={setEditOwnerMonth}
+                      onChangeDay={setEditOwnerDay}
+                    />
+                  </View>
                   <Text style={styles.walkAreaEditLbl}>よく散歩するエリア</Text>
                   <Text style={styles.walkAreaEditHint}>近くの候補は位置情報オンで表示されます。検索で全国の主要エリアから選べます。</Text>
                   <WalkAreaTagPicker anchor={ownerAreaAnchor} value={editWalkAreaTags} onChange={setEditWalkAreaTags} />
@@ -970,16 +993,18 @@ export default function MypageTab() {
               <Text style={styles.pickerTitle}>
                 {vaccinePickerKind === 'rabies' ? '狂犬病ワクチン接種日' : '混合ワクチン接種日'}
               </Text>
-              <OwnerBirthdayPickers
-                fieldLabel=""
-                hint={null}
-                year={vaccinePickerYear}
-                month={vaccinePickerMonth}
-                day={vaccinePickerDay}
-                onChangeYear={setVaccinePickerYear}
-                onChangeMonth={setVaccinePickerMonth}
-                onChangeDay={setVaccinePickerDay}
-              />
+              <View style={styles.birthdayPickerCard}>
+                <OwnerBirthdayPickers
+                  fieldLabel=""
+                  hint={null}
+                  year={vaccinePickerYear}
+                  month={vaccinePickerMonth}
+                  day={vaccinePickerDay}
+                  onChangeYear={setVaccinePickerYear}
+                  onChangeMonth={setVaccinePickerMonth}
+                  onChangeDay={setVaccinePickerDay}
+                />
+              </View>
               <View style={styles.pickerActions}>
                 <Pressable style={styles.pickerGhost} onPress={() => setVaccinePickerKind(null)}>
                   <Text style={styles.pickerGhostTxt}>キャンセル</Text>
@@ -1083,6 +1108,25 @@ const styles = StyleSheet.create({
   /** 編集時（愛犬・オーナー共通）：カメラFABがはみ出す分、先頭入力との間を空ける */
   avatar80WrapEditing: { marginBottom: 12 },
   profileEditFieldsAfterAvatar: { marginTop: 14 },
+  /** オンボーディング owner の birthdayCard と同系（中央固定ドラム3列） */
+  birthdayPickerCard: {
+    marginTop: 4,
+    padding: 16,
+    paddingBottom: 18,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+      },
+      android: { elevation: 4 },
+    }),
+  },
   avatar80Wrap: { position: 'relative', width: 80, height: 80, marginTop: 0 },
   avatar80: {
     width: 80,

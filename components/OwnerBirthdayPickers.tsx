@@ -4,6 +4,11 @@ import { CenterSnapPicker } from '@/components/CenterSnapPicker'
 
 const currentYear = new Date().getFullYear()
 
+/** 愛犬の生年月日用（今年まで・過去に十分な年幅） */
+export function dogBirthdayYearBounds(): { min: number; max: number } {
+  return { min: currentYear - 35, max: currentYear }
+}
+
 export function ownerBirthdayToYmd(year: string, month: string, day: string): string | null {
   const y = year.trim()
   const m = month.trim()

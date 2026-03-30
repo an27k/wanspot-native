@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import {
   Alert,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +16,7 @@ import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CenterSnapPicker } from '@/components/CenterSnapPicker'
 import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
+import { dogBirthdayYearBounds, OwnerBirthdayPickers, ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
 import { IconPaw } from '@/components/IconPaw'
 import { colors } from '@/constants/colors'
 import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
@@ -55,9 +57,6 @@ const BREEDS = [
   'その他',
 ] as const
 
-const currentYear = new Date().getFullYear()
-const YEARS = Array.from({ length: 20 }, (_, i) => currentYear - i)
-const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 const STEP_DOTS = 5
 
 export default function DogPage() {
@@ -71,8 +70,9 @@ export default function DogPage() {
     })()
   }, [router])
   const [name, setName] = useState('')
-  const [year, setYear] = useState('')
-  const [month, setMonth] = useState('')
+  const [dogYear, setDogYear] = useState('')
+  const [dogMonth, setDogMonth] = useState('')
+  const [dogDay, setDogDay] = useState('')
   const [breed, setBreed] = useState('')
   const [gender, setGender] = useState<'male' | 'female' | null>(null)
   const [vaccineCombo, setVaccineCombo] = useState<boolean | null>(null)
@@ -81,8 +81,15 @@ export default function DogPage() {
   const [photoError, setPhotoError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const dogBirthdayYmd = ownerBirthdayToYmd(dogYear, dogMonth, dogDay)
+  const dogYBounds = dogBirthdayYearBounds()
   const canNext =
-    name && year && month && breed && gender !== null && vaccineCombo !== null && vaccineRabies !== null
+    !!dogBirthdayYmd &&
+    !!name.trim() &&
+    !!breed &&
+    gender !== null &&
+    vaccineCombo !== null &&
+    vaccineRabies !== null
 
   const pickPhoto = () => {
     Alert.alert('準備中', '写真の選択は準備中です')
@@ -132,8 +139,9 @@ export default function DogPage() {
 
       const obDogPayload = JSON.stringify({
         name,
-        year,
-        month,
+        year: dogYear,
+        month: dogMonth,
+        day: dogDay,
         breed,
         gender,
         vaccineCombo,
@@ -150,8 +158,6 @@ export default function DogPage() {
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
   const padTop = insets.top + 16
 
-  const yearRows = [{ value: '', label: '—' }, ...YEARS.map((y) => ({ value: String(y), label: `${y}年` }))]
-  const monthRows = [{ value: '', label: '—' }, ...MONTHS.map((m) => ({ value: String(m), label: `${m}月` }))]
   const breedRows = [{ value: '', label: '—' }, ...BREEDS.map((b) => ({ value: b, label: b }))]
 
   return (
@@ -207,15 +213,20 @@ export default function DogPage() {
         <TextInput style={styles.input} placeholder="モカ" value={name} onChangeText={setName} placeholderTextColor="#aaa" />
       </View>
 
-      <View style={styles.grid2}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.label}>誕生年</Text>
-          <CenterSnapPicker listKey="dog-y" data={yearRows} value={year} onChange={setYear} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.label}>誕生月</Text>
-          <CenterSnapPicker listKey="dog-m" data={monthRows} value={month} onChange={setMonth} />
-        </View>
+      <View style={styles.birthdayCard}>
+        <OwnerBirthdayPickers
+          compact
+          year={dogYear}
+          month={dogMonth}
+          day={dogDay}
+          onChangeYear={setDogYear}
+          onChangeMonth={setDogMonth}
+          onChangeDay={setDogDay}
+          yearMin={dogYBounds.min}
+          yearMax={dogYBounds.max}
+          fieldLabel="生年月日（必須）"
+          hint="年・月・日をすべて選択してください。"
+        />
       </View>
 
       <View>
@@ -312,7 +323,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1a1a1a',
   },
-  grid2: { flexDirection: 'row', gap: 12 },
+  /** オーナー登録（owner.tsx）の birthdayCard と同じ見た目 */
+  birthdayCard: {
+    marginTop: 8,
+    padding: 16,
+    paddingBottom: 18,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+      },
+      android: { elevation: 4 },
+    }),
+  },
   row2: { flexDirection: 'row', gap: 8 },
   half: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   halfOn: { backgroundColor: '#FFD84D' },

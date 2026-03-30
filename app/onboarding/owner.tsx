@@ -124,14 +124,19 @@ export default function OwnerOnboardingPage() {
         name?: string
         year?: string
         month?: string
+        day?: string
         breed?: string
         gender?: 'male' | 'female'
         vaccineCombo?: boolean
         vaccineRabies?: boolean
         dogPhotoUrl?: string | null
       }
+      const dayPart =
+        typeof dog.day === 'string' && dog.day.trim() !== '' ? dog.day.trim() : '1'
       const birthday =
-        dog.year && dog.month ? `${dog.year}-${String(dog.month).padStart(2, '0')}-01` : null
+        dog.year && dog.month
+          ? ownerBirthdayToYmd(String(dog.year), String(dog.month), dayPart)
+          : null
 
       const rawArea = await AsyncStorage.getItem('ob_area')
       let walkAreaTags: string[] = []

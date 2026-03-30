@@ -4,7 +4,7 @@
     "slug": "wanspot-native",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/wanspot_image.png",
+    "icon": "./assets/images/wanspot_icon_yellowbg.png",
     "userInterfaceStyle": "light",
     "scheme": "wanspot",
     "splash": {
