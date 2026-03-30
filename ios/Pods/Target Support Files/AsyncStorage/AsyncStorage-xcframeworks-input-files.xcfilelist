@@ -1,0 +1,2 @@
+${PODS_ROOT}/Target Support Files/AsyncStorage/AsyncStorage-xcframeworks.sh
+${PODS_ROOT}/../../node_modules/@react-native-async-storage/async-storage/apple-frameworks/SharedAsyncStorage.xcframework

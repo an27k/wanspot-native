@@ -1,0 +1,6 @@
+module AsyncStorage {
+  umbrella header "AsyncStorage-umbrella.h"
+
+  export *
+  module * { export * }
+}

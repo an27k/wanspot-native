@@ -1,0 +1,6 @@
+module Pods_wanspotnative {
+  umbrella header "Pods-wanspotnative-umbrella.h"
+
+  export *
+  module * { export * }
+}
