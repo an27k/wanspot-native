@@ -120,6 +120,28 @@ function formatDateJaGregorian(ymd: string): string {
   return `${y}年${m}月${day}日`
 }
 
+/** users.walk_area（JSON 配列またはプレーン文字）を表示用に整形。未設定は null */
+function formatWalkAreaForDisplay(raw: string | null | undefined): string | null {
+  const t = typeof raw === 'string' ? raw.trim() : ''
+  if (!t) return null
+  try {
+    const v = JSON.parse(t) as unknown
+    if (Array.isArray(v)) {
+      const strs = v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).map((x) => x.trim())
+      return strs.length > 0 ? strs.join('、') : null
+    }
+  } catch {
+    /* プレーン文字列 */
+  }
+  return t
+}
+
+function dogGenderLabelJa(g: 'male' | 'female' | null | undefined): string | null {
+  if (g === 'male') return 'オス'
+  if (g === 'female') return 'メス'
+  return null
+}
+
 /** DB の日付文字列を YYYY-MM-DD に正規化 */
 function ymdFromDogField(s: string | null | undefined): string {
   if (!s) return ''
@@ -635,11 +657,15 @@ export default function MypageTab() {
                 <>
                   <Text style={styles.profileNameBold}>{dog.name}</Text>
                   {(() => {
-                    const parts = [dog.breed?.trim(), dog.birthday?.trim() ? calcAge(dog.birthday) : null].filter(Boolean)
+                    const parts = [
+                      dog.breed?.trim(),
+                      dogGenderLabelJa(dog.gender),
+                      dog.birthday?.trim() ? calcAge(dog.birthday) : null,
+                    ].filter(Boolean)
                     if (parts.length === 0) return null
                     return (
                       <Text style={styles.profileSubOneLine} numberOfLines={1}>
-                        {parts.join(' · ')}
+                        {parts.join('・')}
                       </Text>
                     )
                   })()}
@@ -816,12 +842,26 @@ export default function MypageTab() {
               ) : (
               <>
                 <Text style={styles.profileNameBold}>{profile?.name ?? '名前未設定'}</Text>
-                <Text style={styles.ownerTitleLine} numberOfLines={1}>
-                  {parentLabel(profile?.parent_type ?? null)}
-                  {profile?.birthday?.trim() && /^\d{4}-\d{2}-\d{2}$/.test(profile.birthday.trim())
-                    ? `・${calcHumanAgeYears(profile.birthday)}`
-                    : ''}
-                </Text>
+                <View style={styles.ownerTitleRow}>
+                  <Text style={styles.ownerRoleBrand} numberOfLines={1}>
+                    {parentLabel(profile?.parent_type ?? null)}
+                  </Text>
+                  {profile?.birthday?.trim() && /^\d{4}-\d{2}-\d{2}$/.test(profile.birthday.trim()) ? (
+                    <Text style={styles.ownerAgeMuted} numberOfLines={1}>
+                      ・{calcHumanAgeYears(profile.birthday)}
+                    </Text>
+                  ) : null}
+                </View>
+                {(() => {
+                  const walkDisp = formatWalkAreaForDisplay(profile?.walk_area)
+                  if (!walkDisp) return null
+                  return (
+                    <View style={styles.walkAreaDisplayBlock}>
+                      <Text style={styles.walkAreaReadonlyLbl}>よく散歩するエリア</Text>
+                      <Text style={styles.walkAreaReadonlyVal}>{walkDisp}</Text>
+                    </View>
+                  )
+                })()}
               </>
             )}
           </View>
@@ -1059,13 +1099,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     alignSelf: 'stretch',
   },
-  ownerTitleLine: {
+  ownerTitleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 4,
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
     alignSelf: 'stretch',
+    gap: 0,
   },
+  ownerRoleBrand: { fontSize: 14, fontWeight: '800', color: colors.brand },
+  ownerAgeMuted: { fontSize: 14, color: colors.textMuted },
+  walkAreaDisplayBlock: { marginTop: 14, alignSelf: 'stretch', width: '100%', alignItems: 'center' },
+  walkAreaReadonlyLbl: { fontSize: 12, fontWeight: '800', color: colors.textMuted },
+  walkAreaReadonlyVal: { marginTop: 6, fontSize: 14, color: colors.text, textAlign: 'center', lineHeight: 20 },
   profileSub: {
     marginTop: 4,
     fontSize: 14,

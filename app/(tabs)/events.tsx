@@ -380,7 +380,7 @@ export default function EventsTab() {
 
   /** リスト末尾がFABに隠れないよう */
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 100
-  const fabRight = 16 + insets.right
+  const fabRight = 16
   const fabBottom = TAB_BAR_HEIGHT + insets.bottom + 16
   const fabMenuBottom = fabBottom + 56 + 10
 
@@ -790,8 +790,8 @@ const styles = StyleSheet.create({
   sortItemOn: { backgroundColor: '#FFF9E0' },
   sortItemTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
   sortItemTxtOn: { color: '#1a1a1a' },
-  fabOverlayAnim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 38 },
-  fabMenu: { position: 'absolute', zIndex: 42, width: 280, maxWidth: '100%', gap: 8 },
+  fabOverlayAnim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 99 },
+  fabMenu: { position: 'absolute', zIndex: 101, width: 280, maxWidth: '100%', gap: 8 },
   eventsPagerHost: { flex: 1, overflow: 'hidden' },
   eventsPagerRow: { flexDirection: 'row', flex: 1 },
   /** 横ページャの各列: 幅は inline、縦は親に合わせ stretch（flex:1 幅と併用しない） */
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
   fabMenuSecTxt: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
   fab: {
     position: 'absolute',
-    zIndex: 44,
+    zIndex: 100,
     width: 56,
     height: 56,
     borderRadius: 28,

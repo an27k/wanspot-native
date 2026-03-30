@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import {
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -11,7 +12,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
-import { Logo } from '@/components/Logo'
 import { colors } from '@/constants/colors'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
 import { useAuth } from '@/context/AuthContext'
@@ -53,7 +53,12 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
         ) : (
           <View style={styles.row}>
             <View style={styles.brand}>
-              <Logo variant="yellow" width={28} height={32} />
+              <Image
+                source={require('@/assets/images/wanspot_icon.png')}
+                style={styles.brandIcon}
+                resizeMode="contain"
+                accessibilityIgnoresInvertColors
+              />
               <Text style={styles.brandText}>wanspot</Text>
             </View>
             <View style={styles.sideRight}>
@@ -122,6 +127,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brandIcon: { width: 28, height: 28 },
   brandText: { fontWeight: '800', fontSize: 16, color: colors.text },
   side: { width: 40, justifyContent: 'center' },
   sideRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
