@@ -417,7 +417,6 @@ export default function SearchTab() {
         .select('id, title, summary, slug, category, keywords, image_url, created_at')
         .eq('status', 'published')
         .order('published_at', { ascending: false, nullsFirst: false })
-        .limit(20)
       setArticlesList((data ?? []) as ArticleRow[])
     } catch {
       setArticlesList([])
