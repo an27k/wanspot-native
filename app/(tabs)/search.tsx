@@ -136,6 +136,7 @@ type ArticleRow = {
   keywords: string[]
   image_url: string | null
   created_at: string
+  published_at?: string | null
 }
 
 export default function SearchTab() {
@@ -414,7 +415,7 @@ export default function SearchTab() {
     try {
       const { data } = await supabase
         .from('articles')
-        .select('id, title, summary, slug, category, keywords, image_url, created_at')
+        .select('id, title, summary, slug, category, keywords, image_url, created_at, published_at')
         .eq('status', 'published')
         .order('published_at', { ascending: false, nullsFirst: false })
       setArticlesList((data ?? []) as ArticleRow[])
