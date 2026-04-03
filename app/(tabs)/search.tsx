@@ -24,6 +24,7 @@ import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
+import { rankArticlesFeed } from '@/lib/article-feed-ranking'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
@@ -167,6 +168,7 @@ export default function SearchTab() {
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
   const [pullRefreshing, setPullRefreshing] = useState(false)
+  const [recentArticleIds, setRecentArticleIds] = useState<string[]>([])
 
   useEffect(() => {
     Location.getCurrentPositionAsync({}).then((p) => setLocation({ lat: p.coords.latitude, lng: p.coords.longitude })).catch(() => {})
@@ -407,24 +409,40 @@ export default function SearchTab() {
     [hotLoading, hotResults.length, location]
   )
 
-  const handleArticles = useCallback(async (opts?: { force?: boolean }) => {
-    const force = opts?.force === true
-    if (articlesLoading) return
-    if (!force && articlesList.length > 0) return
-    setArticlesLoading(true)
-    try {
-      const { data } = await supabase
-        .from('articles')
-        .select('id, title, summary, slug, category, keywords, image_url, created_at, published_at')
-        .eq('status', 'published')
-        .order('published_at', { ascending: false, nullsFirst: false })
-      setArticlesList((data ?? []) as ArticleRow[])
-    } catch {
-      setArticlesList([])
-    } finally {
-      setArticlesLoading(false)
-    }
-  }, [articlesLoading, articlesList.length])
+  const handleArticles = useCallback(
+    async (opts?: { force?: boolean }) => {
+      const force = opts?.force === true
+      if (articlesLoading) return
+      if (!force && articlesList.length > 0) return
+      setArticlesLoading(true)
+      try {
+        const { data } = await supabase
+          .from('articles')
+          .select(
+            'id, title, summary, slug, category, keywords, image_url, created_at, published_at, blocks, spot_links'
+          )
+          .eq('status', 'published')
+          .order('published_at', { ascending: false, nullsFirst: false })
+
+        const rows = (data ?? []) as (ArticleRow & { blocks?: unknown; spot_links?: unknown })[]
+
+        const ranked = await rankArticlesFeed({
+          supabase,
+          articles: rows,
+          userLocation: location,
+          recentArticleIds,
+          topN: 10,
+        })
+
+        setArticlesList(ranked)
+      } catch {
+        setArticlesList([])
+      } finally {
+        setArticlesLoading(false)
+      }
+    },
+    [articlesLoading, articlesList.length, location, recentArticleIds]
+  )
 
   /** まとめ記事サムネを一覧取得直後に先読み（スクロール時の待ちを減らす） */
   useEffect(() => {
@@ -710,6 +728,10 @@ export default function SearchTab() {
                         style={styles.artCard}
                         onPress={() => {
                           track('article_clicked', { article_id: article.id })
+                          setRecentArticleIds((prev) => {
+                            if (prev.includes(article.id)) return prev
+                            return [article.id, ...prev].slice(0, 40)
+                          })
                           router.push(`/articles/${article.slug}`)
                         }}
                       >
