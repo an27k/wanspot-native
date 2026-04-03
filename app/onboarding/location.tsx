@@ -65,11 +65,9 @@ export default function OnboardingLocationPage() {
         </View>
       </View>
 
-      <Text style={styles.h2}>
-        位置情報の利用を{'\n'}許可してください
-      </Text>
+      <Text style={styles.h2}>位置情報の利用を許可してください</Text>
       <Text style={styles.hint}>
-        オンボーディングのあと、「よく散歩するエリア」を現在地の周辺から選べるようにします。いつでもOSの設定から変更できます。
+        wanspotはあなたの現在地をもとに、近くのワンちゃんスポットやイベントを表示します。サービスを利用するために位置情報の許可が必要です。
       </Text>
 
       <TouchableOpacity style={[styles.next, busy && styles.nextOff]} onPress={() => void requestAndSave()} disabled={busy}>

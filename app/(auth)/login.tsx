@@ -17,10 +17,12 @@ import type { TextInput as RNTextInput } from 'react-native'
 import { Link, useRouter } from 'expo-router'
 import { colors } from '@/constants/colors'
 import { useAuth } from '@/context/AuthContext'
-import { supabase } from '@/lib/supabase'
+import { completeLoginNavigation } from '@/lib/complete-login-navigation'
+import { signInWithOAuthProvider } from '@/lib/oauth-supabase'
 
 import { brandLogoSource } from '@/assets/brandLogo'
-import { track } from '@/lib/analytics'
+import { AppleOAuthLabel, GoogleOAuthLabel } from '@/components/auth/OAuthButtonLabels'
+import { oauthApplePressableBase, oauthGooglePressableBase } from '@/components/auth/oauthButtonStyles'
 
 export default function LoginScreen() {
   const router = useRouter()
@@ -29,6 +31,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'apple' | null>(null)
   const [error, setError] = useState('')
 
   const submit = async () => {
@@ -40,12 +43,21 @@ export default function LoginScreen() {
       setLoading(false)
       return
     }
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase.from('users').select('id').eq('id', user!.id).maybeSingle()
     setLoading(false)
-    track('login_completed')
-    if (!profile) router.replace('/onboarding/location')
-    else router.replace('/(tabs)')
+    await completeLoginNavigation(router)
+  }
+
+  const onOAuth = async (provider: 'google' | 'apple') => {
+    setOauthLoading(provider)
+    setError('')
+    const res = await signInWithOAuthProvider(provider)
+    setOauthLoading(null)
+    if (res.cancelled) return
+    if (res.error) {
+      setError(res.error.message)
+      return
+    }
+    await completeLoginNavigation(router)
   }
 
   return (
@@ -101,6 +113,39 @@ export default function LoginScreen() {
             >
               {loading ? <ActivityIndicator color={colors.text} /> : <Text style={styles.btnTxt}>ログイン</Text>}
             </Pressable>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerTxt}>または</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <Pressable
+              style={[styles.btnGoogle, oauthLoading !== null && styles.oauthDis]}
+              disabled={oauthLoading !== null || loading}
+              onPress={() => void onOAuth('google')}
+            >
+              {oauthLoading === 'google' ? (
+                <ActivityIndicator color="#1a1a1a" />
+              ) : (
+                <GoogleOAuthLabel text="Googleでログイン" textStyle={styles.btnGoogleTxt} />
+              )}
+            </Pressable>
+
+            {Platform.OS === 'ios' ? (
+              <Pressable
+                style={[styles.btnApple, oauthLoading !== null && styles.oauthDis]}
+                disabled={oauthLoading !== null || loading}
+                onPress={() => void onOAuth('apple')}
+              >
+                {oauthLoading === 'apple' ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <AppleOAuthLabel text="Appleでログイン" textStyle={styles.btnAppleTxt} />
+                )}
+              </Pressable>
+            ) : null}
+
             <Link href="/(auth)/signup" asChild>
               <Pressable style={styles.link}>
                 <Text style={styles.linkTxt}>新規登録はこちら</Text>
@@ -116,7 +161,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   scrollContent: { flexGrow: 1, padding: 24, justifyContent: 'center' },
-  inner: { width: '100%' },
+  inner: { width: '100%', flexGrow: 1, justifyContent: 'center' },
   logo: { width: 72, height: 72, alignSelf: 'center' },
   title: {
     fontSize: 28,
@@ -147,4 +192,24 @@ const styles = StyleSheet.create({
   btnTxt: { fontWeight: '800', fontSize: 16, color: colors.text },
   link: { marginTop: 20, alignItems: 'center' },
   linkTxt: { color: colors.textMuted, fontSize: 14 },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 22,
+    marginBottom: 4,
+  },
+  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+  dividerTxt: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
+  btnGoogle: {
+    ...oauthGooglePressableBase,
+    marginTop: 14,
+  },
+  btnGoogleTxt: { fontWeight: '800', fontSize: 16, color: '#1a1a1a' },
+  btnApple: {
+    ...oauthApplePressableBase,
+    marginTop: 10,
+  },
+  btnAppleTxt: { fontWeight: '800', fontSize: 16, color: '#fff' },
+  oauthDis: { opacity: 0.55 },
 })

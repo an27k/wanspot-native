@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CenterSnapPicker } from '@/components/CenterSnapPicker'
 import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
 import { dogBirthdayYearBounds, OwnerBirthdayPickers, ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
-import { IconPaw } from '@/components/IconPaw'
+import { DogPawPlaceholder } from '@/components/events/EventCard'
 import { colors } from '@/constants/colors'
 import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
 import { supabase } from '@/lib/supabase'
@@ -195,7 +195,7 @@ export default function DogPage() {
             {dogPhotoPreview ? (
               <Image source={{ uri: dogPhotoPreview }} style={styles.photoImg} resizeMode="cover" />
             ) : (
-              <IconPaw size={36} color={colors.textMuted} />
+              <DogPawPlaceholder size={36} fill={colors.dogPhotoPlaceholderPaw} />
             )}
           </View>
           <Text style={styles.photoLbl}>写真を選ぶ</Text>

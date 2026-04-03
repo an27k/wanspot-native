@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Image as ExpoImage } from 'expo-image'
 import {
-  Image,
   Keyboard,
   Modal,
   Pressable,
@@ -16,6 +16,7 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import * as Location from 'expo-location'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
+import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { AppHeader } from '@/components/AppHeader'
 import { SearchDiscoverResultCard } from '@/components/search/SearchDiscoverResultCard'
 import { PowState, RunningDog } from '@/components/DogStates'
@@ -415,7 +416,7 @@ export default function SearchTab() {
         .from('articles')
         .select('id, title, summary, slug, category, keywords, image_url, created_at')
         .eq('status', 'published')
-        .order('created_at', { ascending: false })
+        .order('published_at', { ascending: false, nullsFirst: false })
         .limit(20)
       setArticlesList((data ?? []) as ArticleRow[])
     } catch {
@@ -424,6 +425,16 @@ export default function SearchTab() {
       setArticlesLoading(false)
     }
   }, [articlesLoading, articlesList.length])
+
+  /** まとめ記事サムネを一覧取得直後に先読み（スクロール時の待ちを減らす） */
+  useEffect(() => {
+    if (articlesList.length === 0) return
+    const urls = articlesList
+      .map((a) => a.image_url)
+      .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+    if (urls.length === 0) return
+    void ExpoImage.prefetch(urls.slice(0, 16), 'memory-disk')
+  }, [articlesList])
 
   useEffect(() => {
     if (searched) return
@@ -703,7 +714,12 @@ export default function SearchTab() {
                         }}
                       >
                         {article.image_url ? (
-                          <Image source={{ uri: article.image_url }} style={styles.artImg} resizeMode="cover" />
+                          <ArticleRemoteImage
+                            uri={article.image_url}
+                            style={styles.artImg}
+                            recyclingKey={`article-list-${article.id}`}
+                            priority="normal"
+                          />
                         ) : (
                           <View style={[styles.artImg, styles.artImgPh]} />
                         )}

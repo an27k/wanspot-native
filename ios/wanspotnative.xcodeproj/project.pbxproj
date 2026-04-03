@@ -9,10 +9,10 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		664C5D859D964F46D2945CCF /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A86C0CFB03EC96B60D6A73E /* ExpoModulesProvider.swift */; };
-		75B08CB938C4FBACA8E6FDBF /* libPods-wanspotnative.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EBAA5EC011D2F6444D1BBC74 /* libPods-wanspotnative.a */; };
+		6BD6BB08C8E09FE87F95263B /* libPods-wanspotnative.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E8999C195BB69ABE43CE384F /* libPods-wanspotnative.a */; };
+		7313DC148A07DA3C332B2913 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 1465CB8A3B1CC8032BCAC108 /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		D7F3AE7D511BBDD633D42F44 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FABF1B7EA672D1956B6195A3 /* PrivacyInfo.xcprivacy */; };
+		CDC5FE19563113BF60D9CDBC /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA556E808BFC306C8A1D6C9 /* ExpoModulesProvider.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -20,16 +20,16 @@
 		13B07F961A680F5B00A75B9A /* wanspotnative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wanspotnative.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = wanspotnative/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = wanspotnative/Info.plist; sourceTree = "<group>"; };
-		1A0EE381437403D0954910DA /* Pods-wanspotnative.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-wanspotnative.debug.xcconfig"; path = "Target Support Files/Pods-wanspotnative/Pods-wanspotnative.debug.xcconfig"; sourceTree = "<group>"; };
-		3A86C0CFB03EC96B60D6A73E /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-wanspotnative/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		3CA9AF4C089A483DDBF3A8A2 /* Pods-wanspotnative.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-wanspotnative.release.xcconfig"; path = "Target Support Files/Pods-wanspotnative/Pods-wanspotnative.release.xcconfig"; sourceTree = "<group>"; };
+		1465CB8A3B1CC8032BCAC108 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = wanspotnative/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		2C6DAEEB9B9269BB9AD1FE8A /* Pods-wanspotnative.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-wanspotnative.debug.xcconfig"; path = "Target Support Files/Pods-wanspotnative/Pods-wanspotnative.debug.xcconfig"; sourceTree = "<group>"; };
+		9EA556E808BFC306C8A1D6C9 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-wanspotnative/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = wanspotnative/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		EBAA5EC011D2F6444D1BBC74 /* libPods-wanspotnative.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-wanspotnative.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E8999C195BB69ABE43CE384F /* libPods-wanspotnative.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-wanspotnative.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = wanspotnative/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* wanspotnative-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "wanspotnative-Bridging-Header.h"; path = "wanspotnative/wanspotnative-Bridging-Header.h"; sourceTree = "<group>"; };
-		FABF1B7EA672D1956B6195A3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = wanspotnative/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F793C098DA221FE9D57CFB77 /* Pods-wanspotnative.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-wanspotnative.release.xcconfig"; path = "Target Support Files/Pods-wanspotnative/Pods-wanspotnative.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,20 +37,19 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				75B08CB938C4FBACA8E6FDBF /* libPods-wanspotnative.a in Frameworks */,
+				6BD6BB08C8E09FE87F95263B /* libPods-wanspotnative.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		039BF46719168693C8549198 /* Pods */ = {
+		0D3CDEA93E66AD253324D015 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				1A0EE381437403D0954910DA /* Pods-wanspotnative.debug.xcconfig */,
-				3CA9AF4C089A483DDBF3A8A2 /* Pods-wanspotnative.release.xcconfig */,
+				9A2E4A3FC2ACACF5E25288E0 /* wanspotnative */,
 			);
-			path = Pods;
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		13B07FAE1A68108700A75B9A /* wanspotnative */ = {
@@ -62,7 +61,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				FABF1B7EA672D1956B6195A3 /* PrivacyInfo.xcprivacy */,
+				1465CB8A3B1CC8032BCAC108 /* PrivacyInfo.xcprivacy */,
 			);
 			name = wanspotnative;
 			sourceTree = "<group>";
@@ -71,17 +70,9 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				EBAA5EC011D2F6444D1BBC74 /* libPods-wanspotnative.a */,
+				E8999C195BB69ABE43CE384F /* libPods-wanspotnative.a */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		50E41CC4D6D65872A5177D4C /* wanspotnative */ = {
-			isa = PBXGroup;
-			children = (
-				3A86C0CFB03EC96B60D6A73E /* ExpoModulesProvider.swift */,
-			);
-			name = wanspotnative;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -98,8 +89,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				039BF46719168693C8549198 /* Pods */,
-				DF7168832BB69EDDF36EF612 /* ExpoModulesProviders */,
+				9F93638570F78487999751F1 /* Pods */,
+				0D3CDEA93E66AD253324D015 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -114,6 +105,23 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		9A2E4A3FC2ACACF5E25288E0 /* wanspotnative */ = {
+			isa = PBXGroup;
+			children = (
+				9EA556E808BFC306C8A1D6C9 /* ExpoModulesProvider.swift */,
+			);
+			name = wanspotnative;
+			sourceTree = "<group>";
+		};
+		9F93638570F78487999751F1 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				2C6DAEEB9B9269BB9AD1FE8A /* Pods-wanspotnative.debug.xcconfig */,
+				F793C098DA221FE9D57CFB77 /* Pods-wanspotnative.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
 			isa = PBXGroup;
 			children = (
@@ -121,14 +129,6 @@
 			);
 			name = Supporting;
 			path = wanspotnative/Supporting;
-			sourceTree = "<group>";
-		};
-		DF7168832BB69EDDF36EF612 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				50E41CC4D6D65872A5177D4C /* wanspotnative */,
-			);
-			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -139,13 +139,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "wanspotnative" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				70018D1BE904EDA9688A73D2 /* [Expo] Configure project */,
+				410F82C6B1A59A921F98655C /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				394A560402DF38283667C0D8 /* [CP] Embed Pods Frameworks */,
+				E372C1EF78AB2262ECAC7FEF /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -195,7 +195,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				D7F3AE7D511BBDD633D42F44 /* PrivacyInfo.xcprivacy in Resources */,
+				7313DC148A07DA3C332B2913 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -241,29 +241,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		394A560402DF38283667C0D8 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-wanspotnative/Pods-wanspotnative-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermesvm.framework/hermesvm",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermesvm.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-wanspotnative/Pods-wanspotnative-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		70018D1BE904EDA9688A73D2 /* [Expo] Configure project */ = {
+		410F82C6B1A59A921F98655C /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -295,6 +273,7 @@
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-wanspotnative/Pods-wanspotnative-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/AsyncStorage/AsyncStorage_resources.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
@@ -306,6 +285,7 @@
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/AsyncStorage_resources.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoApplication_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
@@ -319,6 +299,28 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-wanspotnative/Pods-wanspotnative-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		E372C1EF78AB2262ECAC7FEF /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-wanspotnative/Pods-wanspotnative-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermesvm.framework/hermesvm",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermesvm.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-wanspotnative/Pods-wanspotnative-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -327,7 +329,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				664C5D859D964F46D2945CCF /* ExpoModulesProvider.swift in Sources */,
+				CDC5FE19563113BF60D9CDBC /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -336,13 +338,12 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1A0EE381437403D0954910DA /* Pods-wanspotnative.debug.xcconfig */;
+			baseConfigurationReference = 2C6DAEEB9B9269BB9AD1FE8A /* Pods-wanspotnative.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = wanspotnative/wanspotnative.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3ZKJY68M2F;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -373,7 +374,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3CA9AF4C089A483DDBF3A8A2 /* Pods-wanspotnative.release.xcconfig */;
+			baseConfigurationReference = F793C098DA221FE9D57CFB77 /* Pods-wanspotnative.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

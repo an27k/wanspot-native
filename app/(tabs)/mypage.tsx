@@ -607,11 +607,11 @@ export default function MypageTab() {
               <View style={[styles.avatar80Wrap, editingDog && styles.avatar80WrapEditing]}>
                 <View style={[styles.avatar80, styles.avatar80Dog]}>
                   {dogPhotoRemoved && !dogPhotoUri ? (
-                    <DogPawPlaceholder size={36} fill="#FFD84D" />
+                    <DogPawPlaceholder size={36} fill={colors.dogPhotoPlaceholderPaw} />
                   ) : dogPhotoPreview ?? dog.photo_url ? (
                     <Image source={{ uri: dogPhotoPreview ?? dog.photo_url! }} style={styles.avatar80Img} resizeMode="cover" />
                   ) : (
-                    <DogPawPlaceholder size={36} fill="#FFD84D" />
+                    <DogPawPlaceholder size={36} fill={colors.dogPhotoPlaceholderPaw} />
                   )}
                 </View>
                 {editingDog ? (

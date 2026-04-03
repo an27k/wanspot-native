@@ -1,0 +1,17 @@
+このフォルダ内の route.ts を、Next.js（wanspot Web）の app/api/stripe/ 配下にコピーしてください。
+
+依存: npm install stripe @supabase/supabase-js
+
+配置例: app/api/stripe/_lib.ts と各 route フォルダをそのまま api/stripe/ 以下に置く。
+
+環境変数:
+- STRIPE_SECRET_KEY
+- STRIPE_WEBHOOK_SECRET（webhook/route を使う場合）
+- NEXT_PUBLIC_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY
+- PLATFORM_FEE_PERCENT（既定 0）
+- STRIPE_CONNECT_RETURN_URL / STRIPE_CONNECT_REFRESH_URL（任意）
+- NEXT_PUBLIC_SITE_URL（Checkout リダイレクト用、任意）
+
+既存の Stripe 初期化モジュールがある場合は、各 route 内の new Stripe(...) をそのモジュール呼び出しに差し替えてください。

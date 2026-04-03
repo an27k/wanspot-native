@@ -10,6 +10,7 @@ export type WanspotEventRow = {
   location_name: string | null
   area: string | null
   price: number | null
+  is_paid?: boolean | null
   capacity: number | null
   current_count: number | null
   thumbnail_url: string | null
@@ -63,7 +64,8 @@ export function isEventFull(event: Pick<WanspotEventRow, 'capacity' | 'current_c
 
 export function EventCard({ event, onPressDetail, variant = 'default' }: Props) {
   const full = isEventFull(event)
-  const isPaid = event.price != null && event.price > 0
+  const isPaid =
+    event.is_paid === true || (event.is_paid !== false && event.price != null && event.price > 0)
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return ''
     return new Date(dateStr).toLocaleDateString('ja-JP', {

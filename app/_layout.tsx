@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import * as WebBrowser from 'expo-web-browser'
 import { Stack } from 'expo-router'
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
@@ -28,6 +29,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     initAnalytics()
+  }, [])
+
+  useEffect(() => {
+    try {
+      WebBrowser.maybeCompleteAuthSession()
+    } catch {
+      /* Hermes / ネイティブ側の想定外 URL で落ちないよう握りつぶす */
+    }
   }, [])
 
   if (!ioniconsLoaded && !ioniconsError) {

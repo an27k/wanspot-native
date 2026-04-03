@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { Image } from 'expo-image'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import Svg, { Circle, Path, Polygon, Text as SvgTextNode } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
@@ -204,11 +199,13 @@ function ArticleSpotCard({
   row,
   enrichment,
   onOpen,
+  photoRecyclingKey,
 }: {
   description: string
   row: SpotRow
   enrichment: PlaceCardEnrichment | undefined
   onOpen: () => void
+  photoRecyclingKey: string
 }) {
   const photoRef = enrichment?.photo_ref ?? null
   const photoUrl = spotPhotoUrl(photoRef, 320)
@@ -224,7 +221,9 @@ function ArticleSpotCard({
   return (
     <View style={styles.spotCard}>
       <View style={styles.spotImgWrap}>
-        {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.spotImg} resizeMode="cover" /> : null}
+        {photoUrl ? (
+          <ArticleRemoteImage uri={photoUrl} style={styles.spotImg} recyclingKey={photoRecyclingKey} priority="normal" />
+        ) : null}
       </View>
       <View style={styles.spotBody}>
         <View style={styles.spotTop}>
@@ -257,17 +256,26 @@ function BlockRenderer({
   enrichment,
   onOpenSpot,
   blockIndex,
+  articleId,
+  blockImageRecyclingKey,
 }: {
   block: Block
   spotRow: SpotRow | undefined
   enrichment: PlaceCardEnrichment | undefined
   onOpenSpot: (id: string) => void
   blockIndex: number
+  articleId: string
+  blockImageRecyclingKey?: string
 }) {
   if (block.type === 'image') {
     return (
       <View style={styles.imgBlock}>
-        <Image source={{ uri: block.url }} style={styles.imgBlockImg} resizeMode="cover" />
+        <ArticleRemoteImage
+          uri={block.url}
+          style={styles.imgBlockImg}
+          recyclingKey={blockImageRecyclingKey ?? `${articleId}-img-${block.url}`}
+          priority="normal"
+        />
         {block.caption ? <Text style={styles.imgCap}>{block.caption}</Text> : null}
       </View>
     )
@@ -280,6 +288,7 @@ function BlockRenderer({
         row={spotRow}
         enrichment={enrichment}
         onOpen={() => onOpenSpot(spotRow.id)}
+        photoRecyclingKey={`${articleId}-spot-${spotRow.place_id}`}
       />
     )
   }
@@ -320,6 +329,18 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
   useEffect(() => {
     void load()
   }, [load])
+
+  /** ヒーロー・本文画像を先にキャッシュ（スクロール前の表示を短縮） */
+  useEffect(() => {
+    if (!article) return
+    const urls: string[] = []
+    if (article.image_url?.trim()) urls.push(article.image_url.trim())
+    for (const b of normalizeArticleBlocks(article.blocks)) {
+      if (b.type === 'image' && typeof b.url === 'string' && b.url.trim()) urls.push(b.url.trim())
+    }
+    if (urls.length === 0) return
+    void Image.prefetch(urls, 'memory-disk')
+  }, [article])
 
   const blocks: Block[] = useMemo(() => {
     if (!article) return []
@@ -433,6 +454,15 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
     }
   }, [spotHydrateKey])
 
+  /** スポットカード用サムネを batch-details 取得後に先読み */
+  useEffect(() => {
+    const urls = Object.values(enrichmentByPlaceId)
+      .map((e) => spotPhotoUrl(e.photo_ref ?? null, 320))
+      .filter((u): u is string => !!u)
+    if (urls.length === 0) return
+    void Image.prefetch(urls, 'memory-disk')
+  }, [enrichmentByPlaceId])
+
   const onOpenSpot = useCallback(
     (id: string) => {
       router.push(`/spots/${id}?from=article`)
@@ -480,7 +510,12 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
           </Pressable>
         </View>
         {article.image_url ? (
-          <Image source={{ uri: article.image_url }} style={styles.hero} resizeMode="cover" />
+          <ArticleRemoteImage
+            uri={article.image_url}
+            style={styles.hero}
+            recyclingKey={`${article.id}-hero`}
+            priority="high"
+          />
         ) : null}
         <View style={styles.pad}>
           <Text style={styles.title}>{article.title}</Text>
@@ -506,6 +541,8 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
                     enrichment={en}
                     onOpenSpot={onOpenSpot}
                     blockIndex={i}
+                    articleId={article.id}
+                    blockImageRecyclingKey={undefined}
                   />
                 )
               }
@@ -517,6 +554,8 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
                   enrichment={undefined}
                   onOpenSpot={onOpenSpot}
                   blockIndex={i}
+                  articleId={article.id}
+                  blockImageRecyclingKey={block.type === 'image' ? `${article.id}-block-${i}` : undefined}
                 />
               )
             })}

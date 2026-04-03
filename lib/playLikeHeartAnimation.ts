@@ -1,10 +1,29 @@
-import { Animated } from 'react-native'
+import { Animated, Easing } from 'react-native'
 
-/** いいねタップ時: spring で 0.7 → 1.2 → 1.0 */
+const SCALE_PEAK = 1.4
+const DURATION_UP_MS = 100
+const DURATION_DOWN_MS = 100
+const easeOut = Easing.out(Easing.ease)
+
+/**
+ * いいねタップ時: scale 1 → 1.4 → 1（計 ~200ms、ease-out）
+ * 色は触らず transform のみ（useNativeDriver）
+ */
 export function playLikeHeartAnimation(scaleAnim: Animated.Value) {
+  scaleAnim.stopAnimation()
+  scaleAnim.setValue(1)
   Animated.sequence([
-    Animated.spring(scaleAnim, { toValue: 0.7, useNativeDriver: true, tension: 300, friction: 22 }),
-    Animated.spring(scaleAnim, { toValue: 1.2, tension: 200, friction: 5, useNativeDriver: true }),
-    Animated.spring(scaleAnim, { toValue: 1.0, tension: 200, friction: 8, useNativeDriver: true }),
+    Animated.timing(scaleAnim, {
+      toValue: SCALE_PEAK,
+      duration: DURATION_UP_MS,
+      easing: easeOut,
+      useNativeDriver: true,
+    }),
+    Animated.timing(scaleAnim, {
+      toValue: 1,
+      duration: DURATION_DOWN_MS,
+      easing: easeOut,
+      useNativeDriver: true,
+    }),
   ]).start()
 }

@@ -14,8 +14,10 @@ export const colors = {
   success: '#34A853',
   /** ワクチン「接種済」スタンプ背景 */
   successMutedBg: '#F0FDF4',
-  /** マイページ・犬アイコンなし時の円形プレースホルダー背景 */
-  dogPhotoPlaceholderBg: '#FFF8D6',
+  /** 愛犬写真未登録の円背景（オーナー未設定の薄グレー調に合わせる） */
+  dogPhotoPlaceholderBg: '#E8E8E8',
+  /** 愛犬写真未登録の肉球アイコン色 */
+  dogPhotoPlaceholderPaw: '#A0A0A0',
   /** ♂・オス・パパ表記用の薄い青 */
   genderMale: '#4A90D9',
   /** ♀・メス・ママ表記用の赤 */

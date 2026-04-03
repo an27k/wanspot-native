@@ -8,8 +8,11 @@
 internal import ExpoModulesCore
 internal import ExpoDomWebView
 internal import Expo
+internal import ExpoAppleAuthentication
+internal import EXApplication
 internal import ExpoAsset
 internal import EXConstants
+internal import ExpoCrypto
 internal import ExpoFileSystem
 internal import ExpoFont
 internal import ExpoGlassEffect
@@ -19,6 +22,7 @@ internal import ExpoLinking
 internal import ExpoLocation
 internal import ExpoRouter
 internal import ExpoSymbols
+internal import ExpoWebBrowser
 
 @objc(ExpoModulesProvider)
 internal class ExpoModulesProvider: ModulesProvider {
@@ -26,8 +30,12 @@ internal class ExpoModulesProvider: ModulesProvider {
     return [
       (module: DomWebViewModule.self, name: nil),
       (module: ExpoFetchModule.self, name: nil),
+      (module: AppleAuthenticationModule.self, name: nil),
+      (module: ApplicationModule.self, name: nil),
       (module: AssetModule.self, name: nil),
       (module: ConstantsModule.self, name: nil),
+      (module: CryptoModule.self, name: nil),
+      (module: AesCryptoModule.self, name: nil),
       (module: FileSystemModule.self, name: nil),
       (module: FileSystemLegacyModule.self, name: nil),
       (module: FontLoaderModule.self, name: nil),
@@ -40,7 +48,8 @@ internal class ExpoModulesProvider: ModulesProvider {
       (module: ExpoHeadModule.self, name: nil),
       (module: LinkPreviewNativeModule.self, name: nil),
       (module: RouterToolbarModule.self, name: nil),
-      (module: SymbolModule.self, name: nil)
+      (module: SymbolModule.self, name: nil),
+      (module: WebBrowserModule.self, name: nil)
     ]
   }
 

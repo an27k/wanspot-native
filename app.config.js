@@ -26,7 +26,7 @@ module.exports = ({ config }) => {
 
   return {
     ...config,
-    plugins: [...(config.plugins ?? [])],
+    plugins: [...(config.plugins ?? []), 'expo-image'],
     extra: {
       ...config.extra,
       supabaseUrl,

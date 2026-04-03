@@ -86,6 +86,7 @@ export default function NearbyPage() {
   const [likedOnlyFilter, setLikedOnlyFilter] = useState(false)
   const [likedPlaceIds, setLikedPlaceIds] = useState<Set<string>>(() => new Set())
   const [showObTutorial, setShowObTutorial] = useState(false)
+  const [obTutorialDogName, setObTutorialDogName] = useState('')
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
   const [pullRefreshing, setPullRefreshing] = useState(false)
 
@@ -94,7 +95,23 @@ export default function NearbyPage() {
       void (async () => {
         try {
           const v = await AsyncStorage.getItem(POST_ONBOARDING_TUTORIAL_KEY)
-          if (v === '1') setShowObTutorial(true)
+          if (v === '1') {
+            setShowObTutorial(true)
+            const {
+              data: { user },
+            } = await supabase.auth.getUser()
+            if (user) {
+              const { data: dogRow } = await supabase
+                .from('dogs')
+                .select('name')
+                .eq('user_id', user.id)
+                .maybeSingle()
+              const n = typeof dogRow?.name === 'string' ? dogRow.name.trim() : ''
+              setObTutorialDogName(n)
+            } else {
+              setObTutorialDogName('')
+            }
+          }
         } catch {
           /* ignore */
         }
@@ -402,7 +419,9 @@ export default function NearbyPage() {
       <Modal visible={showObTutorial} transparent animationType="fade" onRequestClose={() => void dismissObTutorial()}>
         <Pressable style={styles.obTutOverlay} onPress={() => void dismissObTutorial()}>
           <Pressable style={styles.obTutCard} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.obTutTitle}>さあ、一緒に探そう！</Text>
+            <Text style={styles.obTutTitle}>
+              {`${obTutorialDogName.trim() || 'ワン'}ちゃんとお出かけの準備！`}
+            </Text>
             <Text style={styles.obTutBody}>
               ワンちゃんと行きたいカフェや公園を見つけたら、
               <Text style={styles.obTutEm}>ハートでいいね</Text>
@@ -531,7 +550,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ebebeb',
   },
-  obTutTitle: { fontSize: 17, fontWeight: '800', color: '#1a1a1a', marginBottom: 12 },
+  obTutTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
   obTutBody: { fontSize: 15, lineHeight: 24, color: '#555' },
   obTutEm: { fontWeight: '800', color: '#1a1a1a' },
   obTutBtn: {

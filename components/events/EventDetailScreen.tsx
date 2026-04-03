@@ -29,6 +29,8 @@ type EventRow = {
   location_name: string | null
   area: string | null
   price: number | null
+  /** DB に無い既存行は undefined 扱いで price から推測 */
+  is_paid?: boolean | null
   capacity: number | null
   current_count: number | null
   thumbnail_url: string | null
@@ -90,6 +92,12 @@ const DogPh = () => (
 
 const CANCEL_CONFIRM_MESSAGE =
   '参加をキャンセルしますか？\n\n※基本的に参加費の返金はできません。ご不明な点はメニューバーの「お問い合わせ」よりご連絡ください。'
+
+function eventRequiresPayment(e: Pick<EventRow, 'is_paid' | 'price'>): boolean {
+  if (e.is_paid === true) return true
+  if (e.is_paid === false) return false
+  return e.price != null && e.price > 0
+}
 
 export default function EventDetailScreen({
   eventId,
@@ -171,8 +179,8 @@ export default function EventDetailScreen({
     if (!userId || !event || joining || joined) return
     setJoining(true)
     try {
-      if (event.price != null && event.price > 0) {
-        const data = await wanspotFetchJson<{ url?: string; error?: string }>('/api/events/checkout', {
+      if (eventRequiresPayment(event)) {
+        const data = await wanspotFetchJson<{ url?: string; error?: string }>('/api/stripe/payment-intent', {
           method: 'POST',
           json: { eventId: event.id },
         })
@@ -348,7 +356,7 @@ export default function EventDetailScreen({
                 <View style={styles.joinedPill}>
                   <Text style={styles.joinedPillTxt}>参加予定</Text>
                 </View>
-                {event.price != null && event.price > 0 ? (
+                {eventRequiresPayment(event) ? (
                   <View style={styles.paidBadge}>
                     <Text style={styles.paidBadgeTxt}>✓ 支払い済み</Text>
                   </View>

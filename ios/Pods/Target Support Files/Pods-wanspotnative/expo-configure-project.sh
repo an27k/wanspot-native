@@ -50,4 +50,4 @@ with_node \
   --entitlement "/Users/atsu/Desktop/wanspot-native/ios/wanspotnative/wanspotnative.entitlements" \
    \
   --platform "apple" \
-  --packages "@expo/dom-webview" "expo" "expo-asset" "expo-constants" "expo-file-system" "expo-font" "expo-glass-effect" "expo-image" "expo-keep-awake" "expo-linking" "expo-location" "expo-router" "expo-symbols"
+  --packages "@expo/dom-webview" "expo" "expo-apple-authentication" "expo-application" "expo-asset" "expo-constants" "expo-crypto" "expo-file-system" "expo-font" "expo-glass-effect" "expo-image" "expo-keep-awake" "expo-linking" "expo-location" "expo-router" "expo-symbols" "expo-web-browser"

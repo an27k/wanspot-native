@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -16,8 +17,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { CapacityDrumPicker } from '@/components/events/CapacityDrumPicker'
+import { clampEventPickerDate, EventDateTimeDrumPickers } from '@/components/events/EventDateTimeDrumPickers'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { clearEventCreateDraft, loadEventCreateDraft, saveEventCreateDraft, type EventCreateDraftV1 } from '@/lib/event-create-draft'
 import { EVENT_MODERATION_REJECT_MESSAGE } from '@/lib/event-moderation'
 import { supabase } from '@/lib/supabase'
 import { wanspotFetchJson } from '@/lib/wanspot-api'
@@ -32,6 +35,7 @@ export type EventEditorSnapshot = {
   event_at: string | null
   capacity: number | null
   price: number | null
+  is_paid?: boolean | null
   tags: string[] | null
   thumbnail_url: string | null
 }
@@ -42,25 +46,15 @@ type Props = {
   initial?: Partial<EventEditorSnapshot>
   priceReadOnly?: boolean
   minCapacity?: number
+  /** 作成画面: Stripe Connect から戻ったとき（URL クエリを親で渡し、処理後に onConsumedConnectReturn で消す） */
+  connectReturn?: 'success' | 'refresh'
+  onConsumedConnectReturn?: () => void
   onSuccess: (id: string) => void
 }
 
 const PRESET_TAGS = ['ドッグラン', 'お散歩', 'カフェ', 'しつけ教室', '写真撮影', 'パーティー', '公園', 'ビーチ']
 
 const AREA_PRESETS = ['渋谷', '新宿', '港区', '目黒', '世田谷', '中目黒', '恵比寿', '吉祥寺', '代官山', '自由が丘', 'その他']
-
-const PRICE_OPTIONS = [
-  { value: '0', label: '無料' },
-  { value: '1000', label: '¥1,000' },
-  { value: '1500', label: '¥1,500' },
-  { value: '2000', label: '¥2,000' },
-  { value: '2500', label: '¥2,500' },
-  { value: '3000', label: '¥3,000' },
-  { value: '4000', label: '¥4,000' },
-  { value: '5000', label: '¥5,000' },
-  { value: '7000', label: '¥7,000' },
-  { value: '10000', label: '¥10,000' },
-]
 
 export function toDatetimeLocalValue(iso: string | null | undefined): string {
   if (!iso) return ''
@@ -103,6 +97,8 @@ export function EventEditorForm({
   initial,
   priceReadOnly,
   minCapacity = 0,
+  connectReturn,
+  onConsumedConnectReturn,
   onSuccess,
 }: Props) {
   const insets = useSafeAreaInsets()
@@ -114,7 +110,9 @@ export function EventEditorForm({
   const [eventPickerOpen, setEventPickerOpen] = useState(false)
   const [eventPickerTemp, setEventPickerTemp] = useState<Date>(() => defaultNextDayTenAm())
   const [capacity, setCapacity] = useState<number | null>(mode === 'create' ? null : Math.max(minCapacity, 3))
-  const [price, setPrice] = useState('0')
+  /** 無料 / 有料（作成・編集とも UI はこのフラグと金額で表現） */
+  const [feeKind, setFeeKind] = useState<'free' | 'paid'>('free')
+  const [paidAmountYen, setPaidAmountYen] = useState('1000')
   const [tags, setTags] = useState<string[]>([])
   const [customTag, setCustomTag] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -126,6 +124,7 @@ export function EventEditorForm({
   const [aiThumbLoading, setAiThumbLoading] = useState(false)
   const [showFieldErrors, setShowFieldErrors] = useState(false)
   const [hydrated, setHydrated] = useState(mode === 'create')
+  const [connectLoading, setConnectLoading] = useState(false)
 
   const drumMin = mode === 'edit' ? Math.max(minCapacity ?? 0, 3) : 3
 
@@ -144,7 +143,14 @@ export function EventEditorForm({
     const mc = Math.max(minCapacity ?? 0, 3)
     const cap = initial.capacity ?? null
     setCapacity(cap == null ? mc : cap < mc ? mc : cap)
-    setPrice(String(initial.price ?? 0))
+    const p = initial.price ?? 0
+    if (p > 0) {
+      setFeeKind('paid')
+      setPaidAmountYen(String(p))
+    } else {
+      setFeeKind('free')
+      setPaidAmountYen('1000')
+    }
     setTags(initial.tags ?? [])
     if (initial.thumbnail_url) {
       setThumbnailUrlExternal(initial.thumbnail_url)
@@ -155,6 +161,105 @@ export function EventEditorForm({
     }
     setHydrated(true)
   }, [mode, initial, minCapacity])
+
+  const buildDraftV1 = useCallback((): EventCreateDraftV1 => {
+    const thumb =
+      thumbnailUri && thumbnailUri.startsWith('http')
+        ? thumbnailUri
+        : thumbnailUrlExternal && thumbnailUrlExternal.startsWith('http')
+          ? thumbnailUrlExternal
+          : null
+    return {
+      v: 1,
+      title: title.trim(),
+      description: description.trim(),
+      location_name: locationName.trim(),
+      area: area.trim(),
+      event_at: eventAt,
+      capacity,
+      tags: [...tags],
+      feeKind,
+      paidAmountYen,
+      thumbnail_url: thumb,
+    }
+  }, [
+    title,
+    description,
+    locationName,
+    area,
+    eventAt,
+    capacity,
+    tags,
+    feeKind,
+    paidAmountYen,
+    thumbnailUri,
+    thumbnailUrlExternal,
+  ])
+
+  useEffect(() => {
+    if (mode !== 'create' || !connectReturn) return
+    let cancelled = false
+    void (async () => {
+      if (connectReturn === 'success') {
+        try {
+          await wanspotFetchJson('/api/stripe/sync-connect-account', { method: 'POST' })
+        } catch {
+          /* バックエンド未実装時は無視 */
+        }
+      }
+      const d = await loadEventCreateDraft()
+      if (cancelled) return
+      if (d) {
+        setTitle(d.title)
+        setDescription(d.description)
+        setLocationName(d.location_name)
+        setArea(d.area)
+        if (d.event_at) {
+          const dt = new Date(d.event_at)
+          if (!Number.isNaN(dt.getTime())) setEventAtDate(dt)
+        }
+        setCapacity(d.capacity)
+        setTags(d.tags ?? [])
+        setFeeKind(d.feeKind)
+        setPaidAmountYen(d.paidAmountYen)
+        if (d.thumbnail_url) {
+          setThumbnailUri(d.thumbnail_url)
+          setThumbnailUrlExternal(d.thumbnail_url)
+        }
+      }
+      onConsumedConnectReturn?.()
+      Alert.alert(
+        connectReturn === 'success' ? 'Stripe' : '再接続',
+        connectReturn === 'success'
+          ? 'ブラウザでの手続きを終えたら、ここからイベント作成を続けてください。反映まで少し時間がかかる場合があります。'
+          : 'リンクの有効期限が切れている場合があります。再度お試しください。'
+      )
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [mode, connectReturn, onConsumedConnectReturn])
+
+  const handleStripeConnect = async () => {
+    if (mode !== 'create' || connectLoading) return
+    setConnectLoading(true)
+    setError('')
+    try {
+      await saveEventCreateDraft(buildDraftV1())
+      const data = await wanspotFetchJson<{ url?: string; error?: string }>('/api/stripe/connect-onboarding', {
+        method: 'POST',
+      })
+      if (data.url) {
+        await Linking.openURL(data.url)
+        return
+      }
+      setError(typeof data.error === 'string' ? data.error : 'Stripe 接続の開始に失敗しました')
+    } catch {
+      setError('Stripe 接続の開始に失敗しました')
+    } finally {
+      setConnectLoading(false)
+    }
+  }
 
   const pickThumbnail = () => {
     Alert.alert('準備中', '画像の選択は準備中です')
@@ -249,7 +354,43 @@ export function EventEditorForm({
       return
     }
     setShowFieldErrors(false)
+
+    const priceYen =
+      feeKind === 'free'
+        ? 0
+        : Math.max(0, parseInt(paidAmountYen.replace(/[^0-9]/g, ''), 10) || 0)
+    const isPaidEvent = feeKind === 'paid' && priceYen > 0
+
+    if (mode === 'create' && feeKind === 'paid' && priceYen < 1) {
+      const msg = '有料の場合は参加費（1円以上）を入力してください'
+      setError(msg)
+      Alert.alert('', msg)
+      return
+    }
+
     setSubmitting(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setError('ログインが必要です')
+      setSubmitting(false)
+      return
+    }
+    if (mode === 'create' && isPaidEvent) {
+      const { data: stripeRow } = await supabase
+        .from('users')
+        .select('stripe_account_id, stripe_onboarding_completed')
+        .eq('id', user.id)
+        .maybeSingle()
+      if (!stripeRow?.stripe_account_id || !stripeRow?.stripe_onboarding_completed) {
+        Alert.alert(
+          '',
+          '有料イベントを公開するには、Stripe アカウントの登録を完了してください。下のボタンから接続できます。'
+        )
+        setSubmitting(false)
+        return
+      }
+    }
+
     try {
       const modJson = await wanspotFetchJson<{ ok?: boolean; message?: string }>(
         '/api/events/moderate',
@@ -262,13 +403,6 @@ export function EventEditorForm({
       }
     } catch {
       setError('モデレーションに失敗しました。もう一度お試しください。')
-      setSubmitting(false)
-      return
-    }
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setError('ログインが必要です')
       setSubmitting(false)
       return
     }
@@ -317,7 +451,8 @@ export function EventEditorForm({
         .insert({
           creator_id: user.id,
           ...baseFields,
-          price: parseInt(price, 10) || 0,
+          price: priceYen,
+          is_paid: isPaidEvent,
           is_official: false,
           current_count: 0,
         })
@@ -328,6 +463,7 @@ export function EventEditorForm({
         setSubmitting(false)
         return
       }
+      await clearEventCreateDraft()
       onSuccess(data.id)
     } else {
       if (!eventId) {
@@ -336,7 +472,10 @@ export function EventEditorForm({
         return
       }
       const updatePayload: Record<string, unknown> = { ...baseFields }
-      if (!priceReadOnly) updatePayload.price = parseInt(price, 10) || 0
+      if (!priceReadOnly) {
+        updatePayload.price = priceYen
+        updatePayload.is_paid = isPaidEvent
+      }
       const { error: upErr } = await supabase
         .from('events')
         .update(updatePayload)
@@ -364,18 +503,20 @@ export function EventEditorForm({
     thumbnailUrlExternal,
     mode,
     eventId,
-    price,
+    feeKind,
+    paidAmountYen,
     priceReadOnly,
     onSuccess,
   ])
 
-  const paidSelected = price !== '0'
+  const paidSelected = feeKind === 'paid'
   const canAi = !!title.trim()
   const submitDisabled =
     submitting ||
     uploading ||
     aiDescLoading ||
     aiThumbLoading ||
+    connectLoading ||
     (mode === 'edit' && !hydrated)
 
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 48
@@ -465,12 +606,12 @@ export function EventEditorForm({
         <Pressable
           style={styles.eventPickBtn}
           onPress={() => {
-            setEventPickerTemp(eventAtDate)
+            setEventPickerTemp(clampEventPickerDate(eventAtDate))
             setEventPickerOpen(true)
           }}
         >
           <Text style={styles.eventPickMain}>{formatEventAtJa(eventAtDate)}</Text>
-          <Text style={styles.eventPickSub}>タップして日付と時刻を選択（現在は準備中）</Text>
+          <Text style={styles.eventPickSub}>タップして日付と時刻を選択</Text>
         </Pressable>
       </View>
 
@@ -509,21 +650,55 @@ export function EventEditorForm({
           max={20}
         />
         <Text style={[styles.lbl, { marginTop: 16 }]}>参加費</Text>
-        <ScrollView style={styles.priceList} nestedScrollEnabled>
-          {PRICE_OPTIONS.map((o) => (
-            <Pressable
-              key={o.value}
-              style={[styles.priceRow, price === o.value && styles.priceRowOn]}
-              disabled={priceReadOnly}
-              onPress={() => setPrice(o.value)}
-            >
-              <Text style={[styles.priceRowTxt, price === o.value && styles.priceRowTxtOn]}>{o.label}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <View style={styles.feeKindRow}>
+          <Pressable
+            style={[styles.feeKindChip, feeKind === 'free' && styles.feeKindChipOn]}
+            disabled={priceReadOnly}
+            onPress={() => setFeeKind('free')}
+          >
+            <Text style={[styles.feeKindTxt, feeKind === 'free' && styles.feeKindTxtOn]}>無料</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.feeKindChip, feeKind === 'paid' && styles.feeKindChipOn]}
+            disabled={priceReadOnly}
+            onPress={() => setFeeKind('paid')}
+          >
+            <Text style={[styles.feeKindTxt, feeKind === 'paid' && styles.feeKindTxtOn]}>有料</Text>
+          </Pressable>
+        </View>
         {paidSelected ? (
-          <Text style={styles.paidNote}>現在βテスト中のため、有料イベントは管理者確認後に公開されます。</Text>
-        ) : null}
+          <>
+            <Text style={styles.lblSm}>参加費（円）</Text>
+            <TextInput
+              style={styles.paidInp}
+              value={paidAmountYen}
+              onChangeText={setPaidAmountYen}
+              placeholder="例：1500"
+              placeholderTextColor="#aaa"
+              keyboardType="number-pad"
+              editable={!priceReadOnly}
+            />
+            <Text style={styles.feeLegal}>
+              現在、アプリリリースを祝して手数料０％キャンペーン中です。{'\n'}
+              売り上げを受け取るには、Stripeアカウントを作成して登録してください。
+            </Text>
+            {mode === 'create' && !priceReadOnly ? (
+              <Pressable
+                style={[styles.stripeBtn, connectLoading && styles.stripeBtnOff]}
+                disabled={connectLoading}
+                onPress={() => void handleStripeConnect()}
+              >
+                {connectLoading ? (
+                  <ActivityIndicator color="#1a1a1a" />
+                ) : (
+                  <Text style={styles.stripeBtnTxt}>Stripe アカウントを登録して続ける</Text>
+                )}
+              </Pressable>
+            ) : null}
+          </>
+        ) : (
+          <Text style={styles.freeHint}>無料イベントでは決済・Stripe 登録は不要です。</Text>
+        )}
       </View>
 
       <View style={styles.card}>
@@ -579,11 +754,12 @@ export function EventEditorForm({
           <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setEventPickerOpen(false)} />
           <View style={styles.pickerCard}>
             <Text style={styles.pickerTitle}>開催日時</Text>
-            <Text style={styles.pickerPlaceholder}>準備中</Text>
-            <Text style={styles.pickerPlaceholderSub}>日時の変更は今後の更新で利用できる予定です。現状は初期値のまま公開・保存されます。</Text>
+            <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+              <EventDateTimeDrumPickers value={eventPickerTemp} onChange={setEventPickerTemp} />
+            </ScrollView>
             <View style={styles.pickerActions}>
               <Pressable style={styles.pickerGhost} onPress={() => setEventPickerOpen(false)}>
-                <Text style={styles.pickerGhostTxt}>閉じる</Text>
+                <Text style={styles.pickerGhostTxt}>キャンセル</Text>
               </Pressable>
               <Pressable
                 style={styles.pickerPri}
@@ -592,7 +768,7 @@ export function EventEditorForm({
                   setEventPickerOpen(false)
                 }}
               >
-                <Text style={styles.pickerPriTxt}>そのまま使う</Text>
+                <Text style={styles.pickerPriTxt}>決定</Text>
               </Pressable>
             </View>
           </View>
@@ -638,8 +814,7 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
   },
   pickerTitle: { fontSize: 14, fontWeight: '800', color: '#1a1a1a', marginBottom: 8, textAlign: 'center' },
-  pickerPlaceholder: { fontSize: 16, fontWeight: '700', color: '#888', textAlign: 'center', paddingVertical: 12 },
-  pickerPlaceholderSub: { fontSize: 12, color: '#aaa', textAlign: 'center', lineHeight: 18, marginBottom: 4 },
+  pickerScroll: { maxHeight: 420 },
   pickerActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
   pickerGhost: {
     flex: 1,
@@ -699,20 +874,42 @@ const styles = StyleSheet.create({
   areaChipOn: { backgroundColor: '#FFD84D', borderWidth: 0 },
   areaChipTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
   areaChipTxtOn: { color: '#1a1a1a' },
-  priceList: { maxHeight: 220, marginTop: 8 },
-  priceRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+  feeKindRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  feeKindChip: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
     backgroundColor: '#f7f6f3',
-    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#ebebeb',
+    alignItems: 'center',
+  },
+  feeKindChipOn: { backgroundColor: '#FFF9E0', borderColor: '#e8c84a' },
+  feeKindTxt: { fontSize: 14, fontWeight: '800', color: '#888' },
+  feeKindTxtOn: { color: '#1a1a1a' },
+  lblSm: { fontSize: 12, fontWeight: '800', color: '#aaa', marginTop: 14, marginBottom: 6 },
+  paidInp: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#f7f6f3',
     borderWidth: 1,
     borderColor: '#ebebeb',
   },
-  priceRowOn: { backgroundColor: '#FFF9E0', borderColor: '#e8c84a' },
-  priceRowTxt: { fontSize: 14, fontWeight: '700', color: '#555' },
-  priceRowTxtOn: { color: '#1a1a1a' },
-  paidNote: { fontSize: 12, color: '#b45309', marginTop: 10, lineHeight: 18 },
+  feeLegal: { fontSize: 12, color: '#555', marginTop: 12, lineHeight: 19 },
+  freeHint: { fontSize: 12, color: '#888', marginTop: 8, lineHeight: 18 },
+  stripeBtn: {
+    marginTop: 14,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#635BFF',
+    alignItems: 'center',
+  },
+  stripeBtnOff: { opacity: 0.6 },
+  stripeBtnTxt: { fontSize: 14, fontWeight: '800', color: '#fff' },
   pill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
