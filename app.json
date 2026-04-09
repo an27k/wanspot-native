@@ -42,6 +42,23 @@
         {
           "locationWhenInUsePermission": "近くの散歩エリアの候補を表示するために位置情報を使います。"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "expo-tracking-transparency",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-xxxxxxxx~xxxxxxxx",
+          "iosAppId": "ca-app-pub-4709188613454491~3258937977",
+          "userTrackingUsageDescription": "パーソナライズされた広告の表示に使用します。"
+        }
       ]
     ],
     "extra": {
@@ -55,5 +72,10 @@
       }
     },
     "owner": "atsu_nemoto"
+  },
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-xxxxxxxx~xxxxxxxx",
+    "ios_app_id": "ca-app-pub-4709188613454491~3258937977",
+    "user_tracking_usage_description": "パーソナライズされた広告の表示に使用します。"
   }
 }

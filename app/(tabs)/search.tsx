@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { AppHeader } from '@/components/AppHeader'
+import { AdBannerCard } from '@/components/AdBanner'
 import { SearchDiscoverResultCard } from '@/components/search/SearchDiscoverResultCard'
 import { PowState, RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
@@ -703,7 +704,7 @@ export default function SearchTab() {
           {!loading && searched && results.length === 0 ? <PowState label="見つかりませんでした" /> : null}
           {!loading &&
             searched &&
-            sortedResults.map((spot) => (
+            sortedResults.flatMap((spot, index) => [
               <SearchDiscoverResultCard
                 key={spot.place_id}
                 spot={spot}
@@ -712,8 +713,9 @@ export default function SearchTab() {
                 onOpen={openSpot}
                 onLikesChange={refreshSpotLikesCount}
                 onBeforeNavigate={beforeNavSearch}
-              />
-            ))}
+              />,
+              ...((index + 1) % 5 === 0 ? [<AdBannerCard key={`ad-spot-${index}`} />] : []),
+            ])}
 
           {!searched ? (
             <>
@@ -722,7 +724,7 @@ export default function SearchTab() {
                   {articlesLoading ? <RunningDog label="記事を読み込み中..." /> : null}
                   {!articlesLoading && articlesList.length === 0 ? <PowState label="公開中の記事がありません" /> : null}
                   {!articlesLoading &&
-                    articlesList.map((article) => (
+                    articlesList.flatMap((article, index) => [
                       <Pressable
                         key={article.id}
                         style={styles.artCard}
@@ -760,8 +762,9 @@ export default function SearchTab() {
                             {article.summary}
                           </Text>
                         </View>
-                      </Pressable>
-                    ))}
+                      </Pressable>,
+                      ...((index + 1) % 5 === 0 ? [<AdBannerCard key={`ad-spot-${index}`} />] : []),
+                    ])}
                 </>
               ) : null}
 
@@ -791,7 +794,7 @@ export default function SearchTab() {
                   ) : null}
                   {!discoverLoading &&
                     !(discoverMode === 'ai' && spotLikesCount !== null && spotLikesCount < AI_LIKES_MIN) &&
-                    discoverResults.map((spot) => (
+                    discoverResults.flatMap((spot, index) => [
                       <SearchDiscoverResultCard
                         key={spot.place_id}
                         spot={spot}
@@ -802,8 +805,9 @@ export default function SearchTab() {
                         onBeforeNavigate={async () => {
                           await AsyncStorage.setItem(SEARCH_RESTORE_FLAG, '1')
                         }}
-                      />
-                    ))}
+                      />,
+                      ...((index + 1) % 5 === 0 ? [<AdBannerCard key={`ad-spot-${index}`} />] : []),
+                    ])}
                   {!loading &&
                     !searched &&
                     discoverResults.length === 0 &&

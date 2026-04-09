@@ -1,18 +1,22 @@
 import { useEffect } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import * as WebBrowser from 'expo-web-browser'
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency'
 import { Stack } from 'expo-router'
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
 import { Platform, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { enableScreens } from 'react-native-screens'
 import { AuthProvider } from '@/context/AuthContext'
 import { initAnalytics } from '@/lib/analytics'
+import mobileAds from 'react-native-google-mobile-ads'
 
 /** ルート Stack: ネイティブの UINavigationController / Android Fragment トランジションに寄せる */
 const stackScreenOptions = {
   headerShown: false,
-  animation: 'default' as const,
+  // 画面遷移は iOS 標準に近い右スライドで「ぬるっと」動かす
+  animation: 'slide_from_right' as const,
   gestureEnabled: true,
   gestureDirection: 'horizontal' as const,
   /** iOS: エッジだけでなく画面全体からのインタラクティブな戻り（写真アプリに近い挙動） */
@@ -21,7 +25,12 @@ const stackScreenOptions = {
   animationMatchesGesture: true,
   /** 標準の push/pop に近い尺（短すぎると安っぽく、長すぎると重く感じる） */
   animationDuration: Platform.OS === 'ios' ? 380 : 280,
+  /** iOS 18 + react-native-screens の snapshot 周りのクラッシュを避けるため、ルートでは画面分離しない */
+  detachInactiveScreens: false as const,
 }
+
+// iOS 18 周りの UISnapshot / RNSScreen クラッシュ回避のため、screens 最適化自体を無効化
+enableScreens(false)
 
 export default function RootLayout() {
   /** ヘッダー・タブの Ionicons が componentDidMount まで空表示になるのを防ぐ */
@@ -29,6 +38,11 @@ export default function RootLayout() {
 
   useEffect(() => {
     initAnalytics()
+    const initAds = async () => {
+      await requestTrackingPermissionsAsync()
+      await mobileAds().initialize()
+    }
+    void initAds()
   }, [])
 
   useEffect(() => {

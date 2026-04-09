@@ -26,17 +26,22 @@ export default function TabsLayout() {
           borderTopWidth: 1,
           height: TAB_BAR_HEIGHT + insets.bottom,
           paddingBottom: insets.bottom,
-          paddingTop: 6,
+          // ラベルを消すので、アイコンが中央に来るように少し上方向へ
+          paddingTop: 10,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarShowLabel: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: '現在地',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'location' : 'location-outline'} color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'location' : 'location-outline'}
+              color={color}
+              size={focused ? 26 : 24}
+            />
           ),
         }}
         listeners={{ focus: () => track('tab_viewed', { tab_name: 'index' }) }}
@@ -45,8 +50,8 @@ export default function TabsLayout() {
         name="search"
         options={{
           title: '検索',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'search' : 'search-outline'} color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'search' : 'search-outline'} color={color} size={focused ? 26 : 24} />
           ),
         }}
         listeners={{ focus: () => track('tab_viewed', { tab_name: 'search' }) }}
@@ -55,8 +60,8 @@ export default function TabsLayout() {
         name="events"
         options={{
           title: 'イベント',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} color={color} size={focused ? 26 : 24} />
           ),
         }}
         listeners={{ focus: () => track('tab_viewed', { tab_name: 'events' }) }}
@@ -65,8 +70,12 @@ export default function TabsLayout() {
         name="mypage"
         options={{
           title: 'マイページ',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'person-circle' : 'person-circle-outline'}
+              color={color}
+              size={focused ? 26 : 24}
+            />
           ),
         }}
         listeners={{ focus: () => track('tab_viewed', { tab_name: 'mypage' }) }}
