@@ -20,6 +20,9 @@
 
   dispatch_once(&nativeComponentsToken, ^{
     thirdPartyComponents = @{
+		@"RNGoogleMobileAdsBannerView": NSClassFromString(@"RNGoogleMobileAdsBannerView"), // react-native-google-mobile-ads
+		@"RNGoogleMobileAdsNativeView": NSClassFromString(@"RNGoogleMobileAdsNativeView"), // react-native-google-mobile-ads
+		@"RNGoogleMobileAdsMediaView": NSClassFromString(@"RNGoogleMobileAdsMediaView"), // react-native-google-mobile-ads
 		@"RNCSafeAreaProvider": NSClassFromString(@"RNCSafeAreaProviderComponentView"), // react-native-safe-area-context
 		@"RNCSafeAreaView": NSClassFromString(@"RNCSafeAreaViewComponentView"), // react-native-safe-area-context
 		@"RNSVGCircle": NSClassFromString(@"RNSVGCircle"), // react-native-svg

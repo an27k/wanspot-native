@@ -56,9 +56,11 @@ function buildSpotUpsertFromDetailJson(json: unknown, placeId: string, fallbackN
   const price_level = normalizePriceLevel(o.price_level ?? o.priceLevel)
   let category = 'establishment'
   const types = o.types
-  if (Array.isArray(types)) {
-    const first = types.find((t) => typeof t === 'string')
-    if (typeof first === 'string') category = first
+  const typeStrings = Array.isArray(types)
+    ? types.filter((t): t is string => typeof t === 'string')
+    : []
+  if (typeStrings.length > 0) {
+    category = typeStrings[0]
   }
   return {
     place_id: placeId,
@@ -69,6 +71,7 @@ function buildSpotUpsertFromDetailJson(json: unknown, placeId: string, fallbackN
     lng,
     rating,
     price_level,
+    ...(typeStrings.length > 0 ? { google_types: typeStrings } : {}),
   }
 }
 

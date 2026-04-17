@@ -95,6 +95,22 @@ export default function OwnerOnboardingPage() {
         setSubmitting(false)
         return
       }
+      let sizeParsed: { size?: unknown } = {}
+      try {
+        sizeParsed = JSON.parse(rawSize) as typeof sizeParsed
+      } catch {
+        Alert.alert('エラー', 'サイズ情報の読み込みに失敗しました。')
+        setSubmitting(false)
+        return
+      }
+      const dogSize =
+        sizeParsed.size === 'XS' ||
+        sizeParsed.size === 'S' ||
+        sizeParsed.size === 'M' ||
+        sizeParsed.size === 'L' ||
+        sizeParsed.size === 'XL'
+          ? (sizeParsed.size as 'XS' | 'S' | 'M' | 'L' | 'XL')
+          : null
       let ownerParsed: {
         parent_type?: 'papa' | 'mama'
         ownerYear?: string | null
@@ -180,6 +196,7 @@ export default function OwnerOnboardingPage() {
         birthday,
         breed: dog.breed ?? null,
         gender: dog.gender ?? null,
+        size: dogSize,
         photo_url: dog.dogPhotoUrl ?? null,
         rabies_vaccinated: dog.vaccineRabies === true,
         vaccine_vaccinated: dog.vaccineCombo === true,

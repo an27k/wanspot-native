@@ -3,6 +3,7 @@
     "name": "wanspot-native",
     "slug": "wanspot-native",
     "version": "1.0.0",
+    "jsEngine": "jsc",
     "orientation": "portrait",
     "icon": "./assets/images/wanspot_icon_yellowbg.png",
     "userInterfaceStyle": "light",
@@ -16,7 +17,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "app.wanspot.native",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "GADNativeAdValidatorEnabled": false
       }
     },
     "android": {

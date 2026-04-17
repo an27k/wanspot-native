@@ -1,5 +1,5 @@
 {
-  "expo.jsEngine": "hermes",
+  "expo.jsEngine": "jsc",
   "EX_DEV_CLIENT_NETWORK_INSPECTOR": "true",
   "expo-image.disable-libdav1d": "false",
   "ios.useFrameworks": "static",

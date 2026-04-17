@@ -37,7 +37,7 @@ export default function MyHostedEventsScreen() {
       .eq('creator_id', user.id)
       .order('event_at', { ascending: false })
     if (error) {
-      console.error('[mypage/events]', error)
+      console.error(`[mypage/events] ${String((error as unknown) ?? '')}`)
       setRows([])
     } else {
       setRows((data ?? []) as WanspotEventRow[])

@@ -132,6 +132,9 @@ export function NearbySpotCard({
           lng: spot.lng,
           rating: spot.rating,
           price_level: spot.price_level,
+          ...(Array.isArray(spot.types) && spot.types.length > 0
+            ? { google_types: spot.types.filter((t): t is string => typeof t === 'string') }
+            : {}),
         },
         { onConflict: 'place_id' }
       )
@@ -166,6 +169,9 @@ export function NearbySpotCard({
             lng: spot.lng,
             rating: spot.rating,
             price_level: spot.price_level,
+            ...(Array.isArray(spot.types) && spot.types.length > 0
+              ? { google_types: spot.types.filter((t): t is string => typeof t === 'string') }
+              : {}),
           },
           { onConflict: 'place_id' }
         )

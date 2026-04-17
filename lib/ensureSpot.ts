@@ -2,6 +2,10 @@ import { supabase } from '@/lib/supabase'
 import type { PlaceResult } from '@/types/places'
 
 export async function ensureSpotId(spot: PlaceResult): Promise<string | null> {
+  const types =
+    Array.isArray(spot.types) && spot.types.length > 0
+      ? spot.types.filter((t): t is string => typeof t === 'string')
+      : null
   const { data, error } = await supabase
     .from('spots')
     .upsert(
@@ -14,6 +18,7 @@ export async function ensureSpotId(spot: PlaceResult): Promise<string | null> {
         lng: spot.lng,
         rating: spot.rating,
         price_level: spot.price_level,
+        ...(types ? { google_types: types } : {}),
       },
       { onConflict: 'place_id' }
     )

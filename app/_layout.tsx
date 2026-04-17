@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import * as WebBrowser from 'expo-web-browser'
-import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency'
 import { Stack } from 'expo-router'
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
@@ -10,7 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { enableScreens } from 'react-native-screens'
 import { AuthProvider } from '@/context/AuthContext'
 import { initAnalytics } from '@/lib/analytics'
-import mobileAds from 'react-native-google-mobile-ads'
+import { iosUsesSafeConsoleGuards } from '@/lib/ads-policy'
 
 /** ルート Stack: ネイティブの UINavigationController / Android Fragment トランジションに寄せる */
 const stackScreenOptions = {
@@ -38,11 +37,46 @@ export default function RootLayout() {
 
   useEffect(() => {
     initAnalytics()
-    const initAds = async () => {
-      await requestTrackingPermissionsAsync()
-      await mobileAds().initialize()
+  }, [])
+
+  useEffect(() => {
+    // iOS 26.x + Hermes: avoid passing Error objects to console (stack getter crashes). Runs even when ads are enabled.
+    if (!iosUsesSafeConsoleGuards()) return
+
+    const safeToString = (v: unknown) => {
+      if (v instanceof Error) return v.message
+      if (typeof v === 'string') return v
+      try {
+        return JSON.stringify(v)
+      } catch {
+        return String(v)
+      }
     }
-    void initAds()
+
+    const origWarn = console.warn
+    const origError = console.error
+
+    console.warn = (...args: unknown[]) => origWarn(args.map(safeToString).join(' '))
+    console.error = (...args: unknown[]) => origError(args.map(safeToString).join(' '))
+
+    // グローバルエラーハンドラも stack を触らないようにする（fallback）
+    const anyGlobal = globalThis as unknown as {
+      ErrorUtils?: { getGlobalHandler?: () => unknown; setGlobalHandler?: (h: unknown) => void }
+    }
+    const errorUtils = anyGlobal.ErrorUtils
+    const prevHandler = errorUtils?.getGlobalHandler?.()
+    if (errorUtils?.setGlobalHandler) {
+      errorUtils.setGlobalHandler((err: unknown, isFatal?: boolean) => {
+        const msg = safeToString(err)
+        origError(`[globalError] fatal=${String(isFatal ?? false)} ${msg}`)
+      })
+    }
+
+    return () => {
+      console.warn = origWarn
+      console.error = origError
+      if (errorUtils?.setGlobalHandler && prevHandler) errorUtils.setGlobalHandler(prevHandler)
+    }
   }, [])
 
   useEffect(() => {

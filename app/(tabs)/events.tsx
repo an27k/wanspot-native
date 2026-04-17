@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   FlatList,
-  Linking,
   Modal,
   Pressable,
   RefreshControl,
@@ -15,122 +14,12 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router'
 import Svg, { Line, Path } from 'react-native-svg'
 import { AppHeader } from '@/components/AppHeader'
+import { AiPlanTab } from '@/components/ai-plan/AiPlanTab'
 import { EventCard, type WanspotEventRow } from '@/components/events/EventCard'
 import { PowState, RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
 import { colors } from '@/constants/colors'
-import { EXTERNAL_EVENTS_EMPTY_FALLBACK } from '@/lib/external-events-fallback'
 import { supabase } from '@/lib/supabase'
-import { wanspotFetch } from '@/lib/wanspot-api'
-
-type ExternalEventLink = { label: string; url: string }
-
-type ExternalEvent = {
-  id?: string
-  title: string
-  description: string | null
-  event_at: string | null
-  location_name: string | null
-  area: string | null
-  url: string | null
-  source: string | null
-  links?: ExternalEventLink[] | null
-}
-
-const EXTERNAL_EVENTS_MIN_DISPLAY = 30
-
-function primaryUrlForDedupe(ev: ExternalEvent): string | null {
-  if (ev.url && ev.url.startsWith('http')) return ev.url
-  const l = ev.links?.[0]
-  if (l?.url?.startsWith('http')) return l.url
-  return null
-}
-
-function dedupeKeyForMerge(ev: ExternalEvent): string {
-  const u = primaryUrlForDedupe(ev)
-  if (!u) return `title:${ev.title}`
-  try {
-    const x = new URL(u)
-    return `${x.hostname}${x.pathname}`.toLowerCase().replace(/\/$/, '') || u
-  } catch {
-    return u
-  }
-}
-
-/** API が30件未満のときキュレートで補完（サーバーと同じ考え方） */
-function mergeExternalWithCuratedClient(primary: ExternalEvent[]): ExternalEvent[] {
-  if (primary.length >= EXTERNAL_EVENTS_MIN_DISPLAY) return primary
-  const keys = new Set(primary.map(dedupeKeyForMerge))
-  const buf = [...primary]
-  const pool = EXTERNAL_EVENTS_EMPTY_FALLBACK as ExternalEvent[]
-  for (const row of pool) {
-    if (buf.length >= EXTERNAL_EVENTS_MIN_DISPLAY) break
-    const k = dedupeKeyForMerge(row)
-    if (keys.has(k)) continue
-    keys.add(k)
-    buf.push(row)
-  }
-  return buf
-}
-
-/** API の生配列を表示用に正規化。空・不正ならフォールバック一覧 */
-function normalizeExternalPayload(raw: unknown): ExternalEvent[] {
-  const fallback = () => [...(EXTERNAL_EVENTS_EMPTY_FALLBACK as ExternalEvent[])]
-  if (!Array.isArray(raw)) return fallback()
-  const out: ExternalEvent[] = []
-  for (const item of raw) {
-    if (!item || typeof item !== 'object') continue
-    const o = item as Record<string, unknown>
-    const title = typeof o.title === 'string' ? o.title.trim() : ''
-    if (!title) continue
-    let links: ExternalEventLink[] | null = null
-    if (Array.isArray(o.links)) {
-      const acc: ExternalEventLink[] = []
-      for (const l of o.links) {
-        if (!l || typeof l !== 'object') continue
-        const x = l as Record<string, unknown>
-        const url = typeof x.url === 'string' && x.url.startsWith('http') ? x.url : null
-        if (!url) continue
-        const label = typeof x.label === 'string' && x.label.trim() ? x.label.trim() : 'リンク'
-        acc.push({ label, url })
-      }
-      if (acc.length > 0) links = acc
-    }
-    const url = typeof o.url === 'string' && o.url.startsWith('http') ? o.url : null
-    out.push({
-      id: typeof o.id === 'string' ? o.id : undefined,
-      title,
-      description: typeof o.description === 'string' ? o.description : null,
-      event_at: typeof o.event_at === 'string' ? o.event_at : null,
-      location_name: typeof o.location_name === 'string' ? o.location_name : null,
-      area: typeof o.area === 'string' ? o.area : null,
-      url,
-      source: typeof o.source === 'string' ? o.source : null,
-      links,
-    })
-  }
-  if (out.length === 0) return mergeExternalWithCuratedClient(fallback())
-  return mergeExternalWithCuratedClient(out)
-}
-
-function externalEventDetailLinks(ev: ExternalEvent): ExternalEventLink[] {
-  if (Array.isArray(ev.links)) {
-    const out: ExternalEventLink[] = []
-    for (const l of ev.links) {
-      if (!l || typeof l !== 'object') continue
-      const url = typeof l.url === 'string' && l.url.startsWith('http') ? l.url : null
-      if (!url) continue
-      const label = typeof l.label === 'string' && l.label.trim() ? l.label.trim() : '詳細'
-      out.push({ label, url })
-    }
-    if (out.length > 0) return out
-  }
-  if (ev.url && ev.url.startsWith('http')) {
-    const label = ev.source?.trim() || '詳細ページ'
-    return [{ label, url: ev.url }]
-  }
-  return []
-}
 
 const IconPlusLarge = () => (
   <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
@@ -147,24 +36,6 @@ const IconSort = () => (
   </Svg>
 )
 
-const IconCalendar = () => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} strokeLinecap="round">
-    <Path d="M7 3v4M17 3v4M3 11h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
-  </Svg>
-)
-
-const IconPin = () => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} strokeLinecap="round">
-    <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-    <Path d="M12 10h.01" />
-  </Svg>
-)
-
-const IconExternalLink = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round">
-    <Path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
-  </Svg>
-)
 
 type WanspotSort = 'event_at' | 'price_asc' | 'price_desc' | 'participants'
 
@@ -201,24 +72,6 @@ function sortEvents(list: WanspotEventRow[], sort: WanspotSort): WanspotEventRow
     const ca = Number(a.current_count ?? 0)
     const cb = Number(b.current_count ?? 0)
     return cb - ca
-  })
-  return copy
-}
-
-function externalEventAtTime(ev: ExternalEvent): number {
-  if (!ev.event_at) return Number.POSITIVE_INFINITY
-  const t = new Date(ev.event_at).getTime()
-  return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY
-}
-
-function sortExternalEvents(list: ExternalEvent[], sort: WanspotSort): ExternalEvent[] {
-  const copy = [...list]
-  copy.sort((a, b) => {
-    const ta = externalEventAtTime(a)
-    const tb = externalEventAtTime(b)
-    const tcmp = (a.title ?? '').localeCompare(b.title ?? '', 'ja')
-    if (sort === 'price_desc') return tb - ta || tcmp
-    return ta - tb || tcmp
   })
   return copy
 }
@@ -270,16 +123,13 @@ export default function EventsTab() {
   const { width: windowWidth } = useWindowDimensions()
   const [events, setEvents] = useState<WanspotEventRow[]>([])
   const [joinedEvents, setJoinedEvents] = useState<WanspotEventRow[]>([])
-  const [externalEvents, setExternalEvents] = useState<ExternalEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [joinedLoading, setJoinedLoading] = useState(true)
-  const [externalLoading, setExternalLoading] = useState(true)
-  const [tab, setTab] = useState<'scheduled' | 'joined' | 'external'>('scheduled')
+  const [tab, setTab] = useState<'ai_plan' | 'scheduled' | 'joined'>('ai_plan')
   const [eventSort, setEventSort] = useState<WanspotSort>('event_at')
   const [showSort, setShowSort] = useState(false)
   const [showVaccineBanner, setShowVaccineBanner] = useState(false)
   const [fabMenuOpen, setFabMenuOpen] = useState(false)
-  const [externalError, setExternalError] = useState(false)
   const [pagerLayoutW, setPagerLayoutW] = useState<number | null>(null)
   const eventsContentW = pagerLayoutW ?? windowWidth
 
@@ -288,41 +138,8 @@ export default function EventsTab() {
   const fabMenuAnim = useRef(new Animated.Value(0)).current
   const tabSlideX = useRef(new Animated.Value(0)).current
 
-  const fetchExternalEvents = useCallback((): Promise<void> => {
-    setExternalLoading(true)
-    setExternalEvents([])
-    setExternalError(false)
-    const ac = new AbortController()
-    const t = setTimeout(() => ac.abort(), 15_000)
-    return wanspotFetch('/api/events/external', { signal: ac.signal })
-      .then(async (r) => {
-        let data: { events?: unknown; error?: string } = {}
-        try {
-          data = (await r.json()) as { events?: unknown; error?: string }
-        } catch {
-          /* ignore */
-        }
-        if (!r.ok) {
-          setExternalEvents(normalizeExternalPayload(null))
-          setExternalError(false)
-          setExternalLoading(false)
-          return
-        }
-        setExternalEvents(normalizeExternalPayload(data.events))
-        setExternalError(false)
-        setExternalLoading(false)
-      })
-      .catch(() => {
-        setExternalEvents(normalizeExternalPayload(null))
-        setExternalError(false)
-        setExternalLoading(false)
-      })
-      .finally(() => clearTimeout(t))
-  }, [])
-
   const [refreshScheduled, setRefreshScheduled] = useState(false)
   const [refreshJoined, setRefreshJoined] = useState(false)
-  const [refreshExternal, setRefreshExternal] = useState(false)
 
   const reloadScheduledEvents = useCallback(async () => {
     const { data: eventsData } = await supabase.from('events').select('*').order('event_at', { ascending: true })
@@ -334,8 +151,7 @@ export default function EventsTab() {
       await reloadScheduledEvents()
       setLoading(false)
     })()
-    void fetchExternalEvents()
-  }, [fetchExternalEvents, reloadScheduledEvents])
+  }, [reloadScheduledEvents])
 
   useFocusEffect(
     useCallback(() => {
@@ -403,15 +219,6 @@ export default function EventsTab() {
     }
   }, [])
 
-  const onRefreshExternal = useCallback(async () => {
-    setRefreshExternal(true)
-    try {
-      await fetchExternalEvents()
-    } finally {
-      setRefreshExternal(false)
-    }
-  }, [fetchExternalEvents])
-
   useEffect(() => {
     if (tab !== 'scheduled') setFabMenuOpen(false)
   }, [tab])
@@ -442,7 +249,7 @@ export default function EventsTab() {
 
   useEffect(() => {
     if (eventsContentW <= 0) return
-    const idx = tab === 'scheduled' ? 0 : tab === 'joined' ? 1 : 2
+    const idx = tab === 'ai_plan' ? 0 : tab === 'scheduled' ? 1 : 2
     Animated.spring(tabSlideX, {
       toValue: -idx * eventsContentW,
       useNativeDriver: true,
@@ -453,20 +260,8 @@ export default function EventsTab() {
     }).start()
   }, [tab, eventsContentW, tabSlideX])
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return ''
-    return new Date(dateStr).toLocaleDateString('ja-JP', {
-      month: 'long',
-      day: 'numeric',
-      weekday: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
   const sortedWanspotEvents = useMemo(() => sortEvents(events, eventSort), [events, eventSort])
   const sortedJoinedEvents = useMemo(() => sortEvents(joinedEvents, eventSort), [joinedEvents, eventSort])
-  const sortedExternalEvents = useMemo(() => sortExternalEvents(externalEvents, eventSort), [externalEvents, eventSort])
   const currentSort = WANSPOT_SORT_OPTIONS.find((o) => o.value === eventSort)!
 
   /** タブシーンの下端は既にタブバー直上。FAB はそのすぐ上（マイページ列の中心に合わせる） */
@@ -517,6 +312,12 @@ export default function EventsTab() {
       <View style={styles.subHeader}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabsInner}>
           <Pressable
+            onPress={() => setTab('ai_plan')}
+            style={[styles.eventTabChip, tab === 'ai_plan' ? styles.eventTabChipOn : styles.eventTabChipOff]}
+          >
+            <Text style={[styles.eventTabTxt, tab === 'ai_plan' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>AIプラン</Text>
+          </Pressable>
+          <Pressable
             onPress={() => setTab('scheduled')}
             style={[styles.eventTabChip, tab === 'scheduled' ? styles.eventTabChipOn : styles.eventTabChipOff]}
           >
@@ -528,12 +329,6 @@ export default function EventsTab() {
           >
             <Text style={[styles.eventTabTxt, tab === 'joined' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>参加予定</Text>
           </Pressable>
-          <Pressable
-            onPress={() => setTab('external')}
-            style={[styles.eventTabChip, tab === 'external' ? styles.eventTabChipOn : styles.eventTabChipOff]}
-          >
-            <Text style={[styles.eventTabTxt, tab === 'external' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>外部イベント</Text>
-          </Pressable>
         </ScrollView>
         <View style={styles.sortWrap}>
           <Pressable style={styles.sortBtn} onPress={() => setShowSort(true)}>
@@ -543,7 +338,7 @@ export default function EventsTab() {
         </View>
       </View>
 
-      {showVaccineBanner ? (
+      {showVaccineBanner && (tab === 'scheduled' || tab === 'joined') ? (
         <View style={styles.bannerPad}>
           <View style={styles.vBanner}>
             <Text style={styles.vBannerTxt}>🐾 ワクチン接種日を登録するとイベントに参加できます</Text>
@@ -572,6 +367,9 @@ export default function EventsTab() {
             },
           ]}
         >
+          <View style={[styles.eventsPage, { width: eventsContentW }]}>
+            {tab === 'ai_plan' ? <AiPlanTab /> : <View style={{ flex: 1 }} />}
+          </View>
           <View style={[styles.eventsPage, { width: eventsContentW }]}>
             {loading ? (
               <ScrollView
@@ -679,131 +477,6 @@ export default function EventsTab() {
                 renderItem={({ item }) => (
                   <EventCard event={item} variant="joined" onPressDetail={() => router.push(`/events/${item.id}`)} />
                 )}
-              />
-            )}
-          </View>
-          <View style={[styles.eventsPage, { width: eventsContentW }]}>
-            {externalLoading ? (
-              <ScrollView
-                style={styles.pageScroll}
-                contentContainerStyle={styles.pageScrollContent}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshExternal}
-                    onRefresh={onRefreshExternal}
-                    tintColor={colors.brand}
-                    colors={[colors.brand]}
-                  />
-                }
-              >
-                <RunningDog label="外部イベントを読み込み中..." />
-              </ScrollView>
-            ) : externalError ? (
-              <ScrollView
-                style={styles.pageScroll}
-                contentContainerStyle={styles.pageScrollContent}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshExternal}
-                    onRefresh={onRefreshExternal}
-                    tintColor={colors.brand}
-                    colors={[colors.brand]}
-                  />
-                }
-              >
-                <View style={styles.emptyJoined}>
-                  <IconPaw size={40} color="#aaa" />
-                  <Text style={styles.extErrTxt}>しばらくしてから再度お試しください</Text>
-                  <Pressable style={styles.retryBtn} onPress={() => void fetchExternalEvents()}>
-                    <Text style={styles.retryTxt}>再読み込み</Text>
-                  </Pressable>
-                </View>
-              </ScrollView>
-            ) : externalEvents.length === 0 ? (
-              <ScrollView
-                style={styles.pageScroll}
-                contentContainerStyle={styles.pageScrollContent}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshExternal}
-                    onRefresh={onRefreshExternal}
-                    tintColor={colors.brand}
-                    colors={[colors.brand]}
-                  />
-                }
-              >
-                <View style={styles.emptyJoined}>
-                  <IconPaw size={40} color="#aaa" />
-                  <Text style={styles.extErrTxt}>外部イベントが見つかりませんでした</Text>
-                  <Pressable style={styles.retryBtn} onPress={() => void fetchExternalEvents()}>
-                    <Text style={styles.retryTxt}>再読み込み</Text>
-                  </Pressable>
-                </View>
-              </ScrollView>
-            ) : (
-              <FlatList
-                style={styles.pageFlex}
-                data={sortedExternalEvents}
-                keyExtractor={(item, index) => (item.id ? String(item.id) : `ext-${index}`)}
-                removeClippedSubviews={false}
-                contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshExternal}
-                    onRefresh={onRefreshExternal}
-                    tintColor={colors.brand}
-                    colors={[colors.brand]}
-                  />
-                }
-                renderItem={({ item }) => {
-                  const detailLinks = externalEventDetailLinks(item)
-                  return (
-                    <View style={styles.extCard}>
-                      <View style={styles.extHead}>
-                        {item.source ? (
-                          <View style={styles.srcPill}>
-                            <Text style={styles.srcTxt}>{item.source}</Text>
-                          </View>
-                        ) : (
-                          <View />
-                        )}
-                        {item.area ? <Text style={styles.areaTxt}>{item.area}</Text> : null}
-                      </View>
-                      <View style={styles.extBody}>
-                        <Text style={styles.extTitle}>{item.title}</Text>
-                        {item.description ? <Text style={styles.extDesc}>{item.description}</Text> : null}
-                        <View style={styles.extMeta}>
-                          {item.event_at ? (
-                            <View style={styles.metaLine}>
-                              <IconCalendar />
-                              <Text style={styles.metaSmall}>{formatDate(item.event_at)}</Text>
-                            </View>
-                          ) : null}
-                          {item.location_name ? (
-                            <View style={styles.metaLine}>
-                              <IconPin />
-                              <Text style={styles.metaSmall}>{item.location_name}</Text>
-                            </View>
-                          ) : null}
-                        </View>
-                        {detailLinks.length > 0 ? (
-                          <View style={styles.extLinksWrap}>
-                            {detailLinks.map((link) => (
-                              <Pressable
-                                key={link.url}
-                                style={styles.extLink}
-                                onPress={() => Linking.openURL(link.url)}
-                              >
-                                <IconExternalLink />
-                                <Text style={styles.extLinkTxt}> {link.label}</Text>
-                              </Pressable>
-                            ))}
-                          </View>
-                        ) : null}
-                      </View>
-                    </View>
-                  )
-                }}
               />
             )}
           </View>
@@ -956,38 +629,6 @@ const styles = StyleSheet.create({
   emptyHint: { marginTop: 12, fontSize: 12, color: '#aaa', textAlign: 'center' },
   emptyJoined: { alignItems: 'center', paddingTop: 48, gap: 12 },
   emptyJoinedTxt: { fontSize: 14, color: '#aaa' },
-  extErrTxt: { fontSize: 14, color: '#aaa', textAlign: 'center' },
-  retryBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: '#f5f5f5' },
-  retryTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
-  extCard: { borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: '#ebebeb' },
-  extHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  srcPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: '#f5f5f5' },
-  srcTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
-  areaTxt: { fontSize: 12, color: '#aaa' },
-  extBody: { padding: 16 },
-  extTitle: { fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 8 },
-  extDesc: { fontSize: 12, color: '#888', lineHeight: 18, marginBottom: 8 },
-  extMeta: { gap: 6, marginBottom: 12 },
-  metaLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaSmall: { fontSize: 12, color: '#888' },
-  extLinksWrap: { gap: 8 },
-  extLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#ebebeb',
-  },
-  extLinkTxt: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 120, paddingRight: 16 },
   sortMenu: { borderRadius: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ebebeb', minWidth: 160, overflow: 'hidden' },
   sortItem: { paddingHorizontal: 16, paddingVertical: 12 },

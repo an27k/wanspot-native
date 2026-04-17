@@ -1,6 +1,0 @@
-module ExpoRouter {
-  umbrella header "ExpoRouter-umbrella.h"
-
-  export *
-  module * { export * }
-}

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Image,
   Modal,
@@ -14,11 +14,15 @@ import {
 import * as Location from 'expo-location'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useIsFocused } from '@react-navigation/native'
 import Svg, { Path } from 'react-native-svg'
 import { AppHeader } from '@/components/AppHeader'
+import { AdNativeCard } from '@/components/AdNativeCard'
 import { NearbySpotCard } from '@/components/nearby/NearbySpotCard'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
+import { adsEnabledForDevice } from '@/lib/ads-policy'
+import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import { supabase } from '@/lib/supabase'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
@@ -73,6 +77,7 @@ const IconSort = () => (
 export default function NearbyPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const isFocused = useIsFocused()
   const [genre, setGenre] = useState('cafe')
   const [distance, setDistance] = useState<DistanceKey>(1000)
   const [spots, setSpots] = useState<PlaceResult[]>([])
@@ -89,6 +94,8 @@ export default function NearbyPage() {
   const [obTutorialDogName, setObTutorialDogName] = useState('')
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
   const [pullRefreshing, setPullRefreshing] = useState(false)
+  const [adsRuntimeReady, setAdsRuntimeReady] = useState(false)
+  const adsPrimedRef = useRef(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -266,6 +273,45 @@ export default function NearbyPage() {
     }, [reloadUserLikedPlaceIds])
   )
 
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false
+
+      const run = async () => {
+        try {
+          if (!adsEnabledForDevice()) {
+            if (!cancelled) setAdsRuntimeReady(false)
+            return
+          }
+          if (isAdsMobileSdkInitialized()) {
+            adsPrimedRef.current = true
+            if (!cancelled) setAdsRuntimeReady(true)
+            return
+          }
+          if (adsPrimedRef.current) {
+            if (!cancelled) setAdsRuntimeReady(true)
+            return
+          }
+          // 起動直後の負荷と競合を避ける（検索と同じ安全側の遅延）
+          await new Promise((r) => setTimeout(r, 800))
+          if (cancelled) return
+          await prepareSearchTabAdsOnce()
+          adsPrimedRef.current = true
+          if (!cancelled) setAdsRuntimeReady(true)
+        } catch (e) {
+          console.warn(`prepareSearchTabAds failed (nearby): ${String((e as unknown) ?? '')}`)
+          if (!cancelled) setAdsRuntimeReady(false)
+        }
+      }
+
+      void run()
+
+      return () => {
+        cancelled = true
+      }
+    }, [])
+  )
+
   const handleSpotLikeChange = useCallback((placeId: string, liked: boolean) => {
     setLikedPlaceIds((prev) => {
       const next = new Set(prev)
@@ -294,12 +340,19 @@ export default function NearbyPage() {
 
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
 
+  const AD_ROW_EVERY = 5
+  const shouldShowAdAfter = (index: number, total: number) =>
+    (index + 1) % AD_ROW_EVERY === 0 || (index + 1 === total && total < AD_ROW_EVERY)
+
   return (
     <View style={styles.main}>
       <AppHeader />
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: TAB_BAR_HEIGHT + insets.bottom },
+        ]}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
@@ -380,16 +433,20 @@ export default function NearbyPage() {
           displayedSpots.length === 0 ? (
             <PowState label="この条件ではいいねしたお店がありません" />
           ) : null}
-          {displayedSpots.map((spot) => (
-            <NearbySpotCard
-              key={spot.place_id}
-              spot={spot}
-              likeCount={likeCounts[spot.place_id] ?? 0}
-              userLocation={location}
-              userWalkTags={userWalkTags}
-              onOpenDetail={(id) => router.push(`/spots/${id}`)}
-              onLikeStateChange={handleSpotLikeChange}
-            />
+          {displayedSpots.map((spot, index) => (
+            <View key={spot.place_id}>
+              <NearbySpotCard
+                spot={spot}
+                likeCount={likeCounts[spot.place_id] ?? 0}
+                userLocation={location}
+                userWalkTags={userWalkTags}
+                onOpenDetail={(id) => router.push(`/spots/${id}`)}
+                onLikeStateChange={handleSpotLikeChange}
+              />
+              {isFocused && shouldShowAdAfter(index, displayedSpots.length) ? (
+                <AdNativeCard adsReady={adsRuntimeReady} />
+              ) : null}
+            </View>
           ))}
         </View>
       </ScrollView>

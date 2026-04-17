@@ -12,23 +12,24 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { useIsFocused } from '@react-navigation/native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import * as Location from 'expo-location'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { AppHeader } from '@/components/AppHeader'
-import { AdBannerCard } from '@/components/AdBanner'
+import { AdNativeCard } from '@/components/AdNativeCard'
 import { SearchDiscoverResultCard } from '@/components/search/SearchDiscoverResultCard'
 import { PowState, RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
-import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { rankArticlesFeed } from '@/lib/article-feed-ranking'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
+import { adsEnabledForDevice } from '@/lib/ads-policy'
+import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import { wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -143,7 +144,7 @@ type ArticleRow = {
 
 export default function SearchTab() {
   const router = useRouter()
-  const insets = useSafeAreaInsets()
+  const isFocused = useIsFocused()
   const scrollRef = useRef<ScrollView>(null)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<PlaceResult[]>([])
@@ -170,6 +171,49 @@ export default function SearchTab() {
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
   const [pullRefreshing, setPullRefreshing] = useState(false)
   const [recentArticleIds, setRecentArticleIds] = useState<string[]>([])
+  const [adsRuntimeReady, setAdsRuntimeReady] = useState(false)
+  const adsPrimedRef = useRef(false)
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false
+
+      const run = async () => {
+        try {
+          if (!adsEnabledForDevice()) {
+            if (!cancelled) setAdsRuntimeReady(false)
+            return
+          }
+          // 他タブで既に初期化済みなら待たずに ready（クリーンアップで false にしない）
+          if (isAdsMobileSdkInitialized()) {
+            adsPrimedRef.current = true
+            if (!cancelled) setAdsRuntimeReady(true)
+            return
+          }
+          if (adsPrimedRef.current) {
+            if (!cancelled) setAdsRuntimeReady(true)
+            return
+          }
+          await new Promise((r) => setTimeout(r, 800))
+          if (cancelled) return
+          await prepareSearchTabAdsOnce()
+          adsPrimedRef.current = true
+          if (!cancelled) setAdsRuntimeReady(true)
+        } catch (e) {
+          console.warn(`prepareSearchTabAds failed: ${String((e as unknown) ?? '')}`)
+          // 初期化失敗時に Banner をマウントすると Hermes/ブリッジの不安定要因になり得るため、
+          // 失敗時は adsReady=false のままにして安全側に倒す。
+          if (!cancelled) setAdsRuntimeReady(false)
+        }
+      }
+
+      void run()
+
+      return () => {
+        cancelled = true
+      }
+    }, [])
+  )
 
   useEffect(() => {
     Location.getCurrentPositionAsync({}).then((p) => setLocation({ lat: p.coords.latitude, lng: p.coords.longitude })).catch(() => {})
@@ -561,6 +605,10 @@ export default function SearchTab() {
   }, [discoverMode, aiResults, hotResults, location, userWalkTags])
   const discoverLoading = discoverMode === 'ai' ? aiLoading : discoverMode === 'hot' ? hotLoading : articlesLoading
 
+  const AD_ROW_EVERY = 5
+  const shouldShowAdAfter = (index: number, total: number) =>
+    (index + 1) % AD_ROW_EVERY === 0 || (index + 1 === total && total < AD_ROW_EVERY)
+
   const openSpot = (id: string) => {
     router.push(`/spots/${id}`)
   }
@@ -572,14 +620,13 @@ export default function SearchTab() {
     })
   }
 
-  const padBottom = TAB_BAR_HEIGHT + insets.bottom
-
   return (
     <View style={styles.root}>
       <AppHeader />
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ paddingBottom: padBottom }}
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -704,18 +751,21 @@ export default function SearchTab() {
           {!loading && searched && results.length === 0 ? <PowState label="見つかりませんでした" /> : null}
           {!loading &&
             searched &&
-            sortedResults.flatMap((spot, index) => [
-              <SearchDiscoverResultCard
-                key={spot.place_id}
-                spot={spot}
-                userLocation={location}
-                userWalkTags={userWalkTags}
-                onOpen={openSpot}
-                onLikesChange={refreshSpotLikesCount}
-                onBeforeNavigate={beforeNavSearch}
-              />,
-              ...((index + 1) % 5 === 0 ? [<AdBannerCard key={`ad-spot-${index}`} />] : []),
-            ])}
+            sortedResults.map((spot, index) => (
+              <View key={spot.place_id}>
+                <SearchDiscoverResultCard
+                  spot={spot}
+                  userLocation={location}
+                  userWalkTags={userWalkTags}
+                  onOpen={openSpot}
+                  onLikesChange={refreshSpotLikesCount}
+                  onBeforeNavigate={beforeNavSearch}
+                />
+                {isFocused && shouldShowAdAfter(index, sortedResults.length) ? (
+                  <AdNativeCard adsReady={adsRuntimeReady} />
+                ) : null}
+              </View>
+            ))}
 
           {!searched ? (
             <>
@@ -724,47 +774,50 @@ export default function SearchTab() {
                   {articlesLoading ? <RunningDog label="記事を読み込み中..." /> : null}
                   {!articlesLoading && articlesList.length === 0 ? <PowState label="公開中の記事がありません" /> : null}
                   {!articlesLoading &&
-                    articlesList.flatMap((article, index) => [
-                      <Pressable
-                        key={article.id}
-                        style={styles.artCard}
-                        onPress={() => {
-                          track('article_clicked', { article_id: article.id })
-                          setRecentArticleIds((prev) => {
-                            if (prev.includes(article.id)) return prev
-                            return [article.id, ...prev].slice(0, 40)
-                          })
-                          router.push(`/articles/${article.slug}`)
-                        }}
-                      >
-                        {article.image_url ? (
-                          <ArticleRemoteImage
-                            uri={article.image_url}
-                            style={styles.artImg}
-                            recyclingKey={`article-list-${article.id}`}
-                            priority="normal"
-                          />
-                        ) : (
-                          <View style={[styles.artImg, styles.artImgPh]} />
-                        )}
-                        <View style={styles.artBody}>
-                          {article.keywords?.length > 0 ? (
-                            <View style={styles.kwRow}>
-                              {article.keywords.slice(0, 3).map((k) => (
-                                <View key={k} style={styles.kwPill}>
-                                  <Text style={styles.kwPillTxt}>{k}</Text>
-                                </View>
-                              ))}
-                            </View>
-                          ) : null}
-                          <Text style={styles.artTitle}>{article.title}</Text>
-                          <Text style={styles.artSum} numberOfLines={3}>
-                            {article.summary}
-                          </Text>
-                        </View>
-                      </Pressable>,
-                      ...((index + 1) % 5 === 0 ? [<AdBannerCard key={`ad-spot-${index}`} />] : []),
-                    ])}
+                    articlesList.map((article, index) => (
+                      <View key={article.id}>
+                        <Pressable
+                          style={styles.artCard}
+                          onPress={() => {
+                            track('article_clicked', { article_id: article.id })
+                            setRecentArticleIds((prev) => {
+                              if (prev.includes(article.id)) return prev
+                              return [article.id, ...prev].slice(0, 40)
+                            })
+                            router.push(`/articles/${article.slug}`)
+                          }}
+                        >
+                          {article.image_url ? (
+                            <ArticleRemoteImage
+                              uri={article.image_url}
+                              style={styles.artImg}
+                              recyclingKey={`article-list-${article.id}`}
+                              priority="normal"
+                            />
+                          ) : (
+                            <View style={[styles.artImg, styles.artImgPh]} />
+                          )}
+                          <View style={styles.artBody}>
+                            {article.keywords?.length > 0 ? (
+                              <View style={styles.kwRow}>
+                                {article.keywords.slice(0, 3).map((k) => (
+                                  <View key={k} style={styles.kwPill}>
+                                    <Text style={styles.kwPillTxt}>{k}</Text>
+                                  </View>
+                                ))}
+                              </View>
+                            ) : null}
+                            <Text style={styles.artTitle}>{article.title}</Text>
+                            <Text style={styles.artSum} numberOfLines={3}>
+                              {article.summary}
+                            </Text>
+                          </View>
+                        </Pressable>
+                        {isFocused && shouldShowAdAfter(index, articlesList.length) ? (
+                          <AdNativeCard adsReady={adsRuntimeReady} />
+                        ) : null}
+                      </View>
+                    ))}
                 </>
               ) : null}
 
@@ -794,20 +847,23 @@ export default function SearchTab() {
                   ) : null}
                   {!discoverLoading &&
                     !(discoverMode === 'ai' && spotLikesCount !== null && spotLikesCount < AI_LIKES_MIN) &&
-                    discoverResults.flatMap((spot, index) => [
-                      <SearchDiscoverResultCard
-                        key={spot.place_id}
-                        spot={spot}
-                        userLocation={location}
-                        userWalkTags={userWalkTags}
-                        onOpen={openSpot}
-                        onLikesChange={refreshSpotLikesCount}
-                        onBeforeNavigate={async () => {
-                          await AsyncStorage.setItem(SEARCH_RESTORE_FLAG, '1')
-                        }}
-                      />,
-                      ...((index + 1) % 5 === 0 ? [<AdBannerCard key={`ad-spot-${index}`} />] : []),
-                    ])}
+                    discoverResults.map((spot, index) => (
+                      <View key={spot.place_id}>
+                        <SearchDiscoverResultCard
+                          spot={spot}
+                          userLocation={location}
+                          userWalkTags={userWalkTags}
+                          onOpen={openSpot}
+                          onLikesChange={refreshSpotLikesCount}
+                          onBeforeNavigate={async () => {
+                            await AsyncStorage.setItem(SEARCH_RESTORE_FLAG, '1')
+                          }}
+                        />
+                        {isFocused && shouldShowAdAfter(index, discoverResults.length) ? (
+                          <AdNativeCard adsReady={adsRuntimeReady} />
+                        ) : null}
+                      </View>
+                    ))}
                   {!loading &&
                     !searched &&
                     discoverResults.length === 0 &&
@@ -857,6 +913,7 @@ export default function SearchTab() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f7f6f3' },
+  scrollContent: { paddingBottom: 24 },
   searchHeader: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ebebeb', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   searchInner: {

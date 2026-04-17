@@ -15,8 +15,9 @@ export default function TabsLayout() {
         headerShown: false,
         /** shift は両画面が一瞬 opacity 0 付近を通り「真っ白」に見えやすいのでオフ */
         animation: 'none',
-        /** 初回タブでも中身を即表示（マウント済みにする） */
-        lazy: false,
+        /** 起動時に全タブをマウントしない（検索の広告・一覧と Hermes の競合を避ける） */
+        lazy: true,
+        /** true だと非アクティブタブの更新が止まり、再フォーカス時にネイティブ広告周りが「消えた」ように見えることがある */
         freezeOnBlur: false,
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textMuted,

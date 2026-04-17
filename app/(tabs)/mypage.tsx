@@ -56,11 +56,20 @@ type Dog = {
   birthday: string | null
   /** DB に無い既存ユーザーは null */
   gender?: 'male' | 'female' | null
+  size?: 'XS' | 'S' | 'M' | 'L' | 'XL' | null
   rabies_vaccinated_at: string | null
   vaccine_vaccinated_at: string | null
   photo_url: string | null
   rabies_vaccinated: boolean | null
   vaccine_vaccinated: boolean | null
+}
+
+const DOG_SIZE_LABEL: Record<'XS' | 'S' | 'M' | 'L' | 'XL', string> = {
+  XS: '超小型犬（〜3kg）',
+  S: '小型犬（3〜10kg）',
+  M: '中型犬（10〜25kg）',
+  L: '大型犬（25〜40kg）',
+  XL: '超大型犬（40kg〜）',
 }
 
 const PARENT_OPTIONS = [
@@ -181,6 +190,7 @@ export default function MypageTab() {
   const [editDogMonth, setEditDogMonth] = useState('')
   const [editDogDay, setEditDogDay] = useState('')
   const [editDogGender, setEditDogGender] = useState<'male' | 'female' | null>(null)
+  const [editDogSize, setEditDogSize] = useState<'XS' | 'S' | 'M' | 'L' | 'XL' | null>(null)
   const [editRabiesDate, setEditRabiesDate] = useState('')
   const [editVaccineDate, setEditVaccineDate] = useState('')
   const [vaccinePickerKind, setVaccinePickerKind] = useState<null | 'rabies' | 'mixed'>(null)
@@ -235,6 +245,16 @@ export default function MypageTab() {
     void load()
   }, [load])
 
+  // ==== TEMP: REMOVE AFTER INTEGRATION TEST ====
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      console.log('>>> ACCESS_TOKEN FOR CURL TEST <<<')
+      console.log(data.session?.access_token)
+      console.log('>>> END ACCESS_TOKEN <<<')
+    })
+  }, [])
+  // ==== END TEMP ====
+
   const onPullRefreshProfile = useCallback(async () => {
     setPullRefreshing(true)
     try {
@@ -279,6 +299,7 @@ export default function MypageTab() {
       setEditDogDay(p.d)
     }
     setEditDogGender(dog.gender ?? null)
+    setEditDogSize(dog.size ?? null)
     setEditRabiesDate(dog.rabies_vaccinated_at ?? '')
     setEditVaccineDate(dog.vaccine_vaccinated_at ?? '')
     setDogPhotoPreview(null)
@@ -348,6 +369,7 @@ export default function MypageTab() {
           breed: editDogBreed.trim() || null,
           birthday: dogEditBirthdayYmd,
           gender: editDogGender,
+          size: editDogSize,
           rabies_vaccinated_at: editRabiesDate || null,
           vaccine_vaccinated_at: editVaccineDate || null,
           photo_url: dogPhotoUrl,
@@ -365,6 +387,7 @@ export default function MypageTab() {
               breed: editDogBreed.trim() || null,
               birthday: dogEditBirthdayYmd,
               gender: editDogGender,
+              size: editDogSize,
               rabies_vaccinated_at: editRabiesDate || null,
               vaccine_vaccinated_at: editVaccineDate || null,
               photo_url: dogPhotoUrl,
@@ -681,6 +704,24 @@ export default function MypageTab() {
                       <Text style={styles.genderPickChipLblMuted}>未設定</Text>
                     </Pressable>
                   </View>
+                  <Text style={styles.miniLbl}>サイズ</Text>
+                  <View style={styles.genderPickRow}>
+                    {(['XS', 'S', 'M', 'L', 'XL'] as const).map((k) => {
+                      const on = editDogSize === k
+                      return (
+                        <Pressable
+                          key={k}
+                          style={[styles.genderPickChip, on && styles.genderPickChipOn]}
+                          onPress={() => setEditDogSize(k)}
+                        >
+                          <Text style={styles.genderPickChipLbl}>{k}</Text>
+                        </Pressable>
+                      )
+                    })}
+                    <Pressable style={[styles.genderPickChip, editDogSize === null && styles.genderPickChipOn]} onPress={() => setEditDogSize(null)}>
+                      <Text style={styles.genderPickChipLblMuted}>未設定</Text>
+                    </Pressable>
+                  </View>
                 </View>
               ) : (
                 <>
@@ -688,6 +729,11 @@ export default function MypageTab() {
                   {dog.breed?.trim() ? (
                     <Text style={styles.dogBreedOnlyLine} numberOfLines={1}>
                       {dog.breed.trim()}
+                    </Text>
+                  ) : null}
+                  {dog.size ? (
+                    <Text style={styles.dogBreedOnlyLine} numberOfLines={1}>
+                      サイズ：{DOG_SIZE_LABEL[dog.size]}
                     </Text>
                   ) : null}
                   {(() => {
