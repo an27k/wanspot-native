@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { listMunicipalities, listPrefectures } from '@/app/constants/municipality-centers'
+import { listMunicipalities, listPrefectures } from '@/constants/municipality-centers'
 
 export type DurationPick = 'half_day' | 'full_day'
 export type TravelPick = 'walking' | 'driving'
