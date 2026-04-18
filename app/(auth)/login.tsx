@@ -126,7 +126,7 @@ export default function LoginScreen() {
               onPress={() => void onOAuth('google')}
             >
               {oauthLoading === 'google' ? (
-                <ActivityIndicator color="#1a1a1a" />
+                <ActivityIndicator color="#2b2a28" />
               ) : (
                 <GoogleOAuthLabel text="Googleでログイン" textStyle={styles.btnGoogleTxt} />
               )}
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     ...oauthGooglePressableBase,
     marginTop: 14,
   },
-  btnGoogleTxt: { fontWeight: '800', fontSize: 16, color: '#1a1a1a' },
+  btnGoogleTxt: { fontWeight: '800', fontSize: 16, color: '#2b2a28' },
   btnApple: {
     ...oauthApplePressableBase,
     marginTop: 10,

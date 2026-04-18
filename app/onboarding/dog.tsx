@@ -269,7 +269,7 @@ export default function DogPage() {
                 style={[styles.half, state === v ? styles.halfOn : styles.halfOff]}
                 onPress={() => set(v)}
               >
-                <Text style={[styles.halfTxtSm, state === v && { color: '#1a1a1a' }]}>{v ? 'YES' : 'NO'}</Text>
+                <Text style={[styles.halfTxtSm, state === v && { color: '#2b2a28' }]}>{v ? 'YES' : 'NO'}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -293,10 +293,10 @@ const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#fff' },
   headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandTxt: { fontWeight: '800', fontSize: 14, color: '#1a1a1a' },
+  brandTxt: { fontWeight: '800', fontSize: 14, color: '#2b2a28' },
   dots: { flexDirection: 'row', gap: 4 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#1a1a1a' },
+  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#2b2a28' },
   label: { fontSize: 12, color: '#aaa', marginBottom: 4 },
   hint: { fontSize: 11, color: '#aaa', lineHeight: 16, marginBottom: 8 },
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7f6f3',
     paddingHorizontal: 16,
     fontSize: 14,
-    color: '#1a1a1a',
+    color: '#2b2a28',
   },
   /** オーナー登録（owner.tsx）の birthdayCard と同じ見た目 */
   birthdayCard: {
@@ -357,5 +357,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nextOff: { backgroundColor: '#f5f5f5' },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
+  nextTxt: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
 })

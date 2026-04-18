@@ -79,8 +79,8 @@ export function AiPlanResult({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f7f6f3' },
   head: { borderRadius: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ebebeb', padding: 14, gap: 8 },
-  title: { fontSize: 18, fontWeight: '900', color: '#1a1a1a' },
+  title: { fontSize: 18, fontWeight: '900', color: '#2b2a28' },
   summary: { fontSize: 13, color: '#666', lineHeight: 19 },
   btn: { marginTop: 6, borderRadius: 16, backgroundColor: '#FFD84D', paddingVertical: 14, alignItems: 'center' },
-  btnTxt: { fontSize: 14, fontWeight: '900', color: '#1a1a1a' },
+  btnTxt: { fontSize: 14, fontWeight: '900', color: '#2b2a28' },
 })

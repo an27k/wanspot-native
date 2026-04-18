@@ -1,3 +1,5 @@
+import { TOKENS } from '@/constants/color-tokens'
+
 export const colors = {
   brand: '#FFD84D',
   /** 主ボタン・CTA 用のやや薄い黄（`brand` よりソフト） */
@@ -6,7 +8,7 @@ export const colors = {
   background: '#ffffff',
   cardBg: '#f7f6f3',
   border: '#ebebeb',
-  text: '#171717',
+  text: TOKENS.text.primary,
   textMuted: '#aaaaaa',
   textLight: '#666666',
   error: '#E84335',

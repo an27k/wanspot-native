@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
   genreChipOn: { backgroundColor: '#FFD84D' },
   genreChipOff: { backgroundColor: '#f5f5f5' },
   genreTxt: { fontSize: 12, fontWeight: '800' },
-  genreTxtOn: { color: '#1a1a1a' },
+  genreTxtOn: { color: '#2b2a28' },
   genreTxtOff: { color: '#888' },
   distRow: {
     flexDirection: 'row',
@@ -553,8 +553,8 @@ const styles = StyleSheet.create({
     borderColor: '#e8e8e8',
   },
   likeFilterBtnOn: {
-    backgroundColor: '#1a1a1a',
-    borderColor: '#1a1a1a',
+    backgroundColor: '#2b2a28',
+    borderColor: '#2b2a28',
   },
   likeFilterTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
   likeFilterTxtOn: { color: '#fff' },
@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     marginRight: 8,
   },
-  distChipOn: { backgroundColor: '#1a1a1a' },
+  distChipOn: { backgroundColor: '#2b2a28' },
   distChipOff: { backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e8e8e8' },
   distTxt: { fontSize: 12 },
   distTxtOn: { color: '#fff' },
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#2b2a28',
   },
   sortBtnTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
   list: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   sortItem: { paddingVertical: 10, paddingHorizontal: 16 },
   sortItemOn: { backgroundColor: '#FFF9E0' },
   sortItemTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
-  sortItemTxtOn: { color: '#1a1a1a' },
+  sortItemTxtOn: { color: '#2b2a28' },
   obTutOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -610,12 +610,12 @@ const styles = StyleSheet.create({
   obTutTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1a1a1a',
+    color: '#2b2a28',
     marginBottom: 12,
     textAlign: 'center',
   },
   obTutBody: { fontSize: 15, lineHeight: 24, color: '#555' },
-  obTutEm: { fontWeight: '800', color: '#1a1a1a' },
+  obTutEm: { fontWeight: '800', color: '#2b2a28' },
   obTutBtn: {
     marginTop: 18,
     backgroundColor: '#FFD84D',
@@ -623,5 +623,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  obTutBtnTxt: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
+  obTutBtnTxt: { fontSize: 16, fontWeight: '800', color: '#2b2a28' },
 })

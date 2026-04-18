@@ -66,13 +66,13 @@ export function AiPlanHistory({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f7f6f3' },
   head: { borderRadius: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ebebeb', padding: 14, gap: 6 },
-  h: { fontSize: 16, fontWeight: '900', color: '#1a1a1a' },
+  h: { fontSize: 16, fontWeight: '900', color: '#2b2a28' },
   hint: { fontSize: 12, color: '#888' },
   row: { borderRadius: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ebebeb', padding: 14, gap: 6 },
-  rowTitle: { fontSize: 14, fontWeight: '900', color: '#1a1a1a' },
+  rowTitle: { fontSize: 14, fontWeight: '900', color: '#2b2a28' },
   rowMeta: { fontSize: 11, fontWeight: '700', color: '#888' },
   empty: { borderRadius: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ebebeb', padding: 16, gap: 12, alignItems: 'center' },
   emptyTxt: { fontSize: 13, fontWeight: '800', color: '#888' },
   btn: { borderRadius: 16, backgroundColor: '#FFD84D', paddingVertical: 14, alignItems: 'center' },
-  btnTxt: { fontSize: 14, fontWeight: '900', color: '#1a1a1a' },
+  btnTxt: { fontSize: 14, fontWeight: '900', color: '#2b2a28' },
 })

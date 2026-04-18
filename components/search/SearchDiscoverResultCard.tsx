@@ -264,12 +264,12 @@ const styles = StyleSheet.create({
   body: { padding: 12, gap: 4 },
   row1: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   catPill: { backgroundColor: '#FFF9E0', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  catTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  catTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dist: { fontSize: 12, color: '#aaa' },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateTxt: { fontSize: 12, color: '#888' },
-  name: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
+  name: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
   addr: { fontSize: 12, color: '#aaa' },
   aiFooter: { paddingHorizontal: 12, paddingBottom: 12, gap: 4 },
   aiBtn: {
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: '#FFD84D',
-    color: '#1a1a1a',
+    color: '#2b2a28',
   },
   aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
 })

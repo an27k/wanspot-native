@@ -119,5 +119,5 @@ const styles = StyleSheet.create({
   sc: { flex: 1 },
   item: { justifyContent: 'center', alignItems: 'center' },
   itemTxt: { fontSize: 16, fontWeight: '700', color: '#888' },
-  itemTxtSel: { color: '#1a1a1a', fontSize: 17 },
+  itemTxtSel: { color: '#2b2a28', fontSize: 17 },
 })

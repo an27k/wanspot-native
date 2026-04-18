@@ -22,7 +22,7 @@ import { colors } from '@/constants/colors'
 import { supabase } from '@/lib/supabase'
 
 const IconPlusLarge = () => (
-  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2.5} strokeLinecap="round">
     <Line x1={12} y1={5} x2={12} y2={19} />
     <Line x1={5} y1={12} x2={19} y2={12} />
   </Svg>
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
   eventTabChipOn: { backgroundColor: '#FFD84D' },
   eventTabChipOff: { backgroundColor: '#f5f5f5' },
   eventTabTxt: { fontSize: 12, fontWeight: '800' },
-  eventTabTxtOn: { color: '#1a1a1a' },
+  eventTabTxtOn: { color: '#2b2a28' },
   eventTabTxtOff: { color: '#888' },
   sortWrap: { justifyContent: 'center' },
   sortBtn: {
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#2b2a28',
   },
   sortBtnTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
   bannerPad: { paddingHorizontal: 16, paddingTop: 12 },
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
     borderColor: '#e8c84a',
     gap: 8,
   },
-  vBannerTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a', lineHeight: 18 },
+  vBannerTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28', lineHeight: 18 },
   vBannerBtn: {
     alignSelf: 'stretch',
     paddingVertical: 10,
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
     borderColor: '#e8c84a',
     alignItems: 'center',
   },
-  vBannerBtnTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  vBannerBtnTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   emptyBlock: { paddingTop: 48, alignItems: 'center' },
   emptyHint: { marginTop: 12, fontSize: 12, color: '#aaa', textAlign: 'center' },
   emptyJoined: { alignItems: 'center', paddingTop: 48, gap: 12 },
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
   sortItem: { paddingHorizontal: 16, paddingVertical: 12 },
   sortItemOn: { backgroundColor: '#FFF9E0' },
   sortItemTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
-  sortItemTxtOn: { color: '#1a1a1a' },
+  sortItemTxtOn: { color: '#2b2a28' },
   fabOverlayAnim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 99 },
   fabMenu: { position: 'absolute', zIndex: 101, width: 280, maxWidth: '100%', gap: 8 },
   eventsPagerHost: { flex: 1, overflow: 'hidden' },
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  fabMenuPrimaryTxt: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
+  fabMenuPrimaryTxt: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
   fabMenuSec: {
     paddingVertical: 14,
     borderRadius: 16,
@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  fabMenuSecTxt: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
+  fabMenuSecTxt: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
   fab: {
     position: 'absolute',
     zIndex: 100,

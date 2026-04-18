@@ -928,9 +928,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ebebeb',
   },
-  input: { flex: 1, fontSize: 12, color: '#1a1a1a', paddingVertical: 4 },
+  input: { flex: 1, fontSize: 12, color: '#2b2a28', paddingVertical: 4 },
   searchGo: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#FFD84D' },
-  searchGoTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  searchGoTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   kbDismissBar: {
     alignSelf: 'center',
     marginTop: 6,
@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
   },
   kbDismissTxt: { fontSize: 12, fontWeight: '700', color: '#2563eb' },
   sortWrap: { position: 'relative' },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#1a1a1a' },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#2b2a28' },
   sortBtnTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
   /** キーワードタグ行と（まとめ記事／AI／トレンド）の間の区切り */
   discoverTabs: {
@@ -960,7 +960,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#f5f5f5',
   },
-  discTabOn: { backgroundColor: '#1a1a1a' },
+  discTabOn: { backgroundColor: '#2b2a28' },
   discTabTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
   discTabTxtOn: { color: '#fff' },
   sugRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
@@ -973,8 +973,8 @@ const styles = StyleSheet.create({
   artBody: { padding: 16 },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kwPill: { backgroundColor: '#FFF9E0', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
-  kwPillTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
-  artTitle: { fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 8 },
+  kwPillTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
+  artTitle: { fontSize: 16, fontWeight: '800', color: '#2b2a28', marginBottom: 8 },
   artSum: { fontSize: 12, color: '#888', lineHeight: 18 },
   discLabel: { fontSize: 12, fontWeight: '800', color: '#aaa', marginBottom: 4 },
   aiGate: { alignItems: 'center', paddingVertical: 32 },
@@ -996,5 +996,5 @@ const styles = StyleSheet.create({
   sortItem: { paddingHorizontal: 16, paddingVertical: 12 },
   sortItemOn: { backgroundColor: '#FFF9E0' },
   sortItemTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
-  sortItemTxtOn: { color: '#1a1a1a' },
+  sortItemTxtOn: { color: '#2b2a28' },
 })

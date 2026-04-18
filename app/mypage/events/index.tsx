@@ -10,7 +10,7 @@ import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 
 const IconChevronLeft = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
   </Svg>
 )
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   backHit: { alignSelf: 'flex-start', marginBottom: 8 },
-  pageTitle: { fontSize: 20, fontWeight: '800', color: '#1a1a1a', paddingLeft: 4 },
+  pageTitle: { fontSize: 20, fontWeight: '800', color: '#2b2a28', paddingLeft: 4 },
   empty: { textAlign: 'center', fontSize: 14, color: '#aaa', paddingVertical: 48 },
   cardWrap: { position: 'relative', borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: '#ebebeb' },
   rowCard: { flexDirection: 'row', gap: 12, padding: 12, paddingRight: 88 },
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   thumbPh: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   noImg: { fontSize: 10, fontWeight: '800', color: '#ccc' },
   rowBody: { flex: 1, minWidth: 0 },
-  evTitle: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
+  evTitle: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
   evDate: { fontSize: 12, color: '#888', marginTop: 4 },
   evLoc: { fontSize: 12, color: '#aaa', marginTop: 2 },
   editFab: {
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#2b2a28',
   },
   editFabTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
 })

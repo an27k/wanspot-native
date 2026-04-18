@@ -247,5 +247,5 @@ const styles = StyleSheet.create({
   loading: { flex: 1, backgroundColor: '#f7f6f3', alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingTxt: { fontSize: 12, color: '#888' },
   btn: { borderRadius: 16, backgroundColor: '#FFD84D', paddingVertical: 14, paddingHorizontal: 16 },
-  btnTxt: { fontSize: 14, fontWeight: '900', color: '#1a1a1a' },
+  btnTxt: { fontSize: 14, fontWeight: '900', color: '#2b2a28' },
 })

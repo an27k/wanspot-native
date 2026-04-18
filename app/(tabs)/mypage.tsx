@@ -1125,7 +1125,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#FFF9E0',
   },
-  walkAreaTagTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  walkAreaTagTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   walkAreaEmpty: { fontSize: 13, fontWeight: '600', color: colors.textMuted, textAlign: 'center', marginTop: 4 },
   walkAreaEditLbl: { marginTop: 10, fontSize: 13, fontWeight: '700', color: colors.text },
   walkAreaEditHint: { marginTop: 4, fontSize: 12, color: colors.textMuted, lineHeight: 17 },

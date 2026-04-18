@@ -66,7 +66,7 @@ export default function SizePage() {
               onPress={() => setSelected(key)}
               style={[styles.card, isSelected ? styles.cardOn : styles.cardOff]}
             >
-              <Text style={[styles.cardTxt, isSelected ? { color: '#1a1a1a' } : { color: '#aaa' }]}>
+              <Text style={[styles.cardTxt, isSelected ? { color: '#2b2a28' } : { color: '#aaa' }]}>
                 {label} <Text style={{ fontWeight: '400', fontSize: 12 }}>{desc}</Text>
               </Text>
             </TouchableOpacity>
@@ -84,10 +84,10 @@ const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#fff' },
   headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandTxt: { fontWeight: '800', fontSize: 14, color: '#1a1a1a' },
+  brandTxt: { fontWeight: '800', fontSize: 14, color: '#2b2a28' },
   dots: { flexDirection: 'row', gap: 4 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  h2: { fontSize: 24, fontWeight: '800', color: '#1a1a1a' },
+  h2: { fontSize: 24, fontWeight: '800', color: '#2b2a28' },
   card: { width: '100%', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 16 },
   cardOn: { backgroundColor: '#FFF9E0', borderWidth: 2, borderColor: '#FFD84D' },
   cardOff: { backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e8e8e8' },
@@ -101,5 +101,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nextOff: { backgroundColor: '#f5f5f5' },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
+  nextTxt: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
 })

@@ -182,7 +182,7 @@ function dedupeCheckInCommentsForAdvice(rows: CheckInCommentRow[]): string[] {
 }
 
 const IconChevronLeft = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
   </Svg>
 )
@@ -222,7 +222,7 @@ function PriceLevel({ level }: { level: number | null }) {
             textAnchor="middle"
             alignmentBaseline="central"
             fontSize={yenFs}
-            fill={i <= level ? '#1a1a1a' : '#bbb'}
+            fill={i <= level ? '#2b2a28' : '#bbb'}
             fontWeight="bold"
           >
             ¥
@@ -243,7 +243,7 @@ const IconGoogle = () => (
 )
 
 const IconShare = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2} strokeLinecap="round">
     <Circle cx={18} cy={5} r={3} />
     <Circle cx={6} cy={12} r={3} />
     <Circle cx={18} cy={19} r={3} />
@@ -258,7 +258,7 @@ const IconX = () => (
 )
 
 const IconCopy = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round">
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2} strokeLinecap="round">
     <Path d="M9 9h10v10H9zM5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
   </Svg>
 )
@@ -842,7 +842,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
               onPress={() => (userId ? setShowCheckInModal(true) : Alert.alert('ログインが必要です'))}
               disabled={!userId}
             >
-              <IconPaw size={16} color={checkedIn ? '#FFD84D' : '#1a1a1a'} />
+              <IconPaw size={16} color={checkedIn ? '#FFD84D' : '#2b2a28'} />
               <Text style={styles.actLbl}>{checkedIn ? '行った ✓' : '行った'}</Text>
             </Pressable>
           </View>
@@ -1072,7 +1072,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     zIndex: 55,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#2b2a28',
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
@@ -1130,8 +1130,8 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
   },
   catPill: { alignSelf: 'flex-start', backgroundColor: '#FFF9E0', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, marginBottom: 8 },
-  catTxt: { fontSize: 12, fontWeight: '700', color: '#1a1a1a' },
-  h1: { fontSize: 20, fontWeight: '800', color: '#1a1a1a', lineHeight: 26 },
+  catTxt: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
+  h1: { fontSize: 20, fontWeight: '800', color: '#2b2a28', lineHeight: 26 },
   addrRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 8 },
   addr: { flex: 1, fontSize: 12, color: '#aaa', lineHeight: 18 },
   shareSm: {
@@ -1159,7 +1159,7 @@ const styles = StyleSheet.create({
   },
   actHalfLiked: { backgroundColor: '#FFF6E5', borderColor: '#f0e4c4' },
   actHalfCheck: { backgroundColor: '#FFD84D', borderColor: '#FFD84D' },
-  actLbl: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
+  actLbl: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
   metaCard: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -1219,7 +1219,7 @@ const styles = StyleSheet.create({
     minHeight: 28,
     alignSelf: 'stretch',
   },
-  rateNum: { fontSize: 20, fontWeight: '800', color: '#1a1a1a' },
+  rateNum: { fontSize: 20, fontWeight: '800', color: '#2b2a28' },
   rateDash: { fontSize: 18, fontWeight: '800', color: '#ccc' },
   priceLevelRow: { flexDirection: 'row', gap: 2, alignItems: 'center', flexShrink: 0 },
   priceQ: { fontSize: 14, fontWeight: '800', color: '#ccc', lineHeight: META_STAR_PX },
@@ -1237,7 +1237,7 @@ const styles = StyleSheet.create({
   sectionLbl: { fontSize: 12, fontWeight: '700', color: '#aaa', letterSpacing: 0.6, marginBottom: 12 },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kwPill: { backgroundColor: '#FFD84D', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  kwTxt: { fontSize: 12, fontWeight: '700', color: '#1a1a1a' },
+  kwTxt: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
   aiBody: { fontSize: 14, lineHeight: 22, color: '#555' },
   revHint: { fontSize: 14, color: '#aaa', textAlign: 'center', paddingVertical: 16 },
   revItem: { paddingBottom: 12 },
@@ -1270,7 +1270,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   sheetGrab: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#e8e8e8', alignSelf: 'center', marginBottom: 8 },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: '#1a1a1a' },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: '#2b2a28' },
   sheetHint: { fontSize: 14, color: '#aaa' },
   starsRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginVertical: 8 },
   ta: {
@@ -1281,7 +1281,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7f6f3',
     padding: 12,
     fontSize: 14,
-    color: '#1a1a1a',
+    color: '#2b2a28',
     textAlignVertical: 'top',
   },
   taFoot: { fontSize: 12, color: '#aaa', lineHeight: 18 },
@@ -1292,7 +1292,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  primaryBtnTxt: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
+  primaryBtnTxt: { fontSize: 16, fontWeight: '800', color: '#2b2a28' },
   secondaryBtn: { backgroundColor: '#f5f5f5', paddingVertical: 14, borderRadius: 16, alignItems: 'center' },
   secondaryBtnTxt: { fontSize: 14, fontWeight: '700', color: '#888' },
   shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
@@ -1302,7 +1302,7 @@ const styles = StyleSheet.create({
   shareX: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#000' },
   shareLine: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#06C755' },
   shareCopy: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#f5f5f5' },
-  shareLbl: { fontSize: 12, fontWeight: '700', color: '#1a1a1a' },
+  shareLbl: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
   shareLblW: { fontSize: 12, fontWeight: '700', color: '#fff' },
   cancelShare: { marginTop: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center' },
   cancelShareTxt: { fontSize: 14, fontWeight: '700', color: '#888' },

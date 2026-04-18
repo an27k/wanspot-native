@@ -33,7 +33,7 @@ const IconHeart = () => (
 )
 
 const IconChevronLeft = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
   </Svg>
 )
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   backBtn: { marginBottom: 4, alignSelf: 'flex-start' },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   titleLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  h1: { fontSize: 20, fontWeight: '700', color: '#1a1a1a' },
+  h1: { fontSize: 20, fontWeight: '700', color: '#2b2a28' },
   count: { fontSize: 14, fontWeight: '700', color: '#aaa' },
   sortPill: {
     flexDirection: 'row',
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#2b2a28',
   },
   sortPillTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
   errBox: {
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ebebeb',
   },
-  errTitle: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 8 },
+  errTitle: { fontSize: 14, fontWeight: '700', color: '#2b2a28', marginBottom: 8 },
   errBody: { fontSize: 12, color: '#888', marginBottom: 12 },
   retry: {
     width: '100%',
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFD84D',
     alignItems: 'center',
   },
-  retryTxt: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
+  retryTxt: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 32 },
   emptyTxt: { fontSize: 14, color: '#aaa' },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', padding: 24 },

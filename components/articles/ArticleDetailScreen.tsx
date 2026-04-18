@@ -151,7 +151,7 @@ type Article = {
 }
 
 const IconChevron = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
   </Svg>
 )
@@ -171,7 +171,7 @@ function PriceLevel({ level }: { level: number | null }) {
       {[1, 2, 3, 4].map((i) => (
         <Svg key={i} width={10} height={10} viewBox="0 0 24 24">
           <Circle cx={12} cy={12} r={10} fill={i <= level ? '#FFD84D' : '#e8e8e8'} />
-          <SvgTextNode x={12} y={16} textAnchor="middle" fontSize={12} fill={i <= level ? '#1a1a1a' : '#bbb'} fontWeight="bold">
+          <SvgTextNode x={12} y={16} textAnchor="middle" fontSize={12} fill={i <= level ? '#2b2a28' : '#bbb'} fontWeight="bold">
             ¥
           </SvgTextNode>
         </Svg>
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   empty: { textAlign: 'center', marginTop: 40, color: colors.textMuted },
   backRow: { paddingHorizontal: 16, paddingBottom: 12 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backTxt: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
+  backTxt: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
   hero: { width: '100%', aspectRatio: 16 / 9 },
   pad: { paddingHorizontal: 16 },
   title: { fontSize: 22, fontWeight: '800', color: '#111', marginTop: 8, lineHeight: 30 },
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e8c84a',
   },
-  kwTag: { fontSize: 12, fontWeight: '700', color: '#1a1a1a' },
+  kwTag: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: '#111', marginBottom: 8 },
   sectionTitleMt: { marginTop: 24 },
   textBlock: { fontSize: 14, color: '#374151', lineHeight: 22, marginBottom: 20 },
@@ -629,10 +629,10 @@ const styles = StyleSheet.create({
   spotBody: { padding: 12, gap: 4 },
   spotTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   catPill: { backgroundColor: '#FFF9E0', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  catPillTxt: { fontSize: 12, fontWeight: '700', color: '#1a1a1a' },
+  catPillTxt: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
   rateMini: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateMiniTxt: { fontSize: 12, color: '#888' },
-  spotName: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
+  spotName: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
   spotAddr: { fontSize: 12, color: '#aaa' },
   spotDesc: { fontSize: 12, color: '#666', lineHeight: 18, marginTop: 8 },
   spotCta: {
@@ -642,11 +642,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFD84D',
     alignItems: 'center',
   },
-  spotCtaTxt: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
+  spotCtaTxt: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
   related: { marginTop: 40, paddingTop: 24, borderTopWidth: 1, borderTopColor: '#eee' },
-  relatedTitle: { fontSize: 14, fontWeight: '800', color: '#1a1a1a', marginBottom: 16 },
+  relatedTitle: { fontSize: 14, fontWeight: '800', color: '#2b2a28', marginBottom: 16 },
   relatedCard: { borderRadius: 12, padding: 16, backgroundColor: '#f9f9f9', marginBottom: 12 },
-  relatedName: { fontSize: 14, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 },
+  relatedName: { fontSize: 14, fontWeight: '800', color: '#2b2a28', marginBottom: 4 },
   relatedDesc: { fontSize: 12, color: '#888', marginBottom: 12 },
   relatedBtn: {
     alignSelf: 'flex-start',
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#FFD84D',
   },
-  relatedBtnTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  relatedBtnTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   relatedNone: { fontSize: 12, color: '#bbb' },
   plQ: { fontSize: 12, color: '#ccc' },
 })

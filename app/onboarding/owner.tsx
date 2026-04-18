@@ -350,10 +350,10 @@ const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#fff' },
   headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandTxt: { fontWeight: '800', fontSize: 14, color: '#1a1a1a' },
+  brandTxt: { fontWeight: '800', fontSize: 14, color: '#2b2a28' },
   dots: { flexDirection: 'row', gap: 4 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#1a1a1a' },
+  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#2b2a28' },
   label: { fontSize: 12, color: '#aaa', marginBottom: 4 },
   hint: { fontSize: 11, color: '#aaa', lineHeight: 16, marginBottom: 8 },
   input: {
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#1a1a1a',
+    color: '#2b2a28',
   },
   inputMultiline: { minHeight: 100, paddingTop: 12 },
   /** 生年月日ピッカーを前後の背景と区切り、ドラム操作しやすくする */
@@ -401,5 +401,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nextOff: { backgroundColor: '#f5f5f5' },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
+  nextTxt: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
 })

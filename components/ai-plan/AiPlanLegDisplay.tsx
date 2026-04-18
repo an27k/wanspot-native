@@ -42,6 +42,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
-  txt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  txt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   txtMuted: { fontSize: 11, fontWeight: '700', color: '#888' },
 })

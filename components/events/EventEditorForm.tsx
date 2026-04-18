@@ -689,7 +689,7 @@ export function EventEditorForm({
                 onPress={() => void handleStripeConnect()}
               >
                 {connectLoading ? (
-                  <ActivityIndicator color="#1a1a1a" />
+                  <ActivityIndicator color="#2b2a28" />
                 ) : (
                   <Text style={styles.stripeBtnTxt}>Stripe アカウントを登録して続ける</Text>
                 )}
@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 14,
   },
-  eventPickMain: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
+  eventPickMain: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
   eventPickSub: { fontSize: 12, color: '#888', marginTop: 6, fontWeight: '600' },
   pickerOverlay: {
     flex: 1,
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ebebeb',
   },
-  pickerTitle: { fontSize: 14, fontWeight: '800', color: '#1a1a1a', marginBottom: 8, textAlign: 'center' },
+  pickerTitle: { fontSize: 14, fontWeight: '800', color: '#2b2a28', marginBottom: 8, textAlign: 'center' },
   pickerScroll: { maxHeight: 420 },
   pickerActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
   pickerGhost: {
@@ -831,11 +831,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFD84D',
     alignItems: 'center',
   },
-  pickerPriTxt: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
+  pickerPriTxt: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
   lbl: { fontSize: 12, fontWeight: '800', color: '#aaa', marginBottom: 8, letterSpacing: 0.5 },
   lblSub: { fontWeight: '400', color: '#888' },
   hint: { fontSize: 12, color: '#888', marginTop: 8, lineHeight: 18 },
-  inputBare: { fontSize: 14, color: '#1a1a1a', paddingVertical: 4 },
+  inputBare: { fontSize: 14, color: '#2b2a28', paddingVertical: 4 },
   ta: { minHeight: 100, textAlignVertical: 'top' },
   thumbTap: { borderRadius: 12, overflow: 'hidden', backgroundColor: '#f7f6f3', minHeight: 180 },
   thumbInner: { width: '100%', height: 180 },
@@ -860,7 +860,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   aiBtnOff: { backgroundColor: '#f5f5f5', borderColor: '#ebebeb' },
-  aiBtnTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  aiBtnTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   aiBtnTxtOff: { color: '#ccc' },
   tagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   areaChip: {
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
   },
   areaChipOn: { backgroundColor: '#FFD84D', borderWidth: 0 },
   areaChipTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
-  areaChipTxtOn: { color: '#1a1a1a' },
+  areaChipTxtOn: { color: '#2b2a28' },
   feeKindRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
   feeKindChip: {
     flex: 1,
@@ -886,12 +886,12 @@ const styles = StyleSheet.create({
   },
   feeKindChipOn: { backgroundColor: '#FFF9E0', borderColor: '#e8c84a' },
   feeKindTxt: { fontSize: 14, fontWeight: '800', color: '#888' },
-  feeKindTxtOn: { color: '#1a1a1a' },
+  feeKindTxtOn: { color: '#2b2a28' },
   lblSm: { fontSize: 12, fontWeight: '800', color: '#aaa', marginTop: 14, marginBottom: 6 },
   paidInp: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#2b2a28',
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 12,
@@ -920,7 +920,7 @@ const styles = StyleSheet.create({
   },
   pillOn: { backgroundColor: '#FFD84D', borderWidth: 0 },
   pillTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
-  pillTxtOn: { color: '#1a1a1a' },
+  pillTxtOn: { color: '#2b2a28' },
   customRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   customInp: {
     flex: 1,
@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     backgroundColor: '#f5f5f5',
-    color: '#1a1a1a',
+    color: '#2b2a28',
   },
   addTagBtn: {
     paddingHorizontal: 14,
@@ -938,7 +938,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFD84D',
     justifyContent: 'center',
   },
-  addTagTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  addTagTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   errBox: { backgroundColor: '#FEE2E2', borderRadius: 16, padding: 12 },
   errTxt: { fontSize: 14, color: '#E84335' },
   submit: {
@@ -949,6 +949,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitOff: { backgroundColor: '#f5f5f5' },
-  submitTxt: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
+  submitTxt: { fontSize: 16, fontWeight: '800', color: '#2b2a28' },
   submitTxtOff: { color: '#bbb' },
 })

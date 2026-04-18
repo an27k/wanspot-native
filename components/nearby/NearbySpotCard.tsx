@@ -42,7 +42,7 @@ const IconStar = () => (
 const IconMoney = ({ filled }: { filled: boolean }) => (
   <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? '#FFD84D' : '#e8e8e8'}>
     <Circle cx="12" cy="12" r="10" />
-    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? '#1a1a1a' : '#bbb'} fontWeight="bold">
+    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? '#2b2a28' : '#bbb'} fontWeight="bold">
       ¥
     </SvgText>
   </Svg>
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     backgroundColor: '#FFF9E0',
-    color: '#1a1a1a',
+    color: '#2b2a28',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateSmall: { fontSize: 12, color: '#888' },
   distSmall: { fontSize: 12, color: '#aaa' },
-  spotName: { fontWeight: '700', fontSize: 14, color: '#1a1a1a' },
+  spotName: { fontWeight: '700', fontSize: 14, color: '#2b2a28' },
   spotAddr: { fontSize: 12, color: '#aaa' },
   aiBtn: {
     marginTop: 8,
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: '#FFD84D',
-    color: '#1a1a1a',
+    color: '#2b2a28',
   },
   aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },

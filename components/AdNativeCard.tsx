@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   titleTextCol: { flex: 1, marginLeft: 10 },
   titleTextColFlush: { marginLeft: 0 },
   icon: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#f5f5f5' },
-  headline: { fontSize: 14, fontWeight: '900', color: '#1a1a1a' },
+  headline: { fontSize: 14, fontWeight: '900', color: '#2b2a28' },
   advertiser: { fontSize: 11, fontWeight: '700', color: '#888', marginTop: 2 },
   bodyText: { fontSize: 12, color: '#666', lineHeight: 18, marginBottom: 10 },
   cta: {
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#FFD84D',
   },
-  ctaText: { fontSize: 12, fontWeight: '900', color: '#1a1a1a' },
+  ctaText: { fontSize: 12, fontWeight: '900', color: '#2b2a28' },
   placeholder: {
     height: 220,
     backgroundColor: '#f5f5f5',

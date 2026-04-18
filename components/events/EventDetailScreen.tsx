@@ -40,7 +40,7 @@ type EventRow = {
 }
 
 const IconChevronLeft = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
   </Svg>
 )
@@ -61,7 +61,7 @@ const IconUsers = () => (
   </Svg>
 )
 const IconShare = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2} strokeLinecap="round">
     <Circle cx={18} cy={5} r={3} />
     <Circle cx={6} cy={12} r={3} />
     <Circle cx={18} cy={19} r={3} />
@@ -75,7 +75,7 @@ const IconX = () => (
   </Svg>
 )
 const IconCopy = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round">
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2} strokeLinecap="round">
     <Path d="M9 9h10v10H9zM5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
   </Svg>
 )
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     zIndex: 60,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#2b2a28',
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
@@ -469,9 +469,9 @@ const styles = StyleSheet.create({
   },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   tagPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: '#FFF9E0' },
-  tagTxt: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
-  title: { fontSize: 20, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 },
-  price: { fontSize: 14, fontWeight: '800', color: '#1a1a1a' },
+  tagTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
+  title: { fontSize: 20, fontWeight: '800', color: '#2b2a28', marginBottom: 4 },
+  price: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
   priceFree: { color: '#34A853' },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
   rowTxt: { flex: 1, fontSize: 14, color: '#555', lineHeight: 22 },
@@ -511,17 +511,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   joinBtnFull: { backgroundColor: '#f5f5f5' },
-  joinBtnTxt: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
+  joinBtnTxt: { fontSize: 16, fontWeight: '800', color: '#2b2a28' },
   joinBtnTxtFull: { color: '#bbb' },
   shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   shareSheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
   grab: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#e8e8e8', alignSelf: 'center', marginBottom: 16 },
-  shareHead: { fontSize: 14, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 },
+  shareHead: { fontSize: 14, fontWeight: '800', color: '#2b2a28', marginBottom: 4 },
   shareSub: { fontSize: 12, color: '#aaa', marginBottom: 16 },
   shareGrid: { flexDirection: 'row', gap: 12 },
   shareX: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#000' },
   shareLine: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#06C755' },
   shareCopy: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#f5f5f5' },
-  shareLbl: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  shareLbl: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   shareLblW: { fontSize: 12, fontWeight: '800', color: '#fff' },
 })

@@ -35,7 +35,7 @@ const IconMoney = ({ filled }: { filled: boolean }) => (
       y="16"
       textAnchor="middle"
       fontSize="12"
-      fill={filled ? '#1a1a1a' : '#bbb'}
+      fill={filled ? '#2b2a28' : '#bbb'}
       fontWeight="bold"
     >
       ¥
@@ -248,13 +248,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     fontWeight: '700',
     backgroundColor: '#FFF9E0',
-    color: '#1a1a1a',
+    color: '#2b2a28',
   },
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateTxt: { fontSize: 12, color: '#888' },
   dist: { fontSize: 12, color: '#aaa' },
-  name: { fontWeight: '700', fontSize: 14, color: '#1a1a1a' },
+  name: { fontWeight: '700', fontSize: 14, color: '#2b2a28' },
   addr: { fontSize: 12, color: '#aaa' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   q: { fontSize: 12, color: '#ccc' },

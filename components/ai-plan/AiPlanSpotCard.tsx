@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   img: { width: '100%', height: 150, backgroundColor: '#f0f0f0' },
   imgPh: { width: '100%', height: 150, backgroundColor: '#f5f5f5' },
   body: { padding: 14, gap: 8 },
-  title: { fontSize: 16, fontWeight: '900', color: '#1a1a1a' },
+  title: { fontSize: 16, fontWeight: '900', color: '#2b2a28' },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   meta: { fontSize: 12, fontWeight: '800', color: '#888' },
   note: { fontSize: 12, color: '#666', lineHeight: 18 },

@@ -8,9 +8,9 @@ type LogoProps = {
 }
 
 export function Logo({ variant = 'white', width = 32, height = 37 }: LogoProps) {
-  const pinFill = variant === 'white' ? '#FFD84D' : '#1a1a1a'
+  const pinFill = variant === 'white' ? '#FFD84D' : '#2b2a28'
   const circleFill = variant === 'white' ? '#fff' : '#FFD84D'
-  const pawFill = '#1a1a1a'
+  const pawFill = '#2b2a28'
   const noseFill = variant === 'white' ? '#fff' : '#FFD84D'
 
   return (

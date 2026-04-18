@@ -116,10 +116,10 @@ const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#fff' },
   headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandTxt: { fontWeight: '800', fontSize: 14, color: '#1a1a1a' },
+  brandTxt: { fontWeight: '800', fontSize: 14, color: '#2b2a28' },
   dots: { flexDirection: 'row', gap: 4 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#1a1a1a' },
+  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#2b2a28' },
   hint: { fontSize: 12, color: '#aaa', lineHeight: 18 },
   switchRow: {
     flexDirection: 'row',
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
   },
   switchTextCol: { flex: 1 },
-  switchTitle: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
+  switchTitle: { fontSize: 14, fontWeight: '700', color: '#2b2a28', marginBottom: 4 },
   switchSub: { fontSize: 11, color: '#888', lineHeight: 16 },
   next: {
     marginTop: 8,
@@ -144,5 +144,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nextOff: { opacity: 0.45 },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
+  nextTxt: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
 })
