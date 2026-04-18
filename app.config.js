@@ -23,6 +23,7 @@ module.exports = ({ config }) => {
     prodOrigin
 
   const amplitudeApiKey = process.env.EXPO_PUBLIC_AMPLITUDE_API_KEY || ''
+  const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || ''
 
   return {
     ...config,
@@ -34,6 +35,7 @@ module.exports = ({ config }) => {
       wanspotApiUrl,
       wanspotSiteUrl,
       amplitudeApiKey,
+      googleMapsApiKey,
     },
   }
 }

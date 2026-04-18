@@ -1,16 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
+import { TOKENS } from '@/constants/color-tokens'
+import { formatDistance } from '@/lib/ai-plan/formatters'
 import type { AiPlanLeg, AiPlanTravelMode } from '@/components/ai-plan/types'
-
-function fmtMinutes(sec: number): string {
-  const m = Math.max(1, Math.round(sec / 60))
-  return `${m}分`
-}
-
-function fmtDistance(m: number): string {
-  if (!Number.isFinite(m) || m <= 0) return ''
-  if (m >= 1000) return `${(m / 1000).toFixed(1)}km`
-  return `${Math.round(m)}m`
-}
 
 export function AiPlanLegDisplay({
   leg,
@@ -19,29 +10,96 @@ export function AiPlanLegDisplay({
   leg: AiPlanLeg | null
   mode: AiPlanTravelMode
 }) {
-  const modeLabel = mode === 'driving' ? '車' : '徒歩'
+  const walking = mode !== 'driving'
+  const travelEmoji = walking ? '🚶' : '🚗'
+  const travelLabel = walking ? '徒歩' : '車で'
+
   if (!leg) {
     return (
-      <View style={styles.wrap}>
-        <Text style={styles.txtMuted}>移動ルートを確認中...</Text>
+      <View style={styles.row}>
+        <View style={styles.leftRail}>
+          <View style={styles.vline} />
+        </View>
+        <View style={styles.badgeRow}>
+          <Text style={styles.muted}>移動ルートを確認中...</Text>
+        </View>
       </View>
     )
   }
+
+  const durationMin = Math.max(1, Math.ceil(leg.duration_seconds / 60))
+  const dist = formatDistance(leg.distance_meters)
+
   return (
-    <View style={styles.wrap}>
-      <Text style={styles.txt}>{modeLabel}で約{fmtMinutes(leg.duration_seconds)}</Text>
-      <Text style={styles.txtMuted}>（約{fmtDistance(leg.distance_meters)}）</Text>
+    <View style={styles.row}>
+      <View style={styles.leftRail}>
+        <View style={styles.vline} />
+      </View>
+      <View style={styles.badgeRow}>
+        <View style={styles.pill}>
+          <Text style={styles.emoji}>{travelEmoji}</Text>
+          <Text style={styles.pillMain}>
+            {travelLabel}
+            {durationMin}分
+          </Text>
+          <Text style={styles.pillSub}> · {dist}</Text>
+        </View>
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    marginTop: 10,
-    marginBottom: 6,
-    alignItems: 'center',
-    gap: 2,
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+    marginVertical: -2,
   },
-  txt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
-  txtMuted: { fontSize: 11, fontWeight: '700', color: '#888' },
+  leftRail: {
+    position: 'relative',
+    flexShrink: 0,
+    width: 28,
+    alignItems: 'center',
+  },
+  vline: {
+    position: 'absolute',
+    left: 13,
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: TOKENS.border.default,
+  },
+  badgeRow: {
+    flex: 1,
+    alignSelf: 'flex-start',
+    paddingBottom: 4,
+  },
+  pill: {
+    alignSelf: 'flex-start',
+    backgroundColor: TOKENS.brand.yellowLight,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  emoji: {
+    fontSize: 10,
+  },
+  pillMain: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: TOKENS.text.primary,
+  },
+  pillSub: {
+    fontSize: 10,
+    color: TOKENS.text.tertiary,
+  },
+  muted: {
+    fontSize: 10,
+    color: TOKENS.text.tertiary,
+    fontWeight: '600',
+  },
 })

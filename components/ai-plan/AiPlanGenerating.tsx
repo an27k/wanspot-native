@@ -1,42 +1,109 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { Animated, StyleSheet, Text, View } from 'react-native'
-import { RunningDog } from '@/components/DogStates'
+import { useEffect, useRef } from 'react'
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
+import { TOKENS } from '@/constants/color-tokens'
+import { formatAiPlanDogDisplayName } from '@/lib/ai-plan/formatters'
+import { AiPlanProgressSteps } from '@/components/ai-plan/AiPlanProgressSteps'
 
-const PHASE_LABEL: Record<string, string> = {
-  auth_ok: '認証しています…',
-  loading_profile: 'ワンちゃんの情報を確認しています…',
-  resolving_area: 'エリアを調べています…',
-  fetching_candidates: 'ぴったりの場所を探しています…',
-  llm: 'プランを組み立てています…',
-  routes_resolving: '移動ルートを計算しています…',
-  saving: 'プランを保存しています…',
-}
+export function AiPlanGenerating({
+  phase,
+  dogName,
+}: {
+  phase: string | null
+  dogName: string
+}) {
+  const spin = useRef(new Animated.Value(0)).current
 
-export function AiPlanGenerating({ phase, areaLabel, dogName }: { phase: string | null; areaLabel: string; dogName: string }) {
-  const fade = useRef(new Animated.Value(0)).current
   useEffect(() => {
-    fade.setValue(0)
-    Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }).start()
-  }, [phase, fade])
+    const loop = Animated.loop(
+      Animated.timing(spin, {
+        toValue: 1,
+        duration: 1400,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [spin])
 
-  const msg = useMemo(() => {
-    const base = phase ? (PHASE_LABEL[phase] ?? '準備しています…') : '準備しています…'
-    if (phase === 'loading_profile') return `${dogName}の情報を確認しています…`
-    if (phase === 'resolving_area') return `${areaLabel}を調べています…`
-    return base
-  }, [phase, areaLabel, dogName])
+  const rotate = spin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  })
+
+  const displayName = formatAiPlanDogDisplayName(dogName)
 
   return (
     <View style={styles.wrap}>
-      <RunningDog label="" />
-      <Animated.View style={{ opacity: fade }}>
-        <Text style={styles.msg}>{msg}</Text>
-      </Animated.View>
+      <View style={styles.hero}>
+        <View style={styles.ringOuter} />
+        <Animated.View style={[styles.ringInner, { transform: [{ rotate }] }]} />
+        <Text style={styles.emoji}>🐕</Text>
+      </View>
+
+      <Text style={styles.title}>{displayName}のプランを作成中</Text>
+      <Text style={styles.sub}>だいたい15秒で完成します</Text>
+
+      <AiPlanProgressSteps phase={phase} />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingTop: 12, paddingHorizontal: 16, alignItems: 'center' },
-  msg: { marginTop: 4, fontSize: 13, fontWeight: '700', color: '#888' },
+  wrap: {
+    flex: 1,
+    backgroundColor: TOKENS.surface.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 16,
+  },
+  hero: {
+    position: 'relative',
+    width: 120,
+    height: 120,
+    marginBottom: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringOuter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 3,
+    borderColor: TOKENS.brand.yellow,
+    borderRightColor: 'transparent',
+    borderRadius: 60,
+    opacity: 0.3,
+  },
+  ringInner: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    right: 10,
+    bottom: 10,
+    borderWidth: 3,
+    borderColor: TOKENS.brand.yellow,
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderRadius: 50,
+  },
+  emoji: {
+    fontSize: 56,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: TOKENS.text.primary,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  sub: {
+    fontSize: 11,
+    color: TOKENS.text.tertiary,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
 })

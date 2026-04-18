@@ -1,61 +1,104 @@
-import { useEffect, useRef } from 'react'
-import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import { spotPhotoUrl } from '@/lib/wanspot-api'
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { TOKENS } from '@/constants/color-tokens'
+import { getCategoryBgColor, getCategoryLabel } from '@/lib/ai-plan/category-labels'
 import type { AiPlanStop } from '@/components/ai-plan/types'
 
 export function AiPlanSpotCard({
   stop,
-  photoRef,
-  delayMs,
   onPress,
 }: {
   stop: AiPlanStop
-  photoRef: string | null
-  delayMs: number
   onPress: () => void
 }) {
-  const opacity = useRef(new Animated.Value(0)).current
-  useEffect(() => {
-    const t = setTimeout(() => {
-      Animated.timing(opacity, { toValue: 1, duration: 240, useNativeDriver: true }).start()
-    }, delayMs)
-    return () => clearTimeout(t)
-  }, [delayMs, opacity])
-
-  const img = spotPhotoUrl(photoRef, 480)
+  const categoryLabel = getCategoryLabel(stop)
+  const categoryBgColor = getCategoryBgColor(stop)
+  const dwellMinutes = stop.dwell_minutes ?? 0
+  const note = stop.note?.trim() ?? ''
 
   return (
-    <Animated.View style={{ opacity }}>
-      <Pressable style={styles.card} onPress={onPress}>
-        {img ? <Image source={{ uri: img }} style={styles.img} resizeMode="cover" /> : <View style={styles.imgPh} />}
-        <View style={styles.body}>
-          <Text style={styles.title} numberOfLines={2}>
-            {stop.name ?? 'スポット'}
-          </Text>
-          <View style={styles.metaRow}>
-            {stop.category ? <Text style={styles.meta}>{stop.category}</Text> : null}
-            <Text style={styles.meta}>約{stop.dwell_minutes}分滞在</Text>
-          </View>
-          {stop.note ? <Text style={styles.note}>{stop.note}</Text> : null}
+    <Pressable style={styles.card} onPress={onPress}>
+      <View style={[styles.imgArea, { backgroundColor: categoryBgColor }]}>
+        {stop.photo_url ? (
+          <Image source={{ uri: stop.photo_url }} style={styles.img} resizeMode="cover" />
+        ) : null}
+        <View style={styles.catBadge}>
+          <Text style={styles.catBadgeTxt}>{categoryLabel}</Text>
         </View>
-      </Pressable>
-    </Animated.View>
+        <View style={styles.dwellBadge}>
+          <Text style={styles.dwellBadgeTxt}>{dwellMinutes}分滞在</Text>
+        </View>
+      </View>
+      <View style={styles.body}>
+        <Text style={styles.title} numberOfLines={2}>
+          {stop.name ?? 'スポット'}
+        </Text>
+        {note ? (
+          <Text style={styles.note} numberOfLines={4}>
+            {note}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
+    backgroundColor: TOKENS.surface.primary,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: TOKENS.border.default,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
-  img: { width: '100%', height: 150, backgroundColor: '#f0f0f0' },
-  imgPh: { width: '100%', height: 150, backgroundColor: '#f5f5f5' },
-  body: { padding: 14, gap: 8 },
-  title: { fontSize: 16, fontWeight: '900', color: '#2b2a28' },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  meta: { fontSize: 12, fontWeight: '800', color: '#888' },
-  note: { fontSize: 12, color: '#666', lineHeight: 18 },
+  imgArea: {
+    height: 80,
+    position: 'relative',
+  },
+  img: {
+    width: '100%',
+    height: '100%',
+  },
+  catBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  catBadgeTxt: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: TOKENS.text.primary,
+  },
+  dwellBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: TOKENS.brand.yellow,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  dwellBadgeTxt: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: TOKENS.text.primary,
+  },
+  body: {
+    padding: 10,
+    paddingHorizontal: 11,
+  },
+  title: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: TOKENS.text.primary,
+    marginBottom: 3,
+  },
+  note: {
+    fontSize: 9,
+    color: TOKENS.text.secondary,
+    lineHeight: 13,
+  },
 })

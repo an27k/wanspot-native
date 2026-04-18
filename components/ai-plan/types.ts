@@ -7,6 +7,11 @@ export type AiPlanStop = {
   category: string | null
   dwell_minutes: number
   note: string | null
+  lat?: number | null
+  lng?: number | null
+  extended_category?: string | null
+  google_types?: string[] | null
+  photo_url?: string | null
 }
 
 export type AiPlanLeg = {

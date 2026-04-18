@@ -126,6 +126,8 @@ export default function EventsTab() {
   const [loading, setLoading] = useState(true)
   const [joinedLoading, setJoinedLoading] = useState(true)
   const [tab, setTab] = useState<'ai_plan' | 'scheduled' | 'joined'>('ai_plan')
+  /** AI プラン結果画面ではイベントタブのサブタブ＋並び替えを隠す */
+  const [aiPlanChromeVisible, setAiPlanChromeVisible] = useState(true)
   const [eventSort, setEventSort] = useState<WanspotSort>('event_at')
   const [showSort, setShowSort] = useState(false)
   const [showVaccineBanner, setShowVaccineBanner] = useState(false)
@@ -309,34 +311,36 @@ export default function EventsTab() {
   return (
     <View style={styles.root}>
       <AppHeader />
-      <View style={styles.subHeader}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabsInner}>
-          <Pressable
-            onPress={() => setTab('ai_plan')}
-            style={[styles.eventTabChip, tab === 'ai_plan' ? styles.eventTabChipOn : styles.eventTabChipOff]}
-          >
-            <Text style={[styles.eventTabTxt, tab === 'ai_plan' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>AIプラン</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setTab('scheduled')}
-            style={[styles.eventTabChip, tab === 'scheduled' ? styles.eventTabChipOn : styles.eventTabChipOff]}
-          >
-            <Text style={[styles.eventTabTxt, tab === 'scheduled' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>開催予定</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setTab('joined')}
-            style={[styles.eventTabChip, tab === 'joined' ? styles.eventTabChipOn : styles.eventTabChipOff]}
-          >
-            <Text style={[styles.eventTabTxt, tab === 'joined' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>参加予定</Text>
-          </Pressable>
-        </ScrollView>
-        <View style={styles.sortWrap}>
-          <Pressable style={styles.sortBtn} onPress={() => setShowSort(true)}>
-            <IconSort />
-            <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
-          </Pressable>
+      {!(tab === 'ai_plan' && !aiPlanChromeVisible) ? (
+        <View style={styles.subHeader}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabsInner}>
+            <Pressable
+              onPress={() => setTab('ai_plan')}
+              style={[styles.eventTabChip, tab === 'ai_plan' ? styles.eventTabChipOn : styles.eventTabChipOff]}
+            >
+              <Text style={[styles.eventTabTxt, tab === 'ai_plan' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>AIプラン</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setTab('scheduled')}
+              style={[styles.eventTabChip, tab === 'scheduled' ? styles.eventTabChipOn : styles.eventTabChipOff]}
+            >
+              <Text style={[styles.eventTabTxt, tab === 'scheduled' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>開催予定</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setTab('joined')}
+              style={[styles.eventTabChip, tab === 'joined' ? styles.eventTabChipOn : styles.eventTabChipOff]}
+            >
+              <Text style={[styles.eventTabTxt, tab === 'joined' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>参加予定</Text>
+            </Pressable>
+          </ScrollView>
+          <View style={styles.sortWrap}>
+            <Pressable style={styles.sortBtn} onPress={() => setShowSort(true)}>
+              <IconSort />
+              <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      ) : null}
 
       {showVaccineBanner && (tab === 'scheduled' || tab === 'joined') ? (
         <View style={styles.bannerPad}>
@@ -368,7 +372,11 @@ export default function EventsTab() {
           ]}
         >
           <View style={[styles.eventsPage, { width: eventsContentW }]}>
-            {tab === 'ai_plan' ? <AiPlanTab /> : <View style={{ flex: 1 }} />}
+            {tab === 'ai_plan' ? (
+              <AiPlanTab onEmbeddedChromeVisibility={setAiPlanChromeVisible} />
+            ) : (
+              <View style={{ flex: 1 }} />
+            )}
           </View>
           <View style={[styles.eventsPage, { width: eventsContentW }]}>
             {loading ? (
