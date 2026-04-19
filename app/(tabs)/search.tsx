@@ -157,6 +157,7 @@ export default function SearchTab() {
   const [suggestions, setSuggestions] = useState<string[]>(DEFAULT_SUGGESTIONS)
   const [suggestionsReady, setSuggestionsReady] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
+  const [aiLabel, setAiLabel] = useState<string | null>(null)
   const [aiReason, setAiReason] = useState<string | null>(null)
   const [aiResults, setAiResults] = useState<PlaceResult[]>([])
   const [hotLoading, setHotLoading] = useState(false)
@@ -354,6 +355,7 @@ export default function SearchTab() {
     setAiLoading(true)
     if (force) {
       setAiResults([])
+      setAiLabel(null)
       setAiReason(null)
     }
     try {
@@ -373,30 +375,28 @@ export default function SearchTab() {
         return
       }
       const walkTags = await fetchUserWalkAreaTags(supabase)
-      const [result] = await Promise.all([
-        wanspotFetchJson<{ query?: string; reason?: string }>('/api/spots/recommend', {
-          method: 'POST',
-          json: {
-            userId: user.id,
-            lat: loc?.lat,
-            lng: loc?.lng,
-            walkAreaTags: walkTags,
-          },
-        }),
-        new Promise((r) => setTimeout(r, 1500)),
-      ])
-      const aiQuery = result.query ?? 'ドッグラン'
+      const prefecture = loc ? await getPrefecture(loc.lat, loc.lng) : undefined
+      const result = await wanspotFetchJson<{
+        spots?: PlaceResult[]
+        label?: string
+        reason?: string
+      }>('/api/spots/recommend', {
+        method: 'POST',
+        json: {
+          userId: user.id,
+          lat: loc?.lat,
+          lng: loc?.lng,
+          walkAreaTags: walkTags,
+          prefecture,
+        },
+      })
+      setAiLabel(result.label ?? null)
       setAiReason(result.reason ?? null)
-      const locationParam = loc ? `&lat=${loc.lat}&lng=${loc.lng}` : ''
-      const areaParam =
-        walkTags.length > 0 ? `&walkAreas=${encodeURIComponent(JSON.stringify(walkTags))}` : ''
-      const searchRes = await wanspotFetch(
-        `/api/spots/search?q=${encodeURIComponent(aiQuery)}${locationParam}${areaParam}`
-      )
-      const data = (await searchRes.json()) as { spots?: PlaceResult[] }
-      setAiResults(filterDiscoverRecommendSpots(data.spots ?? []))
+      setAiResults(filterDiscoverRecommendSpots(result.spots ?? []))
     } catch {
       setAiResults([])
+      setAiLabel(null)
+      setAiReason(null)
     } finally {
       setAiLoading(false)
     }
@@ -412,7 +412,7 @@ export default function SearchTab() {
       try {
         const walkTags = await fetchUserWalkAreaTags(supabase)
         const prefecture = loc ? await getPrefecture(loc.lat, loc.lng) : '東京'
-        const result = await wanspotFetchJson<{ queries?: string[]; label?: string }>('/api/spots/hot', {
+        const result = await wanspotFetchJson<{ spots?: PlaceResult[]; label?: string }>('/api/spots/hot', {
           method: 'POST',
           json: {
             lat: loc?.lat,
@@ -421,30 +421,8 @@ export default function SearchTab() {
             walkAreaTags: walkTags,
           },
         })
-        const queries = result.queries ?? []
         setHotLabel(result.label ?? null)
-        const locationParam = loc ? `&lat=${loc.lat}&lng=${loc.lng}` : ''
-        const areaParam =
-          walkTags.length > 0 ? `&walkAreas=${encodeURIComponent(JSON.stringify(walkTags))}` : ''
-        const allResults = await Promise.all(
-          queries.map((q) =>
-            wanspotFetch(`/api/spots/search?q=${encodeURIComponent(q)}${locationParam}${areaParam}`)
-              .then((r) => r.json())
-              .then((d) => (d as { spots?: PlaceResult[] }).spots ?? [])
-              .catch(() => [] as PlaceResult[])
-          )
-        )
-        const seen = new Set<string>()
-        const merged: PlaceResult[] = []
-        for (const spots of allResults) {
-          for (const spot of spots) {
-            if (!seen.has(spot.place_id)) {
-              seen.add(spot.place_id)
-              merged.push(spot)
-            }
-          }
-        }
-        setHotResults(filterDiscoverRecommendSpots(merged))
+        setHotResults(filterDiscoverRecommendSpots(result.spots ?? []))
       } catch {
         setHotResults([])
       } finally {
@@ -829,12 +807,19 @@ export default function SearchTab() {
                   {!discoverLoading &&
                     !(discoverMode === 'ai' && spotLikesCount === null) &&
                     !(discoverMode === 'ai' && spotLikesCount !== null && spotLikesCount < AI_LIKES_MIN) ? (
-                    <Text style={styles.discLabel}>
-                      {discoverMode === 'ai' ? aiReason ?? 'あなたへのおすすめ' : hotLabel ?? '今話題のスポット'}
-                    </Text>
+                    <View style={{ marginBottom: 4 }}>
+                      <Text style={styles.discLabel}>
+                        {discoverMode === 'ai'
+                          ? aiLabel ?? aiReason ?? 'あなたへのおすすめ'
+                          : hotLabel ?? '今話題のスポット'}
+                      </Text>
+                      {discoverMode === 'ai' && aiLabel && aiReason && aiReason.trim() !== aiLabel.trim() ? (
+                        <Text style={styles.discSub}>{aiReason}</Text>
+                      ) : null}
+                    </View>
                   ) : null}
                   {discoverLoading ? (
-                    <RunningDog label={discoverMode === 'ai' ? 'AIが好みを分析中...' : 'トレンドを調査中...'} />
+                    <RunningDog label={discoverMode === 'ai' ? 'おすすめを読み込み中...' : '読み込み中...'} />
                   ) : null}
                   {!discoverLoading &&
                   discoverMode === 'ai' &&
@@ -977,6 +962,7 @@ const styles = StyleSheet.create({
   artTitle: { fontSize: 16, fontWeight: '800', color: '#2b2a28', marginBottom: 8 },
   artSum: { fontSize: 12, color: '#888', lineHeight: 18 },
   discLabel: { fontSize: 12, fontWeight: '800', color: '#aaa', marginBottom: 4 },
+  discSub: { fontSize: 11, fontWeight: '500', color: '#888', marginTop: 2, marginBottom: 2 },
   aiGate: { alignItems: 'center', paddingVertical: 32 },
   aiGateTxt: { fontSize: 14, color: '#888' },
   aiGateSub: { fontSize: 12, color: '#aaa', marginTop: 8 },
