@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: TOKENS.border.default,
-    padding: 13,
+    padding: 14,
     paddingHorizontal: 15,
     zIndex: 1,
   },
@@ -104,26 +104,26 @@ const styles = StyleSheet.create({
   },
   badge: {
     borderRadius: 8,
-    paddingVertical: 2,
-    paddingHorizontal: 7,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
   },
   badgeTxt: {
-    fontSize: 9,
+    fontSize: 11,
   },
   hours: {
-    fontSize: 10,
+    fontSize: 12,
     color: TOKENS.text.meta,
   },
   title: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '800',
     color: TOKENS.text.primary,
     marginBottom: 6,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   summary: {
-    fontSize: 10,
+    fontSize: 12,
     color: TOKENS.text.secondary,
-    lineHeight: 16,
+    lineHeight: 18,
   },
 })

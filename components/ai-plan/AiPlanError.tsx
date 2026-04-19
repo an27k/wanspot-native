@@ -59,7 +59,7 @@ export function AiPlanError({
     >
       <View style={styles.hero}>
         <View style={styles.heroIcon}>
-          <Ionicons name="search-outline" size={32} color={TOKENS.text.secondary} />
+          <Ionicons name="search-outline" size={36} color={TOKENS.text.secondary} />
         </View>
         <Text style={styles.heroTitle}>{title}</Text>
         <Text style={styles.heroMsg}>{message}</Text>
@@ -118,29 +118,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   heroTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: TOKENS.text.primary,
     marginBottom: 4,
     textAlign: 'center',
   },
   heroMsg: {
-    fontSize: 11,
+    fontSize: 13,
     color: TOKENS.text.secondary,
     textAlign: 'center',
-    lineHeight: 17,
+    lineHeight: 19,
   },
   suggestCard: {
     backgroundColor: TOKENS.surface.primary,
     borderWidth: 1,
     borderColor: TOKENS.border.default,
     borderRadius: 12,
-    padding: 13,
+    padding: 14,
     paddingHorizontal: 14,
     marginBottom: 10,
   },
   suggestLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: TOKENS.text.tertiary,
     letterSpacing: 0.5,
@@ -158,14 +158,14 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
   suggestRowMain: {
-    fontSize: 12,
+    fontSize: 14,
     color: TOKENS.text.primary,
     fontWeight: '600',
     flex: 1,
     marginRight: 8,
   },
   suggestRowMeta: {
-    fontSize: 10,
+    fontSize: 12,
     color: TOKENS.text.tertiary,
   },
   cta: {
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ctaTxt: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: TOKENS.text.primary,
   },

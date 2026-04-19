@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   headerBackTxt: {
-    fontSize: 14,
+    fontSize: 16,
     color: TOKENS.text.primary,
     fontWeight: '600',
   },

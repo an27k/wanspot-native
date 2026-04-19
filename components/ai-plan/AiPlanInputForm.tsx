@@ -261,7 +261,7 @@ export function AiPlanInputForm({
 
       <View style={styles.dogBadge}>
         <View style={styles.dogIcon}>
-          <Ionicons name="paw" size={14} color={TOKENS.text.primary} />
+          <Ionicons name="paw" size={16} color={TOKENS.text.primary} />
         </View>
         <View style={styles.dogTextCol}>
           <Text style={styles.dogLine}>
@@ -310,7 +310,7 @@ export function AiPlanInputForm({
         <Pressable style={styles.modalBg} onPress={() => setSizePickerOpen(false)}>
           <View style={styles.sizeModalCard}>
             <Text style={styles.sizeModalTitle}>サイズを選択</Text>
-            <View style={{ gap: 10 }}>
+            <View style={{ gap: 12 }}>
               {(Object.keys(SIZE_LABEL) as DogSize[]).map((k) => (
                 <Pressable
                   key={k}
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   scroll: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    gap: 10,
+    gap: 12,
     paddingBottom: 32,
   },
   areaCard: {
@@ -346,10 +346,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: TOKENS.border.default,
     borderRadius: 14,
-    padding: 13,
+    padding: 14,
     paddingHorizontal: 14,
   },
-  areaTitle: { fontSize: 12, fontWeight: '700', color: TOKENS.text.primary, marginBottom: 8 },
+  areaTitle: { fontSize: 14, fontWeight: '700', color: TOKENS.text.primary, marginBottom: 8 },
   areaRow: { flexDirection: 'row', gap: 6 },
   areaCol: { flex: 1 },
   selector: {
@@ -372,21 +372,21 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: TOKENS.text.primary,
   },
-  selectorTxt: { fontSize: 11, flex: 1 },
+  selectorTxt: { fontSize: 14, flex: 1 },
   selectorTxtOn: { color: TOKENS.text.primary, fontWeight: '600' },
   selectorTxtOff: { color: TOKENS.text.secondary },
   selectorChevron: { fontSize: 9, color: TOKENS.text.meta },
-  row2: { flexDirection: 'row', gap: 10 },
+  row2: { flexDirection: 'row', gap: 12 },
   halfCard: {
     flex: 1,
     backgroundColor: TOKENS.surface.primary,
     borderWidth: 1,
     borderColor: TOKENS.border.default,
     borderRadius: 14,
-    padding: 13,
+    padding: 14,
   },
   cardLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: TOKENS.text.primary,
     marginBottom: 8,
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   seg: {
     flex: 1,
     borderRadius: 10,
-    paddingVertical: 7,
+    paddingVertical: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   segOn: { backgroundColor: TOKENS.brand.yellow },
   segOff: { backgroundColor: TOKENS.surface.alt },
-  segTxt: { fontSize: 11, textAlign: 'center' },
+  segTxt: { fontSize: 13, textAlign: 'center' },
   segTxtOn: { fontWeight: '700', color: TOKENS.text.primary },
   segTxtOff: { color: TOKENS.text.secondary },
   moodWrap: {
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: TOKENS.border.default,
     borderRadius: 14,
-    padding: 13,
+    padding: 14,
     paddingHorizontal: 14,
   },
   moodRow: { flexDirection: 'row', gap: 6 },
@@ -432,10 +432,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: TOKENS.border.default,
   },
-  moodMain: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  moodMain: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
   moodMainOn: { color: TOKENS.text.primary },
   moodMainOff: { color: TOKENS.text.secondary },
-  moodSub: { fontSize: 9, marginTop: 2, textAlign: 'center' },
+  moodSub: { fontSize: 11, marginTop: 2, textAlign: 'center' },
   moodSubOn: { color: TOKENS.text.secondary },
   moodSubOff: { color: TOKENS.text.tertiary },
   dogBadge: {
@@ -458,8 +458,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dogTextCol: { flex: 1 },
-  dogLine: { fontSize: 11, color: TOKENS.text.primary, fontWeight: '600' },
-  dogEdit: { fontSize: 10, color: TOKENS.text.secondary, fontWeight: '600' },
+  dogLine: { fontSize: 13, color: TOKENS.text.primary, fontWeight: '600' },
+  dogEdit: { fontSize: 12, color: TOKENS.text.secondary, fontWeight: '600' },
   submit: {
     marginTop: 4,
     backgroundColor: TOKENS.brand.yellow,
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   submitOff: { backgroundColor: TOKENS.surface.alt },
-  submitTxt: { fontSize: 14, fontWeight: '700', color: TOKENS.text.primary },
+  submitTxt: { fontSize: 16, fontWeight: '700', color: TOKENS.text.primary },
   submitTxtOff: { color: TOKENS.text.hint },
   cancelBtn: { paddingVertical: 12, alignItems: 'center' },
   cancelTxt: { fontSize: 13, fontWeight: '600', color: TOKENS.text.secondary },

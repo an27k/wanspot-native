@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
   stepRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
+    gap: 12,
+    marginBottom: 12,
   },
   circleWrap: {
     width: 18,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 13,
   },
   labelOn: {
     fontWeight: '600',

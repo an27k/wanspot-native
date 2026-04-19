@@ -98,14 +98,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: TOKENS.text.primary,
     marginBottom: 6,
     textAlign: 'center',
   },
   sub: {
-    fontSize: 11,
+    fontSize: 13,
     color: TOKENS.text.tertiary,
     marginBottom: 24,
     textAlign: 'center',

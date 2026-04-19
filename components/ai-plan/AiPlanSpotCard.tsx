@@ -159,11 +159,11 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   dwellBadgeTxt: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
     color: TOKENS.text.primary,
   },
-  body: { paddingHorizontal: 12, paddingVertical: 12, gap: 4 },
+  body: { paddingHorizontal: 14, paddingVertical: 14, gap: 4 },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cat: {
     fontSize: 12,
@@ -182,9 +182,9 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   q: { fontSize: 12, color: TOKENS.text.hint },
   note: {
-    fontSize: 11,
+    fontSize: 13,
     color: TOKENS.text.secondary,
-    lineHeight: 16,
+    lineHeight: 18,
     marginTop: 6,
     paddingHorizontal: 4,
   },

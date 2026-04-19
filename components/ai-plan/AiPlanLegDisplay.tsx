@@ -37,7 +37,7 @@ export function AiPlanLegDisplay({
       </View>
       <View style={styles.badgeRow}>
         <View style={styles.pill}>
-          <Ionicons name={walking ? 'walk' : 'car'} size={14} color={TOKENS.text.primary} />
+          <Ionicons name={walking ? 'walk' : 'car'} size={12} color={TOKENS.text.primary} />
           <Text style={styles.pillMain}>
             {travelLabel}
             {durationMin}分
@@ -58,12 +58,12 @@ const styles = StyleSheet.create({
   leftRail: {
     position: 'relative',
     flexShrink: 0,
-    width: 28,
+    width: 32,
     alignItems: 'center',
   },
   vline: {
     position: 'absolute',
-    left: 13,
+    left: 15,
     top: 0,
     bottom: 0,
     width: 2,
@@ -86,16 +86,16 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   pillMain: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: TOKENS.text.primary,
   },
   pillSub: {
-    fontSize: 10,
+    fontSize: 12,
     color: TOKENS.text.tertiary,
   },
   muted: {
-    fontSize: 10,
+    fontSize: 12,
     color: TOKENS.text.tertiary,
     fontWeight: '600',
   },

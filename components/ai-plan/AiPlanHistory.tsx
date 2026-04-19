@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   content: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    gap: 10,
+    gap: 12,
     paddingBottom: 28,
   },
   ctaCard: {
@@ -140,13 +140,13 @@ const styles = StyleSheet.create({
   },
   ctaTextCol: { flex: 1 },
   ctaTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '800',
     color: TOKENS.text.primary,
     marginBottom: 1,
   },
   ctaSub: {
-    fontSize: 10,
+    fontSize: 12,
     color: TOKENS.text.tertiary,
   },
   ctaIcon: {
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: TOKENS.text.tertiary,
     letterSpacing: 1.28,
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     color: TOKENS.text.tertiary,
     fontWeight: '600',
   },
-  cardList: { gap: 10 },
+  cardList: { gap: 12 },
   card: {
     backgroundColor: TOKENS.surface.primary,
     borderWidth: 1,
@@ -189,9 +189,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardTop: {
-    paddingTop: 12,
+    paddingTop: 14,
     paddingHorizontal: 14,
-    paddingBottom: 10,
+    paddingBottom: 12,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -201,39 +201,39 @@ const styles = StyleSheet.create({
   },
   moodBadge: {
     borderRadius: 8,
-    paddingVertical: 2,
-    paddingHorizontal: 7,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
   },
   moodOn: { backgroundColor: TOKENS.brand.yellow },
   moodOff: { backgroundColor: TOKENS.surface.alt },
-  moodBadgeTxt: { fontSize: 9 },
+  moodBadgeTxt: { fontSize: 11 },
   moodTxtOn: { color: TOKENS.text.primary, fontWeight: '800' },
   moodTxtOff: { color: TOKENS.text.secondary, fontWeight: '700' },
   travelBadge: {
     borderRadius: 8,
-    paddingVertical: 2,
-    paddingHorizontal: 7,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
     backgroundColor: TOKENS.surface.alt,
   },
   travelBadgeTxt: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '700',
     color: TOKENS.text.secondary,
   },
   date: {
-    fontSize: 10,
+    fontSize: 11,
     color: TOKENS.text.meta,
     marginLeft: 'auto',
   },
   cardTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: TOKENS.text.primary,
-    lineHeight: 18,
+    lineHeight: 20,
     marginBottom: 3,
   },
   areaLine: {
-    fontSize: 10,
+    fontSize: 12,
     color: TOKENS.text.tertiary,
   },
   cardBottom: {
@@ -247,29 +247,29 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   spotCountCircle: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: TOKENS.brand.yellow,
     alignItems: 'center',
     justifyContent: 'center',
   },
   spotCountNum: {
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     color: TOKENS.text.primary,
   },
   spotLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: TOKENS.text.secondary,
   },
   dot: {
-    fontSize: 10,
+    fontSize: 12,
     color: TOKENS.text.hint,
   },
   routeSum: {
     flex: 1,
-    fontSize: 10,
+    fontSize: 12,
     color: TOKENS.text.secondary,
   },
 })
