@@ -324,7 +324,7 @@ export default function EventsTab() {
               onPress={() => setTab('scheduled')}
               style={[styles.eventTabChip, tab === 'scheduled' ? styles.eventTabChipOn : styles.eventTabChipOff]}
             >
-              <Text style={[styles.eventTabTxt, tab === 'scheduled' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>開催予定</Text>
+              <Text style={[styles.eventTabTxt, tab === 'scheduled' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>イベント</Text>
             </Pressable>
             <Pressable
               onPress={() => setTab('joined')}
@@ -333,12 +333,14 @@ export default function EventsTab() {
               <Text style={[styles.eventTabTxt, tab === 'joined' ? styles.eventTabTxtOn : styles.eventTabTxtOff]}>参加予定</Text>
             </Pressable>
           </ScrollView>
-          <View style={styles.sortWrap}>
-            <Pressable style={styles.sortBtn} onPress={() => setShowSort(true)}>
-              <IconSort />
-              <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
-            </Pressable>
-          </View>
+          {tab !== 'ai_plan' ? (
+            <View style={styles.sortWrap}>
+              <Pressable style={styles.sortBtn} onPress={() => setShowSort(true)}>
+                <IconSort />
+                <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
       ) : null}
 

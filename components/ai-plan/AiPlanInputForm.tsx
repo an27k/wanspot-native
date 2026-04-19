@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { TOKENS } from '@/constants/color-tokens'
+import { sortMunicipalityNames } from '@/constants/municipality-sort'
 import { listMunicipalities, listPrefectures } from '@/constants/municipality-centers'
+import { sortPrefecturesJis } from '@/constants/prefectures'
 import { formatAiPlanDogDisplayName } from '@/lib/ai-plan/formatters'
 
 export type DurationPick = 'half_day' | 'full_day'
@@ -136,11 +138,14 @@ export function AiPlanInputForm({
   onCancel: () => void
   areaPreset?: { prefecture: string; municipality: string } | null
 }) {
-  const prefs = useMemo(() => listPrefectures(), [])
+  const prefs = useMemo(() => sortPrefecturesJis(listPrefectures()), [])
   const [pref, setPref] = useState<string>('')
   const [muni, setMuni] = useState<string>('')
 
-  const munis = useMemo(() => (pref ? listMunicipalities(pref) : []), [pref])
+  const munis = useMemo(
+    () => (pref ? sortMunicipalityNames(listMunicipalities(pref)) : []),
+    [pref]
+  )
 
   const [duration, setDuration] = useState<DurationPick | null>(null)
   const [travel, setTravel] = useState<TravelPick | null>(null)
