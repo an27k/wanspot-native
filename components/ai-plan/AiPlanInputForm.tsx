@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Ionicons } from '@expo/vector-icons'
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { TOKENS } from '@/constants/color-tokens'
 import { listMunicipalities, listPrefectures } from '@/constants/municipality-centers'
@@ -172,10 +173,7 @@ export function AiPlanInputForm({
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.scroll}>
       <View style={styles.areaCard}>
-        <View style={styles.areaHead}>
-          <Text style={styles.areaTitle}>エリア</Text>
-          <Text style={styles.areaMeta}>全国対応</Text>
-        </View>
+        <Text style={styles.areaTitle}>エリア</Text>
         <View style={styles.areaRow}>
           <View style={styles.areaCol}>
             <SelectorRow
@@ -222,13 +220,27 @@ export function AiPlanInputForm({
               onPress={() => setTravel('walking')}
               style={[styles.seg, travel === 'walking' ? styles.segOn : styles.segOff]}
             >
-              <Text style={[styles.segTxt, travel === 'walking' ? styles.segTxtOn : styles.segTxtOff]}>🚶 徒歩</Text>
+              <View style={styles.segInner}>
+                <Ionicons
+                  name="walk"
+                  size={16}
+                  color={travel === 'walking' ? TOKENS.text.primary : TOKENS.text.tertiary}
+                />
+                <Text style={[styles.segTxt, travel === 'walking' ? styles.segTxtOn : styles.segTxtOff]}>徒歩</Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setTravel('driving')}
               style={[styles.seg, travel === 'driving' ? styles.segOn : styles.segOff]}
             >
-              <Text style={[styles.segTxt, travel === 'driving' ? styles.segTxtOn : styles.segTxtOff]}>🚗 車</Text>
+              <View style={styles.segInner}>
+                <Ionicons
+                  name="car"
+                  size={16}
+                  color={travel === 'driving' ? TOKENS.text.primary : TOKENS.text.tertiary}
+                />
+                <Text style={[styles.segTxt, travel === 'driving' ? styles.segTxtOn : styles.segTxtOff]}>車</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -244,7 +256,7 @@ export function AiPlanInputForm({
 
       <View style={styles.dogBadge}>
         <View style={styles.dogIcon}>
-          <Text style={styles.dogEmoji}>🐕</Text>
+          <Ionicons name="paw" size={14} color={TOKENS.text.primary} />
         </View>
         <View style={styles.dogTextCol}>
           <Text style={styles.dogLine}>
@@ -332,14 +344,7 @@ const styles = StyleSheet.create({
     padding: 13,
     paddingHorizontal: 14,
   },
-  areaHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  areaTitle: { fontSize: 12, fontWeight: '700', color: TOKENS.text.primary },
-  areaMeta: { fontSize: 10, color: TOKENS.text.meta },
+  areaTitle: { fontSize: 12, fontWeight: '700', color: TOKENS.text.primary, marginBottom: 8 },
   areaRow: { flexDirection: 'row', gap: 6 },
   areaCol: { flex: 1 },
   selector: {
@@ -388,6 +393,12 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  segInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
   },
   segOn: { backgroundColor: TOKENS.brand.yellow },
   segOff: { backgroundColor: TOKENS.surface.alt },
@@ -441,7 +452,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dogEmoji: { fontSize: 12 },
   dogTextCol: { flex: 1 },
   dogLine: { fontSize: 11, color: TOKENS.text.primary, fontWeight: '600' },
   dogEdit: { fontSize: 10, color: TOKENS.text.secondary, fontWeight: '600' },

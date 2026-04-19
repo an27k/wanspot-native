@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
+import { LoadingDogSvg } from '@/components/common/LoadingDog'
+import { AiPlanProgressSteps } from '@/components/ai-plan/AiPlanProgressSteps'
 import { TOKENS } from '@/constants/color-tokens'
 import { formatAiPlanDogDisplayName } from '@/lib/ai-plan/formatters'
-import { AiPlanProgressSteps } from '@/components/ai-plan/AiPlanProgressSteps'
 
 export function AiPlanGenerating({
   phase,
@@ -38,7 +39,9 @@ export function AiPlanGenerating({
       <View style={styles.hero}>
         <View style={styles.ringOuter} />
         <Animated.View style={[styles.ringInner, { transform: [{ rotate }] }]} />
-        <Text style={styles.emoji}>🐕</Text>
+        <View style={styles.dogMark}>
+          <LoadingDogSvg />
+        </View>
       </View>
 
       <Text style={styles.title}>{displayName}のプランを作成中</Text>
@@ -90,8 +93,9 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
     borderRadius: 50,
   },
-  emoji: {
-    fontSize: 56,
+  dogMark: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 14,

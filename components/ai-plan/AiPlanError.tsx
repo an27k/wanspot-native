@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { TOKENS } from '@/constants/color-tokens'
 
@@ -58,7 +59,7 @@ export function AiPlanError({
     >
       <View style={styles.hero}>
         <View style={styles.heroIcon}>
-          <Text style={styles.heroEmoji}>🔍</Text>
+          <Ionicons name="search-outline" size={32} color={TOKENS.text.secondary} />
         </View>
         <Text style={styles.heroTitle}>{title}</Text>
         <Text style={styles.heroMsg}>{message}</Text>
@@ -115,9 +116,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
-  },
-  heroEmoji: {
-    fontSize: 36,
   },
   heroTitle: {
     fontSize: 15,

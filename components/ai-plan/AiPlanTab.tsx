@@ -69,13 +69,14 @@ export function AiPlanTab({
     }
   }, [onEmbeddedChromeVisibility])
 
-  const loadHistory = useCallback(async () => {
-    setLoadingHistory(true)
+  const loadHistory = useCallback(async (opts?: { onlyRefresh?: boolean }) => {
+    const onlyRefresh = !!opts?.onlyRefresh
+    if (!onlyRefresh) setLoadingHistory(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         setHistory([])
-        setUi('form')
+        if (!onlyRefresh) setUi('form')
         return
       }
       const { data } = await supabase
@@ -96,9 +97,11 @@ export function AiPlanTab({
           }
         })
       setHistory(normalized)
-      setUi(normalized.length > 0 ? 'history' : 'form')
+      if (!onlyRefresh) {
+        setUi(normalized.length > 0 ? 'history' : 'form')
+      }
     } finally {
-      setLoadingHistory(false)
+      if (!onlyRefresh) setLoadingHistory(false)
     }
   }, [])
 
@@ -210,7 +213,7 @@ export function AiPlanTab({
               return
             }
             if (ev.type === 'saved') {
-              void loadHistory()
+              void loadHistory({ onlyRefresh: true })
               return
             }
             if (ev.type === 'error') {

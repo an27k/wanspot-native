@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons'
 import { StyleSheet, Text, View } from 'react-native'
 import { TOKENS } from '@/constants/color-tokens'
 import { formatDistance } from '@/lib/ai-plan/formatters'
@@ -11,7 +12,6 @@ export function AiPlanLegDisplay({
   mode: AiPlanTravelMode
 }) {
   const walking = mode !== 'driving'
-  const travelEmoji = walking ? '🚶' : '🚗'
   const travelLabel = walking ? '徒歩' : '車で'
 
   if (!leg) {
@@ -37,7 +37,7 @@ export function AiPlanLegDisplay({
       </View>
       <View style={styles.badgeRow}>
         <View style={styles.pill}>
-          <Text style={styles.emoji}>{travelEmoji}</Text>
+          <Ionicons name={walking ? 'walk' : 'car'} size={14} color={TOKENS.text.primary} />
           <Text style={styles.pillMain}>
             {travelLabel}
             {durationMin}分
@@ -84,9 +84,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 5,
-  },
-  emoji: {
-    fontSize: 10,
   },
   pillMain: {
     fontSize: 10,

@@ -14,6 +14,12 @@ type SpotRow = {
   id: string
   lat: number | null
   lng: number | null
+  name: string | null
+  address: string | null
+  category: string | null
+  photo_ref: string | null
+  rating: number | null
+  price_level: number | null
   google_types: string[] | null
   extended_category: string | null
 }
@@ -45,7 +51,9 @@ export function AiPlanResult({
     void (async () => {
       const { data } = await supabase
         .from('spots')
-        .select('id, lat, lng, google_types, extended_category')
+        .select(
+          'id, name, address, category, lat, lng, photo_ref, rating, price_level, google_types, extended_category'
+        )
         .in('id', ids)
       const map: Record<string, SpotRow> = {}
       for (const row of (data ?? []) as SpotRow[]) {
@@ -76,6 +84,7 @@ export function AiPlanResult({
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.scrollContent}>
+      {/* タブ内のため通常はスタックの OS 戻るは出ないが、親ナビの設定によっては重なる場合あり */}
       <View style={styles.header}>
         <Pressable onPress={onBack} style={styles.headerBack} hitSlop={8}>
           <Text style={styles.headerBackTxt}>← 戻る</Text>
@@ -93,7 +102,11 @@ export function AiPlanResult({
         {mergedStops.map((stop, i) => (
           <View key={stop.spot_id}>
             <AiPlanTimelineNode index={i} isLast={i === mergedStops.length - 1}>
-              <AiPlanSpotCard stop={stop} onPress={() => router.push(`/spots/${stop.spot_id}`)} />
+              <AiPlanSpotCard
+                stop={stop}
+                db={spotById[stop.spot_id] ?? null}
+                onPress={() => router.push(`/spots/${stop.spot_id}`)}
+              />
             </AiPlanTimelineNode>
             {i < mergedStops.length - 1 ? <AiPlanLegDisplay leg={legs[i] ?? null} mode={travelMode} /> : null}
           </View>
