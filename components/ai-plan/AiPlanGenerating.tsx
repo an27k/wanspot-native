@@ -1,18 +1,32 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
-import { AiPlanProgressSteps } from '@/components/ai-plan/AiPlanProgressSteps'
+import {
+  AI_PLAN_PHASES,
+  AiPlanProgressSteps,
+  type AiPlanProgressPhaseId,
+} from '@/components/ai-plan/AiPlanProgressSteps'
 import { TOKENS } from '@/constants/color-tokens'
 import { formatAiPlanDogDisplayName } from '@/lib/ai-plan/formatters'
 
+const MIN_MS_BEFORE_RESULT = AI_PLAN_PHASES.slice(0, -1).reduce((s, p) => s + p.duration, 0)
+
 export function AiPlanGenerating({
-  phase,
   dogName,
+  apiPlanReady,
+  onReadyForResult,
 }: {
-  phase: string | null
   dogName: string
+  apiPlanReady: boolean
+  onReadyForResult: () => void
 }) {
   const spin = useRef(new Animated.Value(0)).current
+  const startTimeRef = useRef(Date.now())
+  const onResultRef = useRef(onReadyForResult)
+  onResultRef.current = onReadyForResult
+
+  const [currentPhaseId, setCurrentPhaseId] = useState<AiPlanProgressPhaseId>('search')
+  const [completedPhaseIds, setCompletedPhaseIds] = useState<AiPlanProgressPhaseId[]>([])
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -26,6 +40,41 @@ export function AiPlanGenerating({
     loop.start()
     return () => loop.stop()
   }, [spin])
+
+  // 擬似進行（API の phase イベントは使わない）
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = []
+    let cumulative = 0
+    for (const phase of AI_PLAN_PHASES) {
+      const tStart = setTimeout(() => {
+        setCurrentPhaseId(phase.id)
+      }, cumulative)
+      timers.push(tStart)
+      cumulative += phase.duration
+
+      if (phase.id !== 'finish') {
+        const tDone = setTimeout(() => {
+          setCompletedPhaseIds((prev) => (prev.includes(phase.id) ? prev : [...prev, phase.id]))
+        }, cumulative)
+        timers.push(tDone)
+      }
+    }
+    return () => {
+      for (const t of timers) clearTimeout(t)
+    }
+  }, [])
+
+  // API 完了後: 最低 11 秒経過してから結果へ
+  useEffect(() => {
+    if (!apiPlanReady) return
+    const elapsed = Date.now() - startTimeRef.current
+    const remainingWait = Math.max(0, MIN_MS_BEFORE_RESULT - elapsed)
+    const t = setTimeout(() => {
+      setCompletedPhaseIds((prev) => (prev.includes('finish') ? prev : [...prev, 'finish']))
+      onResultRef.current()
+    }, remainingWait)
+    return () => clearTimeout(t)
+  }, [apiPlanReady])
 
   const rotate = spin.interpolate({
     inputRange: [0, 1],
@@ -47,7 +96,10 @@ export function AiPlanGenerating({
       <Text style={styles.title}>{displayName}のプランを作成中</Text>
       <Text style={styles.sub}>だいたい15秒で完成します</Text>
 
-      <AiPlanProgressSteps phase={phase} />
+      <AiPlanProgressSteps
+        currentPhaseId={currentPhaseId}
+        completedPhaseIds={completedPhaseIds}
+      />
     </View>
   )
 }

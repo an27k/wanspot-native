@@ -17,6 +17,8 @@ import type {
 import { streamAiPlan } from '@/components/ai-plan/stream-ai-plan'
 import { TOKENS } from '@/constants/color-tokens'
 
+const MAX_GENERATION_TIMEOUT_MS = 30_000
+
 type UiState = 'history' | 'form' | 'generating' | 'result' | 'error'
 
 function normalizeLeg(raw: unknown): AiPlanLeg | null {
@@ -49,7 +51,8 @@ export function AiPlanTab({
   const [dogName, setDogName] = useState('ワンちゃん')
   const [dbDogSize, setDbDogSize] = useState<DogSize | null>(null)
 
-  const [phase, setPhase] = useState<string | null>(null)
+  const [streamPlanReady, setStreamPlanReady] = useState(false)
+  const [resultPlanId, setResultPlanId] = useState<string | null>(null)
   const [currentPlan, setCurrentPlan] = useState<AiPlanCore | null>(null)
   const [travelMode, setTravelMode] = useState<AiPlanTravelMode>('walking')
   const [resultMood, setResultMood] = useState<AiPlanMood>('active')
@@ -58,10 +61,24 @@ export function AiPlanTab({
   const [areaPreset, setAreaPreset] = useState<{ prefecture: string; municipality: string } | null>(null)
 
   const abortRef = useRef<AbortController | null>(null)
+  const planReceivedRef = useRef(false)
+  const generationAbortedByTimeoutRef = useRef(false)
 
   useEffect(() => {
     onEmbeddedChromeVisibility?.(ui !== 'result')
   }, [ui, onEmbeddedChromeVisibility])
+
+  useEffect(() => {
+    if (ui !== 'generating') return
+    const t = setTimeout(() => {
+      if (planReceivedRef.current) return
+      generationAbortedByTimeoutRef.current = true
+      abortRef.current?.abort()
+      setErrorCode('generation_timeout')
+      setUi('error')
+    }, MAX_GENERATION_TIMEOUT_MS)
+    return () => clearTimeout(t)
+  }, [ui])
 
   useEffect(() => {
     return () => {
@@ -125,13 +142,20 @@ export function AiPlanTab({
   }, [loadDog, loadHistory])
 
   const startNew = useCallback(() => {
+    generationAbortedByTimeoutRef.current = false
     abortRef.current?.abort()
     abortRef.current = null
-    setPhase(null)
+    setStreamPlanReady(false)
+    setResultPlanId(null)
+    planReceivedRef.current = false
     setCurrentPlan(null)
     setLegsByIndex({})
     setAreaPreset(null)
     setUi('form')
+  }, [])
+
+  const onReadyForResult = useCallback(() => {
+    setUi('result')
   }, [])
 
   const onSelectHistory = (row: AiPlanHistoryRow) => {
@@ -162,6 +186,7 @@ export function AiPlanTab({
       if (leg) map[leg.index] = leg
     }
     setLegsByIndex(map)
+    setResultPlanId(row.id)
     setUi('result')
   }
 
@@ -173,12 +198,15 @@ export function AiPlanTab({
     mood: 'active' | 'relaxed'
     dogSize: DogSize
   }) => {
+    generationAbortedByTimeoutRef.current = false
     abortRef.current?.abort()
     const ac = new AbortController()
     abortRef.current = ac
 
     setUi('generating')
-    setPhase('loading_profile')
+    setStreamPlanReady(false)
+    setResultPlanId(null)
+    planReceivedRef.current = false
     setTravelMode(v.travel_mode)
     setResultMood(v.mood)
     setCurrentPlan(null)
@@ -198,12 +226,13 @@ export function AiPlanTab({
           signal: ac.signal,
           onEvent: (ev: AiPlanSseEvent) => {
             if (ev.type === 'phase') {
-              setPhase(ev.phase)
+              // UI は擬似進行のみ（サーバーの phase は無視）
               return
             }
             if (ev.type === 'plan') {
               setCurrentPlan(ev.plan)
-              setUi('result')
+              planReceivedRef.current = true
+              setStreamPlanReady(true)
               return
             }
             if (ev.type === 'leg') {
@@ -213,6 +242,7 @@ export function AiPlanTab({
               return
             }
             if (ev.type === 'saved') {
+              if (typeof ev.id === 'string' && ev.id) setResultPlanId(ev.id)
               void loadHistory({ onlyRefresh: true })
               return
             }
@@ -229,6 +259,10 @@ export function AiPlanTab({
       )
     } catch (e) {
       if ((e as { name?: string })?.name === 'AbortError') {
+        if (generationAbortedByTimeoutRef.current) {
+          generationAbortedByTimeoutRef.current = false
+          return
+        }
         setUi('form')
         return
       }
@@ -274,13 +308,20 @@ export function AiPlanTab({
   }
 
   if (ui === 'generating') {
-    return <AiPlanGenerating phase={phase} dogName={dogName} />
+    return (
+      <AiPlanGenerating
+        dogName={dogName}
+        apiPlanReady={streamPlanReady}
+        onReadyForResult={onReadyForResult}
+      />
+    )
   }
 
   if (ui === 'result' && currentPlan) {
     return (
       <AiPlanResult
         plan={currentPlan}
+        planId={resultPlanId}
         legs={legsByIndex}
         travelMode={travelMode}
         mood={resultMood}

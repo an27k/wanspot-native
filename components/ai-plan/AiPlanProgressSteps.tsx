@@ -2,21 +2,16 @@ import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, View } from 'react-native'
 import { TOKENS } from '@/constants/color-tokens'
 
-const STEPS = [
-  { phase: 'fetching_candidates', label: 'スポット候補を検索' },
-  { phase: 'llm', label: 'ルートを組み立て中' },
-  { phase: 'routes_resolving', label: '移動時間を計算中' },
-  { phase: 'saving', label: '仕上げ中' },
+/** 擬似進行用。合計 15 秒（最終「仕上げ中」は API 完了まで） */
+export const AI_PLAN_PHASES = [
+  { id: 'search' as const, label: 'スポット候補を検索', duration: 3000 },
+  { id: 'route' as const, label: 'ルートを組み立て中', duration: 4000 },
+  { id: 'time' as const, label: '移動時間を計算中', duration: 4000 },
+  { id: 'finish' as const, label: '仕上げ中', duration: 4000 },
 ] as const
 
-const ORDER = STEPS.map((s) => s.phase)
-
-function stepIndexForPhase(phase: string | null): number {
-  if (!phase) return 0
-  const i = ORDER.indexOf(phase as (typeof ORDER)[number])
-  if (i >= 0) return i
-  return 0
-}
+export type AiPlanProgressPhase = (typeof AI_PLAN_PHASES)[number]
+export type AiPlanProgressPhaseId = AiPlanProgressPhase['id']
 
 function DotPulse() {
   const op = useRef(new Animated.Value(0.4)).current
@@ -35,17 +30,21 @@ function DotPulse() {
   )
 }
 
-export function AiPlanProgressSteps({ phase }: { phase: string | null }) {
-  const current = stepIndexForPhase(phase)
-
+export function AiPlanProgressSteps({
+  currentPhaseId,
+  completedPhaseIds,
+}: {
+  currentPhaseId: AiPlanProgressPhaseId
+  completedPhaseIds: readonly AiPlanProgressPhaseId[]
+}) {
   return (
     <View style={styles.wrap}>
-      {STEPS.map((s, index) => {
-        const done = index < current
-        const active = index === current
+      {AI_PLAN_PHASES.map((s) => {
+        const done = completedPhaseIds.includes(s.id)
+        const active = s.id === currentPhaseId
 
         return (
-          <View key={s.phase} style={styles.stepRow}>
+          <View key={s.id} style={styles.stepRow}>
             <View style={styles.circleWrap}>
               {done ? (
                 <View style={styles.circleDone}>

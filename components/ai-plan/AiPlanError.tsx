@@ -31,6 +31,10 @@ const ERROR_MESSAGES: Record<string, { title: string; message: string }> = {
     title: 'エラーが発生しました',
     message: '一時的な問題です。しばらくしてからお試しください。',
   },
+  generation_timeout: {
+    title: 'プラン生成に時間がかかっています',
+    message: 'もう一度お試しください。',
+  },
 }
 
 function resolveError(code: string | undefined): { title: string; message: string } {
