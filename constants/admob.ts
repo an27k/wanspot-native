@@ -10,6 +10,8 @@
  *   we use Google's official iOS native DEMO unit (fill works for QA).
  * - Before App Store / monetization, set your real native unit ID.
  */
+import { Platform } from 'react-native'
+import { TestIds } from 'react-native-google-mobile-ads'
 import Constants from 'expo-constants'
 
 /** Google sample native ad unit (iOS). Used only when no production ID is set. */
@@ -50,3 +52,31 @@ export function iosNativeAdUnitIdLooksLikeAppIdSuffix(): boolean {
 }
 
 export const ANDROID_NATIVE_AD_UNIT_ID = ''
+
+/** AIプラン作成中：動画ネイティブ（未設定時は既存 iOS/Android ネイティブ ID にフォールバック） */
+export function resolveAiPlanVideoNativeAdUnitId(): string {
+  if (__DEV__) return TestIds.NATIVE
+  if (Platform.OS === 'ios') {
+    const fromEnv = (process.env.EXPO_PUBLIC_ADMOB_IOS_VIDEO_NATIVE_AD_UNIT_ID ?? '').trim()
+    if (fromEnv.length > 0) return fromEnv
+    return getIosReleaseNativeAdUnitId()
+  }
+  const fromEnv = (process.env.EXPO_PUBLIC_ADMOB_ANDROID_VIDEO_NATIVE_AD_UNIT_ID ?? '').trim()
+  if (fromEnv.length > 0) return fromEnv
+  const legacy = ANDROID_NATIVE_AD_UNIT_ID.trim()
+  return legacy.length > 0 ? legacy : TestIds.NATIVE
+}
+
+/** AIプラン結果：標準ネイティブ */
+export function resolveAiPlanResultNativeAdUnitId(): string {
+  if (__DEV__) return TestIds.NATIVE
+  if (Platform.OS === 'ios') {
+    const fromEnv = (process.env.EXPO_PUBLIC_ADMOB_IOS_NATIVE_AD_UNIT_ID ?? '').trim()
+    if (fromEnv.length > 0) return fromEnv
+    return getIosReleaseNativeAdUnitId()
+  }
+  const fromEnv = (process.env.EXPO_PUBLIC_ADMOB_ANDROID_NATIVE_AD_UNIT_ID ?? '').trim()
+  if (fromEnv.length > 0) return fromEnv
+  const legacy = ANDROID_NATIVE_AD_UNIT_ID.trim()
+  return legacy.length > 0 ? legacy : TestIds.NATIVE
+}

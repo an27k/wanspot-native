@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
-import { AiPlanInsuranceBanner } from '@/components/ai-plan/AiPlanInsuranceBanner'
 import { AiPlanLegDisplay } from '@/components/ai-plan/AiPlanLegDisplay'
+import { AiPlanResultAd } from '@/components/ai-plan/AiPlanResultAd'
 import { AiPlanRouteMap } from '@/components/ai-plan/AiPlanRouteMap'
 import { AiPlanSpotCard } from '@/components/ai-plan/AiPlanSpotCard'
 import { AiPlanSummaryCard } from '@/components/ai-plan/AiPlanSummaryCard'
@@ -101,7 +101,7 @@ export function AiPlanResult({
 
       <AiPlanSummaryCard plan={plan} legs={legs} mood={mood} travelMode={travelMode} />
 
-      <AiPlanInsuranceBanner planId={planId} />
+      <AiPlanResultAd />
 
       <View style={styles.timeline}>
         {mergedStops.map((stop, i) => (

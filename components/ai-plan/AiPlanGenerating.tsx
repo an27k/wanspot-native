@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
+import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
+import { AiPlanGeneratingAd } from '@/components/ai-plan/AiPlanGeneratingAd'
 import {
   AI_PLAN_PHASES,
   AiPlanProgressSteps,
@@ -84,34 +85,51 @@ export function AiPlanGenerating({
   const displayName = formatAiPlanDogDisplayName(dogName)
 
   return (
-    <View style={styles.wrap}>
-      <View style={styles.hero}>
-        <View style={styles.ringOuter} />
-        <Animated.View style={[styles.ringInner, { transform: [{ rotate }] }]} />
-        <View style={styles.dogMark}>
-          <LoadingDogSvg />
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.inner}>
+        <View style={styles.hero}>
+          <View style={styles.ringOuter} />
+          <Animated.View style={[styles.ringInner, { transform: [{ rotate }] }]} />
+          <View style={styles.dogMark}>
+            <LoadingDogSvg />
+          </View>
         </View>
+
+        <Text style={styles.title}>{displayName}のプランを作成中</Text>
+        <Text style={styles.sub}>だいたい15秒で完成します</Text>
+
+        <AiPlanProgressSteps
+          currentPhaseId={currentPhaseId}
+          completedPhaseIds={completedPhaseIds}
+        />
+
+        <AiPlanGeneratingAd />
       </View>
-
-      <Text style={styles.title}>{displayName}のプランを作成中</Text>
-      <Text style={styles.sub}>だいたい15秒で完成します</Text>
-
-      <AiPlanProgressSteps
-        currentPhaseId={currentPhaseId}
-        completedPhaseIds={completedPhaseIds}
-      />
-    </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: {
+  scroll: {
     flex: 1,
     backgroundColor: TOKENS.surface.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 60,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingTop: 48,
+    paddingBottom: 32,
     paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  inner: {
+    width: '100%',
+    maxWidth: 440,
+    alignItems: 'center',
   },
   hero: {
     position: 'relative',

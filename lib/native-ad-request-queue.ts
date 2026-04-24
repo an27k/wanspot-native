@@ -14,21 +14,29 @@ function delay(ms: number) {
 /**
  * iOS: ATT 未許可は NPA。許可済みでも後半リトライでは NPA を試し、在庫が付きやすいパターンに対応する。
  */
-export async function buildNativeAdRequestOptions(attemptIndex: number): Promise<NativeAdRequestOptions | undefined> {
-  if (Platform.OS !== 'ios') return undefined
+export async function buildNativeAdRequestOptions(
+  attemptIndex: number,
+  opts?: { aspectRatio?: NativeMediaAspectRatio }
+): Promise<NativeAdRequestOptions | undefined> {
+  const aspectRatio = opts?.aspectRatio ?? NativeMediaAspectRatio.ANY
+  if (Platform.OS !== 'ios') {
+    // 既存の一覧ネイティブ（AdNativeCard）は opts なし → undefined のまま
+    if (opts?.aspectRatio == null) return undefined
+    return { aspectRatio: opts.aspectRatio, startVideoMuted: true }
+  }
   try {
     const { status } = await getTrackingPermissionsAsync()
     const attDenied = status !== 'granted'
     const tryNpaAfterPersonalizedFails = !attDenied && attemptIndex >= 2
     return {
       requestNonPersonalizedAdsOnly: attDenied || tryNpaAfterPersonalizedFails,
-      aspectRatio: NativeMediaAspectRatio.ANY,
+      aspectRatio,
       startVideoMuted: true,
     }
   } catch {
     return {
       requestNonPersonalizedAdsOnly: true,
-      aspectRatio: NativeMediaAspectRatio.ANY,
+      aspectRatio,
       startVideoMuted: true,
     }
   }
