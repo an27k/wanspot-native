@@ -7,6 +7,7 @@ import type { UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import type { PlaceCardEnrichment } from '@/lib/user-spot-list-utils'
 import { calcDistanceMeters } from '@/lib/user-spot-list-utils'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 
 const IconHeart = ({ filled }: { filled: boolean }) => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -96,6 +97,7 @@ export function SpotListCard({
   onUnlike,
   unlikeLoading,
 }: SpotListCardProps) {
+  const requireAuth = useRequireAuth()
   const photoRef = enrichment?.photo_ref ?? null
   const uri = spotPhotoUrl(photoRef, 288)
   const displayRating = enrichment?.rating ?? null
@@ -141,6 +143,10 @@ export function SpotListCard({
     }
 
     setLikeLoading(true)
+    if (!requireAuth('いいねするにはログインしてください。')) {
+      setLikeLoading(false)
+      return
+    }
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setLikeLoading(false)

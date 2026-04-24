@@ -82,8 +82,8 @@ export function AiPlanHistory({
               <Pressable key={r.id} style={styles.card} onPress={() => onSelect(r)}>
                 <View style={styles.cardTop}>
                   <View style={styles.badgeRow}>
-                    <View style={[styles.moodBadge, moodActive ? styles.moodOn : styles.moodOff]}>
-                      <Text style={[styles.moodBadgeTxt, moodActive ? styles.moodTxtOn : styles.moodTxtOff]}>
+                    <View style={[styles.moodBadge, styles.moodBadgeNeutral]}>
+                      <Text style={[styles.moodBadgeTxt, styles.moodBadgeTxtNeutral]}>
                         {moodActive ? 'アクティブ' : 'のんびり'}
                       </Text>
                     </View>
@@ -204,11 +204,9 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     paddingHorizontal: 9,
   },
-  moodOn: { backgroundColor: TOKENS.brand.yellow },
-  moodOff: { backgroundColor: TOKENS.surface.alt },
+  moodBadgeNeutral: { backgroundColor: TOKENS.surface.alt },
   moodBadgeTxt: { fontSize: 11 },
-  moodTxtOn: { color: TOKENS.text.primary, fontWeight: '800' },
-  moodTxtOff: { color: TOKENS.text.secondary, fontWeight: '700' },
+  moodBadgeTxtNeutral: { color: TOKENS.text.secondary, fontWeight: '700' },
   travelBadge: {
     borderRadius: 8,
     paddingVertical: 3,
@@ -250,14 +248,14 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: TOKENS.brand.yellow,
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
   spotCountNum: {
     fontSize: 11,
     fontWeight: '800',
-    color: TOKENS.text.primary,
+    color: '#ffffff',
   },
   spotLabel: {
     fontSize: 12,

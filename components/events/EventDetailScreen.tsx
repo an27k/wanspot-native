@@ -20,6 +20,7 @@ import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 
 type EventRow = {
   id: string
@@ -108,6 +109,7 @@ export default function EventDetailScreen({
   onJoinedFree?: () => void
 }) {
   const router = useRouter()
+  const requireAuth = useRequireAuth()
   const insets = useSafeAreaInsets()
   const params = useLocalSearchParams<{ payment?: string; created?: string }>()
   const paymentParam = Array.isArray(params.payment) ? params.payment[0] : params.payment
@@ -176,7 +178,9 @@ export default function EventDetailScreen({
   }, [createdParam, router, eventId])
 
   const handleJoin = async () => {
-    if (!userId || !event || joining || joined) return
+    if (!event || joining || joined) return
+    if (!requireAuth('イベントに参加するにはログインしてください。')) return
+    if (!userId) return
     setJoining(true)
     try {
       if (eventRequiresPayment(event)) {
@@ -201,7 +205,9 @@ export default function EventDetailScreen({
   }
 
   const handleCancelJoin = () => {
-    if (!userId || !event || joining || !joined) return
+    if (!event || joining || !joined) return
+    if (!requireAuth('参加をキャンセルするにはログインしてください。')) return
+    if (!userId) return
     Alert.alert('確認', CANCEL_CONFIRM_MESSAGE, [
       { text: '戻る', style: 'cancel' },
       {
@@ -370,7 +376,7 @@ export default function EventDetailScreen({
             <Pressable
               style={[styles.joinBtn, isFull && styles.joinBtnFull]}
               onPress={() => void handleJoin()}
-              disabled={!userId || joining || isFull}
+              disabled={joining || isFull}
             >
               <Text style={[styles.joinBtnTxt, isFull && styles.joinBtnTxtFull]}>
                 {joining ? '処理中...' : isFull ? '満員です' : '参加する'}

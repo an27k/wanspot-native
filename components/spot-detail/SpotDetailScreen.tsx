@@ -35,6 +35,7 @@ import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
 import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 
 const { width: WIN_W, height: WIN_H } = Dimensions.get('window')
 
@@ -265,6 +266,7 @@ const IconCopy = () => (
 
 export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   const router = useRouter()
+  const requireAuth = useRequireAuth()
   const insets = useSafeAreaInsets()
   const likeScale = useRef(new Animated.Value(1)).current
   const instagramAutoFetchSent = useRef<string | null>(null)
@@ -559,7 +561,9 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   }
 
   const toggleLike = async () => {
-    if (!userId || !spot || likeLoading) return
+    if (!spot || likeLoading) return
+    if (!requireAuth('いいねするにはログインしてください。')) return
+    if (!userId) return
     setLikeLoading(true)
     playLikeHeartAnimation(likeScale)
     try {
@@ -579,7 +583,9 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   }
 
   const submitNewCheckIn = async () => {
-    if (!userId || !spot || checkInSubmitting || checkedIn) return
+    if (!spot || checkInSubmitting || checkedIn) return
+    if (!requireAuth('チェックインするにはログインしてください。')) return
+    if (!userId) return
     if (checkInRating < 1) {
       Alert.alert('', '評価をお願いします')
       return
@@ -616,7 +622,9 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   }
 
   const saveCheckInEdits = async () => {
-    if (!userId || !spot || checkInSubmitting || !checkedIn) return
+    if (!spot || checkInSubmitting || !checkedIn) return
+    if (!requireAuth('チェックインを更新するにはログインしてください。')) return
+    if (!userId) return
     if (checkInRating < 1) {
       Alert.alert('', '評価をお願いします')
       return
@@ -662,7 +670,9 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   }
 
   const executeRemoveCheckIn = async () => {
-    if (!userId || !spot || checkInSubmitting) return
+    if (!spot || checkInSubmitting) return
+    if (!requireAuth('チェックインを取り消すにはログインしてください。')) return
+    if (!userId) return
     setCheckInSubmitting(true)
     try {
       await supabase.from('check_ins').delete().eq('spot_id', spot.id).eq('user_id', userId)
@@ -830,7 +840,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
             <Pressable
               style={[styles.actHalf, liked && styles.actHalfLiked]}
               onPress={() => void toggleLike()}
-              disabled={likeLoading || !userId}
+              disabled={likeLoading}
             >
               <Animated.View style={{ transform: [{ scale: likeScale }] }}>
                 <IconHeart filled={liked} />
@@ -839,8 +849,10 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
             </Pressable>
             <Pressable
               style={[styles.actHalf, checkedIn && styles.actHalfCheck]}
-              onPress={() => (userId ? setShowCheckInModal(true) : Alert.alert('ログインが必要です'))}
-              disabled={!userId}
+              onPress={() => {
+                if (!requireAuth('チェックインするにはログインしてください。')) return
+                setShowCheckInModal(true)
+              }}
             >
               <IconPaw size={16} color={checkedIn ? '#FFD84D' : '#2b2a28'} />
               <Text style={styles.actLbl}>{checkedIn ? '行った ✓' : '行った'}</Text>

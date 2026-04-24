@@ -3,7 +3,9 @@ import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native
 import Svg, { Path, Polygon } from 'react-native-svg'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 import { HEART_ICON } from '@/lib/constants'
+import { ensureSpotId } from '@/lib/ensureSpot'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
@@ -62,6 +64,7 @@ export function SearchDiscoverResultCard({
   onLikesChange,
   onBeforeNavigate,
 }: Props) {
+  const requireAuth = useRequireAuth()
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
   const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
@@ -75,30 +78,10 @@ export function SearchDiscoverResultCard({
       : null
 
   const handleOpen = async () => {
-    const { data: spotRow, error } = await supabase
-      .from('spots')
-      .upsert(
-        {
-          place_id: spot.place_id,
-          name: spot.name,
-          category: spot.category,
-          address: spot.address,
-          lat: spot.lat,
-          lng: spot.lng,
-          rating: spot.rating,
-          price_level: spot.price_level,
-          ...(Array.isArray(spot.types) && spot.types.length > 0
-            ? { google_types: spot.types.filter((t): t is string => typeof t === 'string') }
-            : {}),
-        },
-        { onConflict: 'place_id' }
-      )
-      .select('id')
-      .single()
-    if (!error && spotRow) {
-      onBeforeNavigate?.()
-      onOpen(spotRow.id as string)
-    }
+    const id = await ensureSpotId(spot)
+    if (!id) return
+    onBeforeNavigate?.()
+    onOpen(id)
   }
 
   const handleLike = async (e?: { stopPropagation?: () => void }) => {
@@ -106,36 +89,20 @@ export function SearchDiscoverResultCard({
     if (likeLoading) return
     playLikeHeartAnimation(likeScale)
     setLikeLoading(true)
+    if (!requireAuth('いいねするにはログインしてください。')) {
+      setLikeLoading(false)
+      return
+    }
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setLikeLoading(false)
       return
     }
-    const { data: spotRow } = await supabase
-      .from('spots')
-      .upsert(
-        {
-          place_id: spot.place_id,
-          name: spot.name,
-          category: spot.category,
-          address: spot.address,
-          lat: spot.lat,
-          lng: spot.lng,
-          rating: spot.rating,
-          price_level: spot.price_level,
-          ...(Array.isArray(spot.types) && spot.types.length > 0
-            ? { google_types: spot.types.filter((t): t is string => typeof t === 'string') }
-            : {}),
-        },
-        { onConflict: 'place_id' }
-      )
-      .select('id')
-      .single()
-    if (!spotRow) {
+    const sid = await ensureSpotId(spot)
+    if (!sid) {
       setLikeLoading(false)
       return
     }
-    const sid = spotRow.id as string
     if (!liked) {
       await supabase.from('spot_likes').insert({ user_id: user.id, spot_id: sid })
       setLiked(true)

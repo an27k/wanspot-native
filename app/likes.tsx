@@ -25,6 +25,7 @@ import {
 } from '@/lib/user-spot-list-utils'
 import { wanspotFetch } from '@/lib/wanspot-api'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 
 const IconHeart = () => (
   <Svg width={15} height={15} viewBox="0 0 24 24" fill={HEART_ICON.filled} stroke={HEART_ICON.filled} strokeWidth={2}>
@@ -56,6 +57,7 @@ type LoadState = 'idle' | 'loading' | 'success' | 'error' | 'redirect'
 
 export default function LikesPage() {
   const router = useRouter()
+  const requireAuth = useRequireAuth()
   const insets = useSafeAreaInsets()
   const [spots, setSpots] = useState<UserSpotRow[]>([])
   const [loadState, setLoadState] = useState<LoadState>('idle')
@@ -139,6 +141,7 @@ export default function LikesPage() {
     if (unlikeLoadingId) return
     setUnlikeLoadingId(spot.id)
     try {
+      if (!requireAuth('いいねを解除するにはログインしてください。')) return
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       await supabase.from('spot_likes').delete().eq('user_id', user.id).eq('spot_id', spot.id)

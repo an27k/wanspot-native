@@ -24,6 +24,7 @@ import { clearEventCreateDraft, loadEventCreateDraft, saveEventCreateDraft, type
 import { EVENT_MODERATION_REJECT_MESSAGE } from '@/lib/event-moderation'
 import { supabase } from '@/lib/supabase'
 import { wanspotFetchJson } from '@/lib/wanspot-api'
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 
 type Mode = 'create' | 'edit'
 
@@ -101,6 +102,7 @@ export function EventEditorForm({
   onConsumedConnectReturn,
   onSuccess,
 }: Props) {
+  const requireAuth = useRequireAuth()
   const insets = useSafeAreaInsets()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -346,6 +348,9 @@ export function EventEditorForm({
 
   const handleSubmit = useCallback(async () => {
     setError('')
+    if (!requireAuth(mode === 'create' ? 'イベントを作成するにはログインしてください。' : 'イベントを更新するにはログインしてください。')) {
+      return
+    }
     if (!title.trim() || !eventAt || !locationName.trim()) {
       setShowFieldErrors(true)
       const msg = 'タイトル・開催日時・場所名をすべて入力してください'

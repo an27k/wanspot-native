@@ -6,7 +6,9 @@ import { IconPaw } from '@/components/IconPaw'
 import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { track } from '@/lib/analytics'
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 import { supabase } from '@/lib/supabase'
+import { ensureSpotId } from '@/lib/ensureSpot'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -83,6 +85,7 @@ export function NearbySpotCard({
   onOpenDetail: (id: string) => void
   onLikeStateChange?: (placeId: string, liked: boolean) => void
 }) {
+  const requireAuth = useRequireAuth()
   const scaleAnim = useRef(new Animated.Value(1)).current
   const [spotId, setSpotId] = useState<string | null>(null)
   const [liked, setLiked] = useState(false)
@@ -98,15 +101,15 @@ export function NearbySpotCard({
 
   useEffect(() => {
     const fetchLikeData = async () => {
-      const { data: spotRow } = await supabase.from('spots').select('id').eq('place_id', spot.place_id).single()
-      if (!spotRow) return
-      setSpotId(spotRow.id)
+      const ensuredId = await ensureSpotId(spot)
+      if (!ensuredId) return
+      setSpotId(ensuredId)
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data: myLike } = await supabase
           .from('spot_likes')
           .select('id')
-          .eq('spot_id', spotRow.id)
+          .eq('spot_id', ensuredId)
           .eq('user_id', user.id)
           .maybeSingle()
         setLiked(!!myLike)
@@ -120,36 +123,20 @@ export function NearbySpotCard({
       onOpenDetail(spotId)
       return
     }
-    const { data: spotRow, error } = await supabase
-      .from('spots')
-      .upsert(
-        {
-          place_id: spot.place_id,
-          name: spot.name,
-          category: spot.category,
-          address: spot.address,
-          lat: spot.lat,
-          lng: spot.lng,
-          rating: spot.rating,
-          price_level: spot.price_level,
-          ...(Array.isArray(spot.types) && spot.types.length > 0
-            ? { google_types: spot.types.filter((t): t is string => typeof t === 'string') }
-            : {}),
-        },
-        { onConflict: 'place_id' }
-      )
-      .select('id')
-      .single()
-    if (!error && spotRow) {
-      setSpotId(spotRow.id)
-      onOpenDetail(spotRow.id)
-    }
+    const ensuredId = await ensureSpotId(spot)
+    if (!ensuredId) return
+    setSpotId(ensuredId)
+    onOpenDetail(ensuredId)
   }
 
   const handleLike = async () => {
     if (likeLoading) return
     playLikeHeartAnimation(scaleAnim)
     setLikeLoading(true)
+    if (!requireAuth('いいねするにはログインしてください。')) {
+      setLikeLoading(false)
+      return
+    }
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setLikeLoading(false)
@@ -157,39 +144,21 @@ export function NearbySpotCard({
     }
 
     if (!liked) {
-      const { data: spotRow, error: spotErr } = await supabase
-        .from('spots')
-        .upsert(
-          {
-            place_id: spot.place_id,
-            name: spot.name,
-            category: spot.category,
-            address: spot.address,
-            lat: spot.lat,
-            lng: spot.lng,
-            rating: spot.rating,
-            price_level: spot.price_level,
-            ...(Array.isArray(spot.types) && spot.types.length > 0
-              ? { google_types: spot.types.filter((t): t is string => typeof t === 'string') }
-              : {}),
-          },
-          { onConflict: 'place_id' }
-        )
-        .select('id')
-        .single()
-      if (spotErr || !spotRow) {
+      const ensuredId = await ensureSpotId(spot)
+      if (!ensuredId) {
         setLikeLoading(false)
         return
       }
-      await supabase.from('spot_likes').insert({ user_id: user.id, spot_id: spotRow.id })
+      await supabase.from('spot_likes').insert({ user_id: user.id, spot_id: ensuredId })
       setLiked(true)
       setLocalLikeCount((c) => c + 1)
       onLikeStateChange?.(spot.place_id, true)
-      track('spot_liked', { spot_id: spotRow.id })
+      track('spot_liked', { spot_id: ensuredId })
     } else {
-      const { data: spotRow } = await supabase.from('spots').select('id').eq('place_id', spot.place_id).single()
-      if (spotRow)
-        await supabase.from('spot_likes').delete().eq('user_id', user.id).eq('spot_id', spotRow.id)
+      const ensuredId = spotId ?? (await ensureSpotId(spot))
+      if (ensuredId) {
+        await supabase.from('spot_likes').delete().eq('user_id', user.id).eq('spot_id', ensuredId)
+      }
       setLiked(false)
       setLocalLikeCount((c) => Math.max(0, c - 1))
       onLikeStateChange?.(spot.place_id, false)

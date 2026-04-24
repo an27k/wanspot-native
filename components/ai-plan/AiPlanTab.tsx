@@ -16,6 +16,7 @@ import type {
 } from '@/components/ai-plan/types'
 import { streamAiPlan } from '@/components/ai-plan/stream-ai-plan'
 import { TOKENS } from '@/constants/color-tokens'
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 
 const MAX_GENERATION_TIMEOUT_MS = 30_000
 
@@ -44,6 +45,7 @@ export function AiPlanTab({
 }: {
   onEmbeddedChromeVisibility?: (visible: boolean) => void
 } = {}) {
+  const requireAuth = useRequireAuth()
   const [ui, setUi] = useState<UiState>('history')
   const [history, setHistory] = useState<AiPlanHistoryRow[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
@@ -198,6 +200,7 @@ export function AiPlanTab({
     mood: 'active' | 'relaxed'
     dogSize: DogSize
   }) => {
+    if (!requireAuth('AIプランを保存するにはログインしてください。')) return
     generationAbortedByTimeoutRef.current = false
     abortRef.current?.abort()
     const ac = new AbortController()

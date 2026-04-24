@@ -5,18 +5,8 @@ import type { AiPlanCore, AiPlanLeg, AiPlanMood, AiPlanTravelMode } from '@/comp
 function MoodBadge({ mood }: { mood: AiPlanMood | undefined }) {
   const active = mood === 'active'
   return (
-    <View
-      style={[
-        styles.badge,
-        active ? { backgroundColor: TOKENS.brand.yellow } : { backgroundColor: TOKENS.surface.alt },
-      ]}
-    >
-      <Text
-        style={[
-          styles.badgeTxt,
-          active ? { color: TOKENS.text.primary, fontWeight: '800' } : { color: TOKENS.text.secondary, fontWeight: '700' },
-        ]}
-      >
+    <View style={[styles.badge, { backgroundColor: TOKENS.surface.alt }]}>
+      <Text style={[styles.badgeTxt, { color: TOKENS.text.secondary, fontWeight: '700' }]}>
         {active ? 'アクティブ' : 'のんびり'}
       </Text>
     </View>
