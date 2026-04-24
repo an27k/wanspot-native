@@ -160,22 +160,25 @@ export function AiPlanResultAd() {
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: 16,
-    marginVertical: 12,
+    marginTop: 20,
+    marginBottom: 16,
   },
   adView: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FAFAFA',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E0DED8',
+    borderColor: '#EDEDED',
     padding: 12,
     position: 'relative',
     overflow: 'hidden',
+    shadowColor: 'transparent',
+    elevation: 0,
   },
   prLabel: {
     position: 'absolute',
     top: 6,
     right: 8,
-    backgroundColor: '#999',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
   prLabelText: {
     fontSize: 9,
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   row: {
     flexDirection: 'row',
@@ -219,14 +222,14 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   ctaButton: {
-    backgroundColor: '#FFD400',
+    backgroundColor: '#F0F0F0',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
   ctaText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#2b2a28',
+    fontWeight: '600',
+    color: '#666',
   },
 })

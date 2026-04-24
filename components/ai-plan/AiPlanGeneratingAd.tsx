@@ -38,9 +38,11 @@ export function AiPlanGeneratingAd() {
   }, [nativeAd])
 
   const mediaPixelHeight = useMemo(() => {
-    if (mediaInnerWidth <= 0) return 140
-    const raw = Math.ceil(mediaInnerWidth / aspectRatio)
-    return Math.max(120, Math.min(raw, 220))
+    // 作成中画面では「下部にさりげなく」を優先し、横長で高さを抑える
+    if (mediaInnerWidth <= 0) return 120
+    const effectiveRatio = Math.max(1.9, aspectRatio)
+    const raw = Math.ceil(mediaInnerWidth / effectiveRatio)
+    return Math.max(96, Math.min(raw, 140))
   }, [mediaInnerWidth, aspectRatio])
 
   const onMediaRowLayout = useCallback((e: LayoutChangeEvent) => {
@@ -187,8 +189,8 @@ export function AiPlanGeneratingAd() {
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: 16,
-    marginTop: 24,
-    marginBottom: 12,
+    marginTop: 20,
+    marginBottom: 16,
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
@@ -197,15 +199,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#F0E8D0',
+    borderColor: '#EDEDED',
     overflow: 'hidden',
     position: 'relative',
+    shadowColor: 'transparent',
+    elevation: 0,
   },
   prLabel: {
     position: 'absolute',
-    top: 8,
+    top: 6,
     right: 8,
-    backgroundColor: '#999',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -214,7 +218,7 @@ const styles = StyleSheet.create({
   prLabelText: {
     fontSize: 9,
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   mediaRow: {
     width: '100%',
@@ -254,14 +258,14 @@ const styles = StyleSheet.create({
     color: '#888',
   },
   ctaButton: {
-    backgroundColor: '#FFD400',
+    backgroundColor: '#F0F0F0',
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
   },
   ctaText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#2b2a28',
+    fontWeight: '600',
+    color: '#666',
   },
 })
