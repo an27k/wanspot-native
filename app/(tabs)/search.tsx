@@ -24,7 +24,7 @@ import { PowState, RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
-import { rankArticlesFeed } from '@/lib/article-feed-ranking'
+import { sortArticlesByScore } from '@/lib/articles/scoring'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
@@ -76,6 +76,24 @@ async function getPrefecture(lat: number, lng: number): Promise<string> {
     /* ignore */
   }
   return '東京'
+}
+
+async function getPrefectureAndMunicipality(
+  lat: number,
+  lng: number
+): Promise<{ prefecture: string | null; municipality: string | null }> {
+  try {
+    const rows = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng })
+    const r0 = rows[0]
+    const prefecture = r0?.region ?? r0?.subregion ?? null
+    const municipality = r0?.city ?? r0?.district ?? r0?.subregion ?? null
+    return {
+      prefecture: typeof prefecture === 'string' ? prefecture : null,
+      municipality: typeof municipality === 'string' ? municipality : null,
+    }
+  } catch {
+    return { prefecture: null, municipality: null }
+  }
 }
 
 const IconSearch = () => (
@@ -449,15 +467,31 @@ export default function SearchTab() {
 
         const rows = (data ?? []) as (ArticleRow & { blocks?: unknown; spot_links?: unknown })[]
 
-        const ranked = await rankArticlesFeed({
-          supabase,
-          articles: rows,
-          userLocation: location,
-          recentArticleIds,
-          topN: 10,
-        })
+        const geo =
+          location != null
+            ? await getPrefectureAndMunicipality(location.lat, location.lng)
+            : { prefecture: null as string | null, municipality: null as string | null }
 
-        setArticlesList(ranked)
+        const sorted = sortArticlesByScore(
+          rows.map((r) => ({
+            ...r,
+            title: r.title ?? null,
+            keywords: r.keywords ?? null,
+            theme: null,
+            category: r.category ?? null,
+            summary: r.summary ?? null,
+            published_at: r.published_at ?? null,
+          })),
+          {
+            userPrefecture: geo.prefecture,
+            userMunicipality: geo.municipality,
+            userId: null,
+            likedArticleIds: [],
+            readArticleIds: recentArticleIds,
+          }
+        )
+
+        setArticlesList(sorted)
       } catch {
         setArticlesList([])
       } finally {
