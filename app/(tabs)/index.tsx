@@ -20,6 +20,7 @@ import { AppHeader } from '@/components/AppHeader'
 import { AdNativeCard } from '@/components/AdNativeCard'
 import { NearbySpotCard } from '@/components/nearby/NearbySpotCard'
 import { RunningDog, PowState } from '@/components/DogStates'
+import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
@@ -136,6 +137,9 @@ export default function NearbyPage() {
     }
     setShowObTutorial(false)
   }, [])
+
+  // TODO: いいね5件達成時に「AIがもっとぴったりな提案をします」のヒントを
+  // マイページ または いいね一覧画面で表示する仕組みを別途検討
 
   useEffect(() => {
     const valid = new Set(DISTANCES.map((d) => d.key))
@@ -473,27 +477,11 @@ export default function NearbyPage() {
         </Pressable>
       </Modal>
 
-      <Modal visible={showObTutorial} transparent animationType="fade" onRequestClose={() => void dismissObTutorial()}>
-        <Pressable style={styles.obTutOverlay} onPress={() => void dismissObTutorial()}>
-          <Pressable style={styles.obTutCard} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.obTutTitle}>
-              {`${obTutorialDogName.trim() || 'ワン'}ちゃんとお出かけの準備！`}
-            </Text>
-            <Text style={styles.obTutBody}>
-              ワンちゃんと行きたいカフェや公園を見つけたら、
-              <Text style={styles.obTutEm}>ハートでいいね</Text>
-              してみてください。いいねが増えるほど「好き」の傾向が伝わり、
-              <Text style={styles.obTutEm}>専属AIのおすすめやまとめの精度が上がります。</Text>
-              {'\n\n'}
-              まずは気軽に<Text style={styles.obTutEm}>5件以上</Text>
-              いいねして、ワクワクするスポット探しのスタートを切りましょう。お気に入りはマイページの「いいね一覧」からいつでも見られます。
-            </Text>
-            <TouchableOpacity style={styles.obTutBtn} onPress={() => void dismissObTutorial()}>
-              <Text style={styles.obTutBtnTxt}>OK</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <PostOnboardingTutorialModal
+        visible={showObTutorial}
+        dogName={obTutorialDogName}
+        onDismiss={dismissObTutorial}
+      />
     </View>
   )
 }
@@ -594,34 +582,4 @@ const styles = StyleSheet.create({
   sortItemOn: { backgroundColor: '#FFF9E0' },
   sortItemTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
   sortItemTxtOn: { color: '#2b2a28' },
-  obTutOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  obTutCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: '#ebebeb',
-  },
-  obTutTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#2b2a28',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  obTutBody: { fontSize: 15, lineHeight: 24, color: '#555' },
-  obTutEm: { fontWeight: '800', color: '#2b2a28' },
-  obTutBtn: {
-    marginTop: 18,
-    backgroundColor: '#FFD84D',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  obTutBtnTxt: { fontSize: 16, fontWeight: '800', color: '#2b2a28' },
 })
