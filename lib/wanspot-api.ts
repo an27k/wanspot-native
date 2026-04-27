@@ -1,4 +1,5 @@
 import Constants from 'expo-constants'
+import { widthForImageSize, type ImageSize } from '@/lib/images/placesImage'
 import { supabase } from '@/lib/supabase'
 
 type Extra = {
@@ -87,11 +88,14 @@ export async function wanspotFetch(path: string, init: WanspotFetchInit = {}): P
   return fetch(url, { ...init, headers, body })
 }
 
-export function spotPhotoUrl(photoRef: string | null, maxWidth = 320): string | null {
+export type { ImageSize } from '@/lib/images/placesImage'
+
+export function spotPhotoUrl(photoRef: string | null, size: ImageSize | number = 'card'): string | null {
   if (!photoRef) return null
   const base = getWanspotApiBase()
   if (!base) return null
-  return `${base}/api/spots/photo?ref=${encodeURIComponent(photoRef)}&w=${maxWidth}`
+  const w = typeof size === 'number' ? size : widthForImageSize(size)
+  return `${base}/api/spots/photo?ref=${encodeURIComponent(photoRef)}&w=${w}`
 }
 
 export async function wanspotFetchJson<T>(path: string, init?: WanspotFetchInit): Promise<T> {
@@ -103,4 +107,17 @@ export async function wanspotFetchJson<T>(path: string, init?: WanspotFetchInit)
   } catch {
     return {} as T
   }
+}
+
+/** 準備中エリア向け: スポット整備リクエストを Supabase `area_requests` に保存（Bearer 必須） */
+export async function sendAreaRequest(
+  prefecture: string,
+  municipality: string,
+  message: string
+): Promise<{ ok: boolean }> {
+  const res = await wanspotFetch('/api/area-requests', {
+    method: 'POST',
+    json: { prefecture, municipality, message },
+  })
+  return { ok: res.ok }
 }

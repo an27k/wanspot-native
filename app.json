@@ -16,10 +16,30 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.wanspot.native",
-      "buildNumber": "66",
+      "buildNumber": "90",
+      "usesAppleSignIn": true,
+      "entitlements": {
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "GADNativeAdValidatorEnabled": false
+        "GADNativeAdValidatorEnabled": false,
+        "NSPhotoLibraryUsageDescription": "ワンちゃんやプロフィールの写真を設定するため、写真ライブラリへのアクセスを許可してください。",
+        "NSCameraUsageDescription": "ワンちゃんやプロフィールの写真を撮影するため、カメラへのアクセスを許可してください。",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "wanspot"
+            ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.573139399424-cgqe3u58m724rpjsm5uu0u1t69qor80m"
+            ]
+          }
+        ]
       }
     },
     "android": {
@@ -58,9 +78,22 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-xxxxxxxx~xxxxxxxx",
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
           "iosAppId": "ca-app-pub-4709188613454491~3258937977",
           "userTrackingUsageDescription": "パーソナライズされた広告の表示に使用します。"
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.573139399424-cgqe3u58m724rpjsm5uu0u1t69qor80m"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ワンちゃんやプロフィールの写真を設定するため、写真ライブラリへのアクセスを許可してください。",
+          "cameraPermission": "ワンちゃんやプロフィールの写真を撮影するため、カメラへのアクセスを許可してください。"
         }
       ]
     ],
@@ -77,7 +110,7 @@
     "owner": "atsu_nemoto"
   },
   "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-xxxxxxxx~xxxxxxxx",
+    "android_app_id": "ca-app-pub-3940256099942544~3347511713",
     "ios_app_id": "ca-app-pub-4709188613454491~3258937977",
     "user_tracking_usage_description": "パーソナライズされた広告の表示に使用します。"
   }

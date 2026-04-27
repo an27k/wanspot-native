@@ -61,6 +61,10 @@ export function AiPlanTab({
   const [legsByIndex, setLegsByIndex] = useState<Record<number, AiPlanLeg>>({})
   const [errorCode, setErrorCode] = useState<string>('internal_error')
   const [areaPreset, setAreaPreset] = useState<{ prefecture: string; municipality: string } | null>(null)
+  const [lastPlanAttemptArea, setLastPlanAttemptArea] = useState<{
+    prefecture: string
+    municipality: string
+  } | null>(null)
 
   const abortRef = useRef<AbortController | null>(null)
   const planReceivedRef = useRef(false)
@@ -210,6 +214,7 @@ export function AiPlanTab({
     setStreamPlanReady(false)
     setResultPlanId(null)
     planReceivedRef.current = false
+    setLastPlanAttemptArea({ prefecture: v.prefecture, municipality: v.municipality })
     setTravelMode(v.travel_mode)
     setResultMood(v.mood)
     setCurrentPlan(null)
@@ -340,6 +345,7 @@ export function AiPlanTab({
         code={errorCode}
         onBack={goForm}
         onSelectArea={onErrorSelectArea}
+        requestArea={lastPlanAttemptArea}
       />
     )
   }
