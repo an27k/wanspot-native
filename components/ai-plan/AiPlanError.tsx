@@ -21,6 +21,20 @@ const SUGGESTED_AREAS: SuggestedArea[] = [
   { prefecture: '京都府', municipality: '京都市東山区', spotCount: 3 },
 ]
 
+/** unsupported_area の SSE message 拡張（徒歩・車の feasibility 用） */
+const UNSUPPORTED_AREA_DETAIL: Record<string, { title: string; message: string }> = {
+  feasibility_walking: {
+    title: '徒歩でのプランが組みにくいエリアです',
+    message:
+      'スポット同士の距離の都合で、徒歩での周遊プランが組みにくい場合があります。\n車でのプランなら、ワンちゃんと行けるペット可スポットをまとめてご提案できることがあります。',
+  },
+  feasibility_driving: {
+    title: '車でのプランが組みにくいエリアです',
+    message:
+      'スポット同士の距離の都合で、車での周遊プランが組みにくい場合があります。\n徒歩でのプランをお試しください。',
+  },
+}
+
 const ERROR_MESSAGES: Record<string, { title: string; message: string }> = {
   unsupported_area: {
     title: 'このエリアはまだ準備中です',
@@ -46,37 +60,36 @@ const ERROR_MESSAGES: Record<string, { title: string; message: string }> = {
     title: 'プラン生成に時間がかかっています',
     message: 'もう一度お試しください。',
   },
-  walking_not_feasible: {
-    title: '徒歩でのプランが組みにくいエリアです',
-    message:
-      'スポット同士の距離の都合で、徒歩での周遊プランが組みにくい場合があります。\n車でのプランなら、ワンちゃんと行けるペット可スポットをまとめてご提案できることがあります。',
-  },
-  driving_not_feasible: {
-    title: '車でのプランが組みにくいエリアです',
-    message:
-      'スポット同士の距離の都合で、車での周遊プランが組みにくい場合があります。\n徒歩でのプランをお試しください。',
-  },
 }
 
-function resolveError(code: string | undefined): { title: string; message: string } {
+function resolveError(
+  code: string | undefined,
+  detail?: string | null
+): { title: string; message: string } {
+  if (code === 'unsupported_area' && detail && UNSUPPORTED_AREA_DETAIL[detail]) {
+    return UNSUPPORTED_AREA_DETAIL[detail]
+  }
   const c = code && ERROR_MESSAGES[code] ? code : 'internal_error'
   return ERROR_MESSAGES[c] ?? ERROR_MESSAGES.internal_error
 }
 
 export function AiPlanError({
   code,
+  errorDetail,
   onBack,
   onSelectArea,
   requestArea,
 }: {
   code?: string
+  /** SSE error の message（例: feasibility_walking） */
+  errorDetail?: string | null
   onBack: () => void
   onSelectArea?: (area: SuggestedArea) => void
   /** プラン生成に使った都道府県・市区町村（リクエスト送信用） */
   requestArea?: { prefecture: string; municipality: string } | null
 }) {
   const insets = useSafeAreaInsets()
-  const { title, message } = resolveError(code)
+  const { title, message } = resolveError(code, errorDetail)
   const showSuggestions =
     (code === 'unsupported_area' || code === 'no_candidates') && typeof onSelectArea === 'function'
 

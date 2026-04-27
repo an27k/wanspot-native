@@ -60,6 +60,7 @@ export function AiPlanTab({
   const [resultMood, setResultMood] = useState<AiPlanMood>('active')
   const [legsByIndex, setLegsByIndex] = useState<Record<number, AiPlanLeg>>({})
   const [errorCode, setErrorCode] = useState<string>('internal_error')
+  const [errorDetail, setErrorDetail] = useState<string | null>(null)
   const [areaPreset, setAreaPreset] = useState<{ prefecture: string; municipality: string } | null>(null)
   const [lastPlanAttemptArea, setLastPlanAttemptArea] = useState<{
     prefecture: string
@@ -81,6 +82,7 @@ export function AiPlanTab({
       generationAbortedByTimeoutRef.current = true
       abortRef.current?.abort()
       setErrorCode('generation_timeout')
+      setErrorDetail(null)
       setUi('error')
     }, MAX_GENERATION_TIMEOUT_MS)
     return () => clearTimeout(t)
@@ -157,6 +159,7 @@ export function AiPlanTab({
     setCurrentPlan(null)
     setLegsByIndex({})
     setAreaPreset(null)
+    setErrorDetail(null)
     setUi('form')
   }, [])
 
@@ -214,6 +217,7 @@ export function AiPlanTab({
     setStreamPlanReady(false)
     setResultPlanId(null)
     planReceivedRef.current = false
+    setErrorDetail(null)
     setLastPlanAttemptArea({ prefecture: v.prefecture, municipality: v.municipality })
     setTravelMode(v.travel_mode)
     setResultMood(v.mood)
@@ -255,7 +259,18 @@ export function AiPlanTab({
               return
             }
             if (ev.type === 'error') {
-              setErrorCode(normalizeErrorCode(ev.code))
+              const raw = typeof ev.code === 'string' ? ev.code : ''
+              let code = normalizeErrorCode(ev.code)
+              let detail: string | null = typeof ev.message === 'string' ? ev.message : null
+              if (raw === 'walking_not_feasible') {
+                code = 'unsupported_area'
+                detail = detail ?? 'feasibility_walking'
+              } else if (raw === 'driving_not_feasible') {
+                code = 'unsupported_area'
+                detail = detail ?? 'feasibility_driving'
+              }
+              setErrorCode(code)
+              setErrorDetail(detail)
               setUi('error')
               return
             }
@@ -275,6 +290,7 @@ export function AiPlanTab({
         return
       }
       setErrorCode('internal_error')
+      setErrorDetail(null)
       setUi('error')
     } finally {
       // history refresh handled on saved
@@ -283,6 +299,7 @@ export function AiPlanTab({
 
   const goForm = useCallback(() => {
     setAreaPreset(null)
+    setErrorDetail(null)
     setUi('form')
   }, [])
 
@@ -343,6 +360,7 @@ export function AiPlanTab({
     return (
       <AiPlanError
         code={errorCode}
+        errorDetail={errorDetail}
         onBack={goForm}
         onSelectArea={onErrorSelectArea}
         requestArea={lastPlanAttemptArea}

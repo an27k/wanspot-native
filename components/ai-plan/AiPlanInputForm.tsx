@@ -248,6 +248,9 @@ export function AiPlanInputForm({
             value={travel ?? ''}
             onChange={(v) => setTravel(v === 'driving' ? 'driving' : 'walking')}
           />
+          {pref && muni && !feasibility.loading && !feasibility.walking_feasible && !feasibility.driving_feasible ? (
+            <Text style={styles.feasibilityHint}>このエリアではプランを作成できません</Text>
+          ) : null}
         </View>
 
         <View style={styles.section}>
@@ -350,6 +353,12 @@ const styles = StyleSheet.create({
   pressed: { transform: [{ scale: 0.97 }], opacity: 0.9 },
   section: { paddingHorizontal: 16 },
   sectionTitle: { fontSize: 12, color: '#999', marginBottom: 8, fontWeight: '500' },
+  feasibilityHint: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#c62828',
+    lineHeight: 17,
+  },
   row: { flexDirection: 'row', gap: 12 },
   flex1: { flex: 1 },
   selector: {

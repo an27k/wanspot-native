@@ -117,35 +117,37 @@ export type AiPlanFeasibilityResult = {
   is_major_area: boolean
 }
 
-/** エリアのプラン組み可否（徒歩・車）。API 失敗時はサーバー判定に任せるため両方許可扱い。 */
+const FEASIBILITY_FAIL_OPEN: AiPlanFeasibilityResult = {
+  feasible: true,
+  walking_feasible: true,
+  driving_feasible: true,
+  spot_count: 0,
+  is_major_area: false,
+}
+
+/** エリアのプラン組み可否（徒歩・車）。失敗時はオプティミスティックに許可（生成 API で再チェック）。 */
 export async function checkAiPlanFeasibility(
   prefecture: string,
   municipality?: string
 ): Promise<AiPlanFeasibilityResult> {
-  const failOpen = (): AiPlanFeasibilityResult => ({
-    feasible: true,
-    walking_feasible: true,
-    driving_feasible: true,
-    spot_count: 0,
-    is_major_area: false,
-  })
-  const res = await wanspotFetch('/api/ai-plan/feasibility', {
-    method: 'POST',
-    json: { prefecture, municipality: municipality ?? '' },
-  })
-  if (!res.ok) return failOpen()
   try {
-    const data = (await res.json()) as Record<string, unknown>
-    if (data.ok !== true) return failOpen()
+    const res = await wanspotFetch('/api/ai-plan/feasibility', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prefecture, municipality }),
+    })
+    if (!res.ok) return FEASIBILITY_FAIL_OPEN
+    const json = (await res.json()) as Record<string, unknown>
     return {
-      feasible: data.feasible === true,
-      walking_feasible: data.walking_feasible === true,
-      driving_feasible: data.driving_feasible === true,
-      spot_count: typeof data.spot_count === 'number' ? data.spot_count : 0,
-      is_major_area: data.is_major_area === true,
+      feasible: (json.feasible as boolean | undefined) ?? true,
+      walking_feasible: (json.walking_feasible as boolean | undefined) ?? true,
+      driving_feasible: (json.driving_feasible as boolean | undefined) ?? true,
+      spot_count: (json.spot_count as number | undefined) ?? 0,
+      is_major_area: (json.is_major_area as boolean | undefined) ?? false,
     }
-  } catch {
-    return failOpen()
+  } catch (e) {
+    console.warn('checkAiPlanFeasibility failed:', e)
+    return FEASIBILITY_FAIL_OPEN
   }
 }
 
