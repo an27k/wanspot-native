@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { TOKENS } from '@/constants/color-tokens'
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { sortMunicipalityNames } from '@/constants/municipality-sort'
 import { listMunicipalities, listPrefectures } from '@/constants/municipality-centers'
 import { sortPrefecturesJis } from '@/constants/prefectures'
 import { formatAiPlanDogDisplayName } from '@/lib/ai-plan/formatters'
+import { checkAiPlanFeasibility } from '@/lib/wanspot-api'
+import { SegmentedControl } from '@/components/common/SegmentedControl'
+import { MoodCard } from '@/components/common/MoodCard'
 
 export type DurationPick = 'half_day' | 'full_day'
 export type TravelPick = 'walking' | 'driving'
@@ -40,17 +42,21 @@ function SelectorRow({
   disabled?: boolean
 }) {
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[styles.selector, selected ? styles.selectorOn : styles.selectorOff, disabled && styles.selectorDisabled]}
-      activeOpacity={0.85}
+      style={({ pressed }) => [
+        styles.selector,
+        selected ? styles.selectorOn : styles.selectorOff,
+        disabled && styles.selectorDisabled,
+        pressed && !disabled && styles.pressed,
+      ]}
     >
       <Text style={[styles.selectorTxt, selected ? styles.selectorTxtOn : styles.selectorTxtOff]} numberOfLines={1}>
         {label || '選択'}
       </Text>
       <Text style={styles.selectorChevron}>▼</Text>
-    </TouchableOpacity>
+    </Pressable>
   )
 }
 
@@ -77,6 +83,10 @@ function PickerModal({
             keyExtractor={(item) => item}
             style={styles.modalList}
             keyboardShouldPersistTaps="handled"
+            initialNumToRender={12}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+            removeClippedSubviews
             renderItem={({ item }) => (
               <Pressable
                 style={styles.modalRow}
@@ -92,29 +102,6 @@ function PickerModal({
         </View>
       </Pressable>
     </Modal>
-  )
-}
-
-function MoodCard({
-  type,
-  selected,
-  onPress,
-}: {
-  type: 'active' | 'relaxed'
-  selected: boolean
-  onPress: () => void
-}) {
-  const main = type === 'active' ? 'アクティブ' : 'のんびり'
-  const sub = type === 'active' ? 'しっかり運動' : 'カフェ中心'
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={[styles.moodCard, selected ? styles.moodCardOn : styles.moodCardOff]}
-      activeOpacity={0.88}
-    >
-      <Text style={[styles.moodMain, selected ? styles.moodMainOn : styles.moodMainOff]}>{main}</Text>
-      <Text style={[styles.moodSub, selected ? styles.moodSubOn : styles.moodSubOff]}>{sub}</Text>
-    </TouchableOpacity>
   )
 }
 
@@ -156,6 +143,12 @@ export function AiPlanInputForm({
   const [prefOpen, setPrefOpen] = useState(false)
   const [muniOpen, setMuniOpen] = useState(false)
 
+  const [feasibility, setFeasibility] = useState<{
+    walking_feasible: boolean
+    driving_feasible: boolean
+    loading: boolean
+  }>({ walking_feasible: true, driving_feasible: true, loading: false })
+
   useEffect(() => {
     if (!areaPreset) return
     if (areaPreset.prefecture) setPref(areaPreset.prefecture)
@@ -169,189 +162,196 @@ export function AiPlanInputForm({
     }
   }, [pref, munis, muni])
 
+  useEffect(() => {
+    if (!pref || !muni) {
+      setFeasibility({ walking_feasible: true, driving_feasible: true, loading: false })
+      return
+    }
+    setFeasibility((prev) => ({ ...prev, loading: true }))
+    let cancelled = false
+    void checkAiPlanFeasibility(pref, muni).then((result) => {
+      if (cancelled) return
+      setFeasibility({
+        walking_feasible: result.walking_feasible,
+        driving_feasible: result.driving_feasible,
+        loading: false,
+      })
+      setTravel((prevPick) => {
+        if (result.walking_feasible && result.driving_feasible) return prevPick
+        if (result.walking_feasible) return 'walking'
+        if (result.driving_feasible) return 'driving'
+        return null
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [pref, muni])
+
   const effectiveSize = overrideSize ?? dbDogSize
-  const canSubmit = !!pref && !!muni && !!duration && !!travel && !!mood && !!effectiveSize
+  const isFormValid = !!pref && !!muni && !!duration && !!travel && !!mood && !!effectiveSize
 
   const dogDisplay = formatAiPlanDogDisplayName(initialDogName)
   const sizeShort = effectiveSize ? SIZE_LABEL_SHORT[effectiveSize] : ''
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.scroll}>
-      <View style={styles.areaCard}>
-        <Text style={styles.areaTitle}>エリア</Text>
-        <View style={styles.areaRow}>
-          <View style={styles.areaCol}>
-            <SelectorRow
-              label={pref || '都道府県'}
-              selected={!!pref}
-              onPress={() => setPrefOpen(true)}
-            />
-          </View>
-          <View style={styles.areaCol}>
-            <SelectorRow
-              label={muni ? muni.replace(pref, '').trim() || muni : '市区町村'}
-              selected={!!muni}
-              disabled={!pref}
-              onPress={() => {
-                if (pref) setMuniOpen(true)
-              }}
-            />
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.row2}>
-        <View style={styles.halfCard}>
-          <Text style={styles.cardLabel}>所要時間</Text>
-          <View style={styles.segRow}>
-            <TouchableOpacity
-              onPress={() => setDuration('half_day')}
-              style={[styles.seg, duration === 'half_day' ? styles.segOn : styles.segOff]}
-            >
-              <Text style={[styles.segTxt, duration === 'half_day' ? styles.segTxtOn : styles.segTxtOff]}>半日</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setDuration('full_day')}
-              style={[styles.seg, duration === 'full_day' ? styles.segOn : styles.segOff]}
-            >
-              <Text style={[styles.segTxt, duration === 'full_day' ? styles.segTxtOn : styles.segTxtOff]}>1日</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.halfCard}>
-          <Text style={styles.cardLabel}>移動手段</Text>
-          <View style={styles.segRow}>
-            <TouchableOpacity
-              onPress={() => setTravel('walking')}
-              style={[styles.seg, travel === 'walking' ? styles.segOn : styles.segOff]}
-            >
-              <View style={styles.segInner}>
-                <Ionicons
-                  name="walk"
-                  size={16}
-                  color={travel === 'walking' ? TOKENS.text.primary : TOKENS.text.tertiary}
-                />
-                <Text style={[styles.segTxt, travel === 'walking' ? styles.segTxtOn : styles.segTxtOff]}>徒歩</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setTravel('driving')}
-              style={[styles.seg, travel === 'driving' ? styles.segOn : styles.segOff]}
-            >
-              <View style={styles.segInner}>
-                <Ionicons
-                  name="car"
-                  size={16}
-                  color={travel === 'driving' ? TOKENS.text.primary : TOKENS.text.tertiary}
-                />
-                <Text style={[styles.segTxt, travel === 'driving' ? styles.segTxtOn : styles.segTxtOff]}>車</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.moodWrap}>
-        <Text style={styles.cardLabel}>ムード</Text>
-        <View style={styles.moodRow}>
-          <MoodCard type="active" selected={mood === 'active'} onPress={() => setMood('active')} />
-          <MoodCard type="relaxed" selected={mood === 'relaxed'} onPress={() => setMood('relaxed')} />
-        </View>
-      </View>
-
-      <View style={styles.dogBadge}>
-        <View style={styles.dogIcon}>
-          <Ionicons name="paw" size={16} color={TOKENS.text.primary} />
-        </View>
-        <View style={styles.dogTextCol}>
-          <Text style={styles.dogLine}>
-            {effectiveSize ? `${dogDisplay}（${sizeShort}）でプラン作成` : `${dogDisplay}でプラン作成（サイズ未設定）`}
-          </Text>
-        </View>
-        <TouchableOpacity onPress={() => setSizePickerOpen(true)} hitSlop={8}>
-          <Text style={styles.dogEdit}>{effectiveSize ? '変更' : 'サイズを選ぶ'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        style={[styles.submit, !canSubmit && styles.submitOff]}
-        disabled={!canSubmit}
-        onPress={() => {
-          if (!duration || !travel || !mood || !effectiveSize) return
-          onSubmit({ prefecture: pref, municipality: muni, duration, travel_mode: travel, mood, dogSize: effectiveSize })
-        }}
-      >
-        <Text style={[styles.submitTxt, !canSubmit && styles.submitTxtOff]}>この内容でプランを作る →</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
-        <Text style={styles.cancelTxt}>戻る</Text>
-      </TouchableOpacity>
-
-      <PickerModal
-        visible={prefOpen}
-        title="都道府県"
-        items={prefs}
-        onClose={() => setPrefOpen(false)}
-        onPick={(p) => {
-          setPref(p)
-          setMuni('')
-        }}
-      />
-      <PickerModal
-        visible={muniOpen}
-        title="市区町村"
-        items={munis}
-        onClose={() => setMuniOpen(false)}
-        onPick={setMuni}
-      />
-
-      <Modal visible={sizePickerOpen} transparent animationType="fade" onRequestClose={() => setSizePickerOpen(false)}>
-        <Pressable style={styles.modalBg} onPress={() => setSizePickerOpen(false)}>
-          <View style={styles.sizeModalCard}>
-            <Text style={styles.sizeModalTitle}>サイズを選択</Text>
-            <View style={{ gap: 12 }}>
-              {(Object.keys(SIZE_LABEL) as DogSize[]).map((k) => (
-                <Pressable
-                  key={k}
-                  style={[styles.sizeRow, (overrideSize ?? dbDogSize) === k && styles.sizeRowOn]}
-                  onPress={() => {
-                    setOverrideSize(k)
-                    setSizePickerOpen(false)
-                  }}
-                >
-                  <Text style={styles.sizeRowTxt}>
-                    {k} {SIZE_LABEL[k]}
-                  </Text>
-                </Pressable>
-              ))}
+    <View style={styles.screen}>
+      <ScrollView style={styles.root} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>エリア</Text>
+          <View style={styles.row}>
+            <View style={styles.flex1}>
+              <SelectorRow label={pref || '都道府県'} selected={!!pref} onPress={() => setPrefOpen(true)} />
+            </View>
+            <View style={styles.flex1}>
+              <SelectorRow
+                label={muni ? muni.replace(pref, '').trim() || muni : '市区町村'}
+                selected={!!muni}
+                disabled={!pref}
+                onPress={() => {
+                  if (pref) setMuniOpen(true)
+                }}
+              />
             </View>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>所要時間</Text>
+          <SegmentedControl
+            options={[
+              { label: '半日', value: 'half_day' },
+              { label: '1日', value: 'full_day' },
+            ]}
+            value={duration ?? ''}
+            onChange={(v) => setDuration(v === 'full_day' ? 'full_day' : 'half_day')}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>移動手段</Text>
+          <SegmentedControl
+            options={[
+              {
+                label: '徒歩',
+                value: 'walking',
+                icon: 'walk-outline',
+                disabled: !feasibility.loading && !feasibility.walking_feasible,
+              },
+              {
+                label: '車',
+                value: 'driving',
+                icon: 'car-outline',
+                disabled: !feasibility.loading && !feasibility.driving_feasible,
+              },
+            ]}
+            value={travel ?? ''}
+            onChange={(v) => setTravel(v === 'driving' ? 'driving' : 'walking')}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>ムード</Text>
+          <View style={styles.moodGrid}>
+            <MoodCard title="アクティブ" subtitle="しっかり運動" selected={mood === 'active'} onPress={() => setMood('active')} />
+            <MoodCard title="のんびり" subtitle="カフェ中心" selected={mood === 'relaxed'} onPress={() => setMood('relaxed')} />
+          </View>
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.dogSelectRow, pressed && styles.dogSelectRowPressed]}
+          onPress={() => setSizePickerOpen(true)}
+        >
+          <View style={styles.dogSelectLeft}>
+            <Text style={styles.dogSelectIcon}>🐾</Text>
+            <Text style={styles.dogSelectText} numberOfLines={1} ellipsizeMode="tail">
+              {effectiveSize ? `${dogDisplay}（${sizeShort}）でプラン作成` : `${dogDisplay}でプラン作成（サイズ未設定）`}
+            </Text>
+          </View>
+          <Text style={styles.dogSelectChange}>{effectiveSize ? '変更' : '選択'}</Text>
         </Pressable>
-      </Modal>
-    </ScrollView>
+
+        <Pressable style={styles.cancelBtn} onPress={onCancel}>
+          <Text style={styles.cancelTxt}>戻る</Text>
+        </Pressable>
+
+        <PickerModal
+          visible={prefOpen}
+          title="都道府県"
+          items={prefs}
+          onClose={() => setPrefOpen(false)}
+          onPick={(p) => {
+            setPref(p)
+            setMuni('')
+          }}
+        />
+        <PickerModal
+          visible={muniOpen}
+          title="市区町村"
+          items={munis}
+          onClose={() => setMuniOpen(false)}
+          onPick={setMuni}
+        />
+
+        <Modal visible={sizePickerOpen} transparent animationType="fade" onRequestClose={() => setSizePickerOpen(false)}>
+          <Pressable style={styles.modalBg} onPress={() => setSizePickerOpen(false)}>
+            <View style={styles.sizeModalCard}>
+              <Text style={styles.sizeModalTitle}>サイズを選択</Text>
+              <View style={{ gap: 12 }}>
+                {(Object.keys(SIZE_LABEL) as DogSize[]).map((k) => (
+                  <Pressable
+                    key={k}
+                    style={[styles.sizeRow, (overrideSize ?? dbDogSize) === k && styles.sizeRowOn]}
+                    onPress={() => {
+                      setOverrideSize(k)
+                      setSizePickerOpen(false)
+                    }}
+                  >
+                    <Text style={styles.sizeRowTxt}>
+                      {k} {SIZE_LABEL[k]}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </Pressable>
+        </Modal>
+      </ScrollView>
+
+      <View style={styles.ctaContainer}>
+        <Pressable
+          disabled={!isFormValid}
+          style={({ pressed }) => [
+            styles.ctaButton,
+            !isFormValid && styles.ctaButtonDisabled,
+            pressed && isFormValid && styles.ctaButtonPressed,
+          ]}
+          onPress={() => {
+            if (!duration || !travel || !mood || !effectiveSize) return
+            onSubmit({ prefecture: pref, municipality: muni, duration, travel_mode: travel, mood, dogSize: effectiveSize })
+          }}
+        >
+          <Text style={[styles.ctaText, !isFormValid && styles.ctaTextDisabled]}>この内容でプランを作る</Text>
+          {isFormValid ? <Ionicons name="arrow-forward" size={18} color="#1A1A1A" /> : null}
+        </Pressable>
+      </View>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: TOKENS.surface.secondary },
+  screen: { flex: 1, backgroundColor: '#FAFAF8' },
+  root: { flex: 1, backgroundColor: '#FAFAF8' },
   scroll: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    gap: 12,
-    paddingBottom: 32,
+    paddingTop: 16,
+    paddingBottom: 140,
+    gap: 16,
   },
-  areaCard: {
-    backgroundColor: TOKENS.surface.primary,
-    borderWidth: 1,
-    borderColor: TOKENS.border.default,
-    borderRadius: 14,
-    padding: 14,
-    paddingHorizontal: 14,
-  },
-  areaTitle: { fontSize: 14, fontWeight: '700', color: TOKENS.text.primary, marginBottom: 8 },
-  areaRow: { flexDirection: 'row', gap: 6 },
-  areaCol: { flex: 1 },
+  pressed: { transform: [{ scale: 0.97 }], opacity: 0.9 },
+  section: { paddingHorizontal: 16 },
+  sectionTitle: { fontSize: 12, color: '#999', marginBottom: 8, fontWeight: '500' },
+  row: { flexDirection: 'row', gap: 12 },
+  flex1: { flex: 1 },
   selector: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -364,147 +364,95 @@ const styles = StyleSheet.create({
   },
   selectorDisabled: { opacity: 0.45 },
   selectorOff: {
-    backgroundColor: TOKENS.surface.secondary,
-    borderColor: TOKENS.border.default,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E5E5',
   },
   selectorOn: {
-    backgroundColor: TOKENS.surface.primary,
-    borderWidth: 2,
-    borderColor: TOKENS.text.primary,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E5E5',
   },
   selectorTxt: { fontSize: 14, flex: 1 },
-  selectorTxtOn: { color: TOKENS.text.primary, fontWeight: '600' },
-  selectorTxtOff: { color: TOKENS.text.secondary },
-  selectorChevron: { fontSize: 9, color: TOKENS.text.meta },
-  row2: { flexDirection: 'row', gap: 12 },
-  halfCard: {
-    flex: 1,
-    backgroundColor: TOKENS.surface.primary,
-    borderWidth: 1,
-    borderColor: TOKENS.border.default,
-    borderRadius: 14,
-    padding: 14,
-  },
-  cardLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: TOKENS.text.primary,
-    marginBottom: 8,
-  },
-  segRow: { flexDirection: 'row', gap: 5 },
-  seg: {
-    flex: 1,
-    borderRadius: 10,
-    paddingVertical: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segInner: {
+  selectorTxtOn: { color: '#1A1A1A', fontWeight: '600' },
+  selectorTxtOff: { color: '#666' },
+  selectorChevron: { fontSize: 9, color: '#999' },
+  moodGrid: { flexDirection: 'row', gap: 12 },
+  dogSelectRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  segOn: { backgroundColor: TOKENS.brand.yellow },
-  segOff: { backgroundColor: TOKENS.surface.alt },
-  segTxt: { fontSize: 13, textAlign: 'center' },
-  segTxtOn: { fontWeight: '700', color: TOKENS.text.primary },
-  segTxtOff: { color: TOKENS.text.secondary },
-  moodWrap: {
-    backgroundColor: TOKENS.surface.primary,
-    borderWidth: 1,
-    borderColor: TOKENS.border.default,
-    borderRadius: 14,
-    padding: 14,
-    paddingHorizontal: 14,
-  },
-  moodRow: { flexDirection: 'row', gap: 6 },
-  moodCard: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  moodCardOn: { backgroundColor: TOKENS.brand.yellow },
-  moodCardOff: {
-    backgroundColor: TOKENS.surface.secondary,
-    borderWidth: 1,
-    borderColor: TOKENS.border.default,
-  },
-  moodMain: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  moodMainOn: { color: TOKENS.text.primary },
-  moodMainOff: { color: TOKENS.text.secondary },
-  moodSub: { fontSize: 11, marginTop: 2, textAlign: 'center' },
-  moodSubOn: { color: TOKENS.text.secondary },
-  moodSubOff: { color: TOKENS.text.tertiary },
-  dogBadge: {
-    backgroundColor: TOKENS.brand.yellowLight,
-    borderWidth: 1,
-    borderColor: TOKENS.brand.yellow,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginVertical: 16,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 9,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
-  dogIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: TOKENS.brand.yellow,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dogTextCol: { flex: 1 },
-  dogLine: { fontSize: 13, color: TOKENS.text.primary, fontWeight: '600' },
-  dogEdit: { fontSize: 12, color: TOKENS.text.secondary, fontWeight: '600' },
-  submit: {
-    marginTop: 4,
-    backgroundColor: TOKENS.brand.yellow,
-    borderRadius: 14,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitOff: { backgroundColor: TOKENS.surface.alt },
-  submitTxt: { fontSize: 16, fontWeight: '700', color: TOKENS.text.primary },
-  submitTxtOff: { color: TOKENS.text.hint },
+  dogSelectRowPressed: { opacity: 0.6 },
+  dogSelectLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  dogSelectIcon: { fontSize: 18 },
+  dogSelectText: { flex: 1, fontSize: 13, color: '#666' },
+  dogSelectChange: { fontSize: 13, color: '#999', fontWeight: '600' },
   cancelBtn: { paddingVertical: 12, alignItems: 'center' },
-  cancelTxt: { fontSize: 13, fontWeight: '600', color: TOKENS.text.secondary },
+  cancelTxt: { fontSize: 13, fontWeight: '600', color: '#666' },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: 16 },
   modalCard: {
     borderRadius: 16,
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: '#F0F0F0',
     padding: 14,
     maxHeight: '70%',
   },
-  modalTitle: { fontSize: 14, fontWeight: '700', color: TOKENS.text.primary, marginBottom: 10 },
+  modalTitle: { fontSize: 14, fontWeight: '700', color: '#1A1A1A', marginBottom: 10 },
   modalList: { flexGrow: 0 },
   modalRow: {
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: TOKENS.border.default,
+    borderBottomColor: '#F0F0F0',
   },
-  modalRowTxt: { fontSize: 13, color: TOKENS.text.primary },
+  modalRowTxt: { fontSize: 13, color: '#1A1A1A' },
   sizeModalCard: {
     borderRadius: 16,
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: '#F0F0F0',
     padding: 14,
   },
-  sizeModalTitle: { fontSize: 14, fontWeight: '700', color: TOKENS.text.primary, marginBottom: 10 },
+  sizeModalTitle: { fontSize: 14, fontWeight: '700', color: '#1A1A1A', marginBottom: 10 },
   sizeRow: {
     borderRadius: 12,
-    backgroundColor: TOKENS.surface.tertiary,
+    backgroundColor: '#F5F4F0',
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: '#F0F0F0',
     padding: 12,
   },
-  sizeRowOn: { backgroundColor: TOKENS.brand.yellowLight, borderColor: TOKENS.brand.yellow },
-  sizeRowTxt: { fontSize: 12, fontWeight: '700', color: TOKENS.text.primary },
+  sizeRowOn: { backgroundColor: '#FFD84D', borderColor: '#e8c44a' },
+  sizeRowTxt: { fontSize: 12, fontWeight: '700', color: '#1A1A1A' },
+  ctaContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
+    backgroundColor: '#FAFAF8',
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+  },
+  ctaButton: {
+    backgroundColor: '#FFC107',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
+  ctaButtonPressed: { backgroundColor: '#FFB300', transform: [{ scale: 0.98 }] },
+  ctaText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
+  ctaTextDisabled: { color: '#999' },
 })

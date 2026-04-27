@@ -109,6 +109,46 @@ export async function wanspotFetchJson<T>(path: string, init?: WanspotFetchInit)
   }
 }
 
+export type AiPlanFeasibilityResult = {
+  feasible: boolean
+  walking_feasible: boolean
+  driving_feasible: boolean
+  spot_count: number
+  is_major_area: boolean
+}
+
+/** エリアのプラン組み可否（徒歩・車）。API 失敗時はサーバー判定に任せるため両方許可扱い。 */
+export async function checkAiPlanFeasibility(
+  prefecture: string,
+  municipality?: string
+): Promise<AiPlanFeasibilityResult> {
+  const failOpen = (): AiPlanFeasibilityResult => ({
+    feasible: true,
+    walking_feasible: true,
+    driving_feasible: true,
+    spot_count: 0,
+    is_major_area: false,
+  })
+  const res = await wanspotFetch('/api/ai-plan/feasibility', {
+    method: 'POST',
+    json: { prefecture, municipality: municipality ?? '' },
+  })
+  if (!res.ok) return failOpen()
+  try {
+    const data = (await res.json()) as Record<string, unknown>
+    if (data.ok !== true) return failOpen()
+    return {
+      feasible: data.feasible === true,
+      walking_feasible: data.walking_feasible === true,
+      driving_feasible: data.driving_feasible === true,
+      spot_count: typeof data.spot_count === 'number' ? data.spot_count : 0,
+      is_major_area: data.is_major_area === true,
+    }
+  } catch {
+    return failOpen()
+  }
+}
+
 /** 準備中エリア向け: スポット整備リクエストを Supabase `area_requests` に保存（Bearer 必須） */
 export async function sendAreaRequest(
   prefecture: string,

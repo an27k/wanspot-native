@@ -46,6 +46,16 @@ const ERROR_MESSAGES: Record<string, { title: string; message: string }> = {
     title: 'プラン生成に時間がかかっています',
     message: 'もう一度お試しください。',
   },
+  walking_not_feasible: {
+    title: '徒歩でのプランが組みにくいエリアです',
+    message:
+      'スポット同士の距離の都合で、徒歩での周遊プランが組みにくい場合があります。\n車でのプランなら、ワンちゃんと行けるペット可スポットをまとめてご提案できることがあります。',
+  },
+  driving_not_feasible: {
+    title: '車でのプランが組みにくいエリアです',
+    message:
+      'スポット同士の距離の都合で、車での周遊プランが組みにくい場合があります。\n徒歩でのプランをお試しください。',
+  },
 }
 
 function resolveError(code: string | undefined): { title: string; message: string } {
