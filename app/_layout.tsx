@@ -100,7 +100,23 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <StatusBar style="dark" />
-        <Stack screenOptions={stackScreenOptions} />
+        <Stack screenOptions={stackScreenOptions}>
+          {/* タブシェル・ゲート画面のみスワイプ pop を無効化。詳細ルートは stackScreenOptions のまま */}
+          <Stack.Screen
+            name="(tabs)"
+            options={{
+              gestureEnabled: false,
+              fullScreenGestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="index"
+            options={{
+              gestureEnabled: false,
+              fullScreenGestureEnabled: false,
+            }}
+          />
+        </Stack>
       </AuthProvider>
     </SafeAreaProvider>
   )
