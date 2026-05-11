@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
+import { BackHandler, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { AiPlanLegDisplay } from '@/components/ai-plan/AiPlanLegDisplay'
@@ -10,6 +11,13 @@ import { AiPlanSummaryCard } from '@/components/ai-plan/AiPlanSummaryCard'
 import { AiPlanTimelineNode } from '@/components/ai-plan/AiPlanTimelineNode'
 import type { AiPlanCore, AiPlanLeg, AiPlanMood, AiPlanStop, AiPlanTravelMode } from '@/components/ai-plan/types'
 import { TOKENS } from '@/constants/color-tokens'
+import { spotPhotoUrl } from '@/lib/wanspot-api'
+
+/** タブ内表示のためネイティブ pop ジェスチャの対象外 — iOS は左端スワイプで onBack を再現 */
+const IOS_EDGE_BACK_WIDTH = 24
+const IOS_EDGE_SWIPE_DX = 56
+/** 固定オーバーレイのため、ヘッダー「戻る」と被らないよう上端を空ける */
+const IOS_EDGE_BACK_TOP_INSET = 56
 
 type SpotRow = {
   id: string
@@ -49,6 +57,35 @@ export function AiPlanResult({
   const [spotById, setSpotById] = useState<Record<string, SpotRow>>({})
 
   useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onBack()
+      return true
+    })
+    return () => sub.remove()
+  }, [onBack])
+
+  const edgePan = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, g) =>
+          Platform.OS === 'ios' &&
+          g.numberActiveTouches === 1 &&
+          g.dx > 10 &&
+          Math.abs(g.dx) > Math.abs(g.dy),
+        onPanResponderRelease: (_, g) => {
+          if (
+            Platform.OS === 'ios' &&
+            g.dx > IOS_EDGE_SWIPE_DX &&
+            Math.abs(g.dx) > Math.abs(g.dy)
+          ) {
+            onBack()
+          }
+        },
+      }),
+    [onBack]
+  )
+
+  useEffect(() => {
     const ids = stops.map((s) => s.spot_id).filter((id): id is string => typeof id === 'string' && id.length > 0)
     if (ids.length === 0) return
     void (async () => {
@@ -65,6 +102,16 @@ export function AiPlanResult({
       setSpotById(map)
     })()
   }, [stops])
+
+  useEffect(() => {
+    const rows = Object.values(spotById)
+    if (rows.length === 0) return
+    const urls = rows
+      .map((r) => spotPhotoUrl(r.photo_ref ?? null))
+      .filter((u): u is string => u != null && u.length > 0)
+    if (urls.length === 0) return
+    void Image.prefetch(urls, 'memory-disk')
+  }, [spotById])
 
   const mergedStops: AiPlanStop[] = useMemo(() => {
     return stops.map((s) => {
@@ -86,46 +133,67 @@ export function AiPlanResult({
   }
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.scrollContent}>
-      {/* タブ内のため通常はスタックの OS 戻るは出ないが、親ナビの設定によっては重なる場合あり */}
-      <View style={styles.header}>
-        <Pressable onPress={onBack} style={styles.headerBack} hitSlop={8}>
-          <Text style={styles.headerBackTxt}>← 戻る</Text>
+    <View style={styles.wrap}>
+      {/* タブ内のため RN Stack のスワイプ pop は効かない — 左端ストリップで同等の戻りを実装 */}
+      <ScrollView style={styles.root} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Pressable onPress={onBack} style={styles.headerBack} hitSlop={8}>
+            <Text style={styles.headerBackTxt}>← 戻る</Text>
+          </Pressable>
+          <Pressable onPress={handleMore} style={styles.headerMore} hitSlop={8}>
+            <Text style={styles.headerMoreTxt}>⋯</Text>
+          </Pressable>
+        </View>
+
+        <AiPlanRouteMap stops={mergedStops} />
+
+        <AiPlanSummaryCard plan={plan} legs={legs} mood={mood} travelMode={travelMode} />
+
+        <AiPlanResultAd />
+
+        <View style={styles.timeline}>
+          {mergedStops.map((stop, i) => (
+            <View key={stop.spot_id}>
+              <AiPlanTimelineNode index={i} isLast={i === mergedStops.length - 1}>
+                <AiPlanSpotCard
+                  stop={stop}
+                  db={spotById[stop.spot_id] ?? null}
+                  onPress={() => router.push(`/spots/${stop.spot_id}`)}
+                />
+              </AiPlanTimelineNode>
+              {i < mergedStops.length - 1 ? <AiPlanLegDisplay leg={legs[i] ?? null} mode={travelMode} /> : null}
+            </View>
+          ))}
+        </View>
+
+        <Pressable style={styles.cta} onPress={onPressNew}>
+          <Text style={styles.ctaTxt}>別のプランを作る</Text>
         </Pressable>
-        <Pressable onPress={handleMore} style={styles.headerMore} hitSlop={8}>
-          <Text style={styles.headerMoreTxt}>⋯</Text>
-        </Pressable>
-      </View>
-
-      <AiPlanRouteMap stops={mergedStops} />
-
-      <AiPlanSummaryCard plan={plan} legs={legs} mood={mood} travelMode={travelMode} />
-
-      <AiPlanResultAd />
-
-      <View style={styles.timeline}>
-        {mergedStops.map((stop, i) => (
-          <View key={stop.spot_id}>
-            <AiPlanTimelineNode index={i} isLast={i === mergedStops.length - 1}>
-              <AiPlanSpotCard
-                stop={stop}
-                db={spotById[stop.spot_id] ?? null}
-                onPress={() => router.push(`/spots/${stop.spot_id}`)}
-              />
-            </AiPlanTimelineNode>
-            {i < mergedStops.length - 1 ? <AiPlanLegDisplay leg={legs[i] ?? null} mode={travelMode} /> : null}
-          </View>
-        ))}
-      </View>
-
-      <Pressable style={styles.cta} onPress={onPressNew}>
-        <Text style={styles.ctaTxt}>別のプランを作る</Text>
-      </Pressable>
-    </ScrollView>
+      </ScrollView>
+      {Platform.OS === 'ios' ? (
+        <View
+          style={styles.edgeBackStrip}
+          collapsable={false}
+          {...edgePan.panHandlers}
+          importantForAccessibility="no-hide-descendants"
+        />
+      ) : null}
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    flex: 1,
+  },
+  edgeBackStrip: {
+    position: 'absolute',
+    left: 0,
+    top: IOS_EDGE_BACK_TOP_INSET,
+    bottom: 0,
+    width: IOS_EDGE_BACK_WIDTH,
+    zIndex: 10,
+  },
   root: {
     flex: 1,
     backgroundColor: TOKENS.surface.secondary,
