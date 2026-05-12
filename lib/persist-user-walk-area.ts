@@ -9,7 +9,7 @@ type OwnerUpsertRow = {
   id: string
   name: string
   parent_type: string
-  birthday: string
+  birthday: string | null
   bio: string | null
   walkAreaTags: string[]
 }
@@ -38,7 +38,7 @@ type OwnerUpdateFields = {
   name: string
   parent_type: string
   bio: string | null
-  birthday: string
+  birthday: string | null
   photo_url: string | null
 }
 

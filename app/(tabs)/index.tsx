@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import * as Linking from 'expo-linking'
 import * as Location from 'expo-location'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -97,6 +98,7 @@ export default function NearbyPage() {
   const [pullRefreshing, setPullRefreshing] = useState(false)
   const [adsRuntimeReady, setAdsRuntimeReady] = useState(false)
   const adsPrimedRef = useRef(false)
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -167,17 +169,33 @@ export default function NearbyPage() {
     })()
   }, [])
 
-  useEffect(() => {
-    void (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') {
-        setError('位置情報を取得できませんでした')
-        return
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false
+      void (async () => {
+        const { status } = await Location.getForegroundPermissionsAsync()
+        if (cancelled) return
+        if (status !== 'granted') {
+          setLocation(null)
+          setLocationPermissionDenied(true)
+          setError('')
+          return
+        }
+        setLocationPermissionDenied(false)
+        try {
+          const pos = await Location.getCurrentPositionAsync({})
+          if (cancelled) return
+          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+          setError('')
+        } catch {
+          if (!cancelled) setError('位置情報を取得できませんでした')
+        }
+      })()
+      return () => {
+        cancelled = true
       }
-      const pos = await Location.getCurrentPositionAsync({})
-      setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-    })()
-  }, [])
+    }, [])
+  )
 
   const fetchNearbySpots = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -423,6 +441,19 @@ export default function NearbyPage() {
         </View>
 
         <View style={styles.list}>
+          {locationPermissionDenied ? (
+            <View style={styles.permissionBanner}>
+              <Text style={styles.permissionBannerTxt}>現在地を表示するには位置情報の許可が必要です。</Text>
+              <TouchableOpacity
+                style={styles.permissionBtn}
+                onPress={() => void Linking.openSettings()}
+                accessibilityRole="button"
+                accessibilityLabel="設定アプリを開く"
+              >
+                <Text style={styles.permissionBtnTxt}>設定を開く</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
           {error ? <Text style={styles.err}>{error}</Text> : null}
           {spotsFetchError ? <Text style={styles.err}>{spotsFetchError}</Text> : null}
           {loading ? <RunningDog label="近くのスポットを探し中..." /> : null}
@@ -568,6 +599,23 @@ const styles = StyleSheet.create({
   },
   sortBtnTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
   list: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
+  permissionBanner: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ebebeb',
+    padding: 16,
+    gap: 12,
+  },
+  permissionBannerTxt: { fontSize: 14, color: '#2b2a28', lineHeight: 22 },
+  permissionBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#2b2a28',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+  },
+  permissionBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
   err: { textAlign: 'center', paddingVertical: 32, color: '#aaa', fontSize: 14 },
   sortOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 180, paddingRight: 16 },
   sortMenu: {

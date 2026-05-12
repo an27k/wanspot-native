@@ -1,21 +1,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useEffect, useState } from 'react'
+import * as Haptics from 'expo-haptics'
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
 import { OwnerBirthdayPickers, ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
-import { colors } from '@/constants/colors'
+import { Header } from '@/components/onboarding/Header'
+import { FormField } from '@/components/onboarding/FormField'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { defaultBioFromDog } from '@/lib/default-bio'
 import { OB_LOCATION_KEY, POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
@@ -27,8 +28,6 @@ const PARENT_OPTIONS = [
   { value: 'papa' as const, label: 'パパ' },
   { value: 'mama' as const, label: 'ママ' },
 ]
-
-const STEP_DOTS = 5
 
 export default function OwnerOnboardingPage() {
   const router = useRouter()
@@ -64,12 +63,7 @@ export default function OwnerOnboardingPage() {
     })()
   }, [router])
 
-  const ownerBirthdayYmd = ownerBirthdayToYmd(ownerYear, ownerMonth, ownerDay)
-  const canNext =
-    parentType !== null &&
-    ownerBirthdayYmd !== null &&
-    ownerName.trim().length > 0 &&
-    ownerBio.trim().length > 0
+  const canNext = parentType !== null && ownerName.trim().length > 0 && ownerBio.trim().length > 0
 
   const goNext = async () => {
     if (!canNext || submitting) return
@@ -131,11 +125,6 @@ export default function OwnerOnboardingPage() {
         String(ownerParsed.ownerMonth ?? ''),
         String(ownerParsed.ownerDay ?? '')
       )
-      if (!userBirthday) {
-        Alert.alert('入力エラー', 'オーナーの生年月日（年・月・日すべて）を選択してください。')
-        setSubmitting(false)
-        return
-      }
       const dog = JSON.parse(raw) as {
         name?: string
         year?: string
@@ -181,7 +170,7 @@ export default function OwnerOnboardingPage() {
         id: user.id,
         name: (ownerParsed.ownerName ?? '').trim() || (user.email?.split('@')[0] ?? 'ユーザー'),
         parent_type: ownerParsed.parent_type ?? 'papa',
-        birthday: userBirthday,
+        birthday: userBirthday ?? null,
         bio: (ownerParsed.ownerBio ?? '').trim() || null,
         walkAreaTags: walkAreaTags,
       })
@@ -245,161 +234,175 @@ export default function OwnerOnboardingPage() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
       <ScrollView
-        style={styles.main}
-        contentContainerStyle={{ paddingBottom: padBottom, paddingHorizontal: 20, paddingTop: padTop, gap: 20 }}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: padTop, paddingBottom: padBottom + CTA_HEIGHT }]}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headRow}>
-          <View style={styles.brandRow}>
-            <OnboardingBrand />
-            <Text style={styles.brandTxt}>wanspot</Text>
-          </View>
-          <View style={styles.dots}>
-            {Array.from({ length: STEP_DOTS }, (_, i) => (
-              <View key={i} style={[styles.dot, { backgroundColor: i <= 4 ? '#FFD84D' : '#e0e0e0' }]} />
-            ))}
-          </View>
-        </View>
+        <Header progress={5} total={5} />
 
-        <Text style={styles.h2}>
-          あなたについて{'\n'}教えてください
-        </Text>
+        <Text style={styles.title}>あなたについて{'\n'}教えてください</Text>
 
-        <View>
-          <Text style={styles.label}>オーナーの名前（表示名）</Text>
-          <Text style={styles.hint}>例：パパの場合 山田 太郎／ママの場合 山田 花子</Text>
+        <FormField
+          label="オーナーの名前（表示名）"
+          required
+          hint="例：パパの場合 山田 太郎／ママの場合 山田 花子"
+        >
           <TextInput
-            style={styles.input}
+            style={styles.textInput}
             placeholder="山田 太郎"
             value={ownerName}
             onChangeText={setOwnerName}
-            placeholderTextColor="#aaa"
+            placeholderTextColor="#BBB"
+            returnKeyType="next"
           />
-        </View>
+        </FormField>
 
-        <View>
-          <Text style={styles.label}>自己紹介</Text>
-          <Text style={styles.hint}>愛犬の名前をもとに案内文を入れています。編集してOKです。</Text>
+        <FormField label="自己紹介" required hint="愛犬の名前をもとに案内文を入れています。編集してOKです。">
           <TextInput
-            style={[styles.input, styles.inputMultiline]}
+            style={[styles.textInput, styles.textInputMultiline]}
             placeholder="自己紹介"
             value={ownerBio}
             onChangeText={setOwnerBio}
-            placeholderTextColor="#aaa"
+            placeholderTextColor="#BBB"
             multiline
             textAlignVertical="top"
           />
-        </View>
+        </FormField>
 
-        <View>
-          <Text style={styles.label}>肩書き</Text>
+        <FormField label="肩書き" required>
           <View style={styles.row2}>
             {PARENT_OPTIONS.map((opt) => {
               const on = parentType === opt.value
               return (
-                <TouchableOpacity
+                <Pressable
                   key={opt.value}
-                  style={[styles.half, on ? styles.halfOn : styles.halfOff]}
                   onPress={() => setParentType(opt.value)}
+                  style={({ pressed }) => [
+                    styles.optionHalf,
+                    on && styles.optionHalfOn,
+                    pressed && styles.optionHalfPressed,
+                  ]}
                 >
-                  <Text
-                    style={[
-                      styles.halfTxt,
-                      on && (opt.value === 'papa' ? { color: colors.genderMale } : { color: colors.genderFemale }),
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
+                  <Text style={[styles.optionHalfTxtSm, on && { color: '#1A1A1A' }]}>{opt.label}</Text>
+                </Pressable>
               )
             })}
           </View>
-        </View>
+        </FormField>
 
-        <View style={styles.birthdayCard}>
-          <OwnerBirthdayPickers
-            compact
-            year={ownerYear}
-            month={ownerMonth}
-            day={ownerDay}
-            onChangeYear={setOwnerYear}
-            onChangeMonth={setOwnerMonth}
-            onChangeDay={setOwnerDay}
-          />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.next, (!canNext || submitting) && styles.nextOff]}
-          disabled={!canNext || submitting}
-          onPress={() => void goNext()}
-        >
-          <Text style={[styles.nextTxt, (!canNext || submitting) && { color: '#ccc' }]}>
-            {submitting ? '保存中...' : 'はじめる →'}
-          </Text>
-        </TouchableOpacity>
+        <FormField label="生年月日（任意）" hint="未入力のままでも登録できます。">
+          <View style={styles.birthdayCard}>
+            <OwnerBirthdayPickers
+              compact
+              fieldLabel=""
+              hint={null}
+              year={ownerYear}
+              month={ownerMonth}
+              day={ownerDay}
+              onChangeYear={(v) => {
+                setOwnerYear(v)
+                void Haptics.selectionAsync()
+              }}
+              onChangeMonth={(v) => {
+                setOwnerMonth(v)
+                void Haptics.selectionAsync()
+              }}
+              onChangeDay={(v) => {
+                setOwnerDay(v)
+                void Haptics.selectionAsync()
+              }}
+            />
+          </View>
+        </FormField>
       </ScrollView>
+
+      <View style={[styles.ctaContainer, { paddingBottom: insets.bottom + 32 }]}>
+        <Pressable
+          onPress={() => void goNext()}
+          disabled={!canNext || submitting}
+          style={({ pressed }) => [
+            styles.ctaButton,
+            (!canNext || submitting) && styles.ctaButtonDisabled,
+            pressed && canNext && !submitting && styles.ctaButtonPressed,
+          ]}
+        >
+          <Text style={[styles.ctaText, (!canNext || submitting) && styles.ctaTextDisabled]}>
+            {submitting ? '保存中...' : 'はじめる'}
+          </Text>
+        </Pressable>
+      </View>
     </KeyboardAvoidingView>
   )
 }
 
+const CTA_HEIGHT = 92
+
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  main: { flex: 1, backgroundColor: '#fff' },
-  headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandTxt: { fontWeight: '800', fontSize: 14, color: '#2b2a28' },
-  dots: { flexDirection: 'row', gap: 4 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#2b2a28' },
-  label: { fontSize: 12, color: '#aaa', marginBottom: 4 },
-  hint: { fontSize: 11, color: '#aaa', lineHeight: 16, marginBottom: 8 },
-  input: {
-    minHeight: 44,
+  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 120 },
+  title: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    lineHeight: 36,
+    marginTop: 16,
+    marginBottom: 32,
+    letterSpacing: 0.3,
+  },
+  textInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ebebeb',
-    backgroundColor: '#f7f6f3',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#2b2a28',
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#1A1A1A',
   },
-  inputMultiline: { minHeight: 100, paddingTop: 12 },
-  /** 生年月日ピッカーを前後の背景と区切り、ドラム操作しやすくする */
+  textInputMultiline: { minHeight: 110, paddingTop: 14 },
   birthdayCard: {
-    marginTop: 8,
-    padding: 16,
-    paddingBottom: 18,
-    backgroundColor: colors.background,
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: colors.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-      },
-      android: { elevation: 4 },
-    }),
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  row2: { flexDirection: 'row', gap: 8 },
-  half: { flex: 1, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  halfOn: { backgroundColor: '#FFF9E0', borderWidth: 2, borderColor: '#FFD84D' },
-  halfOff: { backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e8e8e8' },
-  halfTxt: { fontSize: 16, fontWeight: '800', color: '#aaa' },
-  next: {
-    marginTop: 12,
+  row2: { flexDirection: 'row', gap: 12 },
+  optionHalf: {
+    flex: 1,
     height: 48,
-    borderRadius: 16,
-    backgroundColor: '#FFD84D',
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#F5F4F0',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
-  nextOff: { backgroundColor: '#f5f5f5' },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
+  optionHalfOn: { backgroundColor: '#FFC107' },
+  optionHalfPressed: { transform: [{ scale: 0.97 }], opacity: 0.85 },
+  optionHalfTxtSm: { fontSize: 15, fontWeight: '700', color: '#666' },
+  ctaContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    backgroundColor: '#FAFAF8',
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+  },
+  ctaButton: {
+    backgroundColor: '#FFC107',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
+  ctaButtonPressed: { backgroundColor: '#FFB300', transform: [{ scale: 0.98 }] },
+  ctaText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
+  ctaTextDisabled: { color: '#999' },
 })

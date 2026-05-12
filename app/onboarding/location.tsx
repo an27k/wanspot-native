@@ -71,7 +71,7 @@ export default function OnboardingLocationPage() {
       </Text>
 
       <TouchableOpacity style={[styles.next, busy && styles.nextOff]} onPress={() => void requestAndSave()} disabled={busy}>
-        <Text style={styles.nextTxt}>{busy ? '確認中...' : '位置情報を許可して次へ'}</Text>
+        <Text style={styles.nextTxt}>{busy ? '確認中...' : '次へ'}</Text>
       </TouchableOpacity>
     </ScrollView>
   )

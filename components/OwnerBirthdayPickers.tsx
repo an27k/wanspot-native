@@ -38,8 +38,8 @@ function daysInMonth(y: number, m: number): number {
   return new Date(y, m, 0).getDate()
 }
 
-const DEFAULT_FIELD_LABEL = '生年月日（必須）'
-const DEFAULT_HINT = '年・月・日をすべて選択してください。'
+const DEFAULT_FIELD_LABEL = '生年月日（任意）'
+const DEFAULT_HINT = '任意です。入力する場合は年・月・日をすべて選んでください。'
 
 type Props = {
   year: string

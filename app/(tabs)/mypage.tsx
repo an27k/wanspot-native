@@ -215,7 +215,6 @@ export default function MypageTab() {
   const [pullRefreshing, setPullRefreshing] = useState(false)
 
   const ownerEditBirthdayYmd = ownerBirthdayToYmd(editOwnerYear, editOwnerMonth, editOwnerDay)
-  const ownerEditBirthdayOk = ownerEditBirthdayYmd !== null
   const dogEditBirthdayYmd = ownerBirthdayToYmd(editDogYear, editDogMonth, editDogDay)
   const dogYBounds = dogBirthdayYearBounds()
 
@@ -406,10 +405,6 @@ export default function MypageTab() {
   const saveOwner = async () => {
     if (!profile) return
     const birthdayYmd = ownerEditBirthdayYmd
-    if (!birthdayYmd) {
-      Alert.alert('入力エラー', '生年月日は年・月・日すべて必須です。')
-      return
-    }
     setSavingOwner(true)
     try {
       let photoUrl: string | null = profile.photo_url
@@ -431,7 +426,7 @@ export default function MypageTab() {
           name: editName.trim(),
           parent_type: editParentType,
           bio: editBio.trim() || null,
-          birthday: birthdayYmd,
+          birthday: birthdayYmd ?? null,
           photo_url: photoUrl,
         },
         editWalkAreaTags
@@ -447,7 +442,7 @@ export default function MypageTab() {
               name: editName.trim(),
               parent_type: editParentType,
               bio: editBio.trim() || null,
-              birthday: birthdayYmd,
+              birthday: birthdayYmd ?? null,
               photo_url: photoUrl,
               walk_area_tags: persistedTags,
               walk_area: persistedTags.length > 0 ? JSON.stringify(persistedTags) : null,
@@ -917,6 +912,8 @@ export default function MypageTab() {
                   </View>
                   <View style={styles.birthdayPickerCard}>
                     <OwnerBirthdayPickers
+                      fieldLabel="生年月日（任意）"
+                      hint="未入力のまま保存すると年齢表示は省略されます。"
                       year={editOwnerYear}
                       month={editOwnerMonth}
                       day={editOwnerDay}
@@ -999,11 +996,7 @@ export default function MypageTab() {
               >
                 <Text style={styles.btnGhostTxt}>キャンセル</Text>
               </Pressable>
-                <Pressable
-                  style={[styles.btnPri, !ownerEditBirthdayOk && styles.btnPriDis]}
-                  onPress={() => void saveOwner()}
-                  disabled={savingOwner || !ownerEditBirthdayOk}
-                >
+                <Pressable style={styles.btnPri} onPress={() => void saveOwner()} disabled={savingOwner}>
                   <Text style={styles.btnPriTxt}>{savingOwner ? '保存中...' : '保存する'}</Text>
                 </Pressable>
             </View>
@@ -1027,6 +1020,25 @@ export default function MypageTab() {
           <Text style={styles.evDesc}>作成したイベントの一覧・編集はこちらから</Text>
           <Pressable style={styles.evCta} onPress={() => router.push('/mypage/events')}>
             <Text style={styles.evCtaTxt}>イベント管理へ</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.settingsBlock}>
+          <Text style={styles.settingsBlockTitle}>設定</Text>
+          <Pressable
+            onPress={() => router.push('/account-delete')}
+            style={({ pressed }) => [styles.settingsDangerCard, pressed && { opacity: 0.88 }]}
+            accessibilityRole="button"
+            accessibilityLabel="アカウントを削除"
+          >
+            <View style={styles.settingsDangerRow}>
+              <Ionicons name="trash-outline" size={22} color="#E84335" />
+              <View style={styles.settingsDangerTextCol}>
+                <Text style={styles.settingsDangerTitle}>アカウントを削除</Text>
+                <Text style={styles.settingsDangerSub}>取り消しできません</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#CCC" />
+            </View>
           </Pressable>
         </View>
       </ScrollView>
@@ -1465,4 +1477,17 @@ const styles = StyleSheet.create({
   },
   evCtaTxt: { fontSize: 14, fontWeight: '800', color: colors.text },
   listSplitDivider: { height: 1, backgroundColor: colors.border, marginTop: 20, marginBottom: 4 },
+  settingsBlock: { marginHorizontal: 16, marginTop: 8, marginBottom: 8, gap: 8 },
+  settingsBlockTitle: { fontSize: 12, color: colors.textMuted, fontWeight: '600', marginLeft: 4 },
+  settingsDangerCard: {
+    backgroundColor: colors.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  settingsDangerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  settingsDangerTextCol: { flex: 1 },
+  settingsDangerTitle: { fontSize: 14, fontWeight: '700', color: '#E84335' },
+  settingsDangerSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
 })
