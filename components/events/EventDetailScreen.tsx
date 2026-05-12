@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Image } from 'expo-image'
 import {
   Alert,
-  Image,
   Linking,
   Modal,
   Pressable,
@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import Svg, { Circle, Ellipse, Line, Path } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -296,7 +297,12 @@ export default function EventDetailScreen({
           <View style={styles.thumbCard}>
             <View style={styles.thumbInner}>
               {event.thumbnail_url ? (
-                <Image source={{ uri: event.thumbnail_url }} style={styles.thumbImg} resizeMode="cover" />
+                <Image
+                  source={{ uri: event.thumbnail_url }}
+                  style={styles.thumbImg}
+                  contentFit="cover"
+                  {...remoteImageExpoProps}
+                />
               ) : (
                 <View style={[styles.thumbImg, styles.thumbPh]}>
                   <DogPh />

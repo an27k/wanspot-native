@@ -1,6 +1,9 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Polygon } from 'react-native-svg'
 import { colors } from '@/constants/colors'
+import { resizePlacesImageUrl } from '@/lib/images/placesImage'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import type { PlaceResult } from '@/types/places'
 
 const IconStarSm = () => (
@@ -17,10 +20,16 @@ type Props = {
 
 export function SearchResultCard({ spot, photoUri, onPress }: Props) {
   const showRating = spot.rating != null && spot.rating > 0
+  const thumbUri = photoUri ? resizePlacesImageUrl(photoUri, 'thumbnail') : null
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      {photoUri ? (
-        <Image source={{ uri: photoUri }} style={styles.thumb} resizeMode="cover" />
+      {thumbUri ? (
+        <Image
+          source={{ uri: thumbUri }}
+          style={styles.thumb}
+          contentFit="cover"
+          {...remoteImageExpoProps}
+        />
       ) : (
         <View style={[styles.thumb, styles.ph]} />
       )}

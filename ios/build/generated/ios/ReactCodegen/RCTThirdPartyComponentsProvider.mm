@@ -20,6 +20,7 @@
 
   dispatch_once(&nativeComponentsToken, ^{
     thirdPartyComponents = @{
+		@"RNGoogleSignInButton": NSClassFromString(@"RNGoogleSignInButtonComponentView"), // @react-native-google-signin/google-signin
 		@"RNGoogleMobileAdsBannerView": NSClassFromString(@"RNGoogleMobileAdsBannerView"), // react-native-google-mobile-ads
 		@"RNGoogleMobileAdsNativeView": NSClassFromString(@"RNGoogleMobileAdsNativeView"), // react-native-google-mobile-ads
 		@"RNGoogleMobileAdsMediaView": NSClassFromString(@"RNGoogleMobileAdsMediaView"), // react-native-google-mobile-ads

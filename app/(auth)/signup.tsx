@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -20,8 +21,9 @@ import { AppleOAuthLabel, GoogleOAuthLabel } from '@/components/auth/OAuthButton
 import { oauthApplePressableBase, oauthGooglePressableBase } from '@/components/auth/oauthButtonStyles'
 import { colors } from '@/constants/colors'
 import { useAuth } from '@/context/AuthContext'
+import { isAppleSignInAvailable, signInWithApple } from '@/lib/apple-signin'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
-import { signInWithOAuthProvider } from '@/lib/oauth-supabase'
+import { signInWithGoogle } from '@/lib/google-signin'
 import { track } from '@/lib/analytics'
 
 export default function SignupScreen() {
@@ -33,6 +35,11 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'google' | 'apple' | null>(null)
   const [error, setError] = useState('')
+  const [appleNativeAvailable, setAppleNativeAvailable] = useState(false)
+
+  useEffect(() => {
+    void isAppleSignInAvailable().then(setAppleNativeAvailable)
+  }, [])
 
   const submit = async () => {
     setLoading(true)
@@ -47,17 +54,30 @@ export default function SignupScreen() {
     router.replace('/onboarding/location')
   }
 
-  const onOAuth = async (provider: 'google' | 'apple') => {
-    setOauthLoading(provider)
+  const handleGoogleSignIn = async () => {
+    setOauthLoading('google')
     setError('')
-    const res = await signInWithOAuthProvider(provider)
+    const res = await signInWithGoogle()
     setOauthLoading(null)
-    if (res.cancelled) return
-    if (res.error) {
-      setError(res.error.message)
+    if (res.success) {
+      await completeLoginNavigation(router)
       return
     }
-    await completeLoginNavigation(router)
+    if (res.error === 'cancelled') return
+    Alert.alert('エラー', res.error ?? 'Googleサインインに失敗しました')
+  }
+
+  const handleAppleNativeSignIn = async () => {
+    setOauthLoading('apple')
+    setError('')
+    const res = await signInWithApple()
+    setOauthLoading(null)
+    if (res.success) {
+      await completeLoginNavigation(router)
+      return
+    }
+    if (res.error === 'cancelled') return
+    if (res.error) Alert.alert('エラー', res.error)
   }
 
   return (
@@ -123,7 +143,7 @@ export default function SignupScreen() {
             <Pressable
               style={[styles.btnGoogle, oauthLoading !== null && styles.oauthDis]}
               disabled={oauthLoading !== null || loading}
-              onPress={() => void onOAuth('google')}
+              onPress={() => void handleGoogleSignIn()}
             >
               {oauthLoading === 'google' ? (
                 <ActivityIndicator color="#2b2a28" />
@@ -132,11 +152,11 @@ export default function SignupScreen() {
               )}
             </Pressable>
 
-            {Platform.OS === 'ios' ? (
+            {appleNativeAvailable ? (
               <Pressable
                 style={[styles.btnApple, oauthLoading !== null && styles.oauthDis]}
                 disabled={oauthLoading !== null || loading}
-                onPress={() => void onOAuth('apple')}
+                onPress={() => void handleAppleNativeSignIn()}
               >
                 {oauthLoading === 'apple' ? (
                   <ActivityIndicator color="#fff" />

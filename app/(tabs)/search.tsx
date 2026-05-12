@@ -30,6 +30,7 @@ import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
+import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 import { wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -507,6 +508,7 @@ export default function SearchTab() {
     const urls = articlesList
       .map((a) => a.image_url)
       .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+      .map((u) => resizePlacesImageUrl(u.trim(), 'card'))
     if (urls.length === 0) return
     void ExpoImage.prefetch(urls.slice(0, 16), 'memory-disk')
   }, [articlesList])
@@ -801,7 +803,7 @@ export default function SearchTab() {
                         >
                           {article.image_url ? (
                             <ArticleRemoteImage
-                              uri={article.image_url}
+                              uri={resizePlacesImageUrl(article.image_url, 'card')}
                               style={styles.artImg}
                               recyclingKey={`article-list-${article.id}`}
                               priority="normal"

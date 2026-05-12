@@ -1,5 +1,6 @@
 import { Image } from 'expo-image'
 import type { ImageStyle, StyleProp } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 
 type Props = {
   uri: string
@@ -19,10 +20,9 @@ export function ArticleRemoteImage({ uri, style, recyclingKey, priority = 'norma
       source={{ uri }}
       style={style}
       contentFit="cover"
-      cachePolicy="memory-disk"
       recyclingKey={recyclingKey ?? uri}
       priority={priority}
-      transition={0}
+      {...remoteImageExpoProps}
     />
   )
 }

@@ -1,5 +1,7 @@
 import Constants from 'expo-constants'
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Image } from 'expo-image'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { TOKENS } from '@/constants/color-tokens'
 import type { AiPlanStop } from '@/components/ai-plan/types'
 
@@ -41,7 +43,7 @@ export function AiPlanRouteMap({
   return (
     <View style={styles.wrap}>
       {mapUrl ? (
-        <Image source={{ uri: mapUrl }} style={styles.img} resizeMode="cover" />
+        <Image source={{ uri: mapUrl }} style={styles.img} contentFit="cover" {...remoteImageExpoProps} />
       ) : (
         <View style={styles.ph} />
       )}

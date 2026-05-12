@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
+import { signOutGoogle } from '@/lib/google-signin'
 
 type AuthContextValue = {
   session: Session | null
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
+    await signOutGoogle()
     setSession(null)
   }, [])
 

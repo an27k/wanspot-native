@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { track } from '@/lib/analytics'
+import { featureFlags } from '@/lib/feature-flags'
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets()
@@ -60,9 +61,13 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="events"
         options={{
-          title: 'イベント',
+          title: featureFlags.events ? 'イベント' : 'プラン',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} color={color} size={focused ? 26 : 24} />
+            <Ionicons
+              name={focused ? 'calendar' : 'calendar-outline'}
+              color={color}
+              size={focused ? 26 : 24}
+            />
           ),
         }}
         listeners={{ focus: () => track('tab_viewed', { tab_name: 'events' }) }}

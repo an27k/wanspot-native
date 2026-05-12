@@ -1,4 +1,6 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Ellipse, Path } from 'react-native-svg'
 import { colors } from '@/constants/colors'
 
@@ -81,7 +83,12 @@ export function EventCard({ event, onPressDetail, variant = 'default' }: Props) 
     <View style={styles.card}>
       <View style={styles.banner}>
         {event.thumbnail_url ? (
-          <Image source={{ uri: event.thumbnail_url }} style={styles.bannerImg} resizeMode="cover" />
+          <Image
+            source={{ uri: event.thumbnail_url }}
+            style={styles.bannerImg}
+            contentFit="cover"
+            {...remoteImageExpoProps}
+          />
         ) : (
           <View style={[styles.bannerImg, styles.bannerPh]}>
             <DogPlaceholder />

@@ -1,9 +1,10 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { AppHeader } from '@/components/AppHeader'
 import { EventEditorForm } from '@/components/events/EventEditorForm'
 import { colors } from '@/constants/colors'
+import { featureFlags } from '@/lib/feature-flags'
 
 export default function NewEventScreen() {
   const router = useRouter()
@@ -11,6 +12,14 @@ export default function NewEventScreen() {
   const connectRaw = Array.isArray(connect) ? connect[0] : connect
   const connectReturn =
     connectRaw === 'success' || connectRaw === 'refresh' ? connectRaw : undefined
+
+  useEffect(() => {
+    if (!featureFlags.events) {
+      router.replace('/(tabs)/')
+    }
+  }, [router])
+
+  if (!featureFlags.events) return null
 
   const onConsumedConnectReturn = useCallback(() => {
     router.replace('/events/new')

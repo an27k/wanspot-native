@@ -1,4 +1,6 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Image } from 'expo-image'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { TOKENS } from '@/constants/color-tokens'
 import { getCategoryLabel } from '@/lib/ai-plan/category-labels'
@@ -84,7 +86,7 @@ export function AiPlanSpotCard({
   onPress: () => void
 }) {
   const photoRef = db?.photo_ref ?? null
-  const uri = spotPhotoUrl(photoRef, 288)
+  const uri = spotPhotoUrl(photoRef)
   const dwellMinutes = stop.dwell_minutes ?? 0
   const note = stop.note?.trim() ?? ''
   const catLabel = getCategoryLabel(stop)
@@ -98,7 +100,7 @@ export function AiPlanSpotCard({
     <View style={styles.wrap}>
       <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.92}>
         <View style={styles.photoWrap}>
-          {uri ? <Image source={{ uri }} style={styles.photo} resizeMode="cover" /> : null}
+          {uri ? <Image source={{ uri }} style={styles.photo} contentFit="cover" {...remoteImageExpoProps} /> : null}
           <View style={styles.dwellBadge}>
             <Text style={styles.dwellBadgeTxt}>{dwellMinutes}分滞在</Text>
           </View>

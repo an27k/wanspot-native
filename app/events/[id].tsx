@@ -1,10 +1,21 @@
-import { useLocalSearchParams } from 'expo-router'
+import { useEffect } from 'react'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { View, Text, StyleSheet } from 'react-native'
 import EventDetailScreen from '@/components/events/EventDetailScreen'
 import { colors } from '@/constants/colors'
 import { track } from '@/lib/analytics'
+import { featureFlags } from '@/lib/feature-flags'
 
 export default function EventDetailRoute() {
+  const router = useRouter()
+  useEffect(() => {
+    if (!featureFlags.events) {
+      router.replace('/(tabs)/')
+    }
+  }, [router])
+
+  if (!featureFlags.events) return null
+
   const { id } = useLocalSearchParams<{ id: string }>()
   const eventId = Array.isArray(id) ? id[0] : id
   if (!eventId) {

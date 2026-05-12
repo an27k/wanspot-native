@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { Image } from 'expo-image'
 import {
   Alert,
   Animated,
   Dimensions,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -33,6 +33,7 @@ import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
 import { track } from '@/lib/analytics'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
@@ -429,6 +430,15 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
   }, [spotId, router, loadReviews])
 
   useEffect(() => {
+    if (photoRefs.length === 0) return
+    const urls = photoRefs
+      .map((r) => spotPhotoUrl(r, 'hero'))
+      .filter((u): u is string => u != null && u.length > 0)
+    if (urls.length === 0) return
+    void Image.prefetch(urls, 'memory-disk')
+  }, [photoRefs])
+
+  useEffect(() => {
     instagramAutoFetchSent.current = null
   }, [spotId])
 
@@ -733,7 +743,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
 
   if (!spot) return null
 
-  const photoUris = photoRefs.map((r) => spotPhotoUrl(r, 800)).filter(Boolean) as string[]
+  const photoUris = photoRefs.map((r) => spotPhotoUrl(r, 'hero')).filter(Boolean) as string[]
 
   return (
     <View style={styles.screen}>
@@ -761,7 +771,18 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                 keyExtractor={(u) => u}
                 showsHorizontalScrollIndicator={false}
                 onMomentumScrollEnd={onPhotoScroll}
-                renderItem={({ item }) => <Image source={{ uri: item }} style={{ width: WIN_W, height: 260 }} resizeMode="cover" />}
+                initialNumToRender={2}
+                maxToRenderPerBatch={2}
+                windowSize={3}
+                removeClippedSubviews
+                renderItem={({ item }) => (
+                  <Image
+                    source={{ uri: item }}
+                    style={{ width: WIN_W, height: 260 }}
+                    contentFit="cover"
+                    {...remoteImageExpoProps}
+                  />
+                )}
                 getItemLayout={(_, index) => ({ length: WIN_W, offset: WIN_W * index, index })}
               />
               {currentPhoto > 0 ? (
@@ -904,7 +925,12 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                 <IconInstagram size={24} />
               </Pressable>
               <Pressable style={styles.iconSq} onPress={() => Linking.openURL(mapsUrl)}>
-                <Image source={require('@/assets/icon-google-maps.png')} style={{ width: 24, height: 24 }} resizeMode="contain" />
+                <Image
+                  source={require('@/assets/icon-google-maps.png')}
+                  style={{ width: 24, height: 24 }}
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
+                />
               </Pressable>
             </View>
           </View>

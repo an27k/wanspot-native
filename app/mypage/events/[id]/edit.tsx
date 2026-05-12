@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { AppHeader } from '@/components/AppHeader'
 import { EventEditorForm } from '@/components/events/EventEditorForm'
 import { colors } from '@/constants/colors'
+import { featureFlags } from '@/lib/feature-flags'
 import { supabase } from '@/lib/supabase'
 
 type EventRow = {
@@ -28,6 +29,14 @@ export default function EditEventScreen() {
   const [ev, setEv] = useState<EventRow | null>(null)
   const [loading, setLoading] = useState(true)
   const [forbidden, setForbidden] = useState(false)
+
+  useEffect(() => {
+    if (!featureFlags.events) {
+      router.replace('/(tabs)/')
+    }
+  }, [router])
+
+  if (!featureFlags.events) return null
 
   const load = useCallback(async () => {
     if (!eventId) {

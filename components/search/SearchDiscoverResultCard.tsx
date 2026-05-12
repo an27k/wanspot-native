@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
-import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Path, Polygon } from 'react-native-svg'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
@@ -70,7 +72,7 @@ export function SearchDiscoverResultCard({
   const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const likeScale = useRef(new Animated.Value(1)).current
-  const photoUrl = spotPhotoUrl(spot.photo_ref, 288)
+  const photoUrl = spotPhotoUrl(spot.photo_ref)
 
   const dist =
     userLocation && spot.lat && spot.lng
@@ -150,7 +152,16 @@ export function SearchDiscoverResultCard({
     <View style={styles.card}>
       <Pressable onPress={() => void handleOpen()}>
         <View style={styles.thumbWrap}>
-          {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.thumb} resizeMode="cover" /> : <View style={[styles.thumb, styles.ph]} />}
+          {photoUrl ? (
+            <Image
+              source={{ uri: photoUrl }}
+              style={styles.thumb}
+              contentFit="cover"
+              {...remoteImageExpoProps}
+            />
+          ) : (
+            <View style={[styles.thumb, styles.ph]} />
+          )}
           <Pressable
             style={styles.heartFab}
             onPress={(ev) => void handleLike(ev)}

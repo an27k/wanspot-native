@@ -1,5 +1,5 @@
-import * as WebBrowser from 'expo-web-browser'
 import { supabase } from '@/lib/supabase'
+import { signInWithGoogle } from '@/lib/google-signin'
 
 /** Supabase Dashboard の Redirect URLs に登録すること */
 export const OAUTH_REDIRECT_TO = 'wanspot://auth/callback'
@@ -79,32 +79,16 @@ export async function applyOAuthCallbackUrl(url: string | null | undefined): Pro
 export async function signInWithOAuthProvider(
   provider: 'google' | 'apple'
 ): Promise<OAuthSignInResult> {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider,
-    options: {
-      redirectTo: OAUTH_REDIRECT_TO,
-      skipBrowserRedirect: true,
-    },
-  })
-  if (error) return { error: new Error(error.message) }
-  const startUrl = data?.url
-  if (startUrl == null || typeof startUrl !== 'string' || !startUrl.trim()) {
-    return { error: new Error('OAuth URL を取得できませんでした') }
+  if (provider === 'google') {
+    const result = await signInWithGoogle()
+    if (!result.success) {
+      if (result.error === 'cancelled') return { error: null, cancelled: true }
+      return { error: new Error(result.error ?? 'Googleサインインに失敗しました') }
+    }
+    return { error: null }
   }
 
-  const result = await WebBrowser.openAuthSessionAsync(startUrl.trim(), OAUTH_REDIRECT_TO)
-
-  if (result.type === 'cancel' || result.type === 'dismiss') {
-    return { error: null, cancelled: true }
-  }
-  if (result.type !== 'success') {
-    return { error: new Error('ログインを完了できませんでした') }
-  }
-
-  const callbackUrl = result.url
-  if (callbackUrl == null || typeof callbackUrl !== 'string' || !callbackUrl.trim()) {
-    return { error: new Error('ログインを完了できませんでした') }
-  }
-
-  return applyOAuthCallbackUrl(callbackUrl)
+  // Apple はネイティブ実装（lib/apple-signin.ts）を利用する想定
+  console.warn('[oauth-supabase] Apple is now handled by lib/apple-signin.ts')
+  return { error: new Error('Apple Sign-In はネイティブ方式をご利用ください') }
 }

@@ -1,27 +1,30 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-// import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
+import { Image } from 'expo-image'
+import * as Haptics from 'expo-haptics'
 import {
   Alert,
-  Image,
+  KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CenterSnapPicker } from '@/components/CenterSnapPicker'
-import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
 import { dogBirthdayYearBounds, OwnerBirthdayPickers, ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
-import { DogPawPlaceholder } from '@/components/events/EventCard'
-import { colors } from '@/constants/colors'
+import { Header } from '@/components/onboarding/Header'
+import { FormField } from '@/components/onboarding/FormField'
+import { Ionicons } from '@expo/vector-icons'
 import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { showImagePickerOptions } from '@/lib/image-picker'
 
 const BREEDS = [
   'トイプードル',
@@ -57,8 +60,6 @@ const BREEDS = [
   'その他',
 ] as const
 
-const STEP_DOTS = 5
-
 export default function DogPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
@@ -77,7 +78,7 @@ export default function DogPage() {
   const [gender, setGender] = useState<'male' | 'female' | null>(null)
   const [vaccineCombo, setVaccineCombo] = useState<boolean | null>(null)
   const [vaccineRabies, setVaccineRabies] = useState<boolean | null>(null)
-  const [dogPhotoPreview, setDogPhotoPreview] = useState<string | null>(null)
+  const [dogPhotoUri, setDogPhotoUri] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -91,23 +92,59 @@ export default function DogPage() {
     vaccineCombo !== null &&
     vaccineRabies !== null
 
-  const pickPhoto = () => {
-    Alert.alert('準備中', '写真の選択は準備中です')
-    // const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    // if (!perm.granted) {
-    //   setPhotoError('画像ライブラリへのアクセスが必要です')
-    //   return
-    // }
-    // const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 })
-    // if (!res.canceled && res.assets[0]?.uri) {
-    //   setPhotoError('')
-    //   setDogPhotoPreview(res.assets[0].uri)
-    // }
-  }
+  const handlePickDogPhoto = () => {
+    showImagePickerOptions(async (image) => {
+      setDogPhotoUri(image.uri)
+      setPhotoError('')
 
-  const skipPhoto = () => {
-    setPhotoError('')
-    setDogPhotoPreview(null)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        const userId = user?.id
+        if (!userId) {
+          Alert.alert('エラー', 'ログインが必要です')
+          return
+        }
+
+        const fileExt = 'jpg'
+        const filePath = `dogs/${userId}-${Date.now()}.${fileExt}`
+
+        const response = await fetch(image.uri)
+        const arrayBuffer = await response.arrayBuffer()
+
+        // FIXME: Supabase Dashboard で avatars バケットの RLS ポリシーを確認
+        // - INSERT: authenticated ユーザーが自分のフォルダにアップロード可能
+        // - SELECT: 全ユーザーが読み取り可能（公開URL利用のため）
+        // - UPDATE/DELETE: 自分のファイルのみ
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, arrayBuffer, {
+            contentType: 'image/jpeg',
+            upsert: true,
+          })
+
+        if (uploadError) {
+          Alert.alert('エラー', '写真のアップロードに失敗しました')
+          setDogPhotoUri(null)
+          return
+        }
+
+        const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
+        const publicUrl = data.publicUrl
+
+        const obDog = JSON.parse((await AsyncStorage.getItem('ob_dog')) || '{}')
+        await AsyncStorage.setItem(
+          'ob_dog',
+          JSON.stringify({
+            ...obDog,
+            photo_url: publicUrl,
+          })
+        )
+      } catch (error) {
+        console.error('[onboarding/dog] photo upload error:', error)
+        Alert.alert('エラー', '写真のアップロードに失敗しました')
+        setDogPhotoUri(null)
+      }
+    })
   }
 
   const goNext = async () => {
@@ -115,27 +152,8 @@ export default function DogPage() {
     setSubmitting(true)
     setPhotoError('')
     try {
-      let dogPhotoUrl: string | null = null
-      if (dogPhotoPreview) {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          setPhotoError('ログインが必要です')
-          return
-        }
-        const resFetch = await fetch(dogPhotoPreview)
-        const buf = await resFetch.arrayBuffer()
-        const path = `${user.id}/dog.jpg`
-        const { error: upErr } = await supabase.storage.from('avatars').upload(path, buf, {
-          upsert: true,
-          contentType: 'image/jpeg',
-        })
-        if (upErr) {
-          setPhotoError('写真のアップロードに失敗しました')
-          return
-        }
-        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
-        dogPhotoUrl = urlData.publicUrl
-      }
+      const prev = JSON.parse((await AsyncStorage.getItem('ob_dog')) || '{}')
+      const prevPhotoUrl = typeof prev?.photo_url === 'string' ? prev.photo_url : null
 
       const obDogPayload = JSON.stringify({
         name,
@@ -146,7 +164,7 @@ export default function DogPage() {
         gender,
         vaccineCombo,
         vaccineRabies,
-        ...(dogPhotoUrl ? { dogPhotoUrl } : {}),
+        ...(prevPhotoUrl ? { photo_url: prevPhotoUrl } : {}),
       })
       await AsyncStorage.setItem('ob_dog', obDogPayload)
       router.push('/onboarding/size')
@@ -161,201 +179,241 @@ export default function DogPage() {
   const breedRows = [{ value: '', label: '—' }, ...BREEDS.map((b) => ({ value: b, label: b }))]
 
   return (
-    <ScrollView
-      style={styles.main}
-      contentContainerStyle={{ paddingBottom: padBottom, paddingHorizontal: 20, paddingTop: padTop, gap: 20 }}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}
     >
-      <View style={styles.headRow}>
-        <View style={styles.brandRow}>
-          <OnboardingBrand />
-          <Text style={styles.brandTxt}>wanspot</Text>
-        </View>
-        <View style={styles.dots}>
-          {Array.from({ length: STEP_DOTS }, (_, i) => (
-            <View key={i} style={[styles.dot, { backgroundColor: i <= 1 ? '#FFD84D' : '#e0e0e0' }]} />
-          ))}
-        </View>
-      </View>
-
-      <Text style={styles.h2}>
-        愛犬のことを{'\n'}教えてください
-      </Text>
-
-      <View>
-        <Text style={styles.label}>
-          愛犬の写真<Text style={{ color: '#c9a227' }}>（任意）</Text>
-        </Text>
-        <Text style={styles.hint}>
-          写真の選択は準備中です。写真なしでも「次へ」で進めます。選んだあと取り消す場合は「スキップ（写真なし）」を押してください。
-        </Text>
-        <TouchableOpacity style={styles.photoRow} onPress={pickPhoto}>
-          <View style={styles.photoRing}>
-            {dogPhotoPreview ? (
-              <Image source={{ uri: dogPhotoPreview }} style={styles.photoImg} resizeMode="cover" />
-            ) : (
-              <DogPawPlaceholder size={36} fill={colors.dogPhotoPlaceholderPaw} />
-            )}
-          </View>
-          <Text style={styles.photoLbl}>写真を選ぶ</Text>
-        </TouchableOpacity>
-        {dogPhotoPreview ? (
-          <TouchableOpacity onPress={skipPhoto}>
-            <Text style={styles.skip}>スキップ（写真なし）</Text>
-          </TouchableOpacity>
-        ) : null}
-        {photoError ? <Text style={styles.err}>{photoError}</Text> : null}
-      </View>
-
-      <View>
-        <Text style={styles.label}>名前</Text>
-        <TextInput style={styles.input} placeholder="モカ" value={name} onChangeText={setName} placeholderTextColor="#aaa" />
-      </View>
-
-      <View style={styles.birthdayCard}>
-        <OwnerBirthdayPickers
-          compact
-          year={dogYear}
-          month={dogMonth}
-          day={dogDay}
-          onChangeYear={setDogYear}
-          onChangeMonth={setDogMonth}
-          onChangeDay={setDogDay}
-          yearMin={dogYBounds.min}
-          yearMax={dogYBounds.max}
-          fieldLabel="生年月日（必須）"
-          hint="年・月・日をすべて選択してください。"
-        />
-      </View>
-
-      <View>
-        <Text style={styles.label}>犬種</Text>
-        <CenterSnapPicker listKey="dog-breed" data={breedRows} value={breed} onChange={setBreed} />
-      </View>
-
-      <View>
-        <Text style={styles.label}>性別</Text>
-        <View style={styles.row2}>
-          {(['male', 'female'] as const).map((g) => (
-            <TouchableOpacity
-              key={g}
-              style={[styles.half, gender === g ? styles.halfOn : styles.halfOff]}
-              onPress={() => setGender(g)}
-            >
-              <Text
-                style={[
-                  styles.halfTxt,
-                  gender === g && { color: g === 'male' ? colors.genderMale : colors.genderFemale },
-                ]}
-              >
-                {g === 'male' ? '♂' : '♀'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {[
-        { label: '混合ワクチン3回', state: vaccineCombo, set: setVaccineCombo },
-        { label: '狂犬病ワクチン', state: vaccineRabies, set: setVaccineRabies },
-      ].map(({ label, state, set }) => (
-        <View key={label}>
-          <Text style={styles.label}>{label}</Text>
-          <View style={styles.row2}>
-            {[true, false].map((v) => (
-              <TouchableOpacity
-                key={String(v)}
-                style={[styles.half, state === v ? styles.halfOn : styles.halfOff]}
-                onPress={() => set(v)}
-              >
-                <Text style={[styles.halfTxtSm, state === v && { color: '#2b2a28' }]}>{v ? 'YES' : 'NO'}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      ))}
-
-      <TouchableOpacity
-        style={[styles.next, (!canNext || submitting) && styles.nextOff]}
-        disabled={!canNext || submitting}
-        onPress={() => void goNext()}
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingTop: padTop, paddingBottom: padBottom + CTA_HEIGHT }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.nextTxt, (!canNext || submitting) && { color: '#ccc' }]}>
-          {submitting ? '処理中...' : '次へ →'}
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <Header progress={2} total={5} />
+
+        <Text style={styles.title}>愛犬のことを{'\n'}教えてください</Text>
+
+        <View style={styles.photoSection}>
+          <Pressable
+            onPress={handlePickDogPhoto}
+            style={({ pressed }) => [styles.photoCircle, pressed && styles.photoCirclePressed]}
+          >
+            {dogPhotoUri ? (
+              <Image source={{ uri: dogPhotoUri }} style={styles.photoPreview} contentFit="cover" {...remoteImageExpoProps} />
+            ) : (
+              <View style={styles.photoPlaceholder}>
+                <Ionicons name="camera-outline" size={28} color="#BBB" />
+              </View>
+            )}
+          </Pressable>
+          <Text style={styles.photoLabel}>{dogPhotoUri ? '写真を変更' : '写真を追加（任意）'}</Text>
+          {photoError ? <Text style={styles.err}>{photoError}</Text> : null}
+        </View>
+
+        <FormField label="名前" required>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="例: モカ"
+            placeholderTextColor="#BBB"
+            style={styles.textInput}
+            returnKeyType="next"
+          />
+        </FormField>
+
+        <FormField label="生年月日" required hint="正確な日付がわからない場合は、推定でOKです">
+          <View style={styles.birthdayCard}>
+            <OwnerBirthdayPickers
+              compact
+              year={dogYear}
+              month={dogMonth}
+              day={dogDay}
+              onChangeYear={(v) => {
+                setDogYear(v)
+                void Haptics.selectionAsync()
+              }}
+              onChangeMonth={(v) => {
+                setDogMonth(v)
+                void Haptics.selectionAsync()
+              }}
+              onChangeDay={(v) => {
+                setDogDay(v)
+                void Haptics.selectionAsync()
+              }}
+              yearMin={dogYBounds.min}
+              yearMax={dogYBounds.max}
+              fieldLabel=""
+              hint=""
+            />
+          </View>
+        </FormField>
+
+        <FormField label="犬種" required>
+          <View style={styles.pickerCard}>
+            <CenterSnapPicker listKey="dog-breed" data={breedRows} value={breed} onChange={setBreed} />
+          </View>
+        </FormField>
+
+        <FormField label="性別" required>
+          <View style={styles.row2}>
+            {(['male', 'female'] as const).map((g) => {
+              const on = gender === g
+              return (
+                <Pressable
+                  key={g}
+                  onPress={() => setGender(g)}
+                  style={({ pressed }) => [
+                    styles.optionHalf,
+                    on && styles.optionHalfOn,
+                    pressed && styles.optionHalfPressed,
+                  ]}
+                >
+                  <Text style={[styles.optionHalfTxt, on && { color: '#1A1A1A' }]}>{g === 'male' ? '♂' : '♀'}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        </FormField>
+
+        {[
+          { label: '混合ワクチン3回', state: vaccineCombo, set: setVaccineCombo },
+          { label: '狂犬病ワクチン', state: vaccineRabies, set: setVaccineRabies },
+        ].map(({ label, state, set }) => (
+          <FormField key={label} label={label} required>
+            <View style={styles.row2}>
+              {[true, false].map((v) => {
+                const on = state === v
+                return (
+                  <Pressable
+                    key={String(v)}
+                    onPress={() => set(v)}
+                    style={({ pressed }) => [
+                      styles.optionHalf,
+                      on && styles.optionHalfOn,
+                      pressed && styles.optionHalfPressed,
+                    ]}
+                  >
+                    <Text style={[styles.optionHalfTxtSm, on && { color: '#1A1A1A' }]}>{v ? 'YES' : 'NO'}</Text>
+                  </Pressable>
+                )
+              })}
+            </View>
+          </FormField>
+        ))}
+      </ScrollView>
+
+      <View style={[styles.ctaContainer, { paddingBottom: insets.bottom + 32 }]}>
+        <Pressable
+          onPress={() => void goNext()}
+          disabled={!canNext || submitting}
+          style={({ pressed }) => [
+            styles.ctaButton,
+            (!canNext || submitting) && styles.ctaButtonDisabled,
+            pressed && canNext && !submitting && styles.ctaButtonPressed,
+          ]}
+        >
+          <Text style={[styles.ctaText, (!canNext || submitting) && styles.ctaTextDisabled]}>
+            {submitting ? '処理中...' : '次へ'}
+          </Text>
+        </Pressable>
+      </View>
+    </KeyboardAvoidingView>
   )
 }
 
+const CTA_HEIGHT = 92
+
 const styles = StyleSheet.create({
-  main: { flex: 1, backgroundColor: '#fff' },
-  headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandTxt: { fontWeight: '800', fontSize: 14, color: '#2b2a28' },
-  dots: { flexDirection: 'row', gap: 4 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#2b2a28' },
-  label: { fontSize: 12, color: '#aaa', marginBottom: 4 },
-  hint: { fontSize: 11, color: '#aaa', lineHeight: 16, marginBottom: 8 },
-  photoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  photoRing: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.dogPhotoPlaceholderBg,
-    alignItems: 'center',
+  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 120,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    lineHeight: 36,
+    marginTop: 16,
+    marginBottom: 32,
+    letterSpacing: 0.3,
+  },
+  photoSection: { alignItems: 'center', marginBottom: 32 },
+  photoCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#F0EFEC',
     justifyContent: 'center',
+    alignItems: 'center',
     overflow: 'hidden',
+    marginBottom: 8,
   },
-  photoImg: { width: '100%', height: '100%' },
-  photoLbl: { fontSize: 11, color: '#888' },
-  skip: { fontSize: 11, color: '#aaa', marginTop: 8, marginLeft: 92 },
-  err: { fontSize: 12, color: '#E84335', marginTop: 4 },
-  input: {
-    height: 44,
+  photoCirclePressed: { opacity: 0.7, transform: [{ scale: 0.97 }] },
+  photoPreview: { width: '100%', height: '100%' },
+  photoPlaceholder: { justifyContent: 'center', alignItems: 'center' },
+  photoLabel: { fontSize: 12, color: '#999' },
+  err: { fontSize: 12, color: '#E84335', marginTop: 10 },
+  textInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ebebeb',
-    backgroundColor: '#f7f6f3',
     paddingHorizontal: 16,
-    fontSize: 14,
-    color: '#2b2a28',
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#1A1A1A',
   },
-  /** オーナー登録（owner.tsx）の birthdayCard と同じ見た目 */
-  birthdayCard: {
-    marginTop: 8,
-    padding: 16,
-    paddingBottom: 18,
-    backgroundColor: colors.background,
-    borderRadius: 16,
+  pickerCard: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: colors.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-      },
-      android: { elevation: 4 },
-    }),
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
   },
-  row2: { flexDirection: 'row', gap: 8 },
-  half: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  halfOn: { backgroundColor: '#FFD84D' },
-  halfOff: { backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e8e8e8' },
-  halfTxt: { fontSize: 24, fontWeight: '700', color: '#aaa' },
-  halfTxtSm: { fontSize: 14, fontWeight: '700', color: '#aaa' },
-  next: {
-    marginTop: 12,
+  birthdayCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  row2: { flexDirection: 'row', gap: 12 },
+  optionHalf: {
+    flex: 1,
     height: 48,
-    borderRadius: 16,
-    backgroundColor: '#FFD84D',
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#F5F4F0',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
-  nextOff: { backgroundColor: '#f5f5f5' },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
+  optionHalfOn: { backgroundColor: '#FFC107' },
+  optionHalfPressed: { transform: [{ scale: 0.97 }], opacity: 0.85 },
+  optionHalfTxt: { fontSize: 24, fontWeight: '700', color: '#999' },
+  optionHalfTxtSm: { fontSize: 14, fontWeight: '700', color: '#999' },
+  ctaContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    backgroundColor: '#FAFAF8',
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+  },
+  ctaButton: {
+    backgroundColor: '#FFC107',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
+  ctaButtonPressed: { backgroundColor: '#FFB300', transform: [{ scale: 0.98 }] },
+  ctaText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
+  ctaTextDisabled: { color: '#999' },
 })

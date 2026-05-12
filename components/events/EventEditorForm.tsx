@@ -1,10 +1,10 @@
 // import DateTimePicker from '@react-native-community/datetimepicker'
 // import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Image } from 'expo-image'
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Linking,
   Modal,
   Pressable,
@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { CapacityDrumPicker } from '@/components/events/CapacityDrumPicker'
@@ -555,7 +556,12 @@ export function EventEditorForm({
         <Pressable style={styles.thumbTap} onPress={pickThumbnail}>
           {thumbnailUri ? (
             <View style={styles.thumbInner}>
-              <Image source={{ uri: thumbnailUri }} style={styles.thumbImg} resizeMode="cover" />
+              <Image
+                source={{ uri: thumbnailUri }}
+                style={styles.thumbImg}
+                contentFit="cover"
+                {...remoteImageExpoProps}
+              />
               <View style={styles.thumbOverlay}>
                 <Text style={styles.thumbOverlayTxt}>ギャラリー選択は準備中</Text>
               </View>

@@ -45,3 +45,6 @@ yarn-error.*
 # Xcode user-specific state
 *.xcuserstate
 **/xcuserdata/**
+
+# Local env (never commit)
+.env

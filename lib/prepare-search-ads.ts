@@ -24,7 +24,7 @@ export function prepareSearchTabAdsOnce(): Promise<void> {
     preparePromise = (async () => {
       if (Platform.OS === 'ios' && isUsingIosDemoNativeAdUnit()) {
         console.warn(
-          'AdMob: iOS release is using Google demo native ad unit. Set IOS_NATIVE_AD_UNIT_ID or expo.extra.admobIosNativeAdUnitId before App Store / real monetization.'
+          'AdMob: iOS release is using Google demo native ad unit. Set EXPO_PUBLIC_ADMOB_IOS_NATIVE_AD_UNIT_ID in .env for real monetization.'
         )
       }
       if (Platform.OS === 'ios' && iosNativeAdUnitIdLooksLikeAppIdSuffix()) {

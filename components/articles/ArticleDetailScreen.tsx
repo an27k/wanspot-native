@@ -9,6 +9,7 @@ import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
+import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
 import type { PlaceCardEnrichment } from '@/lib/user-spot-list-utils'
 
@@ -211,7 +212,7 @@ function ArticleSpotCard({
   photoRecyclingKey: string
 }) {
   const photoRef = enrichment?.photo_ref ?? null
-  const photoUrl = spotPhotoUrl(photoRef, 320)
+  const photoUrl = spotPhotoUrl(photoRef)
   const displayRating = enrichment?.rating ?? null
   const priceLevel = enrichment?.price_level ?? null
   const address =
@@ -274,7 +275,7 @@ function BlockRenderer({
     return (
       <View style={styles.imgBlock}>
         <ArticleRemoteImage
-          uri={block.url}
+          uri={resizePlacesImageUrl(block.url, 'hero')}
           style={styles.imgBlockImg}
           recyclingKey={blockImageRecyclingKey ?? `${articleId}-img-${block.url}`}
           priority="normal"
@@ -337,9 +338,11 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
   useEffect(() => {
     if (!article) return
     const urls: string[] = []
-    if (article.image_url?.trim()) urls.push(article.image_url.trim())
+    if (article.image_url?.trim()) urls.push(resizePlacesImageUrl(article.image_url.trim(), 'hero'))
     for (const b of normalizeArticleBlocks(article.blocks)) {
-      if (b.type === 'image' && typeof b.url === 'string' && b.url.trim()) urls.push(b.url.trim())
+      if (b.type === 'image' && typeof b.url === 'string' && b.url.trim()) {
+        urls.push(resizePlacesImageUrl(b.url.trim(), 'hero'))
+      }
     }
     if (urls.length === 0) return
     void Image.prefetch(urls, 'memory-disk')
@@ -460,7 +463,7 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
   /** スポットカード用サムネを batch-details 取得後に先読み */
   useEffect(() => {
     const urls = Object.values(enrichmentByPlaceId)
-      .map((e) => spotPhotoUrl(e.photo_ref ?? null, 320))
+      .map((e) => spotPhotoUrl(e.photo_ref ?? null))
       .filter((u): u is string => !!u)
     if (urls.length === 0) return
     void Image.prefetch(urls, 'memory-disk')
@@ -514,7 +517,7 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
         </View>
         {article.image_url ? (
           <ArticleRemoteImage
-            uri={article.image_url}
+            uri={resizePlacesImageUrl(article.image_url, 'hero')}
             style={styles.hero}
             recyclingKey={`${article.id}-hero`}
             priority="high"

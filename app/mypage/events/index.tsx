@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
@@ -7,6 +9,7 @@ import { type WanspotEventRow } from '@/components/events/EventCard'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { featureFlags } from '@/lib/feature-flags'
 import { supabase } from '@/lib/supabase'
 
 const IconChevronLeft = () => (
@@ -21,6 +24,14 @@ export default function MyHostedEventsScreen() {
   const [rows, setRows] = useState<WanspotEventRow[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+
+  useEffect(() => {
+    if (!featureFlags.events) {
+      router.replace('/(tabs)/')
+    }
+  }, [router])
+
+  if (!featureFlags.events) return null
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -88,6 +99,10 @@ export default function MyHostedEventsScreen() {
       <FlatList
         data={rows}
         keyExtractor={(item) => item.id}
+        initialNumToRender={6}
+        maxToRenderPerBatch={4}
+        windowSize={10}
+        removeClippedSubviews
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load() }} />}
         contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 12 }}
         ListEmptyComponent={<Text style={styles.empty}>まだ作成したイベントはありません</Text>}
@@ -99,7 +114,12 @@ export default function MyHostedEventsScreen() {
             >
               <View style={styles.thumb}>
                 {item.thumbnail_url ? (
-                  <Image source={{ uri: item.thumbnail_url }} style={styles.thumbImg} resizeMode="cover" />
+                  <Image
+                    source={{ uri: item.thumbnail_url }}
+                    style={styles.thumbImg}
+                    contentFit="cover"
+                    {...remoteImageExpoProps}
+                  />
                 ) : (
                   <View style={styles.thumbPh}>
                     <Text style={styles.noImg}>No img</Text>

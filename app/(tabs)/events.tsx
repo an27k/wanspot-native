@@ -19,6 +19,7 @@ import { EventCard, type WanspotEventRow } from '@/components/events/EventCard'
 import { PowState, RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
 import { colors } from '@/constants/colors'
+import { featureFlags } from '@/lib/feature-flags'
 import { supabase } from '@/lib/supabase'
 
 const IconPlusLarge = () => (
@@ -121,6 +122,16 @@ async function fetchJoinedEventsList(userId: string): Promise<WanspotEventRow[]>
 export default function EventsTab() {
   const router = useRouter()
   const { width: windowWidth } = useWindowDimensions()
+
+  if (!featureFlags.events) {
+    return (
+      <View style={styles.root}>
+        <AppHeader />
+        <AiPlanTab />
+      </View>
+    )
+  }
+
   const [events, setEvents] = useState<WanspotEventRow[]>([])
   const [joinedEvents, setJoinedEvents] = useState<WanspotEventRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -419,7 +430,10 @@ export default function EventsTab() {
                 style={styles.pageFlex}
                 data={sortedWanspotEvents}
                 keyExtractor={(item) => item.id}
-                removeClippedSubviews={false}
+                removeClippedSubviews
+                initialNumToRender={6}
+                maxToRenderPerBatch={4}
+                windowSize={10}
                 contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
                 refreshControl={
                   <RefreshControl
@@ -474,7 +488,10 @@ export default function EventsTab() {
                 style={styles.pageFlex}
                 data={sortedJoinedEvents}
                 keyExtractor={(item) => item.id}
-                removeClippedSubviews={false}
+                removeClippedSubviews
+                initialNumToRender={6}
+                maxToRenderPerBatch={4}
+                windowSize={10}
                 contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 16 }}
                 refreshControl={
                   <RefreshControl

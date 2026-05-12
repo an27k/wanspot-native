@@ -1,16 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Image, InteractionManager, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { InteractionManager } from 'react-native'
+import { NativeAdStandardCard } from '@/components/ads/NativeAdStandardCard'
 import { resolveAiPlanResultNativeAdUnitId } from '@/constants/admob'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { buildNativeAdRequestOptions, enqueueNativeAdRequest } from '@/lib/native-ad-request-queue'
 import { prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import {
   NativeAd,
-  NativeAdView,
-  NativeAsset,
-  NativeAssetType,
   NativeMediaAspectRatio,
-  NativeMediaView,
 } from 'react-native-google-mobile-ads'
 
 const LOAD_MAX_ATTEMPTS = 3
@@ -49,7 +46,7 @@ export function AiPlanResultAd() {
 
         try {
           const requestOptions = await buildNativeAdRequestOptions(attemptIdx, {
-            aspectRatio: NativeMediaAspectRatio.SQUARE,
+            aspectRatio: NativeMediaAspectRatio.LANDSCAPE,
           })
           const ad = await enqueueNativeAdRequest(unitId, requestOptions)
           if (cancelled) {
@@ -97,139 +94,8 @@ export function AiPlanResultAd() {
     }
   }, [])
 
-  const renderLeftVisual = useCallback(() => {
-    if (!nativeAd) return null
-    if (nativeAd.icon?.url) {
-      return (
-        <NativeAsset assetType={NativeAssetType.ICON}>
-          <Image
-            source={{ uri: nativeAd.icon.url }}
-            style={styles.icon}
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-          />
-        </NativeAsset>
-      )
-    }
-    return <NativeMediaView resizeMode="cover" style={styles.mediaSmall} />
-  }, [nativeAd])
-
   if (!adsEnabled || unitId == null) return null
   if (!nativeAd) return null
 
-  return (
-    <View style={styles.container} collapsable={false}>
-      <NativeAdView nativeAd={nativeAd} style={styles.adView} collapsable={false}>
-        <View style={styles.prLabel}>
-          <Text style={styles.prLabelText}>広告</Text>
-        </View>
-
-        <View style={styles.row}>
-          {renderLeftVisual()}
-
-          <View style={styles.textContainer}>
-            {nativeAd.headline ? (
-              <NativeAsset assetType={NativeAssetType.HEADLINE}>
-                <Text style={styles.headline} numberOfLines={2}>
-                  {nativeAd.headline}
-                </Text>
-              </NativeAsset>
-            ) : null}
-            {nativeAd.body ? (
-              <NativeAsset assetType={NativeAssetType.BODY}>
-                <Text style={styles.body} numberOfLines={2}>
-                  {nativeAd.body}
-                </Text>
-              </NativeAsset>
-            ) : null}
-          </View>
-
-          {nativeAd.callToAction ? (
-            <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}>
-              <View style={styles.ctaButton} accessibilityRole="button">
-                <Text style={styles.ctaText}>{nativeAd.callToAction}</Text>
-              </View>
-            </NativeAsset>
-          ) : null}
-        </View>
-      </NativeAdView>
-    </View>
-  )
+  return <NativeAdStandardCard nativeAd={nativeAd} />
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 16,
-  },
-  adView: {
-    backgroundColor: '#FAFAFA',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#EDEDED',
-    padding: 12,
-    position: 'relative',
-    overflow: 'hidden',
-    shadowColor: 'transparent',
-    elevation: 0,
-  },
-  prLabel: {
-    position: 'absolute',
-    top: 6,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    zIndex: 10,
-  },
-  prLabelText: {
-    fontSize: 9,
-    color: '#fff',
-    fontWeight: '500',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 4,
-  },
-  icon: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    marginRight: 10,
-  },
-  mediaSmall: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-    marginRight: 10,
-  },
-  textContainer: {
-    flex: 1,
-    marginRight: 8,
-  },
-  headline: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#2b2a28',
-    marginBottom: 2,
-  },
-  body: {
-    fontSize: 12,
-    color: '#666',
-  },
-  ctaButton: {
-    backgroundColor: '#F0F0F0',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  ctaText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-  },
-})

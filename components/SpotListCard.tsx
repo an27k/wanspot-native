@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Image } from 'expo-image'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { supabase } from '@/lib/supabase'
 import { HEART_ICON } from '@/lib/constants'
@@ -99,7 +101,7 @@ export function SpotListCard({
 }: SpotListCardProps) {
   const requireAuth = useRequireAuth()
   const photoRef = enrichment?.photo_ref ?? null
-  const uri = spotPhotoUrl(photoRef, 288)
+  const uri = spotPhotoUrl(photoRef)
   const displayRating = enrichment?.rating ?? null
   const priceLevel = enrichment?.price_level ?? null
 
@@ -178,7 +180,14 @@ export function SpotListCard({
   return (
     <TouchableOpacity style={styles.card} onPress={onOpen} activeOpacity={0.92}>
       <View style={styles.photoWrap}>
-        {uri ? <Image source={{ uri }} style={styles.photo} resizeMode="cover" /> : null}
+        {uri ? (
+          <Image
+            source={{ uri }}
+            style={styles.photo}
+            contentFit="cover"
+            {...remoteImageExpoProps}
+          />
+        ) : null}
         <View style={styles.heartCol}>
           <TouchableOpacity
             onPress={() => void handleLikeToggle()}

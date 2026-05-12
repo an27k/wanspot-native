@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Image } from 'expo-image'
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
@@ -93,7 +95,7 @@ export function NearbySpotCard({
   const [likeLoading, setLikeLoading] = useState(false)
   const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
-  const uri = spotPhotoUrl(spot.photo_ref, 288)
+  const uri = spotPhotoUrl(spot.photo_ref)
 
   useEffect(() => {
     setLocalLikeCount(likeCount)
@@ -205,7 +207,7 @@ export function NearbySpotCard({
   return (
     <TouchableOpacity style={styles.card} onPress={handleOpenDetail} activeOpacity={0.95}>
       <View style={styles.cardPhoto}>
-        {uri ? <Image source={{ uri }} style={styles.cardImg} resizeMode="cover" /> : null}
+        {uri ? <Image source={{ uri }} style={styles.cardImg} contentFit="cover" {...remoteImageExpoProps} /> : null}
         <View style={styles.heartCol}>
           <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
             <TouchableOpacity
