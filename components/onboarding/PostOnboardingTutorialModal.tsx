@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   },
   heartText: {
     fontSize: 28,
-    color: '#FFC107',
+    color: '#FF8A1F',
   },
   heartTextSmall: {
     fontSize: 20,
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   titleHighlight: {
-    color: '#FFC107',
+    color: '#FF8A1F',
     fontSize: 24,
   },
   body: {
@@ -242,14 +242,14 @@ const styles = StyleSheet.create({
   },
   ctaButton: {
     width: '100%',
-    backgroundColor: '#FFC107',
+    backgroundColor: '#FF8A1F',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   ctaButtonPressed: {
-    backgroundColor: '#FFB300',
+    backgroundColor: '#E5740A',
     transform: [{ scale: 0.98 }],
   },
   ctaText: {

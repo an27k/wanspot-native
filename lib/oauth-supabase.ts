@@ -82,8 +82,10 @@ export async function signInWithOAuthProvider(
   if (provider === 'google') {
     const result = await signInWithGoogle()
     if (!result.success) {
-      if (result.error === 'cancelled') return { error: null, cancelled: true }
-      return { error: new Error(result.error ?? 'Googleサインインに失敗しました') }
+      if (result.reason === 'cancelled' || result.reason === 'in_progress') {
+        return { error: null, cancelled: true }
+      }
+      return { error: new Error(result.message ?? 'Googleサインインに失敗しました') }
     }
     return { error: null }
   }

@@ -13,15 +13,18 @@ import {
   View,
 } from 'react-native'
 import { useIsFocused } from '@react-navigation/native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
 import * as Location from 'expo-location'
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { AppHeader } from '@/components/AppHeader'
 import { AdNativeCard } from '@/components/AdNativeCard'
+import { AiPlanTab } from '@/components/ai-plan/AiPlanTab'
 import { SearchDiscoverResultCard } from '@/components/search/SearchDiscoverResultCard'
 import { PowState, RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
+import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { sortArticlesByScore } from '@/lib/articles/scoring'
@@ -38,6 +41,7 @@ const SEARCH_STORAGE_KEY = 'search_state_v1'
 const SEARCH_RESTORE_FLAG = 'search_pending_restore'
 
 type SortKey = 'default' | 'rating' | 'distance'
+type DiscoverMode = 'ai' | 'hot' | 'articles' | 'ai_plan'
 
 const DEFAULT_SUGGESTIONS = [
   'ドッグキャンプ',
@@ -142,6 +146,20 @@ const IconThumbUp = ({ fill }: { fill: string }) => (
     <Path d="M512,216.906c-0.031-29.313-23.781-53.078-53.094-53.094h-75.891c-3.531,0-43.578,0-47.219,0c-6.953,0.063-13.328,1.094-17.969,1.031c-1.859,0-3.328-0.156-4.188-0.344L313,164.313l-0.156-0.469c-0.141-0.609-0.281-1.625-0.281-3.094c0-0.906,0.141-2.188,0.25-3.438l30.281-74.875c2.906-7.188,4.281-14.656,4.281-21.969c0.031-23.188-13.844-45.156-36.656-54.406c-7.156-2.891-14.641-4.281-21.984-4.281c-23.203-0.016-45.141,13.875-54.391,36.672l-0.047,0.078l-51.359,129.313h0.031c-3.438,8.063-6.203,15.625-8.906,22.156c-4.078,10.031-8.063,17.25-12.766,21.438c-2.359,2.125-4.922,3.719-8.484,4.969c-3.531,1.219-8.172,2.047-14.391,2.047c-3.781-0.016-7.375,0.422-10.891,1.078H44.5c-24.594,0-44.5,19.922-44.5,44.5v201.703c0,24.578,19.906,44.484,44.5,44.484h61.578c13.641,0,24.719-11.063,24.719-24.719v-20.484c4.328,2.531,8.891,4.828,13.797,6.672c17.156,6.5,37.531,9.219,62.063,9.219h191.25c29.313,0,53.094-23.719,53.094-53.047c0-6.891-1.406-13.453-3.828-19.453c21.156-7,36.453-26.875,36.453-50.375c0.016-9.594-2.688-18.547-7.141-26.25c6.422-5.25,10.781-12.156,13.266-19.375c2.719-7.75,3.656-15.906,3.656-24.203c0-5.141-1.094-10.141-2.969-15.016c-1.375-3.469-3.172-6.891-5.375-10.125C501.125,253.938,511.984,236.703,512,216.906z" />
   </Svg>
 )
+/** AIプラン：散歩ルート風（ピン2点＋経路）で他タブと判別しやすく */
+const IconPlan = ({ fill }: { fill: string }) => (
+  <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M6.5 20c-2 0-3.5-1.2-3.5-3s1.5-2.6 4-3c2.8-.4 4.5-.9 4.5-2.6S14 6 16.5 6"
+      stroke={fill}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeDasharray="0.1 3.4"
+    />
+    <Circle cx={5.5} cy={5} r={2.4} fill={fill} />
+    <Circle cx={18} cy={18.5} r={2.4} fill={fill} />
+  </Svg>
+)
 /** 炎は絵文字と同じくらいの視認性のシルエット。絵文字は端末により多色のままになり `color` が効かないため、他タブと同じ #fff / #888 を SVG で統一 */
 const IconHot = ({ fill }: { fill: string }) => (
   <Svg width={17} height={17} viewBox="0 0 24 24" fill={fill}>
@@ -164,12 +182,15 @@ type ArticleRow = {
 export default function SearchTab() {
   const router = useRouter()
   const isFocused = useIsFocused()
+  const insets = useSafeAreaInsets()
   const scrollRef = useRef<ScrollView>(null)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<PlaceResult[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
-  const [discoverMode, setDiscoverMode] = useState<'ai' | 'hot' | 'articles'>('articles')
+  const [discoverMode, setDiscoverMode] = useState<DiscoverMode>('articles')
+  /** AIプランの結果表示中は検索ヘッダー/タブを隠して全画面に */
+  const [aiPlanChromeVisible, setAiPlanChromeVisible] = useState(true)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('default')
   const [showSort, setShowSort] = useState(false)
@@ -193,6 +214,8 @@ export default function SearchTab() {
   const [recentArticleIds, setRecentArticleIds] = useState<string[]>([])
   const [adsRuntimeReady, setAdsRuntimeReady] = useState(false)
   const adsPrimedRef = useRef(false)
+  /** AIプラン表示時、検索ヘッダーの高さぶん下げてオーバーレイ配置する */
+  const [headerH, setHeaderH] = useState(0)
 
   useFocusEffect(
     useCallback(() => {
@@ -634,13 +657,19 @@ export default function SearchTab() {
     })
   }
 
+  /** 「AIプラン」チップ選択時は AiPlanTab を全画面オーバーレイで表示（挙動は従来のまま） */
+  const showAiPlan = !searched && discoverMode === 'ai_plan'
+
   return (
     <View style={styles.root}>
-      <AppHeader />
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
+        scrollEnabled={!showAiPlan}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24 },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -657,6 +686,9 @@ export default function SearchTab() {
           />
         }
       >
+        {/* ヘッダーはコンテンツと一緒に上へ流れる（固定しない） */}
+        <View onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}>
+        <AppHeader />
         <View style={styles.searchHeader}>
           <View style={styles.searchRow}>
             <View style={styles.searchInner}>
@@ -736,6 +768,16 @@ export default function SearchTab() {
                   <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>まとめ記事</Text>
                 </Pressable>
                 <Pressable
+                  style={[styles.discTab, discoverMode === 'ai_plan' && styles.discTabOn]}
+                  onPress={() => {
+                    Keyboard.dismiss()
+                    setDiscoverMode('ai_plan')
+                  }}
+                >
+                  <IconPlan fill={discoverMode === 'ai_plan' ? '#fff' : '#888'} />
+                  <Text style={[styles.discTabTxt, discoverMode === 'ai_plan' && styles.discTabTxtOn]}>AIプラン</Text>
+                </Pressable>
+                <Pressable
                   style={[styles.discTab, discoverMode === 'ai' && styles.discTabOn]}
                   onPress={() => {
                     Keyboard.dismiss()
@@ -759,7 +801,9 @@ export default function SearchTab() {
             </>
           ) : null}
         </View>
+        </View>
 
+        {!showAiPlan ? (
         <View style={styles.results}>
           {loading ? <RunningDog label="検索中..." /> : null}
           {!loading && searched && results.length === 0 ? <PowState label="見つかりませんでした" /> : null}
@@ -898,7 +942,14 @@ export default function SearchTab() {
             </>
           ) : null}
         </View>
+        ) : null}
       </ScrollView>
+
+      {showAiPlan ? (
+        <View style={[styles.aiPlanOverlay, { top: aiPlanChromeVisible ? headerH : 0 }]}>
+          <AiPlanTab onEmbeddedChromeVisibility={setAiPlanChromeVisible} />
+        </View>
+      ) : null}
 
       <Modal visible={showSort} transparent animationType="fade" onRequestClose={() => setShowSort(false)}>
         <Pressable
@@ -935,6 +986,13 @@ export default function SearchTab() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f7f6f3' },
   scrollContent: { paddingBottom: 24 },
+  aiPlanOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#f7f6f3',
+  },
   searchHeader: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ebebeb', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   searchInner: {
@@ -950,7 +1008,7 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
   },
   input: { flex: 1, fontSize: 12, color: '#2b2a28', paddingVertical: 4 },
-  searchGo: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#FFD84D' },
+  searchGo: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#FF8A1F' },
   searchGoTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   kbDismissBar: {
     alignSelf: 'center',
@@ -993,7 +1051,7 @@ const styles = StyleSheet.create({
   artImgPh: { backgroundColor: '#f5f5f5' },
   artBody: { padding: 16 },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  kwPill: { backgroundColor: '#FFF9E0', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
+  kwPill: { backgroundColor: '#FFF1E3', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
   kwPillTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   artTitle: { fontSize: 16, fontWeight: '800', color: '#2b2a28', marginBottom: 8 },
   artSum: { fontSize: 12, color: '#888', lineHeight: 18 },
@@ -1016,7 +1074,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
   },
   sortItem: { paddingHorizontal: 16, paddingVertical: 12 },
-  sortItemOn: { backgroundColor: '#FFF9E0' },
+  sortItemOn: { backgroundColor: '#FFF1E3' },
   sortItemTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
   sortItemTxtOn: { color: '#2b2a28' },
 })

@@ -1,0 +1,145 @@
+import { useCallback, useState } from 'react'
+import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
+import { useFocusEffect, useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
+import { colors } from '@/constants/colors'
+import { ALBUM_RETENTION_DAYS, fetchAlbumPhotos, type DogPhoto } from '@/lib/dog-photos'
+import { supabase } from '@/lib/supabase'
+
+const COLS = 3
+const CARD_MARGIN = 16
+const CARD_PADDING = 16
+const GRID_GAP = 8
+
+function tileSize(): number {
+  const screen = Dimensions.get('window').width
+  const inner = screen - CARD_MARGIN * 2 - CARD_PADDING * 2
+  return Math.floor((inner - GRID_GAP * (COLS - 1)) / COLS)
+}
+
+/** YYYY-MM-DD → M/D 表記 */
+function shortDate(takenOn: string): string {
+  const [, m, d] = takenOn.split('-')
+  if (!m || !d) return takenOn
+  return `${Number(m)}/${Number(d)}`
+}
+
+/** マイページ内のアルバム（カメラで撮った「今日の1枚」が溜まる） */
+export function AlbumSection() {
+  const router = useRouter()
+  const [photos, setPhotos] = useState<DogPhoto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [viewer, setViewer] = useState<DogPhoto | null>(null)
+  const size = tileSize()
+
+  const load = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      setPhotos([])
+      setLoading(false)
+      return
+    }
+    setPhotos(await fetchAlbumPhotos(user.id))
+    setLoading(false)
+  }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      void load()
+    }, [load])
+  )
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.head}>
+        <Text style={styles.title}>アルバム</Text>
+        <Text style={styles.retention}>保存{ALBUM_RETENTION_DAYS}日間</Text>
+      </View>
+
+      {!loading && photos.length === 0 ? (
+        <Pressable style={styles.empty} onPress={() => router.push('/(tabs)/camera')}>
+          <Ionicons name="camera-outline" size={28} color={colors.textMuted} />
+          <Text style={styles.emptyTxt}>カメラタブで「今日の1枚」を残そう</Text>
+        </Pressable>
+      ) : (
+        <View style={styles.grid}>
+          {photos.map((p) => (
+            <Pressable
+              key={p.id}
+              style={[styles.tile, { width: size, height: size }]}
+              onPress={() => setViewer(p)}
+            >
+              <Image source={{ uri: p.image_url }} style={styles.tileImg} contentFit="cover" transition={120} />
+              <View style={styles.tileDate}>
+                <Text style={styles.tileDateTxt}>{shortDate(p.taken_on)}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      <Modal visible={viewer != null} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
+        <Pressable style={styles.viewerRoot} onPress={() => setViewer(null)}>
+          {viewer ? (
+            <Image source={{ uri: viewer.image_url }} style={styles.viewerImg} contentFit="contain" />
+          ) : null}
+          <Pressable style={styles.viewerClose} onPress={() => setViewer(null)}>
+            <Ionicons name="close" size={24} color="#fff" />
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: CARD_PADDING,
+    marginHorizontal: CARD_MARGIN,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  title: { fontSize: 15, fontWeight: '800', color: colors.text },
+  retention: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
+  empty: { alignItems: 'center', gap: 8, paddingVertical: 28 },
+  emptyTxt: { fontSize: 13, color: colors.textMuted },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
+  tile: { borderRadius: 12, overflow: 'hidden', backgroundColor: colors.cardBg },
+  tileImg: { width: '100%', height: '100%' },
+  tileDate: {
+    position: 'absolute',
+    left: 6,
+    bottom: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  tileDateTxt: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  viewerRoot: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  viewerImg: { width: '100%', height: '80%' },
+  viewerClose: {
+    position: 'absolute',
+    top: 56,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+})

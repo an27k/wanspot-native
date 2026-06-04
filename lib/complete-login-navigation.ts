@@ -3,14 +3,15 @@ import { track } from '@/lib/analytics'
 
 type ReplaceRouter = { replace: (href: string) => void }
 
-/** メール / OAuth 共通: ログイン後の遷移（プロフィール有無で分岐） */
+/** メール / OAuth 共通: ログイン後の遷移（愛犬プロフィール有無で分岐） */
 export async function completeLoginNavigation(router: ReplaceRouter): Promise<void> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return
-  const { data: profile } = await supabase.from('users').select('id').eq('id', user.id).maybeSingle()
+  // 犬中心リデザイン: オンボーディング完了の判定は「dogs 行の有無」。
+  const { data: dog } = await supabase.from('dogs').select('id').eq('user_id', user.id).maybeSingle()
   track('login_completed')
-  if (!profile) router.replace('/onboarding/location')
+  if (!dog) router.replace('/onboarding/location')
   else router.replace('/(tabs)')
 }

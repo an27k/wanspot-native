@@ -5,18 +5,18 @@
     "version": "1.0.0",
     "jsEngine": "jsc",
     "orientation": "portrait",
-    "icon": "./assets/images/wanspot_icon_yellowbg.png",
+    "icon": "./assets/images/wanspot_icon_orange.png",
     "userInterfaceStyle": "light",
     "scheme": "wanspot",
     "splash": {
-      "image": "./assets/images/wanspot_image.png",
+      "image": "./assets/images/wanspot_icon_orange.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FF8A1F"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.wanspot.native",
-      "buildNumber": "94",
+      "buildNumber": "96",
       "usesAppleSignIn": true,
       "entitlements": {
         "com.apple.developer.applesignin": [
@@ -47,13 +47,13 @@
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/wanspot_image.png",
-        "backgroundColor": "#FFD84D"
+        "foregroundImage": "./assets/images/wanspot_icon_orange.png",
+        "backgroundColor": "#FF8A1F"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/images/wanspot_image.png"
+      "favicon": "./assets/images/wanspot_icon_orange.png"
     },
     "plugins": [
       "expo-router",
@@ -95,7 +95,8 @@
           "photosPermission": "ワンちゃんやプロフィールの写真を設定するため、写真ライブラリへのアクセスを許可してください。",
           "cameraPermission": "ワンちゃんやプロフィールの写真を撮影するため、カメラへのアクセスを許可してください。"
         }
-      ]
+      ],
+      "react-native-maps"
     ],
     "extra": {
       "supabaseUrl": "",

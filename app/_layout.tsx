@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler'
 import { useEffect } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import * as WebBrowser from 'expo-web-browser'

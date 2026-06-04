@@ -9,7 +9,7 @@ import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
 
-const STEP_DOTS = 5
+const STEP_DOTS = 4
 
 export default function OnboardingLocationPage() {
   const router = useRouter()
@@ -24,8 +24,8 @@ export default function OnboardingLocationPage() {
       const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
         Alert.alert(
-          '位置情報が必要です',
-          '近くの散歩エリアを提案するために、現在地の利用を許可してください。設定アプリからも変更できます。',
+          '現在地を取得できませんでした',
+          '近くの散歩エリアを提案するには位置情報が使えます。設定アプリから変更できます。',
           [
             { text: '閉じる', style: 'cancel' },
             ...(canAskAgain !== false ? ([{ text: '再試行', onPress: () => void requestAndSave() }] as const) : []),
@@ -60,14 +60,14 @@ export default function OnboardingLocationPage() {
         </View>
         <View style={styles.dots}>
           {Array.from({ length: STEP_DOTS }, (_, i) => (
-            <View key={i} style={[styles.dot, { backgroundColor: i <= 0 ? '#FFD84D' : '#e0e0e0' }]} />
+            <View key={i} style={[styles.dot, { backgroundColor: i <= 0 ? '#FF8A1F' : '#e0e0e0' }]} />
           ))}
         </View>
       </View>
 
-      <Text style={styles.h2}>位置情報の利用を許可してください</Text>
+      <Text style={styles.h2}>近くのワンちゃんスポットを表示するために</Text>
       <Text style={styles.hint}>
-        wanspotはあなたの現在地をもとに、近くのワンちゃんスポットやイベントを表示します。サービスを利用するために位置情報の許可が必要です。
+        wanspotはあなたの現在地をもとに、近くのワンちゃんスポットやイベントを表示します。位置情報を使用します。
       </Text>
 
       <TouchableOpacity style={[styles.next, busy && styles.nextOff]} onPress={() => void requestAndSave()} disabled={busy}>
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#FFD84D',
+    backgroundColor: '#FF8A1F',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F4F0',
   },
   optionSelected: {
-    backgroundColor: '#FFD84D',
+    backgroundColor: '#FF8A1F',
   },
   optionPressed: {
     opacity: 0.85,

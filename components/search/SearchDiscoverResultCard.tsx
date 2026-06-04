@@ -43,7 +43,7 @@ const IconGoogle = () => (
 )
 
 const IconStar = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="#FFD84D" stroke="#FFD84D" strokeWidth={1.5}>
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill="#FF8A1F" stroke="#FF8A1F" strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   },
   body: { padding: 12, gap: 4 },
   row1: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  catPill: { backgroundColor: '#FFF9E0', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  catPill: { backgroundColor: '#FFF1E3', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   catTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dist: { fontSize: 12, color: '#aaa' },
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: '#FFD84D',
+    backgroundColor: '#FF8A1F',
     color: '#2b2a28',
   },
   aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },

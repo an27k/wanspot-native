@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: '#FFD84D',
+    backgroundColor: '#FF8A1F',
     alignItems: 'center',
   },
   retryTxt: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
@@ -273,6 +273,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   sortLine: { paddingVertical: 12, paddingHorizontal: 16 },
-  sortLineOn: { backgroundColor: '#FFF9E0' },
+  sortLineOn: { backgroundColor: '#FFF1E3' },
   sortLineTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
 })

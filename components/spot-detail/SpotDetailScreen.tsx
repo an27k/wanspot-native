@@ -196,7 +196,7 @@ const IconHeart = ({ filled }: { filled: boolean }) => (
 )
 
 const IconStar = ({ filled, size = 28 }: { filled: boolean; size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? '#FFD84D' : 'none'} stroke={filled ? '#FFD84D' : '#ddd'} strokeWidth={1.5}>
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? '#FF8A1F' : 'none'} stroke={filled ? '#FF8A1F' : '#ddd'} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
@@ -217,7 +217,7 @@ function PriceLevel({ level }: { level: number | null }) {
     <View style={styles.priceLevelRow}>
       {[1, 2, 3, 4].map((i) => (
         <Svg key={i} width={px} height={px} viewBox="0 0 24 24">
-          <Circle cx={12} cy={12} r={10} fill={i <= level ? '#FFD84D' : '#e8e8e8'} />
+          <Circle cx={12} cy={12} r={10} fill={i <= level ? '#FF8A1F' : '#e8e8e8'} />
           <SvgTextNode
             x={12}
             y={12}
@@ -875,7 +875,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
                 setShowCheckInModal(true)
               }}
             >
-              <IconPaw size={16} color={checkedIn ? '#FFD84D' : '#2b2a28'} />
+              <IconPaw size={16} color={checkedIn ? '#FF8A1F' : '#2b2a28'} />
               <Text style={styles.actLbl}>{checkedIn ? '行った ✓' : '行った'}</Text>
             </Pressable>
           </View>
@@ -937,7 +937,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
 
           <View style={styles.card}>
             <View style={styles.aiHead}>
-              <IconPaw size={13} color="#FFD84D" />
+              <IconPaw size={13} color="#FF8A1F" />
               <Text style={styles.sectionLbl}>AI まとめ</Text>
             </View>
             {aiLoading ? (
@@ -1122,7 +1122,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFD84D',
+    backgroundColor: '#FF8A1F',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -1167,7 +1167,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ebebeb',
   },
-  catPill: { alignSelf: 'flex-start', backgroundColor: '#FFF9E0', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, marginBottom: 8 },
+  catPill: { alignSelf: 'flex-start', backgroundColor: '#FFF1E3', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, marginBottom: 8 },
   catTxt: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
   h1: { fontSize: 20, fontWeight: '800', color: '#2b2a28', lineHeight: 26 },
   addrRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 8 },
@@ -1196,7 +1196,7 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
   },
   actHalfLiked: { backgroundColor: '#FFF6E5', borderColor: '#f0e4c4' },
-  actHalfCheck: { backgroundColor: '#FFD84D', borderColor: '#FFD84D' },
+  actHalfCheck: { backgroundColor: '#FF8A1F', borderColor: '#FF8A1F' },
   actLbl: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
   metaCard: {
     flexDirection: 'row',
@@ -1274,7 +1274,7 @@ const styles = StyleSheet.create({
   aiHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   sectionLbl: { fontSize: 12, fontWeight: '700', color: '#aaa', letterSpacing: 0.6, marginBottom: 12 },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  kwPill: { backgroundColor: '#FFD84D', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  kwPill: { backgroundColor: '#FF8A1F', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   kwTxt: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
   aiBody: { fontSize: 14, lineHeight: 22, color: '#555' },
   revHint: { fontSize: 14, color: '#aaa', textAlign: 'center', paddingVertical: 16 },
@@ -1324,7 +1324,7 @@ const styles = StyleSheet.create({
   },
   taFoot: { fontSize: 12, color: '#aaa', lineHeight: 18 },
   primaryBtn: {
-    backgroundColor: '#FFD84D',
+    backgroundColor: '#FF8A1F',
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: 'center',

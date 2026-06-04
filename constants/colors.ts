@@ -1,10 +1,11 @@
 import { TOKENS } from '@/constants/color-tokens'
 
 export const colors = {
-  brand: '#FFD84D',
-  /** 主ボタン・CTA 用のやや薄い黄（`brand` よりソフト） */
-  brandButton: '#FFE8A8',
-  brandDark: '#e8c44a',
+  /** ブランド主色（Snapchat の黄に相当する wanspot のオレンジ） */
+  brand: '#FF8A1F',
+  /** 主ボタン・CTA 用のややソフトなオレンジ（`brand` より明るめ・濃いテキスト前提） */
+  brandButton: '#FFC785',
+  brandDark: '#E5740A',
   background: '#ffffff',
   cardBg: '#f7f6f3',
   border: '#ebebeb',

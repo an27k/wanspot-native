@@ -158,7 +158,7 @@ const IconChevron = () => (
 )
 
 const IconStarSm = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="#FFD84D" stroke="#FFD84D" strokeWidth={1.5}>
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill="#FF8A1F" stroke="#FF8A1F" strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
@@ -171,7 +171,7 @@ function PriceLevel({ level }: { level: number | null }) {
     <View style={{ flexDirection: 'row', gap: 2 }}>
       {[1, 2, 3, 4].map((i) => (
         <Svg key={i} width={10} height={10} viewBox="0 0 24 24">
-          <Circle cx={12} cy={12} r={10} fill={i <= level ? '#FFD84D' : '#e8e8e8'} />
+          <Circle cx={12} cy={12} r={10} fill={i <= level ? '#FF8A1F' : '#e8e8e8'} />
           <SvgTextNode x={12} y={16} textAnchor="middle" fontSize={12} fill={i <= level ? '#2b2a28' : '#bbb'} fontWeight="bold">
             ¥
           </SvgTextNode>
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 12,
     borderRadius: 16,
-    backgroundColor: '#FFF9E0',
+    backgroundColor: '#FFF1E3',
     borderWidth: 1,
     borderColor: '#e8c84a',
   },
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
   spotImg: { width: '100%', height: '100%' },
   spotBody: { padding: 12, gap: 4 },
   spotTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  catPill: { backgroundColor: '#FFF9E0', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  catPill: { backgroundColor: '#FFF1E3', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   catPillTxt: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
   rateMini: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateMiniTxt: { fontSize: 12, color: '#888' },
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: '#FFD84D',
+    backgroundColor: '#FF8A1F',
     alignItems: 'center',
   },
   spotCtaTxt: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
@@ -656,7 +656,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#FFD84D',
+    backgroundColor: '#FF8A1F',
   },
   relatedBtnTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   relatedNone: { fontSize: 12, color: '#bbb' },

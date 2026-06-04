@@ -9,8 +9,8 @@ export const TOKENS = {
     disabled: '#ccc',
   },
   brand: {
-    yellow: '#FFD84D',
-    yellowLight: '#FFF9E0',
+    yellow: '#FF8A1F',
+    yellowLight: '#FFF1E3',
   },
   surface: {
     primary: '#ffffff',

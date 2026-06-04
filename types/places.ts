@@ -8,6 +8,8 @@ export type PlaceResult = {
   address: string
   photo_ref: string | null
   rating: number | null
+  /** Google Places のレビュー件数（API が返す場合） */
+  user_ratings_total?: number | null
   price_level: number | null
   /** Google Places types（検索レスポンスに含まれる場合） */
   types?: string[]

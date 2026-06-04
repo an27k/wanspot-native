@@ -78,6 +78,12 @@ export default function DogPage() {
   const [gender, setGender] = useState<'male' | 'female' | null>(null)
   const [vaccineCombo, setVaccineCombo] = useState<boolean | null>(null)
   const [vaccineRabies, setVaccineRabies] = useState<boolean | null>(null)
+  const [comboY, setComboY] = useState('')
+  const [comboM, setComboM] = useState('')
+  const [comboD, setComboD] = useState('')
+  const [rabiesY, setRabiesY] = useState('')
+  const [rabiesM, setRabiesM] = useState('')
+  const [rabiesD, setRabiesD] = useState('')
   const [dogPhotoUri, setDogPhotoUri] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -155,6 +161,8 @@ export default function DogPage() {
       const prev = JSON.parse((await AsyncStorage.getItem('ob_dog')) || '{}')
       const prevPhotoUrl = typeof prev?.photo_url === 'string' ? prev.photo_url : null
 
+      const comboDate = vaccineCombo === true ? ownerBirthdayToYmd(comboY, comboM, comboD) : null
+      const rabiesDate = vaccineRabies === true ? ownerBirthdayToYmd(rabiesY, rabiesM, rabiesD) : null
       const obDogPayload = JSON.stringify({
         name,
         year: dogYear,
@@ -164,6 +172,8 @@ export default function DogPage() {
         gender,
         vaccineCombo,
         vaccineRabies,
+        vaccineComboDate: comboDate,
+        vaccineRabiesDate: rabiesDate,
         ...(prevPhotoUrl ? { photo_url: prevPhotoUrl } : {}),
       })
       await AsyncStorage.setItem('ob_dog', obDogPayload)
@@ -188,7 +198,7 @@ export default function DogPage() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Header progress={2} total={5} />
+        <Header progress={2} total={4} />
 
         <Text style={styles.title}>愛犬のことを{'\n'}教えてください</Text>
 
@@ -220,7 +230,7 @@ export default function DogPage() {
           />
         </FormField>
 
-        <FormField label="生年月日" required hint="正確な日付がわからない場合は、推定でOKです">
+        <FormField label="愛犬の生年月日" required hint="正確な日付がわからない場合は、推定でOKです">
           <View style={styles.birthdayCard}>
             <OwnerBirthdayPickers
               compact
@@ -274,31 +284,97 @@ export default function DogPage() {
           </View>
         </FormField>
 
-        {[
-          { label: '混合ワクチン3回', state: vaccineCombo, set: setVaccineCombo },
-          { label: '狂犬病ワクチン', state: vaccineRabies, set: setVaccineRabies },
-        ].map(({ label, state, set }) => (
-          <FormField key={label} label={label} required>
-            <View style={styles.row2}>
-              {[true, false].map((v) => {
-                const on = state === v
-                return (
-                  <Pressable
-                    key={String(v)}
-                    onPress={() => set(v)}
-                    style={({ pressed }) => [
-                      styles.optionHalf,
-                      on && styles.optionHalfOn,
-                      pressed && styles.optionHalfPressed,
-                    ]}
-                  >
-                    <Text style={[styles.optionHalfTxtSm, on && { color: '#1A1A1A' }]}>{v ? 'YES' : 'NO'}</Text>
-                  </Pressable>
-                )
-              })}
+        <FormField label="混合ワクチン3回" required>
+          <View style={styles.row2}>
+            {[true, false].map((v) => {
+              const on = vaccineCombo === v
+              return (
+                <Pressable
+                  key={String(v)}
+                  onPress={() => setVaccineCombo(v)}
+                  style={({ pressed }) => [styles.optionHalf, on && styles.optionHalfOn, pressed && styles.optionHalfPressed]}
+                >
+                  <Text style={[styles.optionHalfTxtSm, on && { color: '#1A1A1A' }]}>{v ? 'YES' : 'NO'}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        </FormField>
+
+        {vaccineCombo === true ? (
+          <FormField label="混合ワクチンの接種日（任意）" hint="わかる範囲でOK。あとからマイページで変更できます。">
+            <View style={styles.birthdayCard}>
+              <OwnerBirthdayPickers
+                compact
+                fieldLabel=""
+                hint=""
+                year={comboY}
+                month={comboM}
+                day={comboD}
+                onChangeYear={(v) => {
+                  setComboY(v)
+                  void Haptics.selectionAsync()
+                }}
+                onChangeMonth={(v) => {
+                  setComboM(v)
+                  void Haptics.selectionAsync()
+                }}
+                onChangeDay={(v) => {
+                  setComboD(v)
+                  void Haptics.selectionAsync()
+                }}
+                yearMin={dogYBounds.min}
+                yearMax={dogYBounds.max}
+              />
             </View>
           </FormField>
-        ))}
+        ) : null}
+
+        <FormField label="狂犬病ワクチン" required>
+          <View style={styles.row2}>
+            {[true, false].map((v) => {
+              const on = vaccineRabies === v
+              return (
+                <Pressable
+                  key={String(v)}
+                  onPress={() => setVaccineRabies(v)}
+                  style={({ pressed }) => [styles.optionHalf, on && styles.optionHalfOn, pressed && styles.optionHalfPressed]}
+                >
+                  <Text style={[styles.optionHalfTxtSm, on && { color: '#1A1A1A' }]}>{v ? 'YES' : 'NO'}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        </FormField>
+
+        {vaccineRabies === true ? (
+          <FormField label="狂犬病ワクチンの接種日（任意）" hint="わかる範囲でOK。あとからマイページで変更できます。">
+            <View style={styles.birthdayCard}>
+              <OwnerBirthdayPickers
+                compact
+                fieldLabel=""
+                hint=""
+                year={rabiesY}
+                month={rabiesM}
+                day={rabiesD}
+                onChangeYear={(v) => {
+                  setRabiesY(v)
+                  void Haptics.selectionAsync()
+                }}
+                onChangeMonth={(v) => {
+                  setRabiesM(v)
+                  void Haptics.selectionAsync()
+                }}
+                onChangeDay={(v) => {
+                  setRabiesD(v)
+                  void Haptics.selectionAsync()
+                }}
+                yearMin={dogYBounds.min}
+                yearMax={dogYBounds.max}
+              />
+            </View>
+          </FormField>
+        ) : null}
       </ScrollView>
 
       <View style={[styles.ctaContainer, { paddingBottom: insets.bottom + 32 }]}>
@@ -391,7 +467,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  optionHalfOn: { backgroundColor: '#FFC107' },
+  optionHalfOn: { backgroundColor: '#FF8A1F' },
   optionHalfPressed: { transform: [{ scale: 0.97 }], opacity: 0.85 },
   optionHalfTxt: { fontSize: 24, fontWeight: '700', color: '#999' },
   optionHalfTxtSm: { fontSize: 14, fontWeight: '700', color: '#999' },
@@ -407,13 +483,13 @@ const styles = StyleSheet.create({
     borderTopColor: '#EEE',
   },
   ctaButton: {
-    backgroundColor: '#FFC107',
+    backgroundColor: '#FF8A1F',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
-  ctaButtonPressed: { backgroundColor: '#FFB300', transform: [{ scale: 0.98 }] },
+  ctaButtonPressed: { backgroundColor: '#E5740A', transform: [{ scale: 0.98 }] },
   ctaText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
   ctaTextDisabled: { color: '#999' },
 })

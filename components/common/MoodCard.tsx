@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   moodCardSelected: {
-    backgroundColor: '#FFD84D',
+    backgroundColor: '#FF8A1F',
   },
   moodCardPressed: {
     opacity: 0.85,

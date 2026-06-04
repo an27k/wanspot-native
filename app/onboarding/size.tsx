@@ -17,7 +17,7 @@ const SIZES = [
 
 type Size = (typeof SIZES)[number]['key']
 
-const STEP_DOTS = 5
+const STEP_DOTS = 4
 
 export default function SizePage() {
   const router = useRouter()
@@ -52,7 +52,7 @@ export default function SizePage() {
         </View>
         <View style={styles.dots}>
           {Array.from({ length: STEP_DOTS }, (_, i) => (
-            <View key={i} style={[styles.dot, { backgroundColor: i <= 2 ? '#FFD84D' : '#e0e0e0' }]} />
+            <View key={i} style={[styles.dot, { backgroundColor: i <= 2 ? '#FF8A1F' : '#e0e0e0' }]} />
           ))}
         </View>
       </View>
@@ -89,14 +89,14 @@ const styles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4 },
   h2: { fontSize: 24, fontWeight: '800', color: '#2b2a28' },
   card: { width: '100%', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 16 },
-  cardOn: { backgroundColor: '#FFF9E0', borderWidth: 2, borderColor: '#FFD84D' },
+  cardOn: { backgroundColor: '#FFF1E3', borderWidth: 2, borderColor: '#FF8A1F' },
   cardOff: { backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e8e8e8' },
   cardTxt: { fontWeight: '700', fontSize: 14 },
   next: {
     marginTop: 8,
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#FFD84D',
+    backgroundColor: '#FF8A1F',
     alignItems: 'center',
     justifyContent: 'center',
   },

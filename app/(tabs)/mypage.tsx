@@ -1,6 +1,5 @@
-// import * as ImagePicker from 'expo-image-picker'
-import * as Location from 'expo-location'
-import { useCallback, useEffect, useState } from 'react'
+import * as Linking from 'expo-linking'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Image,
@@ -19,7 +18,8 @@ import Svg, { Path } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { AppHeader } from '@/components/AppHeader'
-import { DogPawPlaceholder } from '@/components/events/EventCard'
+import { AlbumSection } from '@/components/album/AlbumSection'
+import { DogPawPlaceholder } from '@/components/DogPawPlaceholder'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
@@ -29,11 +29,10 @@ import {
   ownerBirthdayToYmd,
   splitYmdToParts,
 } from '@/components/OwnerBirthdayPickers'
-import { mergeUnknownWalkTags, WalkAreaTagPicker } from '@/components/walk-area/WalkAreaTagPicker'
-import { defaultBioFromDog } from '@/lib/default-bio'
+import { pickFromLibrary } from '@/lib/image-picker'
+import { getWanspotApiBase } from '@/lib/wanspot-api'
+import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { updateUserWithWalkAreas } from '@/lib/persist-user-walk-area'
-import { normalizeWalkAreaTagsFromDb, walkAreaTagsForUpsert, walkTagsFromUserRow } from '@/lib/walk-area-tags'
 
 type UserProfile = {
   id: string
@@ -71,11 +70,6 @@ const DOG_SIZE_LABEL: Record<'XS' | 'S' | 'M' | 'L' | 'XL', string> = {
   L: '大型犬（25〜40kg）',
   XL: '超大型犬（40kg〜）',
 }
-
-const PARENT_OPTIONS = [
-  { value: 'papa', label: 'パパ' },
-  { value: 'mama', label: 'ママ' },
-]
 
 const IconCamera = ({ size = 18 }: { size?: number }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -176,13 +170,21 @@ function VaccineStampMark() {
 export default function MypageTab() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { signOut } = useAuth()
+  const apiBase = useMemo(() => getWanspotApiBase(), [])
+
+  const openWeb = useCallback(
+    (path: string) => {
+      if (!apiBase) return
+      void Linking.openURL(`${apiBase}${path}`)
+    },
+    [apiBase]
+  )
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [dog, setDog] = useState<Dog | null>(null)
   const [loading, setLoading] = useState(true)
   const [editingDog, setEditingDog] = useState(false)
-  const [editingOwner, setEditingOwner] = useState(false)
   const [savingDog, setSavingDog] = useState(false)
-  const [savingOwner, setSavingOwner] = useState(false)
 
   const [editDogName, setEditDogName] = useState('')
   const [editDogBreed, setEditDogBreed] = useState('')
@@ -199,22 +201,9 @@ export default function MypageTab() {
   const [vaccinePickerDay, setVaccinePickerDay] = useState('')
   const [dogPhotoPreview, setDogPhotoPreview] = useState<string | null>(null)
   const [dogPhotoUri, setDogPhotoUri] = useState<string | null>(null)
-
-  const [editName, setEditName] = useState('')
-  const [editParentType, setEditParentType] = useState('papa')
-  const [editBio, setEditBio] = useState('')
-  const [editOwnerYear, setEditOwnerYear] = useState('')
-  const [editOwnerMonth, setEditOwnerMonth] = useState('')
-  const [editOwnerDay, setEditOwnerDay] = useState('')
-  const [editWalkAreaTags, setEditWalkAreaTags] = useState<string[]>([])
-  const [ownerAreaAnchor, setOwnerAreaAnchor] = useState<{ lat: number; lng: number } | null>(null)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
-  const [avatarUri, setAvatarUri] = useState<string | null>(null)
   const [dogPhotoRemoved, setDogPhotoRemoved] = useState(false)
-  const [ownerPhotoRemoved, setOwnerPhotoRemoved] = useState(false)
   const [pullRefreshing, setPullRefreshing] = useState(false)
 
-  const ownerEditBirthdayYmd = ownerBirthdayToYmd(editOwnerYear, editOwnerMonth, editOwnerDay)
   const dogEditBirthdayYmd = ownerBirthdayToYmd(editDogYear, editDogMonth, editDogDay)
   const dogYBounds = dogBirthdayYearBounds()
 
@@ -232,10 +221,7 @@ export default function MypageTab() {
         .single(),
       supabase.from('dogs').select('*').eq('user_id', user.id).maybeSingle(),
     ])
-    if (userData) {
-      console.log('walk_area:', userData.walk_area, 'walk_area_tags:', userData.walk_area_tags)
-      setProfile(userData as UserProfile)
-    }
+    if (userData) setProfile(userData as UserProfile)
     if (dogData) setDog({ ...(dogData as Dog), gender: (dogData as { gender?: 'male' | 'female' | null }).gender ?? null })
     setLoading(false)
   }, [router])
@@ -243,16 +229,6 @@ export default function MypageTab() {
   useEffect(() => {
     void load()
   }, [load])
-
-  // ==== TEMP: REMOVE AFTER INTEGRATION TEST ====
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      console.log('>>> ACCESS_TOKEN FOR CURL TEST <<<')
-      console.log(data.session?.access_token)
-      console.log('>>> END ACCESS_TOKEN <<<')
-    })
-  }, [])
-  // ==== END TEMP ====
 
   const onPullRefreshProfile = useCallback(async () => {
     setPullRefreshing(true)
@@ -266,26 +242,6 @@ export default function MypageTab() {
   useEffect(() => {
     if (!editingDog) setVaccinePickerKind(null)
   }, [editingDog])
-
-  useEffect(() => {
-    if (!editingOwner) {
-      setOwnerAreaAnchor(null)
-      return
-    }
-    void (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') {
-        setOwnerAreaAnchor(null)
-        return
-      }
-      try {
-        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-        setOwnerAreaAnchor({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-      } catch {
-        setOwnerAreaAnchor(null)
-      }
-    })()
-  }, [editingOwner])
 
   const startEditDog = () => {
     if (!dog) return
@@ -307,43 +263,12 @@ export default function MypageTab() {
     setEditingDog(true)
   }
 
-  const startEditOwner = () => {
-    setEditName(profile?.name ?? '')
-    setEditParentType(profile?.parent_type ?? 'papa')
-    setEditBio(profile?.bio ?? '')
-    const p = splitYmdToParts(profile?.birthday ?? null)
-    setEditOwnerYear(p.y)
-    setEditOwnerMonth(p.m)
-    setEditOwnerDay(p.d)
-    setEditWalkAreaTags(mergeUnknownWalkTags(walkTagsFromUserRow(profile)))
-    setAvatarPreview(null)
-    setAvatarUri(null)
-    setOwnerPhotoRemoved(false)
-    setEditingOwner(true)
-  }
-
-  const pickDogPhoto = () => {
-    Alert.alert('準備中', '写真の選択は準備中です')
-    // const p = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    // if (!p.granted) return
-    // const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 })
-    // if (!r.canceled && r.assets[0]?.uri) {
-    //   setDogPhotoUri(r.assets[0].uri)
-    //   setDogPhotoPreview(r.assets[0].uri)
-    //   setDogPhotoRemoved(false)
-    // }
-  }
-
-  const pickAvatar = () => {
-    Alert.alert('準備中', '写真の選択は準備中です')
-    // const p = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    // if (!p.granted) return
-    // const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 })
-    // if (!r.canceled && r.assets[0]?.uri) {
-    //   setAvatarUri(r.assets[0].uri)
-    //   setAvatarPreview(r.assets[0].uri)
-    //   setOwnerPhotoRemoved(false)
-    // }
+  const pickDogPhoto = async () => {
+    const img = await pickFromLibrary()
+    if (!img) return
+    setDogPhotoUri(img.uri)
+    setDogPhotoPreview(img.uri)
+    setDogPhotoRemoved(false)
   }
 
   const saveDog = async () => {
@@ -402,62 +327,6 @@ export default function MypageTab() {
     }
   }
 
-  const saveOwner = async () => {
-    if (!profile) return
-    const birthdayYmd = ownerEditBirthdayYmd
-    setSavingOwner(true)
-    try {
-      let photoUrl: string | null = profile.photo_url
-      if (avatarUri) {
-        const resFetch = await fetch(avatarUri)
-        const buf = await resFetch.arrayBuffer()
-        const path = `${profile.id}/avatar.jpg`
-        await supabase.storage.from('avatars').upload(path, buf, { upsert: true, contentType: 'image/jpeg' })
-        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
-        photoUrl = urlData.publicUrl
-      } else if (ownerPhotoRemoved) {
-        photoUrl = null
-      }
-      const persistedTags = walkAreaTagsForUpsert(editWalkAreaTags)
-      const { error: ownerSaveError } = await updateUserWithWalkAreas(
-        supabase,
-        profile.id,
-        {
-          name: editName.trim(),
-          parent_type: editParentType,
-          bio: editBio.trim() || null,
-          birthday: birthdayYmd ?? null,
-          photo_url: photoUrl,
-        },
-        editWalkAreaTags
-      )
-      if (ownerSaveError) {
-        Alert.alert('保存に失敗しました（オーナー）', ownerSaveError.message)
-        return
-      }
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              name: editName.trim(),
-              parent_type: editParentType,
-              bio: editBio.trim() || null,
-              birthday: birthdayYmd ?? null,
-              photo_url: photoUrl,
-              walk_area_tags: persistedTags,
-              walk_area: persistedTags.length > 0 ? JSON.stringify(persistedTags) : null,
-            }
-          : prev
-      )
-      setEditingOwner(false)
-      setAvatarPreview(null)
-      setAvatarUri(null)
-      setOwnerPhotoRemoved(false)
-    } finally {
-      setSavingOwner(false)
-    }
-  }
-
   const calcAge = (birthday: string) => {
     const birth = new Date(birthday)
     const now = new Date()
@@ -467,20 +336,8 @@ export default function MypageTab() {
     return years === 0 ? `${months}ヶ月` : `${years}歳${months}ヶ月`
   }
 
-  const calcHumanAgeYears = (birthday: string) => {
-    const birth = parseYmd(birthday)
-    const now = new Date()
-    let y = now.getFullYear() - birth.getFullYear()
-    const m = now.getMonth() - birth.getMonth()
-    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) y -= 1
-    return `${Math.max(0, y)}歳`
-  }
-
-  const parentLabel = (type: string | null) => PARENT_OPTIONS.find((o) => o.value === type)?.label ?? 'パパ'
-
-  /** スクロール末尾がタブバーに隠れないよう（タブ画面の高さは既にタブバー上まで） */
-  const padBottom = TAB_BAR_HEIGHT + insets.bottom
-  const avatarSrc = ownerPhotoRemoved ? null : (avatarPreview ?? profile?.photo_url)
+  /** スクロール末尾が透過フローティングタブバーに隠れないよう余白を確保 */
+  const padBottom = TAB_BAR_HEIGHT + insets.bottom + 16
 
   const persistVaccineDate = useCallback((kind: 'rabies' | 'mixed', ymd: string) => {
     if (!editingDog) return
@@ -589,11 +446,10 @@ export default function MypageTab() {
 
   return (
     <View style={styles.root}>
-      <AppHeader />
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingTop: 6,
+          paddingTop: 0,
           paddingBottom: padBottom,
           gap: 12,
         }}
@@ -606,6 +462,10 @@ export default function MypageTab() {
           />
         }
       >
+        {/* ヘッダーはコンテンツと一緒に上へ流れる（固定しない） */}
+        <View style={{ marginHorizontal: -16, marginBottom: 6 }}>
+          <AppHeader />
+        </View>
         {dog ? (
             <View style={styles.profileCard}>
             <Text style={styles.cardSectionLabel} accessibilityRole="header">
@@ -850,158 +710,7 @@ export default function MypageTab() {
           </View>
         ) : null}
 
-        <View style={styles.profileCard}>
-          <Text style={styles.cardSectionLabel} accessibilityRole="header">
-            オーナー
-          </Text>
-          {!editingOwner ? (
-            <Pressable
-              style={styles.cardEditTopRight}
-              onPress={startEditOwner}
-              hitSlop={8}
-              accessibilityLabel="オーナープロフィールを編集"
-            >
-              <IconEditSmall size={22} />
-            </Pressable>
-          ) : null}
-          <View style={styles.profileMainCol}>
-            <View style={[styles.avatar80Wrap, editingOwner && styles.avatar80WrapEditing]}>
-              <View style={[styles.avatar80, styles.avatar80Owner]}>
-                {avatarSrc ? (
-                  <Image source={{ uri: avatarSrc }} style={styles.avatar80Img} resizeMode="cover" />
-                ) : (
-                  <Ionicons name="person-outline" size={28} color={colors.textMuted} />
-                )}
-              </View>
-              {editingOwner ? (
-                <AvatarCameraFab onPress={() => void pickAvatar()} accessibilityLabel="プロフィール写真を変更" />
-              ) : null}
-            </View>
-            {editingOwner && (avatarPreview ?? profile?.photo_url) && !ownerPhotoRemoved ? (
-              <Pressable
-                style={styles.photoRemoveBtn}
-                onPress={() => {
-                  setOwnerPhotoRemoved(true)
-                  setAvatarPreview(null)
-                  setAvatarUri(null)
-                }}
-                accessibilityLabel="プロフィール写真を削除"
-              >
-                <Text style={styles.photoRemoveTxt}>写真を削除</Text>
-              </Pressable>
-            ) : null}
-            {editingOwner ? (
-              <View style={[styles.profileEditFields, styles.profileEditFieldsAfterAvatar]}>
-                <TextInput
-                  style={styles.inp}
-                  value={editName}
-                  onChangeText={setEditName}
-                  placeholder="名前"
-                  placeholderTextColor={colors.textMuted}
-                />
-                <View style={styles.parentRow}>
-                  {PARENT_OPTIONS.map((opt) => (
-                    <Pressable
-                      key={opt.value}
-                      style={[styles.parentChip, editParentType === opt.value && styles.parentChipOn]}
-                      onPress={() => setEditParentType(opt.value)}
-                    >
-                      <Text style={[styles.parentChipTxt, editParentType === opt.value && styles.parentChipTxtOn]}>{opt.label}</Text>
-                    </Pressable>
-                    ))}
-                  </View>
-                  <View style={styles.birthdayPickerCard}>
-                    <OwnerBirthdayPickers
-                      fieldLabel="生年月日（任意）"
-                      hint="未入力のまま保存すると年齢表示は省略されます。"
-                      year={editOwnerYear}
-                      month={editOwnerMonth}
-                      day={editOwnerDay}
-                      onChangeYear={setEditOwnerYear}
-                      onChangeMonth={setEditOwnerMonth}
-                      onChangeDay={setEditOwnerDay}
-                    />
-                  </View>
-                  <Text style={styles.walkAreaEditLbl}>よく散歩するエリア</Text>
-                  <Text style={styles.walkAreaEditHint}>近くの候補は位置情報オンで表示されます。検索で全国の主要エリアから選べます。</Text>
-                  <WalkAreaTagPicker anchor={ownerAreaAnchor} value={editWalkAreaTags} onChange={setEditWalkAreaTags} />
-                </View>
-              ) : (
-              <>
-                <Text style={styles.profileNameBold}>{profile?.name ?? '名前未設定'}</Text>
-                <View style={styles.ownerTitleRow}>
-                  <Text
-                    style={[
-                      styles.ownerRoleLabel,
-                      profile?.parent_type === 'mama' ? styles.ownerRoleMama : styles.ownerRolePapa,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {parentLabel(profile?.parent_type ?? null)}
-                  </Text>
-                  {profile?.birthday?.trim() && /^\d{4}-\d{2}-\d{2}$/.test(profile.birthday.trim()) ? (
-                    <>
-                      <Text style={styles.ownerTitleSlash}> / </Text>
-                      <Text style={styles.ownerAgeMuted} numberOfLines={1}>
-                        {calcHumanAgeYears(profile.birthday)}
-                      </Text>
-                    </>
-                  ) : null}
-                </View>
-                {(() => {
-                  const tags = normalizeWalkAreaTagsFromDb(profile?.walk_area_tags)
-                  if (tags.length === 0) return null
-                  return (
-                    <View style={styles.walkAreaBelowBio}>
-                      <View style={styles.walkAreaTagRow}>
-                        {tags.map((tag) => (
-                          <View key={tag} style={styles.walkAreaReadTagPill} accessibilityLabel={`散歩エリア ${tag}`}>
-                            <Text style={styles.walkAreaReadTagTxt}>{tag}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                  )
-                })()}
-              </>
-            )}
-          </View>
-          {editingOwner ? (
-            <TextInput
-              style={[styles.inp, styles.bioInp]}
-              value={editBio}
-              onChangeText={setEditBio}
-              placeholder="自己紹介（任意）"
-              placeholderTextColor={colors.textMuted}
-              multiline
-            />
-          ) : (
-            <>
-              <View style={styles.profileDivider} />
-              <Text style={styles.ownerBioDisplay}>
-                {(profile?.bio && profile.bio.trim())
-                  ? profile.bio
-                  : defaultBioFromDog({ name: dog?.name, breed: dog?.breed })}
-              </Text>
-            </>
-          )}
-          {editingOwner ? (
-            <View style={styles.btnRow}>
-              <Pressable
-                style={styles.btnGhost}
-                onPress={() => {
-                  setOwnerPhotoRemoved(false)
-                  setEditingOwner(false)
-                }}
-              >
-                <Text style={styles.btnGhostTxt}>キャンセル</Text>
-              </Pressable>
-                <Pressable style={styles.btnPri} onPress={() => void saveOwner()} disabled={savingOwner}>
-                  <Text style={styles.btnPriTxt}>{savingOwner ? '保存中...' : '保存する'}</Text>
-                </Pressable>
-            </View>
-          ) : null}
-        </View>
+        <AlbumSection />
 
         <View style={styles.card}>
           <Text style={styles.evTitle}>いいねしたスポット</Text>
@@ -1015,16 +724,60 @@ export default function MypageTab() {
           <Pressable style={styles.evCta} onPress={() => router.push('/checkins')} accessibilityLabel="行った一覧へ">
             <Text style={styles.evCtaTxt}>行った一覧へ</Text>
           </Pressable>
-          <View style={styles.listSplitDivider} />
-          <Text style={styles.evTitle}>主催したイベント</Text>
-          <Text style={styles.evDesc}>作成したイベントの一覧・編集はこちらから</Text>
-          <Pressable style={styles.evCta} onPress={() => router.push('/mypage/events')}>
-            <Text style={styles.evCtaTxt}>イベント管理へ</Text>
-          </Pressable>
         </View>
 
         <View style={styles.settingsBlock}>
           <Text style={styles.settingsBlockTitle}>設定</Text>
+
+          <View style={styles.settingsCard}>
+            <Pressable
+              style={({ pressed }) => [styles.settingsRow, pressed && { opacity: 0.7 }]}
+              onPress={() => openWeb('/contact')}
+              accessibilityRole="button"
+              accessibilityLabel="お問い合わせ"
+            >
+              <Ionicons name="mail-outline" size={20} color={colors.text} />
+              <Text style={styles.settingsRowTxt}>お問い合わせ</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+            </Pressable>
+            <View style={styles.settingsRowDivider} />
+            <Pressable
+              style={({ pressed }) => [styles.settingsRow, pressed && { opacity: 0.7 }]}
+              onPress={() => openWeb('/privacy')}
+              accessibilityRole="button"
+              accessibilityLabel="プライバシーポリシー"
+            >
+              <Ionicons name="shield-checkmark-outline" size={20} color={colors.text} />
+              <Text style={styles.settingsRowTxt}>プライバシーポリシー</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+            </Pressable>
+            <View style={styles.settingsRowDivider} />
+            <Pressable
+              style={({ pressed }) => [styles.settingsRow, pressed && { opacity: 0.7 }]}
+              onPress={() => openWeb('/terms')}
+              accessibilityRole="button"
+              accessibilityLabel="利用規約"
+            >
+              <Ionicons name="document-text-outline" size={20} color={colors.text} />
+              <Text style={styles.settingsRowTxt}>利用規約</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+            </Pressable>
+            <View style={styles.settingsRowDivider} />
+            <Pressable
+              style={({ pressed }) => [styles.settingsRow, pressed && { opacity: 0.7 }]}
+              onPress={async () => {
+                await signOut()
+                router.replace('/(auth)/login')
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="ログアウト"
+            >
+              <Ionicons name="log-out-outline" size={20} color={colors.text} />
+              <Text style={styles.settingsRowTxt}>ログアウト</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+            </Pressable>
+          </View>
+
           <Pressable
             onPress={() => router.push('/account-delete')}
             style={({ pressed }) => [styles.settingsDangerCard, pressed && { opacity: 0.88 }]}
@@ -1135,7 +888,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: '#FFF9E0',
+    backgroundColor: '#FFF1E3',
   },
   walkAreaTagTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
   walkAreaEmpty: { fontSize: 13, fontWeight: '600', color: colors.textMuted, textAlign: 'center', marginTop: 4 },
@@ -1280,7 +1033,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   walkAreaReadTagPill: {
-    backgroundColor: '#FFF8D6',
+    backgroundColor: '#FFEEDD',
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 12,
@@ -1479,6 +1232,22 @@ const styles = StyleSheet.create({
   listSplitDivider: { height: 1, backgroundColor: colors.border, marginTop: 20, marginBottom: 4 },
   settingsBlock: { marginHorizontal: 16, marginTop: 8, marginBottom: 8, gap: 8 },
   settingsBlockTitle: { fontSize: 12, color: colors.textMuted, fontWeight: '600', marginLeft: 4 },
+  settingsCard: {
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  settingsRowTxt: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  settingsRowDivider: { height: 1, backgroundColor: colors.border, marginLeft: 48 },
   settingsDangerCard: {
     backgroundColor: colors.cardBg,
     borderRadius: 16,
