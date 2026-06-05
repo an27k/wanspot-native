@@ -4,6 +4,7 @@ import type { SharedValue } from 'react-native-reanimated'
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { NEARBY_DEFAULT_SHEET_INDEX } from '@/lib/nearby/constants'
 import { NearbySheetSpotCard } from '@/components/nearby/NearbySheetSpotCard'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 
@@ -128,7 +129,7 @@ export const NearbyBottomSheet = forwardRef<NearbySheetHandle, NearbyBottomSheet
     <>
       <BottomSheet
         ref={sheetRef}
-        index={1}
+        index={NEARBY_DEFAULT_SHEET_INDEX}
         snapPoints={snapPoints}
         enablePanDownToClose={false}
         animatedIndex={animatedIndex}

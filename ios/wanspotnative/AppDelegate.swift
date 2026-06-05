@@ -25,13 +25,6 @@ class AppDelegate: ExpoAppDelegate {
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
-    // Maps SDK は React Native 起動より前に初期化（後だとタイルが真っ白になる）
-#if canImport(GoogleMaps)
-    if let apiKey = Bundle.main.infoDictionary?["GMSApiKey"] as? String, !apiKey.isEmpty {
-      GMSServices.provideAPIKey(apiKey)
-    }
-#endif
-
 #if os(iOS) || os(tvOS)
     window = UIWindow(frame: UIScreen.main.bounds)
     factory.startReactNative(
@@ -40,6 +33,11 @@ class AppDelegate: ExpoAppDelegate {
       launchOptions: launchOptions)
 #endif
 
+// @generated begin react-native-maps-init - expo prebuild (DO NOT MODIFY) sync-d861207934641242400566149d0abbff59f078d3
+#if canImport(GoogleMaps)
+GMSServices.provideAPIKey("AIzaSyB-uH0kWeDvbOyGVyEkO5zttWg7TE6nBdg")
+#endif
+// @generated end react-native-maps-init
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

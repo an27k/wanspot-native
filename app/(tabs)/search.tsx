@@ -19,6 +19,7 @@ import * as Location from 'expo-location'
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { AppHeader } from '@/components/AppHeader'
+import { IconAiPlan } from '@/components/common/IconAiPlan'
 import { AdNativeCard } from '@/components/AdNativeCard'
 import { AiPlanTab } from '@/components/ai-plan/AiPlanTab'
 import { SearchDiscoverResultCard } from '@/components/search/SearchDiscoverResultCard'
@@ -144,20 +145,6 @@ const IconBulb = ({ fill }: { fill: string }) => {
 const IconThumbUp = ({ fill }: { fill: string }) => (
   <Svg width={13} height={13} viewBox="0 0 512 512" fill={fill}>
     <Path d="M512,216.906c-0.031-29.313-23.781-53.078-53.094-53.094h-75.891c-3.531,0-43.578,0-47.219,0c-6.953,0.063-13.328,1.094-17.969,1.031c-1.859,0-3.328-0.156-4.188-0.344L313,164.313l-0.156-0.469c-0.141-0.609-0.281-1.625-0.281-3.094c0-0.906,0.141-2.188,0.25-3.438l30.281-74.875c2.906-7.188,4.281-14.656,4.281-21.969c0.031-23.188-13.844-45.156-36.656-54.406c-7.156-2.891-14.641-4.281-21.984-4.281c-23.203-0.016-45.141,13.875-54.391,36.672l-0.047,0.078l-51.359,129.313h0.031c-3.438,8.063-6.203,15.625-8.906,22.156c-4.078,10.031-8.063,17.25-12.766,21.438c-2.359,2.125-4.922,3.719-8.484,4.969c-3.531,1.219-8.172,2.047-14.391,2.047c-3.781-0.016-7.375,0.422-10.891,1.078H44.5c-24.594,0-44.5,19.922-44.5,44.5v201.703c0,24.578,19.906,44.484,44.5,44.484h61.578c13.641,0,24.719-11.063,24.719-24.719v-20.484c4.328,2.531,8.891,4.828,13.797,6.672c17.156,6.5,37.531,9.219,62.063,9.219h191.25c29.313,0,53.094-23.719,53.094-53.047c0-6.891-1.406-13.453-3.828-19.453c21.156-7,36.453-26.875,36.453-50.375c0.016-9.594-2.688-18.547-7.141-26.25c6.422-5.25,10.781-12.156,13.266-19.375c2.719-7.75,3.656-15.906,3.656-24.203c0-5.141-1.094-10.141-2.969-15.016c-1.375-3.469-3.172-6.891-5.375-10.125C501.125,253.938,511.984,236.703,512,216.906z" />
-  </Svg>
-)
-/** AIプラン：散歩ルート風（ピン2点＋経路）で他タブと判別しやすく */
-const IconPlan = ({ fill }: { fill: string }) => (
-  <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M6.5 20c-2 0-3.5-1.2-3.5-3s1.5-2.6 4-3c2.8-.4 4.5-.9 4.5-2.6S14 6 16.5 6"
-      stroke={fill}
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeDasharray="0.1 3.4"
-    />
-    <Circle cx={5.5} cy={5} r={2.4} fill={fill} />
-    <Circle cx={18} cy={18.5} r={2.4} fill={fill} />
   </Svg>
 )
 /** 炎は絵文字と同じくらいの視認性のシルエット。絵文字は端末により多色のままになり `color` が効かないため、他タブと同じ #fff / #888 を SVG で統一 */
@@ -756,48 +743,50 @@ export default function SearchTab() {
                   ))}
                 </View>
               </ScrollView>
-              <View style={styles.discoverTabs}>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'articles' && styles.discTabOn]}
-                  onPress={() => {
-                    Keyboard.dismiss()
-                    setDiscoverMode('articles')
-                  }}
-                >
-                  <IconBulb fill={discoverMode === 'articles' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>まとめ記事</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'ai_plan' && styles.discTabOn]}
-                  onPress={() => {
-                    Keyboard.dismiss()
-                    setDiscoverMode('ai_plan')
-                  }}
-                >
-                  <IconPlan fill={discoverMode === 'ai_plan' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'ai_plan' && styles.discTabTxtOn]}>AIプラン</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'ai' && styles.discTabOn]}
-                  onPress={() => {
-                    Keyboard.dismiss()
-                    setDiscoverMode('ai')
-                  }}
-                >
-                  <IconThumbUp fill={discoverMode === 'ai' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'ai' && styles.discTabTxtOn]}>AIレコメンド</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'hot' && styles.discTabOn]}
-                  onPress={() => {
-                    Keyboard.dismiss()
-                    setDiscoverMode('hot')
-                  }}
-                >
-                  <IconHot fill={discoverMode === 'hot' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'hot' && styles.discTabTxtOn]}>トレンド</Text>
-                </Pressable>
-              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.discoverTabsScroll}>
+                <View style={styles.discoverTabsRow}>
+                  <Pressable
+                    style={[styles.discTab, discoverMode === 'articles' && styles.discTabOn]}
+                    onPress={() => {
+                      Keyboard.dismiss()
+                      setDiscoverMode('articles')
+                    }}
+                  >
+                    <IconBulb fill={discoverMode === 'articles' ? '#fff' : '#888'} />
+                    <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>まとめ記事</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.discTab, discoverMode === 'ai_plan' && styles.discTabOn]}
+                    onPress={() => {
+                      Keyboard.dismiss()
+                      setDiscoverMode('ai_plan')
+                    }}
+                  >
+                    <IconAiPlan fill={discoverMode === 'ai_plan' ? '#fff' : '#888'} />
+                    <Text style={[styles.discTabTxt, discoverMode === 'ai_plan' && styles.discTabTxtOn]}>AIプラン</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.discTab, discoverMode === 'ai' && styles.discTabOn]}
+                    onPress={() => {
+                      Keyboard.dismiss()
+                      setDiscoverMode('ai')
+                    }}
+                  >
+                    <IconThumbUp fill={discoverMode === 'ai' ? '#fff' : '#888'} />
+                    <Text style={[styles.discTabTxt, discoverMode === 'ai' && styles.discTabTxtOn]}>AIレコメンド</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.discTab, discoverMode === 'hot' && styles.discTabOn]}
+                    onPress={() => {
+                      Keyboard.dismiss()
+                      setDiscoverMode('hot')
+                    }}
+                  >
+                    <IconHot fill={discoverMode === 'hot' ? '#fff' : '#888'} />
+                    <Text style={[styles.discTabTxt, discoverMode === 'hot' && styles.discTabTxtOn]}>トレンド</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
             </>
           ) : null}
         </View>
@@ -1021,15 +1010,14 @@ const styles = StyleSheet.create({
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#2b2a28' },
   sortBtnTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
   /** キーワードタグ行と（まとめ記事／AI／トレンド）の間の区切り */
-  discoverTabs: {
-    flexDirection: 'row',
-    gap: 8,
+  discoverTabsScroll: {
     marginTop: 10,
     marginBottom: 8,
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  discoverTabsRow: { flexDirection: 'row', gap: 8, paddingRight: 4 },
   discTab: {
     flexDirection: 'row',
     alignItems: 'center',

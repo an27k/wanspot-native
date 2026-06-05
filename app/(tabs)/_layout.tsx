@@ -7,6 +7,7 @@ import { track } from '@/lib/analytics'
 export default function TabsLayout() {
   return (
     <Tabs
+      initialRouteName="search"
       /** 非表示タブを切り離さず、切替時の空白・遅延を減らす */
       detachInactiveScreens={false}
       tabBar={(props) => <GlassTabBar {...props} />}
@@ -24,6 +25,16 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
+        name="search"
+        options={{
+          title: '検索',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'search' : 'search-outline'} color={color} size={focused ? 26 : 24} />
+          ),
+        }}
+        listeners={{ focus: () => track('tab_viewed', { tab_name: 'search' }) }}
+      />
+      <Tabs.Screen
         name="index"
         options={{
           title: '現在地',
@@ -36,16 +47,6 @@ export default function TabsLayout() {
           ),
         }}
         listeners={{ focus: () => track('tab_viewed', { tab_name: 'index' }) }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: '検索',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'search' : 'search-outline'} color={color} size={focused ? 26 : 24} />
-          ),
-        }}
-        listeners={{ focus: () => track('tab_viewed', { tab_name: 'search' }) }}
       />
       <Tabs.Screen
         name="camera"

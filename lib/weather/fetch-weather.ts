@@ -1,7 +1,13 @@
 import { Platform } from 'react-native'
 import Constants from 'expo-constants'
 import type { Ionicons } from '@expo/vector-icons'
-import { getGoogleMapsIosApiKey } from '@/lib/google-maps-config'
+import { getGoogleMapsAndroidApiKey, getGoogleMapsIosApiKey } from '@/lib/google-maps-config'
+
+function getGoogleMapsApiKeyForWeather(): string {
+  return Platform.OS === 'android'
+    ? getGoogleMapsAndroidApiKey()
+    : getGoogleMapsIosApiKey()
+}
 
 /** アプリ内で扱う正規化済みの天気区分 */
 export type WeatherCondition =
@@ -106,7 +112,7 @@ export async function fetchCurrentWeather(
   lat: number,
   lng: number
 ): Promise<CurrentWeather | null> {
-  const key = getGoogleMapsIosApiKey()
+  const key = getGoogleMapsApiKeyForWeather()
   if (key) {
     const g = await fetchFromGoogle(lat, lng, key)
     if (g) return g

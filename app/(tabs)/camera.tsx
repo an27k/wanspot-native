@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
+import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -8,12 +9,7 @@ import { AppHeader } from '@/components/AppHeader'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { takePhoto } from '@/lib/image-picker'
-import {
-  ALBUM_RETENTION_DAYS,
-  fetchTodayPhoto,
-  saveDailyPhoto,
-  type DogPhoto,
-} from '@/lib/dog-photos'
+import { fetchTodayPhoto, saveDailyPhoto, type DogPhoto } from '@/lib/dog-photos'
 import { supabase } from '@/lib/supabase'
 
 /**
@@ -83,7 +79,7 @@ export default function CameraTab() {
       <AppHeader />
       <View style={[styles.body, { paddingBottom: padBottom }]}>
         {loading ? (
-          <ActivityIndicator color={colors.brandDark} />
+          <LoadingDogSvg size={56} />
         ) : todayPhoto ? (
           <>
             <Text style={styles.kicker}>今日の1枚</Text>
@@ -111,7 +107,7 @@ export default function CameraTab() {
             </Text>
             <Pressable style={[styles.shutterBtn, saving && { opacity: 0.6 }]} onPress={handleCapture} disabled={saving}>
               {saving ? (
-                <ActivityIndicator color="#2b2a28" />
+                <LoadingDogSvg size={28} />
               ) : (
                 <>
                   <Ionicons name="camera" size={20} color="#2b2a28" />
@@ -122,12 +118,6 @@ export default function CameraTab() {
           </>
         )}
 
-        <View style={styles.noteCard}>
-          <Text style={styles.noteTxt}>📸 1日1枚・保存は{ALBUM_RETENTION_DAYS}日間</Text>
-          <Text style={styles.noteSub}>
-            プレミアムなら1日に複数枚保存でき、アルバムをずっと残せます（今後対応）。
-          </Text>
-        </View>
       </View>
     </View>
   )
@@ -202,17 +192,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   primaryBtnTxt: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
-  noteCard: {
-    marginTop: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: '#FFF1E3',
-    borderWidth: 1,
-    borderColor: '#f0e3a8',
-    gap: 4,
-    alignSelf: 'stretch',
-  },
-  noteTxt: { fontSize: 13, fontWeight: '800', color: '#2b2a28' },
-  noteSub: { fontSize: 12, color: '#8a7d4a', lineHeight: 18 },
 })

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  ActivityIndicator,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -15,6 +14,7 @@ import {
 } from 'react-native'
 import type { TextInput as RNTextInput } from 'react-native'
 import { Link, useRouter } from 'expo-router'
+import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { Logo } from '@/components/Logo'
 import { AppleOAuthLabel, GoogleOAuthLabel } from '@/components/auth/OAuthButtonLabels'
 import { oauthApplePressableBase, oauthGooglePressableBase } from '@/components/auth/oauthButtonStyles'
@@ -148,7 +148,7 @@ export default function SignupScreen() {
                 void submit()
               }}
             >
-              {loading ? <ActivityIndicator color={colors.text} /> : <Text style={styles.btnTxt}>新規登録</Text>}
+              {loading ? <LoadingDogSvg size={24} /> : <Text style={styles.btnTxt}>新規登録</Text>}
             </Pressable>
 
             {showOAuthSection ? (
@@ -166,7 +166,7 @@ export default function SignupScreen() {
                 onPress={() => void handleGoogleSignIn()}
               >
                 {oauthLoading === 'google' ? (
-                  <ActivityIndicator color="#2b2a28" />
+                  <LoadingDogSvg size={24} />
                 ) : (
                   <GoogleOAuthLabel text="Googleで登録" textStyle={styles.btnGoogleTxt} />
                 )}
@@ -180,7 +180,7 @@ export default function SignupScreen() {
                 onPress={() => void handleAppleNativeSignIn()}
               >
                 {oauthLoading === 'apple' ? (
-                  <ActivityIndicator color="#fff" />
+                  <LoadingDogSvg size={24} />
                 ) : (
                   <AppleOAuthLabel text="Appleで登録" textStyle={styles.btnAppleTxt} />
                 )}

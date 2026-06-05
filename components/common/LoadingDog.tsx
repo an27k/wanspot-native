@@ -1,12 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { Animated, Easing, StyleSheet, View } from 'react-native'
-import { DogGhost } from '@/components/common/DogGhost'
+import { DogFaceMark } from '@/components/common/DogFaceMark'
 
 /**
- * ロード中の犬アニメーション。
- * Snapchat のお化けマーク風の犬シルエット（白塗り＋黒淵）を、
- * バウンド＋スクワッシュ＆ストレッチ＋軽い傾き＋接地シャドウで弾ませる。
- * （名称は後方互換のため LoadingDogSvg のまま）
+ * ロード中の犬顔 SVG アニメーション（バウンド＋きらめき）。
  */
 export function LoadingDogSvg({ size = 64 }: { size?: number }) {
   const bounce = useRef(new Animated.Value(0)).current
@@ -36,18 +33,18 @@ export function LoadingDogSvg({ size = 64 }: { size?: number }) {
     return () => loops.forEach((l) => l.stop())
   }, [bounce, tilt])
 
-  const translateY = bounce.interpolate({ inputRange: [0, 1], outputRange: [0, -size * 0.16] })
+  const translateY = bounce.interpolate({ inputRange: [0, 1], outputRange: [0, -size * 0.14] })
   const scaleX = bounce.interpolate({ inputRange: [0, 1], outputRange: [1, 0.94] })
   const scaleY = bounce.interpolate({ inputRange: [0, 1], outputRange: [1, 1.07] })
-  const rotate = tilt.interpolate({ inputRange: [0, 1], outputRange: ['-5deg', '5deg'] })
+  const rotate = tilt.interpolate({ inputRange: [0, 1], outputRange: ['-4deg', '4deg'] })
   const shadowScaleX = bounce.interpolate({ inputRange: [0, 1], outputRange: [1, 0.7] })
-  const shadowOpacity = bounce.interpolate({ inputRange: [0, 1], outputRange: [0.18, 0.07] })
+  const shadowOpacity = bounce.interpolate({ inputRange: [0, 1], outputRange: [0.16, 0.06] })
 
-  const shadowW = Math.max(20, size * 0.5)
+  const shadowW = Math.max(20, size * 0.52)
   const shadowH = Math.max(5, size * 0.1)
 
   return (
-    <View style={[styles.wrap, { width: size, height: size * 1.18 }]}>
+    <View style={[styles.wrap, { width: size, height: size * 1.2 }]}>
       <Animated.View
         style={[
           styles.shadow,
@@ -60,13 +57,8 @@ export function LoadingDogSvg({ size = 64 }: { size?: number }) {
           },
         ]}
       />
-      <Animated.View
-        style={[
-          styles.img,
-          { transform: [{ translateY }, { rotate }, { scaleX }, { scaleY }] },
-        ]}
-      >
-        <DogGhost size={size} />
+      <Animated.View style={{ transform: [{ translateY }, { rotate }, { scaleX }, { scaleY }] }}>
+        <DogFaceMark size={size} showSparkles />
       </Animated.View>
     </View>
   )
@@ -75,5 +67,4 @@ export function LoadingDogSvg({ size = 64 }: { size?: number }) {
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'flex-end' },
   shadow: { position: 'absolute', bottom: 0, backgroundColor: '#2b2a28' },
-  img: { marginBottom: 2 },
 })

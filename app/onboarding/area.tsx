@@ -172,7 +172,7 @@ export default function WalkAreaOnboardingPage() {
       return
     }
     setSubmitting(false)
-    router.replace('/(tabs)')
+    router.replace('/(tabs)/search')
   }
 
   return (

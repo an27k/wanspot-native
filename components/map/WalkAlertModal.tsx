@@ -9,13 +9,25 @@ import {
 export function WalkAlertModal({
   visible,
   tempC,
+  loading = false,
+  needsLocation = false,
+  onRequestLocation,
   onClose,
 }: {
   visible: boolean
   tempC: number | null
+  loading?: boolean
+  needsLocation?: boolean
+  onRequestLocation?: () => void
   onClose: () => void
 }) {
   const level: WalkAlertLevel | null = tempC == null ? null : walkAlertFromTemp(tempC)
+
+  const emptyMessage = needsLocation
+    ? 'お散歩予報は「位置情報」の許可で現在地の気温を取得します（別の許可項目はありません）。下のボタンで許可を確認してください。'
+    : loading
+      ? '気温を取得しています…'
+      : '気温を取得できませんでした。通信環境を確認して、しばらくお待ちください。'
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -49,9 +61,14 @@ export function WalkAlertModal({
               </View>
             </>
           ) : (
-            <Text style={styles.noData}>
-              気温を取得できませんでした。位置情報を許可して、しばらくお待ちください。
-            </Text>
+            <>
+              <Text style={styles.noData}>{emptyMessage}</Text>
+              {needsLocation && onRequestLocation ? (
+                <Pressable style={styles.locationBtn} onPress={onRequestLocation}>
+                  <Text style={styles.locationBtnTxt}>位置情報を許可する</Text>
+                </Pressable>
+              ) : null}
+            </>
           )}
 
           <Pressable style={styles.closeBtn} onPress={onClose}>
@@ -112,6 +129,15 @@ const styles = StyleSheet.create({
   scaleLabel: { fontSize: 14, fontWeight: '800', color: '#888', width: 64 },
   scaleRange: { fontSize: 13, color: '#aaa' },
   noData: { marginTop: 16, fontSize: 14, color: '#888', lineHeight: 22 },
+  locationBtn: {
+    marginTop: 14,
+    alignSelf: 'stretch',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#FF8A1F',
+    alignItems: 'center',
+  },
+  locationBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
   closeBtn: {
     marginTop: 18,
     alignSelf: 'center',

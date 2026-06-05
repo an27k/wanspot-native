@@ -1,6 +1,12 @@
 /** 地図・近傍スポット取得の固定半径（メートル） */
 export const NEARBY_RADIUS_M = 5000
 
+/** 行った（チェックイン）ピン・ソートアイコン */
+export const MAP_VISITED_CHECK_COLOR = '#34A853'
+
+/** ボトムシート初期スナップ（1 = 55%・4枚目スクショ相当） */
+export const NEARBY_DEFAULT_SHEET_INDEX = 1
+
 export const NEARBY_MAP_GENRE_STORAGE_KEY = 'nearby_map_genre_v1'
 
 /** 地図上ジャンル（6種）。icon は Ionicons 名、match は category 文字列照合用キーワード。 */

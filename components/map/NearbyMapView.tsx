@@ -30,10 +30,12 @@ import { WANSPOT_GOOGLE_MAP_STYLE } from '@/constants/google-map-style'
 import { isGoogleMapsConfigured } from '@/lib/google-maps-config'
 import { GenreIcon } from '@/components/nearby/GenreIcon'
 import { NearbyGenrePicker } from '@/components/nearby/NearbyGenrePicker'
+import { IconAiBadge } from '@/components/common/IconAiBadge'
 import { NearbySortPicker } from '@/components/nearby/NearbySortPicker'
-import { MAP_GENRE_CHIPS, MAP_GENRE_COLOR, MAP_LIKE_COLOR, type MapGenreKey } from '@/lib/nearby/constants'
+import { MAP_GENRE_COLOR, MAP_LIKE_COLOR, MAP_VISITED_CHECK_COLOR, type MapGenreKey } from '@/lib/nearby/constants'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import { NearbySheetSpotCard } from '@/components/nearby/NearbySheetSpotCard'
+import { WalkAlertFab } from '@/components/map/MapAppMenu'
 
 const FALLBACK_REGION: Region = {
   latitude: 35.6812,
@@ -89,7 +91,7 @@ const HeartShape = ({ size = 12, color = MAP_LIKE_COLOR }: { size?: number; colo
   </Svg>
 )
 
-const CheckShape = ({ size = 12, color = '#2b2a28' }: { size?: number; color?: string }) => (
+const CheckShape = ({ size = 12, color = MAP_VISITED_CHECK_COLOR }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
       d="M5 12.5l4 4 10-10.5"
@@ -101,21 +103,11 @@ const CheckShape = ({ size = 12, color = '#2b2a28' }: { size?: number; color?: s
   </Svg>
 )
 
-/** おすすめ順（Google スコア）= Google G マーク */
-const IconGoogleG = ({ size = 22 }: { size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24">
-    <Path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-    <Path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-    <Path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-    <Path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-  </Svg>
-)
-
 /** 現在の並び替えを表すアイコン（ソートボタン表示用） */
 function SortGlyph({ mode }: { mode: MapPinMode }) {
   if (mode === 'like') return <HeartShape size={20} />
-  if (mode === 'visited') return <CheckShape size={20} />
-  return <IconGoogleG size={22} />
+  if (mode === 'visited') return <CheckShape size={20} color={MAP_VISITED_CHECK_COLOR} />
+  return <IconAiBadge size={24} />
 }
 
 /** 折りたたんだ地図アイコン（リスト閲覧時に「地図を見る」ボタンで使用） */
@@ -132,7 +124,33 @@ const MapFoldIcon = ({ size = 22, color = '#2b2a28' }: { size?: number; color?: 
   </Svg>
 )
 
-/** Snapchat ヒートマップ風クラスター：ぼかしたグロー＋ポップな丸い数字バッジ */
+/** 数字バッジ：中心は白、外周はグラデで輪郭をぼかす */
+function ClusterBadge({ count, size, gradId }: { count: number; size: number; gradId: string }) {
+  const feather = 12
+  const total = size + feather * 2
+  const cx = total / 2
+  const badgeGradId = `${gradId}-badge`
+  return (
+    <View style={{ width: total, height: total, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={total} height={total} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <RadialGradient id={badgeGradId} cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#FFFFFF" stopOpacity={1} />
+            <Stop offset="48%" stopColor="#FFFFFF" stopOpacity={0.96} />
+            <Stop offset="68%" stopColor="#FFFFFF" stopOpacity={0.72} />
+            <Stop offset="84%" stopColor="#FFF5E8" stopOpacity={0.32} />
+            <Stop offset="96%" stopColor="#FFE0B8" stopOpacity={0.1} />
+            <Stop offset="100%" stopColor="#FF8A1F" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={cx} cy={cx} r={size / 2 + feather - 1} fill={`url(#${badgeGradId})`} />
+      </Svg>
+      <Text style={styles.clusterTxt}>{count}</Text>
+    </View>
+  )
+}
+
+/** Snapchat ヒートマップ風クラスター：ぼかしたグロー＋ソフトな白丸数字バッジ */
 function ClusterBlob({ count, gradId }: { count: number; gradId: string }) {
   const glow = Math.round(54 + Math.min(count, 40) * 1.6)
   const badge = count >= 100 ? 36 : count >= 10 ? 32 : 28
@@ -148,9 +166,7 @@ function ClusterBlob({ count, gradId }: { count: number; gradId: string }) {
         </Defs>
         <Circle cx={glow / 2} cy={glow / 2} r={glow / 2} fill={`url(#${gradId})`} />
       </Svg>
-      <View style={[styles.clusterBadge, { width: badge, height: badge, borderRadius: badge / 2 }]}>
-        <Text style={styles.clusterTxt}>{count}</Text>
-      </View>
+      <ClusterBadge count={count} size={badge} gradId={gradId} />
     </View>
   )
 }
@@ -200,6 +216,11 @@ export function NearbyMapView({
   onSortChange,
   onGenreChange,
   listMode,
+  showWalkAlert,
+  walkTempC,
+  walkWeatherLoading,
+  walkNeedsLocation,
+  onWalkRequestLocation,
   onShowMap,
   sheetAnimatedIndex,
   bottomInset,
@@ -217,6 +238,12 @@ export function NearbyMapView({
   onSortChange: (mode: MapPinMode) => void
   onGenreChange: (g: MapGenreKey) => void
   listMode: boolean
+  /** リスト全開（92%）のときは非表示 */
+  showWalkAlert: boolean
+  walkTempC: number | null
+  walkWeatherLoading?: boolean
+  walkNeedsLocation?: boolean
+  onWalkRequestLocation?: () => void
   onShowMap: () => void
   sheetAnimatedIndex: SharedValue<number>
   bottomInset: number
@@ -230,7 +257,6 @@ export function NearbyMapView({
   const [sortPickerOpen, setSortPickerOpen] = useState(false)
   const [genrePickerOpen, setGenrePickerOpen] = useState(false)
 
-  const genreLabel = MAP_GENRE_CHIPS.find((g) => g.key === genre)?.label ?? ''
   const genreColor = MAP_GENRE_COLOR[genre]
 
   const initialRegion = useMemo(
@@ -313,6 +339,12 @@ export function NearbyMapView({
     const { width, height } = e.nativeEvent.layout
     setLayout({ width, height })
   }, [])
+
+  const popupAnimStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(sheetAnimatedIndex.value, [0, 0.75, 1], [1, 0, 0], Extrapolation.CLAMP),
+  }))
+
+  const showPinPopup = !!selectedSpot && !listMode
 
   if (!isGoogleMapsConfigured()) {
     return (
@@ -404,20 +436,32 @@ export function NearbyMapView({
         </View>
       ) : null}
 
-      {selectedSpot ? (
-        <View style={[styles.pinCard, popupStyle]}>
+      {showPinPopup ? (
+        <Animated.View
+          style={[styles.pinCard, popupStyle, popupAnimStyle]}
+          pointerEvents={listMode ? 'none' : 'auto'}
+        >
           <NearbySheetSpotCard
-            spot={selectedSpot}
+            spot={selectedSpot!}
             userLocation={userLocation}
             variant="popup"
-            onPress={() => onOpenDetail(selectedSpot)}
+            onPress={() => onOpenDetail(selectedSpot!)}
             onClose={onClearSelection}
           />
-        </View>
+        </Animated.View>
       ) : null}
 
-      {/* 固定浮遊コントロール（上から：ソート / ジャンル / 現在地）。シート上端を追従。 */}
+      {/* 固定浮遊コントロール（上から：お散歩予報 / ソート / ジャンル / 現在地）。シート上端を追従。 */}
       <View style={[styles.controlStack, { bottom: bottomInset + 16 }]} pointerEvents="box-none">
+        {showWalkAlert ? (
+          <WalkAlertFab
+            tempC={walkTempC}
+            loading={walkWeatherLoading}
+            needsLocation={walkNeedsLocation}
+            onRequestLocation={onWalkRequestLocation}
+          />
+        ) : null}
+
         <TouchableOpacity
           style={styles.ctrlBtn}
           onPress={() => setSortPickerOpen(true)}
@@ -427,21 +471,14 @@ export function NearbyMapView({
           <SortGlyph mode={pinMode} />
         </TouchableOpacity>
 
-        <View style={styles.genreRow}>
-          {genreLabel ? (
-            <View style={styles.genreLabelPill}>
-              <Text style={styles.genreLabelTxt}>{genreLabel}</Text>
-            </View>
-          ) : null}
-          <TouchableOpacity
-            style={[styles.ctrlBtn, { backgroundColor: genreColor, borderColor: genreColor }]}
-            onPress={() => setGenrePickerOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel="ジャンルを変更"
-          >
-            <GenreIcon genre={genre} size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[styles.ctrlBtn, { backgroundColor: genreColor, borderColor: genreColor }]}
+          onPress={() => setGenrePickerOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="ジャンルを変更"
+        >
+          <GenreIcon genre={genre} size={20} color="#fff" />
+        </TouchableOpacity>
 
         {listMode ? (
           <TouchableOpacity
@@ -516,16 +553,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 3,
   },
-  clusterBadge: {
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#E5740A',
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
-  },
   clusterTxt: {
     fontSize: 14,
     fontWeight: '900',
@@ -548,28 +575,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 7,
   },
-  genreRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  genreLabelPill: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ebebeb',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  genreLabelTxt: { fontSize: 13, fontWeight: '800', color: '#2b2a28' },
   veil: {
     position: 'absolute',
     left: 0,

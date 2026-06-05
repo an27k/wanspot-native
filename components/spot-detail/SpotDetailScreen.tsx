@@ -37,6 +37,9 @@ import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
+import { ensureSpotId } from '@/lib/ensureSpot'
+import { isPendingPlaceRouteId } from '@/lib/spot-detail-pending'
+import type { PlaceResult } from '@/types/places'
 
 const { width: WIN_W, height: WIN_H } = Dimensions.get('window')
 
@@ -265,7 +268,13 @@ const IconCopy = () => (
   </Svg>
 )
 
-export default function SpotDetailScreen({ spotId }: { spotId: string }) {
+export default function SpotDetailScreen({
+  spotId,
+  pendingPlace = null,
+}: {
+  spotId: string
+  pendingPlace?: PlaceResult | null
+}) {
   const router = useRouter()
   const requireAuth = useRequireAuth()
   const insets = useSafeAreaInsets()
@@ -308,12 +317,22 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
 
   useEffect(() => {
     const init = async () => {
+      let resolvedSpotId = spotId
+      if (isPendingPlaceRouteId(spotId) && pendingPlace) {
+        const ensured = await ensureSpotId(pendingPlace)
+        if (!ensured) {
+          router.replace('/(tabs)/search')
+          return
+        }
+        resolvedSpotId = ensured
+      }
+
       const [{ data: { user } }, { data: spotData }] = await Promise.all([
         supabase.auth.getUser(),
-        supabase.from('spots').select('*').eq('id', spotId).single(),
+        supabase.from('spots').select('*').eq('id', resolvedSpotId).single(),
       ])
       if (!spotData) {
-        router.replace('/(tabs)')
+        router.replace('/(tabs)/search')
         return
       }
       setSpot(spotData as Spot)
@@ -336,12 +355,22 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
         myLikeResult,
         myCheckIn,
       ] = await Promise.all([
-        supabase.from('spot_likes').select('*', { count: 'exact', head: true }).eq('spot_id', spotId),
+        supabase.from('spot_likes').select('*', { count: 'exact', head: true }).eq('spot_id', resolvedSpotId),
         user
-          ? supabase.from('spot_likes').select('id').eq('spot_id', spotId).eq('user_id', user.id).maybeSingle()
+          ? supabase
+              .from('spot_likes')
+              .select('id')
+              .eq('spot_id', resolvedSpotId)
+              .eq('user_id', user.id)
+              .maybeSingle()
           : Promise.resolve({ data: null }),
         user
-          ? supabase.from('check_ins').select('id, rating, comment').eq('spot_id', spotId).eq('user_id', user.id).maybeSingle()
+          ? supabase
+              .from('check_ins')
+              .select('id, rating, comment')
+              .eq('spot_id', resolvedSpotId)
+              .eq('user_id', user.id)
+              .maybeSingle()
           : Promise.resolve({ data: null }),
       ])
 
@@ -402,12 +431,12 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
         .catch(() => {})
         .finally(() => setAiLoading(false))
 
-      await loadReviews(spotId)
+      await loadReviews(resolvedSpotId)
 
       const { data: rawCheckInRows } = await supabase
         .from('check_ins')
         .select('user_id, comment, created_at')
-        .eq('spot_id', spotId)
+        .eq('spot_id', resolvedSpotId)
         .not('comment', 'is', null)
 
       const adviceComments = dedupeCheckInCommentsForAdvice((rawCheckInRows ?? []) as CheckInCommentRow[])
@@ -427,7 +456,7 @@ export default function SpotDetailScreen({ spotId }: { spotId: string }) {
       }
     }
     void init()
-  }, [spotId, router, loadReviews])
+  }, [spotId, pendingPlace, router, loadReviews])
 
   useEffect(() => {
     if (photoRefs.length === 0) return

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
+import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
 import { colors } from '@/constants/colors'
@@ -56,7 +57,7 @@ export default function AuthOAuthCallbackScreen() {
 
   return (
     <View style={styles.root}>
-      <ActivityIndicator size="large" color={colors.text} />
+      <LoadingDogSvg size={72} />
       <Text style={styles.txt}>ログイン処理中...</Text>
     </View>
   )

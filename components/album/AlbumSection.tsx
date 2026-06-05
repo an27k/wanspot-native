@@ -8,13 +8,11 @@ import { ALBUM_RETENTION_DAYS, fetchAlbumPhotos, type DogPhoto } from '@/lib/dog
 import { supabase } from '@/lib/supabase'
 
 const COLS = 3
-const CARD_MARGIN = 16
 const CARD_PADDING = 16
 const GRID_GAP = 8
 
-function tileSize(): number {
-  const screen = Dimensions.get('window').width
-  const inner = screen - CARD_MARGIN * 2 - CARD_PADDING * 2
+function tileSize(screenWidth: number): number {
+  const inner = screenWidth - CARD_PADDING * 2
   return Math.floor((inner - GRID_GAP * (COLS - 1)) / COLS)
 }
 
@@ -31,7 +29,8 @@ export function AlbumSection() {
   const [photos, setPhotos] = useState<DogPhoto[]>([])
   const [loading, setLoading] = useState(true)
   const [viewer, setViewer] = useState<DogPhoto | null>(null)
-  const size = tileSize()
+  const screenW = Dimensions.get('window').width
+  const size = tileSize(screenW - 32)
 
   const load = useCallback(async () => {
     const {
@@ -99,11 +98,12 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background,
     borderRadius: 16,
-    padding: CARD_PADDING,
-    marginHorizontal: CARD_MARGIN,
-    marginTop: 8,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: CARD_PADDING,
     borderWidth: 1,
     borderColor: colors.border,
+    alignSelf: 'stretch',
   },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   title: { fontSize: 15, fontWeight: '800', color: colors.text },

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { DogFaceMark } from '@/components/common/DogFaceMark'
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
-import { IconPaw } from '@/components/IconPaw'
 
 export const RunningDog = ({ label = '読み込み中...' }: { label?: string }) => (
   <View style={styles.runWrap}>
@@ -17,7 +17,7 @@ export const PowState = ({
   onRetry?: () => void
 }) => (
   <View style={styles.runWrap}>
-    <IconPaw size={40} color="#aaa" />
+    <DogFaceMark size={40} muted />
     <Text style={styles.powLabel}>{label}</Text>
     {onRetry ? (
       <TouchableOpacity style={styles.retryBtn} onPress={onRetry} activeOpacity={0.85}>

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  ActivityIndicator,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -21,6 +20,7 @@ import { isAppleSignInAvailable, signInWithApple } from '@/lib/apple-signin'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
 import { isGoogleSignInConfigured, signInWithGoogle } from '@/lib/google-signin'
 
+import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { Logo } from '@/components/Logo'
 import { AppleOAuthLabel, GoogleOAuthLabel } from '@/components/auth/OAuthButtonLabels'
 import { oauthApplePressableBase, oauthGooglePressableBase } from '@/components/auth/oauthButtonStyles'
@@ -148,7 +148,7 @@ export default function LoginScreen() {
                 void submit()
               }}
             >
-              {loading ? <ActivityIndicator color={colors.text} /> : <Text style={styles.btnTxt}>ログイン</Text>}
+              {loading ? <LoadingDogSvg size={24} /> : <Text style={styles.btnTxt}>ログイン</Text>}
             </Pressable>
 
             {showOAuthSection ? (
@@ -166,7 +166,7 @@ export default function LoginScreen() {
                 onPress={() => void handleGoogleSignIn()}
               >
                 {oauthLoading === 'google' ? (
-                  <ActivityIndicator color="#2b2a28" />
+                  <LoadingDogSvg size={24} />
                 ) : (
                   <GoogleOAuthLabel text="Googleでログイン" textStyle={styles.btnGoogleTxt} />
                 )}
@@ -180,7 +180,7 @@ export default function LoginScreen() {
                 onPress={() => void handleAppleNativeSignIn()}
               >
                 {oauthLoading === 'apple' ? (
-                  <ActivityIndicator color="#fff" />
+                  <LoadingDogSvg size={24} />
                 ) : (
                   <AppleOAuthLabel text="Appleでログイン" textStyle={styles.btnAppleTxt} />
                 )}

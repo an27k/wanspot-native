@@ -67,7 +67,7 @@ export default function OnboardingLocationPage() {
 
       <Text style={styles.h2}>近くのワンちゃんスポットを表示するために</Text>
       <Text style={styles.hint}>
-        wanspotはあなたの現在地をもとに、近くのワンちゃんスポットやイベントを表示します。位置情報を使用します。
+        wanspotはあなたの現在地をもとに、近くのワンちゃんスポットの表示とお散歩予報（気温）に位置情報を使います。別の許可項目はありません。
       </Text>
 
       <TouchableOpacity style={[styles.next, busy && styles.nextOff]} onPress={() => void requestAndSave()} disabled={busy}>

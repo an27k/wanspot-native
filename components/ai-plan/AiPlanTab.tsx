@@ -71,9 +71,10 @@ export function AiPlanTab({
   const planReceivedRef = useRef(false)
   const generationAbortedByTimeoutRef = useRef(false)
 
+  /** 個別プラン表示時も検索ヘッダー分の余白を残し、下に白い戻るバーを置く */
   useEffect(() => {
-    onEmbeddedChromeVisibility?.(ui !== 'result')
-  }, [ui, onEmbeddedChromeVisibility])
+    onEmbeddedChromeVisibility?.(true)
+  }, [onEmbeddedChromeVisibility])
 
   useEffect(() => {
     if (ui !== 'generating') return

@@ -16,8 +16,9 @@ import { spotPhotoUrl } from '@/lib/wanspot-api'
 /** タブ内表示のためネイティブ pop ジェスチャの対象外 — iOS は左端スワイプで onBack を再現 */
 const IOS_EDGE_BACK_WIDTH = 24
 const IOS_EDGE_SWIPE_DX = 56
-/** 固定オーバーレイのため、ヘッダー「戻る」と被らないよう上端を空ける */
-const IOS_EDGE_BACK_TOP_INSET = 56
+/** 固定サブヘッダー分 — 左端スワイプの当たり判定 */
+const SUB_HEADER_H = 48
+const IOS_EDGE_BACK_TOP_INSET = SUB_HEADER_H
 
 type SpotRow = {
   id: string
@@ -134,17 +135,17 @@ export function AiPlanResult({
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.subHeader}>
+        <Pressable onPress={onBack} style={styles.headerBack} hitSlop={8}>
+          <Text style={styles.headerBackTxt}>← 戻る</Text>
+        </Pressable>
+        <Pressable onPress={handleMore} style={styles.headerMore} hitSlop={8}>
+          <Text style={styles.headerMoreTxt}>⋯</Text>
+        </Pressable>
+      </View>
+
       {/* タブ内のため RN Stack のスワイプ pop は効かない — 左端ストリップで同等の戻りを実装 */}
       <ScrollView style={styles.root} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Pressable onPress={onBack} style={styles.headerBack} hitSlop={8}>
-            <Text style={styles.headerBackTxt}>← 戻る</Text>
-          </Pressable>
-          <Pressable onPress={handleMore} style={styles.headerMore} hitSlop={8}>
-            <Text style={styles.headerMoreTxt}>⋯</Text>
-          </Pressable>
-        </View>
-
         <AiPlanRouteMap stops={mergedStops} />
 
         <AiPlanSummaryCard plan={plan} legs={legs} mood={mood} travelMode={travelMode} />
@@ -201,13 +202,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
   },
-  header: {
+  subHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    height: SUB_HEADER_H,
     paddingHorizontal: 16,
-    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: TOKENS.border.subtle,
     backgroundColor: TOKENS.surface.primary,

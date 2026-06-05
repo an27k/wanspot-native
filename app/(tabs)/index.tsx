@@ -1,13 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Dimensions, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSharedValue } from 'react-native-reanimated'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import * as Location from 'expo-location'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { MapAppMenu } from '@/components/map/MapAppMenu'
 import {
   NearbyBottomSheet,
   type NearbySheetHandle,
@@ -19,6 +18,7 @@ import {
   DEFAULT_MAP_GENRE,
   matchesGenre,
   NEARBY_MAP_GENRE_STORAGE_KEY,
+  NEARBY_DEFAULT_SHEET_INDEX,
   NEARBY_RADIUS_M,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
@@ -28,12 +28,13 @@ import { sortPlacesByScore } from '@/lib/nearby/place-score'
 import { sheetSpotFromPlace, sheetSpotFromUserRow, type SheetSpot } from '@/lib/nearby/sheet-spot'
 import { fetchCheckedInSpotsForUser, fetchLikedSpotsForUser } from '@/lib/fetch-user-spot-lists'
 import { ensureSpotId } from '@/lib/ensureSpot'
+import { openSpotDetail } from '@/lib/open-spot-detail'
 import { useWeather } from '@/lib/weather/use-weather'
 import { supabase } from '@/lib/supabase'
 import type { UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import type { PlaceResult } from '@/types/places'
 
-const DEFAULT_SHEET_BOTTOM = 280
+const DEFAULT_SHEET_BOTTOM = Math.round(Dimensions.get('window').height * 0.55)
 
 function isMapGenreKey(v: string): v is MapGenreKey {
   return (
@@ -71,12 +72,13 @@ export default function NearbyPage() {
   // いいねの楽観的更新（DB反映前でもハートを即時に切り替える）
   const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({})
   const [sheetBottomInset, setSheetBottomInset] = useState(DEFAULT_SHEET_BOTTOM)
-  const [sheetIndex, setSheetIndex] = useState(1)
+  const [sheetIndex, setSheetIndex] = useState(NEARBY_DEFAULT_SHEET_INDEX)
   const sheetControl = useRef<NearbySheetHandle>(null)
   // シートの開閉に追従するインデックス（0:収納〜2:全開）。下のグラデーション演出に使用。
-  const sheetAnimatedIndex = useSharedValue(1)
+  const sheetAnimatedIndex = useSharedValue(NEARBY_DEFAULT_SHEET_INDEX)
 
-  const weather = useWeather(location)
+  const { data: weather, loading: weatherLoading, needsLocation: weatherNeedsLocation, refetch: refetchWeather } =
+    useWeather(location)
 
   useEffect(() => {
     void (async () => {
@@ -97,33 +99,47 @@ export default function NearbyPage() {
     void AsyncStorage.setItem(NEARBY_MAP_GENRE_STORAGE_KEY, g)
   }, [])
 
+  const refreshLocation = useCallback(async () => {
+    let { status } = await Location.getForegroundPermissionsAsync()
+    if (status === 'undetermined') {
+      const req = await Location.requestForegroundPermissionsAsync()
+      status = req.status
+    }
+    if (status !== 'granted') {
+      setLocation(null)
+      setLocationPermissionDenied(true)
+      setLocationError('')
+      return false
+    }
+    setLocationPermissionDenied(false)
+    try {
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+      setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+      setLocationError('')
+      return true
+    } catch {
+      setLocationError('位置情報を取得できませんでした')
+      return false
+    }
+  }, [])
+
   useFocusEffect(
     useCallback(() => {
       let cancelled = false
       void (async () => {
-        const { status } = await Location.getForegroundPermissionsAsync()
-        if (cancelled) return
-        if (status !== 'granted') {
-          setLocation(null)
-          setLocationPermissionDenied(true)
-          setLocationError('')
-          return
-        }
-        setLocationPermissionDenied(false)
-        try {
-          const pos = await Location.getCurrentPositionAsync({})
-          if (cancelled) return
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-          setLocationError('')
-        } catch {
-          if (!cancelled) setLocationError('位置情報を取得できませんでした')
-        }
+        const ok = await refreshLocation()
+        if (cancelled || !ok) return
       })()
       return () => {
         cancelled = true
       }
-    }, [])
+    }, [refreshLocation])
   )
+
+  const handleSheetIndexChange = useCallback((index: number) => {
+    setSheetIndex(index)
+    if (index >= 1) setSelectedSpot(null)
+  }, [])
 
   const loadNearbySpots = useCallback(async () => {
     if (!location || !genreReady) return
@@ -209,25 +225,8 @@ export default function NearbyPage() {
   const mapMarkers = sheetItems
 
   const handleOpenDetail = useCallback(
-    async (spot: SheetSpot) => {
-      if (spot.spotUuid) {
-        router.push(`/spots/${spot.spotUuid}`)
-        return
-      }
-      const place: PlaceResult = {
-        place_id: spot.placeId,
-        name: spot.name,
-        category: spot.category,
-        lat: spot.lat,
-        lng: spot.lng,
-        address: spot.address,
-        photo_ref: spot.photoRef,
-        rating: spot.rating,
-        price_level: spot.priceLevel,
-        user_ratings_total: spot.userRatingsTotal,
-      }
-      const id = await ensureSpotId(place)
-      if (id) router.push(`/spots/${id}`)
+    (spot: SheetSpot) => {
+      openSpotDetail(router, spot)
     },
     [router]
   )
@@ -307,26 +306,34 @@ export default function NearbyPage() {
               userLocation={location}
               onSelectSpot={setSelectedSpot}
               onClearSelection={() => setSelectedSpot(null)}
-              onOpenDetail={(s) => void handleOpenDetail(s)}
+              onOpenDetail={handleOpenDetail}
               onSortChange={handleTabChange}
               onGenreChange={handleGenreChange}
               listMode={sheetIndex >= 1}
+              showWalkAlert={sheetIndex < 2}
+              walkTempC={weather?.tempC ?? null}
+              walkWeatherLoading={weatherLoading}
+              walkNeedsLocation={weatherNeedsLocation || locationPermissionDenied}
+              onWalkRequestLocation={() => void refreshLocation().then((ok) => ok && refetchWeather())}
               onShowMap={() => sheetControl.current?.collapse()}
               sheetAnimatedIndex={sheetAnimatedIndex}
               bottomInset={sheetBottomInset}
               topInset={topSafe}
             />
 
-            {sheetIndex < 1 ? (
-              <MapAppMenu topOffset={topSafe} tempC={weather?.tempC ?? null} />
-            ) : null}
-
             {locationPermissionDenied ? (
               <View style={[styles.permissionBanner, { top: mapTopControls + 48 }]}>
-                <Text style={styles.permissionBannerTxt}>現在地を表示するには位置情報の許可が必要です。</Text>
-                <TouchableOpacity style={styles.permissionBtn} onPress={() => void Linking.openSettings()}>
-                  <Text style={styles.permissionBtnTxt}>設定を開く</Text>
-                </TouchableOpacity>
+                <Text style={styles.permissionBannerTxt}>
+                  近くのスポットとお散歩予報には位置情報の許可が必要です（別の許可項目ではありません）。
+                </Text>
+                <View style={styles.permissionBtnRow}>
+                  <TouchableOpacity style={styles.permissionBtn} onPress={() => void refreshLocation()}>
+                    <Text style={styles.permissionBtnTxt}>許可を確認</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.permissionBtnGhost} onPress={() => void Linking.openSettings()}>
+                    <Text style={styles.permissionBtnGhostTxt}>設定を開く</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : null}
 
@@ -354,11 +361,11 @@ export default function NearbyPage() {
             emptyTitle={emptyCopy.title}
             emptyHint={emptyCopy.hint}
             onDiscover={() => router.push('/(tabs)/search')}
-            onPressSpot={(s) => void handleOpenDetail(s)}
+            onPressSpot={handleOpenDetail}
             likedPlaceIds={likedPlaceIds}
             onToggleLike={(s) => void handleToggleLike(s)}
             onSheetPositionChange={setSheetBottomInset}
-            onSheetIndexChange={setSheetIndex}
+            onSheetIndexChange={handleSheetIndexChange}
           />
         </View>
       </BottomSheetModalProvider>
@@ -382,14 +389,22 @@ const styles = StyleSheet.create({
     zIndex: 11,
   },
   permissionBannerTxt: { fontSize: 14, color: '#2b2a28', lineHeight: 22 },
+  permissionBtnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   permissionBtn: {
-    alignSelf: 'flex-start',
     backgroundColor: '#2b2a28',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 999,
   },
+  permissionBtnGhost: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#ebebeb',
+  },
   permissionBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  permissionBtnGhostTxt: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
   errOverlay: {
     position: 'absolute',
     left: 16,

@@ -1,6 +1,7 @@
 import { Redirect } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, View } from 'react-native'
+import { View } from 'react-native'
+import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 
@@ -41,11 +42,11 @@ export default function Index() {
   if (authLoading || gate === 'loading') {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+        <LoadingDogSvg size={72} />
       </View>
     )
   }
   if (gate === 'login') return <Redirect href="/(auth)/login" />
   if (gate === 'onboard') return <Redirect href="/onboarding/location" />
-  return <Redirect href="/(tabs)" />
+  return <Redirect href="/(tabs)/search" />
 }

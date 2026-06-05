@@ -1,16 +1,22 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useLocalSearchParams } from 'expo-router'
 import { View, Text, StyleSheet } from 'react-native'
 import SpotDetailScreen from '@/components/spot-detail/SpotDetailScreen'
 import { colors } from '@/constants/colors'
 import { track } from '@/lib/analytics'
+import { isPendingPlaceRouteId, pendingPlaceFromParams } from '@/lib/spot-detail-pending'
 
 export default function SpotDetailRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>()
-  const spotId = Array.isArray(id) ? id[0] : id
+  const params = useLocalSearchParams()
+  const rawId = params.id
+  const spotId = Array.isArray(rawId) ? rawId[0] : rawId
+  const pendingPlace = useMemo(
+    () => pendingPlaceFromParams(params as Record<string, string | string[] | undefined>),
+    [params.id, params.place_id, params.name, params.lat, params.lng]
+  )
 
   useEffect(() => {
-    if (spotId) track('spot_viewed', { spot_id: spotId })
+    if (spotId && !isPendingPlaceRouteId(spotId)) track('spot_viewed', { spot_id: spotId })
   }, [spotId])
 
   if (!spotId) {
@@ -20,7 +26,7 @@ export default function SpotDetailRoute() {
       </View>
     )
   }
-  return <SpotDetailScreen spotId={spotId} />
+  return <SpotDetailScreen spotId={spotId} pendingPlace={pendingPlace} />
 }
 
 const styles = StyleSheet.create({

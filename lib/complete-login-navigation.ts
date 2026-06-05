@@ -13,5 +13,5 @@ export async function completeLoginNavigation(router: ReplaceRouter): Promise<vo
   const { data: dog } = await supabase.from('dogs').select('id').eq('user_id', user.id).maybeSingle()
   track('login_completed')
   if (!dog) router.replace('/onboarding/location')
-  else router.replace('/(tabs)')
+  else router.replace('/(tabs)/search')
 }

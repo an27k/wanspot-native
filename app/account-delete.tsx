@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react'
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -12,6 +11,7 @@ import {
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { useAuth } from '@/context/AuthContext'
 import { colors } from '@/constants/colors'
 import { wanspotFetch } from '@/lib/wanspot-api'
@@ -110,7 +110,7 @@ export default function AccountDeleteScreen() {
         {success ? (
           <View style={styles.successBox}>
             <Text style={styles.successTxt}>アカウントを削除しました</Text>
-            <ActivityIndicator color={colors.brand} style={{ marginTop: 12 }} />
+            <LoadingDogSvg size={40} />
           </View>
         ) : null}
 
