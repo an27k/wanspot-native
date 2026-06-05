@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react'
 import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import Svg, { Path } from 'react-native-svg'
 import { DogPawPlaceholder } from '@/components/DogPawPlaceholder'
+import { FormField } from '@/components/onboarding/FormField'
 import {
   dogBirthdayYearBounds,
   OwnerBirthdayPickers,
@@ -16,13 +18,6 @@ import {
 } from '@/lib/dog-display'
 import { pickFromLibrary } from '@/lib/image-picker'
 import { supabase } from '@/lib/supabase'
-
-const IconCamera = ({ size = 18 }: { size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-    <Path d="M12 13a4 4 0 100-8 4 4 0 000 8z" />
-  </Svg>
-)
 
 const IconEditSmall = ({ size = 22 }: { size?: number }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
@@ -158,8 +153,14 @@ export function DogIdentityProfile({ dog, userId, onUpdated }: Props) {
             )}
           </View>
           {editing ? (
-            <Pressable style={styles.camFab} onPress={() => void pickPhoto()} accessibilityLabel="愛犬の写真を変更">
-              <IconCamera />
+            <Pressable
+              style={styles.camFab}
+              onPress={() => void pickPhoto()}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="愛犬の写真を変更"
+            >
+              <Ionicons name="camera" size={15} color="#fff" />
             </Pressable>
           ) : null}
         </View>
@@ -179,20 +180,26 @@ export function DogIdentityProfile({ dog, userId, onUpdated }: Props) {
 
         {editing ? (
           <View style={styles.editFields}>
-            <TextInput
-              style={styles.inp}
-              value={editName}
-              onChangeText={setEditName}
-              placeholder="名前"
-              placeholderTextColor={colors.textMuted}
-            />
-            <TextInput
-              style={styles.inp}
-              value={editBreed}
-              onChangeText={setEditBreed}
-              placeholder="犬種"
-              placeholderTextColor={colors.textMuted}
-            />
+            <FormField label="名前">
+              <TextInput
+                style={styles.textInput}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="例: モカ"
+                placeholderTextColor={colors.textMuted}
+                returnKeyType="next"
+              />
+            </FormField>
+            <FormField label="犬種">
+              <TextInput
+                style={styles.textInput}
+                value={editBreed}
+                onChangeText={setEditBreed}
+                placeholder="例: トイプードル"
+                placeholderTextColor={colors.textMuted}
+                returnKeyType="done"
+              />
+            </FormField>
             <View style={styles.birthdayCard}>
               <OwnerBirthdayPickers
                 year={editYear}
@@ -266,8 +273,14 @@ const styles = StyleSheet.create({
   wrap: { position: 'relative', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
   editBtn: { position: 'absolute', top: 8, right: 16, zIndex: 2, padding: 4 },
   col: { alignItems: 'center', width: '100%' },
-  avatarWrap: { position: 'relative', width: 88, height: 88 },
-  avatarWrapEditing: { marginBottom: 8 },
+  avatarWrap: {
+    position: 'relative',
+    width: 88,
+    height: 88,
+    overflow: 'visible',
+  },
+  /** 編集時：カメラFABがはみ出す分の余白（旧マイページと同系） */
+  avatarWrapEditing: { marginBottom: 12, width: 96, height: 96 },
   avatar: {
     width: 88,
     height: 88,
@@ -280,28 +293,43 @@ const styles = StyleSheet.create({
   avatarImg: { width: '100%', height: '100%' },
   camFab: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    bottom: 4,
+    right: 4,
     width: 32,
     height: 32,
+    minWidth: 32,
+    minHeight: 32,
     borderRadius: 16,
     backgroundColor: colors.text,
     borderWidth: 2,
     borderColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+    zIndex: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.18,
+        shadowRadius: 2.5,
+      },
+      android: { elevation: 4 },
+    }),
   },
   photoRemoveBtn: { marginTop: 8, paddingVertical: 6 },
   photoRemoveTxt: { fontSize: 13, fontWeight: '700', color: '#E84335' },
   name: { marginTop: 12, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
   meta: { marginTop: 6, fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
-  editFields: { alignSelf: 'stretch', width: '100%', gap: 8, marginTop: 12 },
-  inp: {
-    borderRadius: 10,
-    backgroundColor: colors.cardBg,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    fontSize: 15,
+  editFields: { alignSelf: 'stretch', width: '100%', marginTop: 12 },
+  textInput: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
     color: colors.text,
   },
   birthdayCard: {

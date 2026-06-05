@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Image } from 'expo-image'
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
@@ -95,7 +95,7 @@ export function NearbySpotCard({
   const [likeLoading, setLikeLoading] = useState(false)
   const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
-  const uri = spotPhotoUrl(spot.photo_ref)
+  const uri = spotPhotoUrl(spot.photo_ref, 'thumbnail')
 
   useEffect(() => {
     setLocalLikeCount(likeCount)
@@ -207,7 +207,9 @@ export function NearbySpotCard({
   return (
     <TouchableOpacity style={styles.card} onPress={handleOpenDetail} activeOpacity={0.95}>
       <View style={styles.cardPhoto}>
-        {uri ? <Image source={{ uri }} style={styles.cardImg} contentFit="cover" {...remoteImageExpoProps} /> : null}
+        {uri ? (
+          <Image source={{ uri }} style={styles.cardImg} contentFit="cover" recyclingKey={uri} {...listImageExpoProps} />
+        ) : null}
         <View style={styles.heartCol}>
           <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
             <TouchableOpacity
@@ -242,8 +244,10 @@ export function NearbySpotCard({
         <Text style={styles.spotAddr}>{spot.address}</Text>
         {!aiSummary && !aiLoading ? (
           <TouchableOpacity style={styles.aiBtn} onPress={() => void handleAiSummary()}>
-            <IconPaw size={11} color="#aaa" />
-            <Text style={styles.aiBtnTxt}> AIまとめを見る</Text>
+            <View style={styles.aiBtnIcon}>
+              <IconPaw size={11} color="#aaa" />
+            </View>
+            <Text style={styles.aiBtnTxt}>AIまとめを見る</Text>
           </TouchableOpacity>
         ) : null}
         {aiLoading ? <RunningDog label="AIまとめを生成中..." /> : null}
@@ -286,7 +290,7 @@ const styles = StyleSheet.create({
   likeCnt: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#C9A227',
+    color: HEART_ICON.filled,
     backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -314,6 +318,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -322,7 +327,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e8e8e8',
   },
-  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
+  aiBtnIcon: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
+  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888', lineHeight: 16 },
   aiBox: { marginTop: 8, padding: 12, borderRadius: 12, backgroundColor: '#FFFBEC' },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kw: {

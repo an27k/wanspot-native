@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Image } from 'expo-image'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { supabase } from '@/lib/supabase'
 import { HEART_ICON } from '@/lib/constants'
@@ -101,7 +101,7 @@ export function SpotListCard({
 }: SpotListCardProps) {
   const requireAuth = useRequireAuth()
   const photoRef = enrichment?.photo_ref ?? null
-  const uri = spotPhotoUrl(photoRef)
+  const uri = spotPhotoUrl(photoRef, 'thumbnail')
   const displayRating = enrichment?.rating ?? null
   const priceLevel = enrichment?.price_level ?? null
 
@@ -185,7 +185,8 @@ export function SpotListCard({
             source={{ uri }}
             style={styles.photo}
             contentFit="cover"
-            {...remoteImageExpoProps}
+            recyclingKey={uri ?? undefined}
+            {...listImageExpoProps}
           />
         ) : null}
         <View style={styles.heartCol}>
@@ -250,7 +251,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.9)',
-    color: '#C9A227',
+    color: HEART_ICON.filled,
     minWidth: 20,
     textAlign: 'center',
   },

@@ -1,10 +1,11 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { DogAlertFace } from '@/components/map/DogAlertFace'
 import {
   WALK_ALERT_LEVELS,
   walkAlertFromTemp,
   type WalkAlertLevel,
 } from '@/lib/weather/walk-alert'
+import type { WalkDailyAdvice } from '@/lib/weather/walk-daily-advice'
 
 export function WalkAlertModal({
   visible,
@@ -13,6 +14,8 @@ export function WalkAlertModal({
   needsLocation = false,
   onRequestLocation,
   onClose,
+  dailyAdvice = null,
+  adviceLoading = false,
 }: {
   visible: boolean
   tempC: number | null
@@ -20,6 +23,8 @@ export function WalkAlertModal({
   needsLocation?: boolean
   onRequestLocation?: () => void
   onClose: () => void
+  dailyAdvice?: WalkDailyAdvice | null
+  adviceLoading?: boolean
 }) {
   const level: WalkAlertLevel | null = tempC == null ? null : walkAlertFromTemp(tempC)
 
@@ -28,6 +33,10 @@ export function WalkAlertModal({
     : loading
       ? '気温を取得しています…'
       : '気温を取得できませんでした。通信環境を確認して、しばらくお待ちください。'
+
+  const adviceText = dailyAdvice?.text ?? level?.advice ?? ''
+  const adviceDate = dailyAdvice?.dateLabel
+  const adviceArea = dailyAdvice?.areaLabel
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -38,14 +47,33 @@ export function WalkAlertModal({
           {level ? (
             <>
               <View style={styles.hero}>
-                <DogAlertFace size={104} level={level.key} ringColor={level.color} />
+                <DogAlertFace size={104} level={level.key} ringColor={level.color} tempC={tempC} />
                 <View style={styles.heroText}>
                   <Text style={[styles.levelLabel, { color: level.color }]}>{level.label}</Text>
                   {tempC != null ? <Text style={styles.temp}>現在 {tempC}℃</Text> : null}
                 </View>
               </View>
 
-              <Text style={styles.advice}>{level.advice}</Text>
+              <View style={styles.adviceBox}>
+                {adviceDate || adviceArea ? (
+                  <View style={styles.adviceMeta}>
+                    {adviceDate ? <Text style={styles.adviceDate}>{adviceDate}</Text> : <View />}
+                    {adviceArea ? (
+                      <Text style={styles.adviceArea} numberOfLines={1}>
+                        {adviceArea}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+                {adviceLoading && !dailyAdvice ? (
+                  <View style={styles.adviceLoading}>
+                    <ActivityIndicator size="small" color="#888" />
+                    <Text style={styles.adviceLoadingTxt}>今日の散歩アドバイスを作成中…</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.advice}>{adviceText}</Text>
+                )}
+              </View>
 
               <View style={styles.scale}>
                 {WALK_ALERT_LEVELS.map((lv) => {
@@ -107,15 +135,25 @@ const styles = StyleSheet.create({
   heroText: { flex: 1, gap: 2 },
   levelLabel: { fontSize: 28, fontWeight: '900' },
   temp: { fontSize: 15, fontWeight: '700', color: '#6b6a66' },
-  advice: {
+  adviceBox: {
     marginTop: 14,
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#2b2a28',
     backgroundColor: '#f7f6f3',
     borderRadius: 14,
     padding: 14,
+    gap: 8,
+    minHeight: 96,
   },
+  adviceMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  adviceDate: { fontSize: 12, fontWeight: '800', color: '#888', flexShrink: 0 },
+  adviceArea: { fontSize: 12, fontWeight: '700', color: '#aaa', flex: 1, textAlign: 'right' },
+  advice: { fontSize: 15, lineHeight: 24, color: '#2b2a28' },
+  adviceLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  adviceLoadingTxt: { fontSize: 13, color: '#888' },
   scale: { marginTop: 16, gap: 4 },
   scaleRow: {
     flexDirection: 'row',

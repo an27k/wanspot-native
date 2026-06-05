@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { StyleSheet, TouchableOpacity, View, type ViewStyle } from 'react-native'
+import { StyleSheet, TouchableOpacity, type ViewStyle } from 'react-native'
+import { WalkAlertGauge } from '@/components/map/WalkAlertGauge'
 import { WalkAlertModal } from '@/components/map/WalkAlertModal'
+import { useWalkDailyAdvice } from '@/lib/weather/use-walk-daily-advice'
 import { walkAlertFromTemp } from '@/lib/weather/walk-alert'
 
 /**
- * 地図右下フローティング列のお散歩予報ボタン（並び替えの上）。
- * リスク段階は色付き円のみで表現。
+ * 地図左上のお散歩アラートボタン。
+ * 白ボタン＋温度段階色のゲージアイコン。
  */
 export function WalkAlertFab({
   tempC,
@@ -13,16 +15,27 @@ export function WalkAlertFab({
   needsLocation = false,
   onRequestLocation,
   buttonStyle,
+  location,
+  dogName,
 }: {
   tempC: number | null
   loading?: boolean
   needsLocation?: boolean
   onRequestLocation?: () => void
   buttonStyle?: ViewStyle
+  location?: { lat: number; lng: number } | null
+  dogName?: string | null
 }) {
   const [open, setOpen] = useState(false)
   const alert = tempC != null ? walkAlertFromTemp(tempC) : null
   const color = alert?.color ?? '#9a9a96'
+
+  const { advice: dailyAdvice, loading: adviceLoading } = useWalkDailyAdvice(
+    location ?? null,
+    tempC,
+    dogName,
+    !!location && !needsLocation
+  )
 
   const handlePress = () => {
     if (needsLocation) {
@@ -42,7 +55,14 @@ export function WalkAlertFab({
         accessibilityLabel="お散歩予報を見る"
         activeOpacity={0.85}
       >
-        <View style={[styles.dot, { backgroundColor: color }]} />
+        <WalkAlertGauge
+          size={30}
+          color="#FFFFFF"
+          ringColor={color}
+          iconColor={color}
+          tempC={tempC}
+          filled
+        />
       </TouchableOpacity>
 
       <WalkAlertModal
@@ -52,6 +72,8 @@ export function WalkAlertFab({
         needsLocation={needsLocation}
         onRequestLocation={onRequestLocation}
         onClose={() => setOpen(false)}
+        dailyAdvice={dailyAdvice}
+        adviceLoading={adviceLoading}
       />
     </>
   )
@@ -72,12 +94,5 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 7,
-  },
-  dot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
-    borderColor: '#fff',
   },
 })

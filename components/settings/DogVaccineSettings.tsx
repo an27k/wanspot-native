@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Alert, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
-import Svg, { Path } from 'react-native-svg'
+import { WanspotIconSyringe } from '@/components/icons/WanspotIconSyringe'
 import {
   OwnerBirthdayPickers,
   ownerBirthdayToYmd,
@@ -14,12 +14,6 @@ import {
   ymdFromDogField,
 } from '@/lib/dog-display'
 import { supabase } from '@/lib/supabase'
-
-const IconSyringe = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
-    <Path d="M18 2l4 4M17 7l1-1M3 21l6-6M9 15l2-2M12 12l2-2M6 21c0-2 2-4 4-4M15 3l-6 6M15 3l3 3-7 7-3-3 7-7z" />
-  </Svg>
-)
 
 function VaccineStampMark() {
   return (
@@ -102,7 +96,7 @@ export function DogVaccineSettings({ dog, onUpdated }: Props) {
         accessibilityRole="button"
         accessibilityLabel={opts.label}
       >
-        <IconSyringe />
+        <WanspotIconSyringe size={20} />
         <View style={styles.rowTextCol}>
           <Text style={styles.rowTitle}>{opts.label}</Text>
           <Text style={[styles.rowSub, !hasDate && styles.rowSubMuted]} numberOfLines={1}>

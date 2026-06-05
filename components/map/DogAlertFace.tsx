@@ -1,40 +1,26 @@
-import { View } from 'react-native'
+import { WalkAlertGauge } from '@/components/map/WalkAlertGauge'
 import type { WalkAlertKey } from '@/lib/weather/walk-alert'
 
-/**
- * お散歩アラート用インジケータ（リスク段階の単色塗りつぶし円）。
- */
+/** お散歩アラート用インジケータ（温度ゲージ・段階色） */
 export function DogAlertFace({
   size = 40,
-  level: _level = 'comfortable',
+  level = 'comfortable',
   ringColor = '#34A853',
+  tempC,
 }: {
   size?: number
   level?: WalkAlertKey
   ringColor?: string
+  tempC?: number | null
 }) {
-  const inner = Math.round(size * 0.72)
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: '#fff',
-        borderWidth: Math.max(2, Math.round(size * 0.06)),
-        borderColor: ringColor,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <View
-        style={{
-          width: inner,
-          height: inner,
-          borderRadius: inner / 2,
-          backgroundColor: ringColor,
-        }}
-      />
-    </View>
+    <WalkAlertGauge
+      size={size}
+      color={ringColor}
+      iconColor="#fff"
+      tempC={tempC}
+      level={level}
+      filled
+    />
   )
 }

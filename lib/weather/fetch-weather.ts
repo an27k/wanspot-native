@@ -46,7 +46,7 @@ function conditionFromGoogleType(type: string | undefined): WeatherCondition {
 }
 
 /** WMO weather_code を正規化区分へ（Open-Meteo フォールバック用） */
-function conditionFromWmo(code: number): WeatherCondition {
+export function conditionFromWmo(code: number): WeatherCondition {
   if (code === 0) return 'clear'
   if (code <= 3) return 'partly'
   if (code <= 48) return code <= 45 ? 'cloudy' : 'fog'

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Image } from 'expo-image'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
@@ -84,7 +84,7 @@ export function NearbySheetSpotCard({
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
   const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
-  const uri = spotPhotoUrl(spot.photoRef)
+  const uri = spotPhotoUrl(spot.photoRef, 'thumbnail')
 
   useEffect(() => {
     void fetchUserWalkAreaTags(supabase).then(setUserWalkTags)
@@ -158,7 +158,7 @@ export function NearbySheetSpotCard({
 
       {!compact && uri ? (
         <View style={styles.cardPhoto}>
-          <Image source={{ uri }} style={styles.cardImg} contentFit="cover" {...remoteImageExpoProps} />
+          <Image source={{ uri }} style={styles.cardImg} contentFit="cover" recyclingKey={uri} {...listImageExpoProps} />
         </View>
       ) : null}
       <View style={styles.cardBody}>
@@ -188,8 +188,10 @@ export function NearbySheetSpotCard({
               void handleAiSummary()
             }}
           >
-            <IconPaw size={11} color="#aaa" />
-            <Text style={styles.aiBtnTxt}> AIまとめを見る</Text>
+            <View style={styles.aiBtnIcon}>
+              <IconPaw size={11} color="#aaa" />
+            </View>
+            <Text style={styles.aiBtnTxt}>AIまとめを見る</Text>
           </TouchableOpacity>
         ) : null}
         {aiLoading ? <RunningDog label="AIまとめを生成中..." /> : null}
@@ -265,6 +267,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -273,7 +276,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e8e8e8',
   },
-  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
+  aiBtnIcon: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
+  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888', lineHeight: 16 },
   aiBox: { marginTop: 8, padding: 12, borderRadius: 12, backgroundColor: '#FFFBEC' },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kw: {

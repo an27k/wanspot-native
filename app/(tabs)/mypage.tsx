@@ -6,11 +6,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { AppHeader } from '@/components/AppHeader'
 import { RunningDog } from '@/components/DogStates'
+import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { DogVaccineSettings } from '@/components/settings/DogVaccineSettings'
+import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { MAP_VISITED_CHECK_COLOR } from '@/lib/nearby/constants'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
 import { useAuth } from '@/context/AuthContext'
 
@@ -55,7 +56,7 @@ export default function SettingsTab() {
               accessibilityRole="button"
               accessibilityLabel="散歩エリア"
             >
-              <Ionicons name="walk-outline" size={20} color={colors.text} />
+              <WanspotIconPaw size={20} />
               <Text style={styles.rowTxt}>散歩エリア</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </Pressable>
@@ -70,7 +71,7 @@ export default function SettingsTab() {
               onPress={() => router.push('/likes')}
               accessibilityLabel="いいねしたスポット"
             >
-              <Ionicons name="heart-outline" size={20} color={colors.text} />
+              <Ionicons name="heart-outline" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>いいねしたスポット</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </Pressable>
@@ -80,7 +81,7 @@ export default function SettingsTab() {
               onPress={() => router.push('/checkins')}
               accessibilityLabel="行ったスポット"
             >
-              <Ionicons name="checkmark-circle" size={20} color={MAP_VISITED_CHECK_COLOR} />
+              <Ionicons name="checkmark-circle" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>行ったスポット</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </Pressable>
@@ -95,7 +96,7 @@ export default function SettingsTab() {
               onPress={() => openWeb('/contact')}
               accessibilityLabel="お問い合わせ"
             >
-              <Ionicons name="mail-outline" size={20} color={colors.text} />
+              <Ionicons name="mail-outline" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>お問い合わせ</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </Pressable>
@@ -105,7 +106,7 @@ export default function SettingsTab() {
               onPress={() => openWeb('/privacy')}
               accessibilityLabel="プライバシーポリシー"
             >
-              <Ionicons name="shield-checkmark-outline" size={20} color={colors.text} />
+              <Ionicons name="shield-checkmark-outline" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>プライバシーポリシー</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </Pressable>
@@ -115,7 +116,7 @@ export default function SettingsTab() {
               onPress={() => openWeb('/terms')}
               accessibilityLabel="利用規約"
             >
-              <Ionicons name="document-text-outline" size={20} color={colors.text} />
+              <Ionicons name="document-text-outline" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>利用規約</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </Pressable>
@@ -128,7 +129,7 @@ export default function SettingsTab() {
               }}
               accessibilityLabel="ログアウト"
             >
-              <Ionicons name="log-out-outline" size={20} color={colors.text} />
+              <Ionicons name="log-out-outline" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>ログアウト</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </Pressable>

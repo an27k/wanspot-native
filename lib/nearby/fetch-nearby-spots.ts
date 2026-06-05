@@ -1,18 +1,8 @@
-import {
-  DOG_RUN_RELEVANT_PATTERN,
-  DOG_RUN_SEARCH_QUERY,
-  type MapGenreKey,
-} from '@/lib/nearby/constants'
+import { DOG_RUN_SEARCH_QUERY, type MapGenreKey } from '@/lib/nearby/constants'
+import { placeMatchesGenreFilter } from '@/lib/nearby/map-filter'
 import { calcDistanceMeters } from '@/lib/nearby/geo'
 import { wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
-
-function isDogRunSpot(spot: PlaceResult): boolean {
-  const text = [spot.name, spot.address, spot.category]
-    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-    .join(' ')
-  return DOG_RUN_RELEVANT_PATTERN.test(text)
-}
 
 async function fetchNearbyByType(
   lat: number,
@@ -43,7 +33,7 @@ async function fetchDogRunSpots(lat: number, lng: number, radiusM: number): Prom
   }
   if (!r.ok) return []
   return (data.spots ?? [])
-    .filter(isDogRunSpot)
+    .filter((spot) => placeMatchesGenreFilter(spot, 'dog_run'))
     .filter((spot) => calcDistanceMeters(lat, lng, spot.lat, spot.lng) <= radiusM)
     .map((spot) => ({ ...spot, category: 'ドッグラン' }))
 }
@@ -65,7 +55,8 @@ export async function fetchNearbySpotsForGenre(
     const spots = raw.filter(
       (spot) =>
         spot.place_id &&
-        calcDistanceMeters(location.lat, location.lng, spot.lat, spot.lng) <= radiusM
+        calcDistanceMeters(location.lat, location.lng, spot.lat, spot.lng) <= radiusM &&
+        placeMatchesGenreFilter(spot, genre)
     )
 
     return { spots, error: null }

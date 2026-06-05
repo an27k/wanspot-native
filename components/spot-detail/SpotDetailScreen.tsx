@@ -966,8 +966,10 @@ export default function SpotDetailScreen({
 
           <View style={styles.card}>
             <View style={styles.aiHead}>
-              <IconPaw size={13} color="#FF8A1F" />
-              <Text style={styles.sectionLbl}>AI まとめ</Text>
+              <View style={styles.aiHeadIcon}>
+                <IconPaw size={13} color="#FF8A1F" />
+              </View>
+              <Text style={styles.aiHeadLbl}>AI まとめ</Text>
             </View>
             {aiLoading ? (
               <RunningDog label="AIまとめを生成中..." />
@@ -1301,6 +1303,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   aiHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  aiHeadIcon: { width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
+  aiHeadLbl: { fontSize: 12, fontWeight: '700', color: '#aaa', letterSpacing: 0.6, lineHeight: 16 },
   sectionLbl: { fontSize: 12, fontWeight: '700', color: '#aaa', letterSpacing: 0.6, marginBottom: 12 },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kwPill: { backgroundColor: '#FF8A1F', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
