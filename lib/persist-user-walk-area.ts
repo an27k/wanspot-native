@@ -61,3 +61,21 @@ export async function updateUserWithWalkAreas(
     .eq('id', userId)
   return { error: second.error }
 }
+
+/** 散歩エリアのみ更新（設定画面用） */
+export async function updateUserWalkAreaTagsOnly(
+  supabase: SupabaseClient,
+  userId: string,
+  walkAreaTags: string[]
+): Promise<{ error: { message: string } | null }> {
+  const tagsSaved = walkAreaTagsForUpsert(walkAreaTags)
+  const first = await supabase.from('users').update({ walk_area_tags: tagsSaved }).eq('id', userId)
+  if (!first.error) return { error: null }
+  if (!isWalkAreaTagsColumnUnavailable(first.error)) return { error: first.error }
+
+  const second = await supabase
+    .from('users')
+    .update({ walk_area: walkAreaLegacyTextForDb(tagsSaved) })
+    .eq('id', userId)
+  return { error: second.error }
+}

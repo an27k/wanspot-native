@@ -4,6 +4,13 @@ import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
+import {
+  CACHE_TTL,
+  getCacheEntry,
+  isCacheFresh,
+  readCache,
+  writeCache,
+} from '@/lib/client-cache'
 import { ALBUM_RETENTION_DAYS, fetchAlbumPhotos, type DogPhoto } from '@/lib/dog-photos'
 import { supabase } from '@/lib/supabase'
 
@@ -32,7 +39,7 @@ export function AlbumSection() {
   const screenW = Dimensions.get('window').width
   const size = tileSize(screenW - 32)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -41,13 +48,30 @@ export function AlbumSection() {
       setLoading(false)
       return
     }
-    setPhotos(await fetchAlbumPhotos(user.id))
+
+    const cacheKey = `dog:album:${user.id}`
+    if (!force && isCacheFresh(cacheKey, CACHE_TTL.ALBUM_MS)) {
+      const cached = readCache<DogPhoto[]>(cacheKey)
+      if (cached) {
+        setPhotos(cached)
+        setLoading(false)
+        return
+      }
+    }
+
+    const stale = readCache<DogPhoto[]>(cacheKey)
+    if (stale) setPhotos(stale)
+    else if (force || !getCacheEntry(cacheKey)) setLoading(true)
+
+    const next = await fetchAlbumPhotos(user.id)
+    writeCache(cacheKey, next)
+    setPhotos(next)
     setLoading(false)
   }, [])
 
   useFocusEffect(
     useCallback(() => {
-      void load()
+      void load(false)
     }, [load])
   )
 

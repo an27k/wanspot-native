@@ -1,10 +1,10 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { BrandLoader } from '@/components/common/BrandLoader'
 import { DogFaceMark } from '@/components/common/DogFaceMark'
-import { LoadingDogSvg } from '@/components/common/LoadingDog'
 
-export const RunningDog = ({ label = '読み込み中...' }: { label?: string }) => (
+export const RunningDog = ({ label = '読み込み中...', size = 96 }: { label?: string; size?: number }) => (
   <View style={styles.runWrap}>
-    <LoadingDogSvg />
+    <BrandLoader size={size} />
     <Text style={styles.runLabel}>{label}</Text>
   </View>
 )

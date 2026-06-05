@@ -1,3 +1,4 @@
+import { invalidateCache } from '@/lib/client-cache'
 import { supabase } from '@/lib/supabase'
 import type { PickedImage } from '@/lib/image-picker'
 
@@ -95,5 +96,7 @@ export async function saveDailyPhoto(userId: string, image: PickedImage): Promis
     }
     return { ok: false, reason: 'db_failed' }
   }
+  invalidateCache(`dog:today:${userId}:${takenOn}`)
+  invalidateCache(`dog:album:${userId}`)
   return { ok: true, photo: data as DogPhoto }
 }
