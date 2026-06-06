@@ -66,7 +66,38 @@ export async function pickFromLibrary(): Promise<PickedImage | null> {
 }
 
 /**
- * カメラで写真を撮影
+ * 今日の1枚用：クロップなし撮影 → 写ルンです風フィルター焼き込み（オリジナルアスペクト維持）
+ */
+export async function takeDailyPhoto(): Promise<PickedImage | null> {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync()
+
+  if (status !== 'granted') {
+    Alert.alert(
+      '権限が必要です',
+      '設定アプリからカメラへのアクセスを許可してください。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '設定を開く', onPress: () => Linking.openSettings() },
+      ]
+    )
+    return null
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    allowsEditing: false,
+    quality: 1,
+    exif: false,
+  })
+
+  if (result.canceled) return null
+
+  const asset = result.assets[0]
+  const { applyUtsurunFilter } = await import('@/lib/photo-filter/apply-utsurun-filter')
+  return applyUtsurunFilter(asset.uri)
+}
+
+/**
+ * カメラで写真を撮影（プロフィール等・1:1クロップ + 600px 圧縮）
  */
 export async function takePhoto(): Promise<PickedImage | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync()

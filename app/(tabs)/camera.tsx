@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { BrandLoader } from '@/components/common/BrandLoader'
 import { useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppHeader } from '@/components/AppHeader'
@@ -9,7 +10,7 @@ import { useDogProfile } from '@/components/dog/useDogProfile'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { takePhoto } from '@/lib/image-picker'
+import { takeDailyPhoto } from '@/lib/image-picker'
 import {
   CACHE_TTL,
   invalidateCache,
@@ -28,6 +29,7 @@ export default function CameraTab() {
   const { dog, setDog, userId, loading: dogLoading } = useDogProfile()
   const [todayPhoto, setTodayPhoto] = useState<DogPhoto | null>(null)
   const [todayLoading, setTodayLoading] = useState(false)
+  const [processing, setProcessing] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const loadToday = useCallback(async (force = false) => {
@@ -69,8 +71,20 @@ export default function CameraTab() {
       Alert.alert('ログインが必要です', 'カメラで保存するにはログインしてください。')
       return
     }
-    const image = await takePhoto()
+    if (processing || saving) return
+
+    setProcessing(true)
+    let image: Awaited<ReturnType<typeof takeDailyPhoto>> = null
+    try {
+      image = await takeDailyPhoto()
+    } catch {
+      Alert.alert('加工に失敗しました', '時間をおいて、もう一度お試しください。')
+      return
+    } finally {
+      setProcessing(false)
+    }
     if (!image) return
+
     setSaving(true)
     try {
       const result = await saveDailyPhoto(userId, image)
@@ -87,7 +101,7 @@ export default function CameraTab() {
     } finally {
       setSaving(false)
     }
-  }, [userId, loadToday])
+  }, [userId, loadToday, processing, saving])
 
   const padBottom = insets.bottom + TAB_BAR_HEIGHT + 24
 
@@ -113,9 +127,18 @@ export default function CameraTab() {
           userId={userId}
           todayPhoto={todayPhoto}
           onCaptureToday={() => void handleCapture()}
-          saving={saving || todayLoading}
+          saving={processing || saving || todayLoading}
         />
       </ScrollView>
+
+      {(processing || saving) && (
+        <View style={styles.processingOverlay} pointerEvents="auto">
+          <BrandLoader size={72} />
+          <Text style={styles.processingLabel}>
+            {processing ? '写真を加工しています…' : '保存しています…'}
+          </Text>
+        </View>
+      )}
     </View>
   )
 }
@@ -129,5 +152,18 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: 24,
+  },
+  processingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    zIndex: 20,
+  },
+  processingLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textMuted,
   },
 })
