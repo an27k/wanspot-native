@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { LoadingDogSvg } from '@/components/common/LoadingDog'
+import { BrandLoader } from '@/components/common/BrandLoader'
 import { AiPlanGeneratingAd } from '@/components/ai-plan/AiPlanGeneratingAd'
 import {
   AI_PLAN_PHASES,
@@ -96,7 +96,7 @@ export function AiPlanGenerating({
           <View style={styles.ringOuter} />
           <Animated.View style={[styles.ringInner, { transform: [{ rotate }] }]} />
           <View style={styles.dogMark}>
-            <LoadingDogSvg />
+            <BrandLoader size={96} />
           </View>
         </View>
 

@@ -21,9 +21,15 @@
   dispatch_once(&nativeComponentsToken, ^{
     thirdPartyComponents = @{
 		@"RNGoogleSignInButton": NSClassFromString(@"RNGoogleSignInButtonComponentView"), // @react-native-google-signin/google-signin
+		@"SkiaPictureView": NSClassFromString(@"SkiaPictureView"), // @shopify/react-native-skia
+		@"RNGestureHandlerButton": NSClassFromString(@"RNGestureHandlerButtonComponentView"), // react-native-gesture-handler
 		@"RNGoogleMobileAdsBannerView": NSClassFromString(@"RNGoogleMobileAdsBannerView"), // react-native-google-mobile-ads
 		@"RNGoogleMobileAdsNativeView": NSClassFromString(@"RNGoogleMobileAdsNativeView"), // react-native-google-mobile-ads
 		@"RNGoogleMobileAdsMediaView": NSClassFromString(@"RNGoogleMobileAdsMediaView"), // react-native-google-mobile-ads
+		@"RNMapsGoogleMapView": NSClassFromString(@"RNMapsGoogleMapView"), // react-native-maps
+		@"RNMapsGooglePolygon": NSClassFromString(@"RNMapsGooglePolygonView"), // react-native-maps
+		@"RNMapsMapView": NSClassFromString(@"RNMapsMapView"), // react-native-maps
+		@"RNMapsMarker": NSClassFromString(@"RNMapsMarkerView"), // react-native-maps
 		@"RNCSafeAreaProvider": NSClassFromString(@"RNCSafeAreaProviderComponentView"), // react-native-safe-area-context
 		@"RNCSafeAreaView": NSClassFromString(@"RNCSafeAreaViewComponentView"), // react-native-safe-area-context
 		@"RNSVGCircle": NSClassFromString(@"RNSVGCircle"), // react-native-svg

@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
 import { Alert, Linking } from 'react-native'
+import { applyUtsurunFilter } from '@/lib/photo-filter/apply-utsurun-filter'
 
 export interface PickedImage {
   uri: string
@@ -92,7 +93,6 @@ export async function takeDailyPhoto(): Promise<PickedImage | null> {
   if (result.canceled) return null
 
   const asset = result.assets[0]
-  const { applyUtsurunFilter } = await import('@/lib/photo-filter/apply-utsurun-filter')
   return applyUtsurunFilter(asset.uri)
 }
 

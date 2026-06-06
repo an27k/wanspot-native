@@ -1,4 +1,9 @@
-import { DOG_RUN_SEARCH_QUERY, type MapGenreKey } from '@/lib/nearby/constants'
+import {
+  DOG_RUN_SEARCH_QUERY,
+  NEARBY_MIN_SPOTS_THRESHOLD,
+  NEARBY_RADIUS_EXPANSION_STEPS_M,
+  type MapGenreKey,
+} from '@/lib/nearby/constants'
 import { placeMatchesGenreFilter } from '@/lib/nearby/map-filter'
 import { calcDistanceMeters } from '@/lib/nearby/geo'
 import { wanspotFetch } from '@/lib/wanspot-api'
@@ -67,4 +72,29 @@ export async function fetchNearbySpotsForGenre(
         'ネットワークエラーです。API の URL（EXPO_PUBLIC_WANSPOT_API_URL / https://www.wanspot.app）を確認してください',
     }
   }
+}
+
+/**
+ * 件数が閾値未満なら半径を段階的に拡張（既存 default 起点 → 上限まで）。
+ */
+export async function fetchNearbySpotsForGenreWithExpansion(
+  location: { lat: number; lng: number },
+  genre: MapGenreKey,
+  minSpots = NEARBY_MIN_SPOTS_THRESHOLD
+): Promise<{ spots: PlaceResult[]; error: string | null; radiusM: number }> {
+  const steps = NEARBY_RADIUS_EXPANSION_STEPS_M
+  let last: { spots: PlaceResult[]; error: string | null; radiusM: number } = {
+    spots: [],
+    error: null,
+    radiusM: steps[steps.length - 1],
+  }
+
+  for (const radiusM of steps) {
+    const result = await fetchNearbySpotsForGenre(location, radiusM, genre)
+    last = { spots: result.spots, error: result.error, radiusM }
+    if (result.error) return last
+    if (result.spots.length >= minSpots) return last
+  }
+
+  return last
 }

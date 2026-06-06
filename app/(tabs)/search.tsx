@@ -24,14 +24,17 @@ import { AdNativeCard } from '@/components/AdNativeCard'
 import { AiPlanTab } from '@/components/ai-plan/AiPlanTab'
 import { SearchDiscoverResultCard } from '@/components/search/SearchDiscoverResultCard'
 import { PowState, RunningDog } from '@/components/DogStates'
+import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { sortArticlesByScore } from '@/lib/articles/scoring'
-import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
+import { CACHE_TTL, fetchWithCache, invalidateCache } from '@/lib/client-cache'
+import { fetchUserWalkAreaTags, fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
 import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
+import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
@@ -42,7 +45,7 @@ const SEARCH_STORAGE_KEY = 'search_state_v1'
 const SEARCH_RESTORE_FLAG = 'search_pending_restore'
 
 type SortKey = 'default' | 'rating' | 'distance'
-type DiscoverMode = 'ai' | 'hot' | 'articles' | 'ai_plan'
+type DiscoverMode = 'ai' | 'articles' | 'ai_plan'
 
 const DEFAULT_SUGGESTIONS = [
   'ドッグキャンプ',
@@ -148,11 +151,7 @@ const IconThumbUp = ({ fill }: { fill: string }) => (
   </Svg>
 )
 /** 炎は絵文字と同じくらいの視認性のシルエット。絵文字は端末により多色のままになり `color` が効かないため、他タブと同じ #fff / #888 を SVG で統一 */
-const IconHot = ({ fill }: { fill: string }) => (
-  <Svg width={17} height={17} viewBox="0 0 24 24" fill={fill}>
-    <Path d="M12 22a7 7 0 007-7c0-2.8-1.8-5.2-3.5-7-.2 1.6-1.1 2.8-2.2 3.4C12.8 10 12 8.2 12 6c0-1.1.3-2.1.8-3-3.5 2.5-5.8 5.6-5.8 9a7 7 0 007 10z" />
-  </Svg>
-)
+// (trend feature removed)
 
 type ArticleRow = {
   id: string
@@ -187,9 +186,6 @@ export default function SearchTab() {
   const [aiLabel, setAiLabel] = useState<string | null>(null)
   const [aiReason, setAiReason] = useState<string | null>(null)
   const [aiResults, setAiResults] = useState<PlaceResult[]>([])
-  const [hotLoading, setHotLoading] = useState(false)
-  const [hotResults, setHotResults] = useState<PlaceResult[]>([])
-  const [hotLabel, setHotLabel] = useState<string | null>(null)
   const [articlesList, setArticlesList] = useState<ArticleRow[]>([])
   const [articlesLoading, setArticlesLoading] = useState(false)
   const [spotLikesCount, setSpotLikesCount] = useState<number | null>(null)
@@ -203,6 +199,45 @@ export default function SearchTab() {
   const adsPrimedRef = useRef(false)
   /** AIプラン表示時、検索ヘッダーの高さぶん下げてオーバーレイ配置する */
   const [headerH, setHeaderH] = useState(0)
+  const [showObTutorial, setShowObTutorial] = useState(false)
+  const [obTutorialDogName, setObTutorialDogName] = useState('')
+
+  useFocusEffect(
+    useCallback(() => {
+      void (async () => {
+        try {
+          const v = await AsyncStorage.getItem(POST_ONBOARDING_TUTORIAL_KEY)
+          if (v !== '1') return
+          setShowObTutorial(true)
+          const {
+            data: { user },
+          } = await supabase.auth.getUser()
+          if (!user) {
+            setObTutorialDogName('')
+            return
+          }
+          const { data: dogRow } = await supabase
+            .from('dogs')
+            .select('name')
+            .eq('user_id', user.id)
+            .maybeSingle()
+          const n = typeof dogRow?.name === 'string' ? dogRow.name.trim() : ''
+          setObTutorialDogName(n)
+        } catch {
+          /* ignore */
+        }
+      })()
+    }, [])
+  )
+
+  const dismissObTutorial = useCallback(async () => {
+    try {
+      await AsyncStorage.removeItem(POST_ONBOARDING_TUTORIAL_KEY)
+    } catch {
+      /* ignore */
+    }
+    setShowObTutorial(false)
+  }, [])
 
   useFocusEffect(
     useCallback(() => {
@@ -252,7 +287,18 @@ export default function SearchTab() {
   useFocusEffect(
     useCallback(() => {
       void (async () => {
-        const tags = await fetchUserWalkAreaTags(supabase)
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          setUserWalkTags([])
+          return
+        }
+        const { data: tags } = await fetchWithCache(
+          `user:walk-tags:${user.id}`,
+          CACHE_TTL.WALK_TAGS_MS,
+          () => fetchUserWalkAreaTagsByUserId(supabase, user.id)
+        )
         setUserWalkTags(tags)
       })()
     }, [])
@@ -431,36 +477,6 @@ export default function SearchTab() {
     }
   }, [aiLoading, aiResults.length, location])
 
-  const handleHot = useCallback(
-    async (opts?: { force?: boolean; locationOverride?: { lat: number; lng: number } | null }) => {
-      const force = opts?.force === true
-      const loc = opts?.locationOverride !== undefined ? opts.locationOverride : location
-      if (hotLoading) return
-      if (!force && hotResults.length > 0) return
-      setHotLoading(true)
-      try {
-        const walkTags = await fetchUserWalkAreaTags(supabase)
-        const prefecture = loc ? await getPrefecture(loc.lat, loc.lng) : '東京'
-        const result = await wanspotFetchJson<{ spots?: PlaceResult[]; label?: string }>('/api/spots/hot', {
-          method: 'POST',
-          json: {
-            lat: loc?.lat,
-            lng: loc?.lng,
-            prefecture,
-            walkAreaTags: walkTags,
-          },
-        })
-        setHotLabel(result.label ?? null)
-        setHotResults(filterDiscoverRecommendSpots(result.spots ?? []))
-      } catch {
-        setHotResults([])
-      } finally {
-        setHotLoading(false)
-      }
-    },
-    [hotLoading, hotResults.length, location]
-  )
-
   const handleArticles = useCallback(
     async (opts?: { force?: boolean }) => {
       const force = opts?.force === true
@@ -525,9 +541,8 @@ export default function SearchTab() {
 
   useEffect(() => {
     if (searched) return
-    if (discoverMode === 'hot') void handleHot()
     if (discoverMode === 'articles') void handleArticles()
-  }, [discoverMode, searched, handleHot, handleArticles])
+  }, [discoverMode, searched, handleArticles])
 
   useEffect(() => {
     if (searched || spotLikesCount === null || spotLikesCount < AI_LIKES_MIN) return
@@ -572,8 +587,19 @@ export default function SearchTab() {
     setPullRefreshing(true)
     try {
       await refreshSpotLikesCount()
-      const tags = await fetchUserWalkAreaTags(supabase)
-      setUserWalkTags(tags)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        invalidateCache(`user:walk-tags:${user.id}`)
+        const { data: tags } = await fetchWithCache(
+          `user:walk-tags:${user.id}`,
+          CACHE_TTL.WALK_TAGS_MS,
+          () => fetchUserWalkAreaTagsByUserId(supabase, user.id),
+          { force: true }
+        )
+        setUserWalkTags(tags)
+      }
       let locFresh: { lat: number; lng: number } | null = location
       try {
         const pos = await Location.getCurrentPositionAsync({})
@@ -586,8 +612,6 @@ export default function SearchTab() {
         await handleSearch(query, { silent: true })
       } else if (discoverMode === 'articles') {
         await handleArticles({ force: true })
-      } else if (discoverMode === 'hot') {
-        await handleHot({ force: true, locationOverride: locFresh })
       } else {
         await handleAiRecommend({ force: true, locationOverride: locFresh })
       }
@@ -602,7 +626,6 @@ export default function SearchTab() {
     refreshSpotLikesCount,
     handleSearch,
     handleArticles,
-    handleHot,
     handleAiRecommend,
   ])
 
@@ -624,10 +647,10 @@ export default function SearchTab() {
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
   /** 取得済み結果に対し、タグ・現在地で再ランク（fetch 内でも適用済みだが、タブ復帰後のタグ更新に追従） */
   const discoverResults = useMemo(() => {
-    const raw = discoverMode === 'ai' ? aiResults : hotResults
+    const raw = aiResults
     return rankSpotsByWalkContext(raw, location, userWalkTags)
-  }, [discoverMode, aiResults, hotResults, location, userWalkTags])
-  const discoverLoading = discoverMode === 'ai' ? aiLoading : discoverMode === 'hot' ? hotLoading : articlesLoading
+  }, [aiResults, location, userWalkTags])
+  const discoverLoading = discoverMode === 'ai' ? aiLoading : articlesLoading
 
   const AD_ROW_EVERY = 5
   const shouldShowAdAfter = (index: number, total: number) =>
@@ -743,50 +766,38 @@ export default function SearchTab() {
                   ))}
                 </View>
               </ScrollView>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.discoverTabsScroll}>
-                <View style={styles.discoverTabsRow}>
-                  <Pressable
-                    style={[styles.discTab, discoverMode === 'articles' && styles.discTabOn]}
-                    onPress={() => {
-                      Keyboard.dismiss()
-                      setDiscoverMode('articles')
-                    }}
-                  >
-                    <IconBulb fill={discoverMode === 'articles' ? '#fff' : '#888'} />
-                    <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>まとめ記事</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.discTab, discoverMode === 'ai_plan' && styles.discTabOn]}
-                    onPress={() => {
-                      Keyboard.dismiss()
-                      setDiscoverMode('ai_plan')
-                    }}
-                  >
-                    <IconAiPlan fill={discoverMode === 'ai_plan' ? '#fff' : '#888'} />
-                    <Text style={[styles.discTabTxt, discoverMode === 'ai_plan' && styles.discTabTxtOn]}>AIプラン</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.discTab, discoverMode === 'ai' && styles.discTabOn]}
-                    onPress={() => {
-                      Keyboard.dismiss()
-                      setDiscoverMode('ai')
-                    }}
-                  >
-                    <IconThumbUp fill={discoverMode === 'ai' ? '#fff' : '#888'} />
-                    <Text style={[styles.discTabTxt, discoverMode === 'ai' && styles.discTabTxtOn]}>AIレコメンド</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.discTab, discoverMode === 'hot' && styles.discTabOn]}
-                    onPress={() => {
-                      Keyboard.dismiss()
-                      setDiscoverMode('hot')
-                    }}
-                  >
-                    <IconHot fill={discoverMode === 'hot' ? '#fff' : '#888'} />
-                    <Text style={[styles.discTabTxt, discoverMode === 'hot' && styles.discTabTxtOn]}>トレンド</Text>
-                  </Pressable>
-                </View>
-              </ScrollView>
+              <View style={styles.discoverTabs}>
+                <Pressable
+                  style={[styles.discTab, discoverMode === 'articles' && styles.discTabOn]}
+                  onPress={() => {
+                    Keyboard.dismiss()
+                    setDiscoverMode('articles')
+                  }}
+                >
+                  <IconBulb fill={discoverMode === 'articles' ? '#fff' : '#888'} />
+                  <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>まとめ記事</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.discTab, discoverMode === 'ai_plan' && styles.discTabOn]}
+                  onPress={() => {
+                    Keyboard.dismiss()
+                    setDiscoverMode('ai_plan')
+                  }}
+                >
+                  <IconAiPlan fill={discoverMode === 'ai_plan' ? '#fff' : '#888'} />
+                  <Text style={[styles.discTabTxt, discoverMode === 'ai_plan' && styles.discTabTxtOn]}>AIプラン</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.discTab, discoverMode === 'ai' && styles.discTabOn]}
+                  onPress={() => {
+                    Keyboard.dismiss()
+                    setDiscoverMode('ai')
+                  }}
+                >
+                  <IconThumbUp fill={discoverMode === 'ai' ? '#fff' : '#888'} />
+                  <Text style={[styles.discTabTxt, discoverMode === 'ai' && styles.discTabTxtOn]}>AIレコメンド</Text>
+                </Pressable>
+              </View>
             </>
           ) : null}
         </View>
@@ -878,9 +889,7 @@ export default function SearchTab() {
                     !(discoverMode === 'ai' && spotLikesCount !== null && spotLikesCount < AI_LIKES_MIN) ? (
                     <View style={{ marginBottom: 4 }}>
                       <Text style={styles.discLabel}>
-                        {discoverMode === 'ai'
-                          ? aiLabel ?? aiReason ?? 'あなたへのおすすめ'
-                          : hotLabel ?? '今話題のスポット'}
+                        {discoverMode === 'ai' ? aiLabel ?? aiReason ?? 'あなたへのおすすめ' : ''}
                       </Text>
                       {discoverMode === 'ai' && aiLabel && aiReason && aiReason.trim() !== aiLabel.trim() ? (
                         <Text style={styles.discSub}>{aiReason}</Text>
@@ -968,6 +977,12 @@ export default function SearchTab() {
           </View>
         </Pressable>
       </Modal>
+
+      <PostOnboardingTutorialModal
+        visible={showObTutorial}
+        dogName={obTutorialDogName}
+        onDismiss={() => void dismissObTutorial()}
+      />
     </View>
   )
 }
@@ -1009,15 +1024,16 @@ const styles = StyleSheet.create({
   sortWrap: { position: 'relative' },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#2b2a28' },
   sortBtnTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
-  /** キーワードタグ行と（まとめ記事／AI／トレンド）の間の区切り */
-  discoverTabsScroll: {
+  /** キーワードタグ行と（まとめ記事／AI）の間の区切り */
+  discoverTabs: {
+    flexDirection: 'row',
+    gap: 8,
     marginTop: 10,
     marginBottom: 8,
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  discoverTabsRow: { flexDirection: 'row', gap: 8, paddingRight: 4 },
   discTab: {
     flexDirection: 'row',
     alignItems: 'center',

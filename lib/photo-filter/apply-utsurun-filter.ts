@@ -1,5 +1,6 @@
 import { Asset } from 'expo-asset'
 import { File, Paths } from 'expo-file-system'
+import { normalizeCameraPhotoUri } from '@/lib/photo-filter/normalize-camera-uri'
 import {
   Skia,
   ImageFormat,
@@ -22,10 +23,11 @@ const VIGNETTE_MOD = require('../../assets/filter/vignette.png')
 
 /** 加工時の長辺上限（メモリ保護。保存はこの寸法のまま） */
 const MAX_LONG_EDGE = 4096
-const JPEG_QUALITY = 88
-const GRAIN_OPACITY = 0.2
-const LIGHTLEAK_OPACITY = 0.4
-const BLUR_SIGMA = 0.7
+const JPEG_QUALITY = 90
+const GRAIN_OPACITY = 0.12
+const LIGHTLEAK_OPACITY = 0.18
+const VIGNETTE_OPACITY = 0.72
+const BLUR_SIGMA = 0.4
 const DATE_COLOR = '#FF9628'
 
 const overlayCache = new Map<number, SkImage>()
@@ -70,12 +72,24 @@ function drawFitOverlay(
  * 写ルンです風フィルターをオリジナル解像度（長辺上限あり）で焼き込み、JPEG を返す。
  * UI スレッドをブロックしないよう先頭で yield する。
  */
+async function loadPhotoImage(sourceUri: string): Promise<SkImage> {
+  const jpegUri = await normalizeCameraPhotoUri(sourceUri)
+  let photoData = await Skia.Data.fromURI(jpegUri)
+  if (!photoData) {
+    const file = new File(jpegUri)
+    photoData = Skia.Data.fromBytes(file.bytesSync())
+  }
+  const decoded = Skia.Image.MakeImageFromEncoded(photoData)
+  if (!decoded || decoded.width() < 1 || decoded.height() < 1) {
+    throw new Error('写真の読み込みに失敗しました')
+  }
+  return decoded
+}
+
 export async function applyUtsurunFilter(sourceUri: string): Promise<PickedImage> {
   await new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-  const photoData = await Skia.Data.fromURI(sourceUri)
-  const decoded = Skia.Image.MakeImageFromEncoded(photoData)
-  if (!decoded) throw new Error('写真の読み込みに失敗しました')
+  const decoded = await loadPhotoImage(sourceUri)
 
   const { width, height, scale } = fitLongEdge(decoded.width(), decoded.height())
   let photo = decoded
@@ -103,9 +117,11 @@ export async function applyUtsurunFilter(sourceUri: string): Promise<PickedImage
   const colorCF = Skia.ColorFilter.MakeMatrix(UTSURUN_COLOR_MATRIX)
   const colorIF = Skia.ImageFilter.MakeColorFilter(colorCF, null)
   const blurIF = Skia.ImageFilter.MakeBlur(BLUR_SIGMA, BLUR_SIGMA, TileMode.Clamp, colorIF)
+  const srcRect = Skia.XYWHRect(0, 0, photo.width(), photo.height())
+  const dstRect = Skia.XYWHRect(0, 0, width, height)
   const basePaint = Skia.Paint()
   basePaint.setImageFilter(blurIF)
-  canvas.drawImage(photo, 0, 0, basePaint)
+  canvas.drawImageRect(photo, srcRect, dstRect, basePaint)
 
   // 4: grain（タイル repeat・overlay）
   const grain = await loadBundledSkiaImage(GRAIN_MOD)
@@ -128,17 +144,22 @@ export async function applyUtsurunFilter(sourceUri: string): Promise<PickedImage
   const vignette = await loadBundledSkiaImage(VIGNETTE_MOD)
   const vigPaint = Skia.Paint()
   vigPaint.setBlendMode(BlendMode.Multiply)
+  vigPaint.setAlphaf(VIGNETTE_OPACITY)
   drawFitOverlay(canvas, vignette, width, height, vigPaint)
 
-  // 7: 日付スタンプ（常時 ON・右下オレンジ）
-  const fontSize = Math.max(18, Math.min(72, Math.round(Math.min(width, height) * 0.045)))
-  const margin = Math.round(Math.min(width, height) * 0.04)
+  // 7: 日付スタンプ（右下・7セグ風）
+  const fontSize = Math.max(14, Math.min(52, Math.round(Math.min(width, height) * 0.032)))
+  const margin = Math.round(Math.min(width, height) * 0.035)
   const font = await loadUtsurunFont(fontSize)
   const dateText = formatUtsurunDate()
   const textBounds = font.measureText(dateText)
   const metrics = font.getMetrics()
   const x = width - margin - textBounds.width
   const y = height - margin - metrics.descent
+  const shadowPaint = Skia.Paint()
+  shadowPaint.setColor(Skia.Color('rgba(0,0,0,0.42)'))
+  shadowPaint.setAntiAlias(true)
+  canvas.drawText(dateText, x + 1.5, y + 1.5, shadowPaint, font)
   const textPaint = Skia.Paint()
   textPaint.setColor(Skia.Color(DATE_COLOR))
   textPaint.setAntiAlias(true)
@@ -146,8 +167,13 @@ export async function applyUtsurunFilter(sourceUri: string): Promise<PickedImage
 
   const snapshot = surface.makeImageSnapshot()
   const bytes = snapshot.encodeToBytes(ImageFormat.JPEG, JPEG_QUALITY)
+  if (!bytes || bytes.byteLength === 0) {
+    throw new Error('JPEG のエンコードに失敗しました')
+  }
 
   const file = new File(Paths.cache, `utsurun-${Date.now()}.jpg`)
+  if (file.exists) file.delete()
+  file.create({ overwrite: true })
   file.write(bytes)
 
   return {
@@ -156,4 +182,14 @@ export async function applyUtsurunFilter(sourceUri: string): Promise<PickedImage
     height,
     size: bytes.byteLength,
   }
+}
+
+/** シャッター直後の待ちを短くするため、カメラ起動時にプリロード */
+export async function preloadUtsurunFilterAssets(): Promise<void> {
+  await Promise.all([
+    loadBundledSkiaImage(GRAIN_MOD),
+    loadBundledSkiaImage(LIGHTLEAK_MOD),
+    loadBundledSkiaImage(VIGNETTE_MOD),
+    loadUtsurunFont(28),
+  ])
 }

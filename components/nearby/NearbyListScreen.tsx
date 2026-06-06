@@ -159,27 +159,6 @@ export function NearbyListScreen() {
     if (!valid.has(distance)) setDistance(DISTANCES[0].key)
   }, [distance])
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const raw = await AsyncStorage.getItem('ob_area')
-        const prefWide = await AsyncStorage.getItem('pref_nearby_wide')
-        let wide = prefWide === '1'
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw) as { useLocationBased?: boolean }
-            if (parsed?.useLocationBased) wide = true
-          } catch {
-            /* ignore */
-          }
-        }
-        if (wide) setDistance(3000)
-      } catch {
-        /* ignore */
-      }
-    })()
-  }, [])
-
   useFocusEffect(
     useCallback(() => {
       let cancelled = false

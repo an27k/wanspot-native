@@ -5,11 +5,9 @@ import { useState } from 'react'
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
+import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
-
-const STEP_DOTS = 4
 
 export default function OnboardingLocationPage() {
   const router = useRouter()
@@ -53,22 +51,13 @@ export default function OnboardingLocationPage() {
       contentContainerStyle={{ paddingHorizontal: 20, paddingTop: padTop, paddingBottom: padBottom, gap: 20 }}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.headRow}>
-        <View style={styles.brandRow}>
-          <OnboardingBrand />
-          <Text style={styles.brandTxt}>wanspot</Text>
-        </View>
-        <View style={styles.dots}>
-          {Array.from({ length: STEP_DOTS }, (_, i) => (
-            <View key={i} style={[styles.dot, { backgroundColor: i <= 0 ? '#FF8A1F' : '#e0e0e0' }]} />
-          ))}
-        </View>
-      </View>
+      <OnboardingStepHeader step={1} />
 
       <Text style={styles.h2}>近くのワンちゃんスポットを表示するために</Text>
       <Text style={styles.hint}>
         wanspotはあなたの現在地をもとに、近くのワンちゃんスポットの表示とお散歩予報（気温）に位置情報を使います。別の許可項目はありません。
       </Text>
+      <Text style={styles.reassure}>あとから設定アプリから変更できます。</Text>
 
       <TouchableOpacity style={[styles.next, busy && styles.nextOff]} onPress={() => void requestAndSave()} disabled={busy}>
         <Text style={styles.nextTxt}>{busy ? '確認中...' : '次へ'}</Text>
@@ -79,13 +68,9 @@ export default function OnboardingLocationPage() {
 
 const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#fff' },
-  headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandTxt: { fontWeight: '800', fontSize: 14, color: '#2b2a28' },
-  dots: { flexDirection: 'row', gap: 4 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
   h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#2b2a28' },
   hint: { fontSize: 13, color: '#888', lineHeight: 20 },
+  reassure: { fontSize: 12, color: '#aaa', lineHeight: 18 },
   next: {
     marginTop: 8,
     height: 48,

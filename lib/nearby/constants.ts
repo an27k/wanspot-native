@@ -1,5 +1,11 @@
-/** 地図・近傍スポット取得の固定半径（メートル） */
+/** 地図・近傍スポット取得の上限半径（メートル） */
 export const NEARBY_RADIUS_M = 5000
+
+/** 件数不足時に段階拡張する半径（既存 3km 相当 → 上限 5km） */
+export const NEARBY_RADIUS_EXPANSION_STEPS_M = [3000, NEARBY_RADIUS_M] as const
+
+/** この件数未満なら次の半径へ自動拡張 */
+export const NEARBY_MIN_SPOTS_THRESHOLD = 5
 
 /** 行った（チェックイン）ピン・ソートアイコン */
 export const MAP_VISITED_CHECK_COLOR = '#34A853'

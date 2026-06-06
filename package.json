@@ -22,6 +22,7 @@
     "expo-auth-session": "~55.0.10",
     "expo-blur": "~55.0.14",
     "expo-build-properties": "~55.0.12",
+    "expo-camera": "~55.0.19",
     "expo-constants": "~55.0.9",
     "expo-file-system": "~55.0.22",
     "expo-font": "~55.0.4",

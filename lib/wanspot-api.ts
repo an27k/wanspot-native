@@ -1,5 +1,5 @@
 import Constants from 'expo-constants'
-import { widthForImageSize, type ImageSize } from '@/lib/images/placesImage'
+import { resizePlacesImageUrl, widthForImageSize, type ImageSize } from '@/lib/images/placesImage'
 import { supabase } from '@/lib/supabase'
 
 type Extra = {
@@ -96,6 +96,42 @@ export function spotPhotoUrl(photoRef: string | null, size: ImageSize | number =
   if (!base) return null
   const w = typeof size === 'number' ? size : widthForImageSize(size)
   return `${base}/api/spots/photo?ref=${encodeURIComponent(photoRef)}&w=${w}`
+}
+
+/** DB の photo_ref → プラン SSE の photo_url → 生 URL / ref 文字列の順で解決 */
+export function resolveSpotPhotoUri(
+  photoRef: string | null | undefined,
+  fallbackUrl?: string | null,
+  size: ImageSize = 'card'
+): string | null {
+  const fromRef = spotPhotoUrl(photoRef ?? null, size)
+  if (fromRef) return fromRef
+  const raw = typeof fallbackUrl === 'string' ? fallbackUrl.trim() : ''
+  if (!raw) return null
+  if (/^https?:\/\//i.test(raw)) return resizePlacesImageUrl(raw, size)
+  return spotPhotoUrl(raw, size)
+}
+
+/** Google Places Detail から最新の photo_reference を取得（DB の ref は期限切れになりやすい） */
+export async function fetchSpotPhotoRefFromDetail(placeId: string): Promise<string | null> {
+  const pid = placeId.trim()
+  if (!pid) return null
+  try {
+    const res = await wanspotFetch(`/api/spots/detail?place_id=${encodeURIComponent(pid)}`)
+    if (!res.ok) return null
+    const json = (await res.json()) as Record<string, unknown>
+    const body =
+      json.result && typeof json.result === 'object' && json.result !== null
+        ? (json.result as Record<string, unknown>)
+        : json
+    const photos = body.photos
+    if (!Array.isArray(photos) || photos.length === 0) return null
+    const first = photos[0] as { photo_reference?: unknown }
+    const ref = first?.photo_reference
+    return typeof ref === 'string' && ref.trim().length > 0 ? ref.trim() : null
+  } catch {
+    return null
+  }
 }
 
 export async function wanspotFetchJson<T>(path: string, init?: WanspotFetchInit): Promise<T> {

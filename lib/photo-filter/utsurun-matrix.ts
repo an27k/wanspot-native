@@ -3,7 +3,7 @@
  * Skia ColorFilter.MakeMatrix の offset 列は 0–255 スケール。
  * 設計値 0.085（0–1 正規化）→ ×255 で適用。実機で色が薄い場合は 0–1 のまま試す。
  */
-const OFFSET = 0.085 * 255
+const OFFSET = 0.065 * 255
 
 export const UTSURUN_COLOR_MATRIX: number[] = [
   0.7608, 0.1255, 0.0114, 0, OFFSET,

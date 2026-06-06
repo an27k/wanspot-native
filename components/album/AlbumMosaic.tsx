@@ -104,10 +104,12 @@ type Props = {
   userId: string | null
   todayPhoto: DogPhoto | null
   onCaptureToday: () => void
+  /** 今日の1枚が既にあるときの撮り直し */
+  onRetakeToday?: () => void
   saving?: boolean
 }
 
-export function AlbumMosaic({ userId, todayPhoto, onCaptureToday, saving }: Props) {
+export function AlbumMosaic({ userId, todayPhoto, onCaptureToday, onRetakeToday, saving }: Props) {
   const [photos, setPhotos] = useState<DogPhoto[]>([])
   const [loading, setLoading] = useState(true)
   const [viewer, setViewer] = useState<DogPhoto | null>(null)
@@ -200,6 +202,7 @@ export function AlbumMosaic({ userId, todayPhoto, onCaptureToday, saving }: Prop
                     key={p.key}
                     style={[styles.tile, { left, top, width, height }]}
                     onPress={() => setViewer(p.photo)}
+                    onLongPress={onRetakeToday}
                   >
                     <Image source={{ uri: p.photo.image_url }} style={styles.tileImg} contentFit="cover" transition={120} />
                     <View style={styles.dateLbl}>
@@ -208,6 +211,18 @@ export function AlbumMosaic({ userId, todayPhoto, onCaptureToday, saving }: Prop
                     <View style={styles.todayBadge}>
                       <Text style={styles.todayBadgeTxt}>今日</Text>
                     </View>
+                    {onRetakeToday ? (
+                      <Pressable
+                        style={styles.retakeBtn}
+                        onPress={(e) => {
+                          e.stopPropagation?.()
+                          onRetakeToday()
+                        }}
+                        hitSlop={8}
+                      >
+                        <Text style={styles.retakeBtnTxt}>撮り直す</Text>
+                      </Pressable>
+                    ) : null}
                   </Pressable>
                 )
               }
@@ -281,6 +296,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.85)',
   },
   dateTxt: { fontSize: 11, fontWeight: '800', color: '#FF8A1F' },
+  retakeBtn: {
+    position: 'absolute',
+    right: 6,
+    top: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(43,42,40,0.72)',
+  },
+  retakeBtnTxt: { fontSize: 10, fontWeight: '800', color: '#fff' },
   todayBadge: {
     position: 'absolute',
     top: 6,

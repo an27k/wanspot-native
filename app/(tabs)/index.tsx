@@ -37,7 +37,7 @@ import {
   writeCache,
 } from '@/lib/client-cache'
 import { resolveSessionLocation } from '@/lib/location-session'
-import { fetchNearbySpotsForGenre } from '@/lib/nearby/fetch-nearby-spots'
+import { fetchNearbySpotsForGenreWithExpansion } from '@/lib/nearby/fetch-nearby-spots'
 import { calcDistanceMeters, isWithinRadiusM } from '@/lib/nearby/geo'
 import { isSameMapFilter, mapFilterLabel, type MapFilter } from '@/lib/nearby/map-filter'
 import { sortPlacesByScore } from '@/lib/nearby/place-score'
@@ -212,7 +212,7 @@ export default function NearbyPage() {
     async (force = false) => {
       if (!location || !genreReady || activeFilter?.kind !== 'genre') return
 
-      const cacheKey = `nearby:spots:${genre}:${geoBucket(location.lat, location.lng)}:${NEARBY_RADIUS_M}`
+      const cacheKey = `nearby:spots:${genre}:${geoBucket(location.lat, location.lng)}:exp`
       if (!force && isCacheFresh(cacheKey, CACHE_TTL.NEARBY_SPOTS_MS)) {
         const cached = readCache<{ spots: PlaceResult[]; error: string }>(cacheKey)
         if (cached) {
@@ -230,7 +230,7 @@ export default function NearbyPage() {
         setSpotsLoading(true)
       }
 
-      const { spots, error } = await fetchNearbySpotsForGenre(location, NEARBY_RADIUS_M, genre)
+      const { spots, error } = await fetchNearbySpotsForGenreWithExpansion(location, genre)
       writeCache(cacheKey, { spots, error: error ?? '' })
       setNearbyPlaces(spots)
       setSpotsFetchError(error ?? '')
@@ -507,6 +507,7 @@ export default function NearbyPage() {
           </View>
         </View>
       </BottomSheetModalProvider>
+
     </GestureHandlerRootView>
   )
 }

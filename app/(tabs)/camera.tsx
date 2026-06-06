@@ -1,16 +1,16 @@
 import { useCallback, useState } from 'react'
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { BrandLoader } from '@/components/common/BrandLoader'
 import { useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppHeader } from '@/components/AppHeader'
 import { AlbumMosaic } from '@/components/album/AlbumMosaic'
+import { UtsurunCameraModal } from '@/components/camera/UtsurunCameraModal'
 import { DogIdentityProfile } from '@/components/dog/DogIdentityProfile'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { takeDailyPhoto } from '@/lib/image-picker'
+import type { PickedImage } from '@/lib/image-picker'
 import {
   CACHE_TTL,
   invalidateCache,
@@ -18,7 +18,7 @@ import {
   readCache,
   writeCache,
 } from '@/lib/client-cache'
-import { fetchTodayPhoto, localDateKey, saveDailyPhoto, type DogPhoto } from '@/lib/dog-photos'
+import { fetchTodayPhoto, localDateKey, replaceTodayPhoto, saveDailyPhoto, type DogPhoto } from '@/lib/dog-photos'
 import { supabase } from '@/lib/supabase'
 
 /**
@@ -29,7 +29,7 @@ export default function CameraTab() {
   const { dog, setDog, userId, loading: dogLoading } = useDogProfile()
   const [todayPhoto, setTodayPhoto] = useState<DogPhoto | null>(null)
   const [todayLoading, setTodayLoading] = useState(false)
-  const [processing, setProcessing] = useState(false)
+  const [cameraOpen, setCameraOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const loadToday = useCallback(async (force = false) => {
@@ -66,42 +66,39 @@ export default function CameraTab() {
     }, [loadToday])
   )
 
-  const handleCapture = useCallback(async () => {
+  const persistPhoto = useCallback(
+    async (image: PickedImage) => {
+      if (!userId) return
+      setSaving(true)
+      try {
+        const result = todayPhoto
+          ? await replaceTodayPhoto(userId, image)
+          : await saveDailyPhoto(userId, image)
+        if (result.ok) {
+          invalidateCache(`dog:today:${userId}:${localDateKey()}`)
+          invalidateCache(`dog:album:${userId}`)
+          setTodayPhoto(result.photo)
+        } else if (result.reason === 'already_today') {
+          Alert.alert('本日は撮影済みです', '今日の1枚はもう保存されています。')
+          void loadToday(true)
+        } else {
+          Alert.alert('保存に失敗しました', '時間をおいて、もう一度お試しください。')
+        }
+      } finally {
+        setSaving(false)
+      }
+    },
+    [userId, todayPhoto, loadToday]
+  )
+
+  const handleOpenCamera = useCallback(() => {
     if (!userId) {
       Alert.alert('ログインが必要です', 'カメラで保存するにはログインしてください。')
       return
     }
-    if (processing || saving) return
-
-    setProcessing(true)
-    let image: Awaited<ReturnType<typeof takeDailyPhoto>> = null
-    try {
-      image = await takeDailyPhoto()
-    } catch {
-      Alert.alert('加工に失敗しました', '時間をおいて、もう一度お試しください。')
-      return
-    } finally {
-      setProcessing(false)
-    }
-    if (!image) return
-
-    setSaving(true)
-    try {
-      const result = await saveDailyPhoto(userId, image)
-      if (result.ok) {
-        invalidateCache(`dog:today:${userId}:${localDateKey()}`)
-        invalidateCache(`dog:album:${userId}`)
-        setTodayPhoto(result.photo)
-      } else if (result.reason === 'already_today') {
-        Alert.alert('本日は撮影済みです', '今日の1枚はもう保存されています。また明日撮影できます。')
-        void loadToday(true)
-      } else {
-        Alert.alert('保存に失敗しました', '時間をおいて、もう一度お試しください。')
-      }
-    } finally {
-      setSaving(false)
-    }
-  }, [userId, loadToday, processing, saving])
+    if (saving) return
+    setCameraOpen(true)
+  }, [userId, saving])
 
   const padBottom = insets.bottom + TAB_BAR_HEIGHT + 24
 
@@ -126,19 +123,17 @@ export default function CameraTab() {
         <AlbumMosaic
           userId={userId}
           todayPhoto={todayPhoto}
-          onCaptureToday={() => void handleCapture()}
-          saving={processing || saving || todayLoading}
+          onCaptureToday={handleOpenCamera}
+          onRetakeToday={handleOpenCamera}
+          saving={saving || todayLoading}
         />
       </ScrollView>
 
-      {(processing || saving) && (
-        <View style={styles.processingOverlay} pointerEvents="auto">
-          <BrandLoader size={72} />
-          <Text style={styles.processingLabel}>
-            {processing ? '写真を加工しています…' : '保存しています…'}
-          </Text>
-        </View>
-      )}
+      <UtsurunCameraModal
+        visible={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onConfirm={(image) => persistPhoto(image)}
+      />
     </View>
   )
 }
@@ -152,18 +147,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: 24,
-  },
-  processingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    zIndex: 20,
-  },
-  processingLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textMuted,
   },
 })

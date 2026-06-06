@@ -1,5 +1,5 @@
 /**
- * 検索タブ「トレンド」「AIレコメンド」の検索結果に共通で適用するフィルタ。
+ * 検索タブ「AIレコメンド」の検索結果に適用するフィルタ。
  * 精度向上のルールは随時ここへ追加する（呼び出し側は filterDiscoverRecommendSpots のみ使う）。
  * place_id / 名称パターンのブロックリストは lib/blocklist.ts を編集。
  *
@@ -10,6 +10,7 @@
  */
 
 import { NAME_BLOCK_PATTERNS, PLACE_ID_BLOCKLIST } from '@/lib/blocklist'
+import { DOG_BREEDS, DOG_BREED_AMBIGUOUS } from '@/lib/dog-breeds'
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -67,38 +68,8 @@ function typesIncludesAnyPassForTouristAttraction(types: string[]): boolean {
   return types.some((x) => TOURIST_ATTRACTION_DOG_SIGNAL_PASS_TYPES.has(x.toLowerCase()))
 }
 
-/** app/onboarding/dog.tsx の犬種から「その他」「MIX」は曖昧なので除外 */
-const BREEDS_JP_RAW = [
-  'キャバリアキングチャールズスパニエル',
-  'ミニチュアシュナウザー',
-  'アメリカンコッカースパニエル',
-  'ウエストハイランドホワイトテリア',
-  'ゴールデンレトリバー',
-  'イタリアングレイハウンド',
-  'ラブラドールレトリバー',
-  'ジャックラッセルテリア',
-  'フレンチブルドッグ',
-  'ヨークシャーテリア',
-  'シベリアンハスキー',
-  'ボーダーコリー',
-  'ビションフリーゼ',
-  'ミニチュアピンシャー',
-  'ボストンテリア',
-  '日本スピッツ',
-  'トイプードル',
-  'ダックスフンド',
-  'ポメラニアン',
-  '柴犬',
-  'マルチーズ',
-  'ウェルシュコーギー',
-  'パピヨン',
-  '秋田犬',
-  'チワワ',
-  'シーズー',
-  'パグ',
-  'ビーグル',
-  'サモエド',
-] as const
+/** lib/dog-breeds から曖昧ラベル（ミックス・わからない等）を除いた一覧 */
+const BREEDS_JP_RAW = DOG_BREEDS.filter((b) => !DOG_BREED_AMBIGUOUS.has(b))
 
 /** 長い方を先に（部分一致の取り違えを減らす） */
 const BREEDS_JP_SORTED = [...BREEDS_JP_RAW].sort((a, b) => b.length - a.length)
@@ -168,7 +139,7 @@ const ANIMAL_CAFE_RE = /アニマルカフェ|animal\s*caf[eé]/i
 /** 動物ふれあい・触れ合い系カフェ */
 const PETTING_CAFE_RE = /ふれあいカフェ|フレアイカフェ|触れ合いカフェ|ふれあい\s*カフェ/i
 
-/** ペット写真・スタジオ系（トレンドの外遊び系と被りやすい） */
+/** ペット写真・スタジオ系（お出かけ系クエリと被りやすい） */
 const PHOTO_STUDIO_RE =
   /写真スタジオ|フォトスタジオ|ペット写真|撮影スタジオ|スタジオ撮影|ペットフォト|フォトペット|pet\s*photo|photo\s*studio|pet\s*studio|フォト\s*スタジオ/i
 

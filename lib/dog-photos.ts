@@ -100,3 +100,16 @@ export async function saveDailyPhoto(userId: string, image: PickedImage): Promis
   invalidateCache(`dog:album:${userId}`)
   return { ok: true, photo: data as DogPhoto }
 }
+
+/** 本日分を上書き（撮り直し用）。ストレージ・DB の既存行を削除してから保存。 */
+export async function replaceTodayPhoto(userId: string, image: PickedImage): Promise<SaveResult> {
+  const existing = await fetchTodayPhoto(userId)
+  if (existing) {
+    await supabase.storage.from(BUCKET).remove([existing.storage_path])
+    await supabase.from(TABLE).delete().eq('id', existing.id)
+    const takenOn = localDateKey()
+    invalidateCache(`dog:today:${userId}:${takenOn}`)
+    invalidateCache(`dog:album:${userId}`)
+  }
+  return saveDailyPhoto(userId, image)
+}
