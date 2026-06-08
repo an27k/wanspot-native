@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Path } from 'react-native-svg'
 import { DogPawPlaceholder } from '@/components/DogPawPlaceholder'
@@ -19,8 +20,8 @@ import {
 import { pickFromLibrary } from '@/lib/image-picker'
 import { supabase } from '@/lib/supabase'
 
-const IconEditSmall = ({ size = 22 }: { size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
+const IconEditSmall = ({ size = 22, color = colors.textMuted }: { size?: number; color?: string }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
     <Path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
     <Path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
   </Svg>
@@ -30,10 +31,11 @@ type Props = {
   dog: DogProfile
   userId: string
   onUpdated: (dog: DogProfile) => void
+  variant?: 'default' | 'album'
 }
 
 /** 愛犬アイデンティティ表示＋編集（ワクチンは含まない。旧マイページから移設） */
-export function DogIdentityProfile({ dog, userId, onUpdated }: Props) {
+export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default' }: Props) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editName, setEditName] = useState('')
@@ -133,17 +135,33 @@ export function DogIdentityProfile({ dog, userId, onUpdated }: Props) {
   if (hasSym) metaParts.push(dog.gender === 'male' ? 'オス' : 'メス')
   if (age) metaParts.push(age)
 
+  const isAlbum = variant === 'album'
+
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, isAlbum && styles.wrapAlbum]}>
+      {isAlbum ? (
+        <LinearGradient
+          colors={['#FFC247', '#F4A02A', '#FF6F43']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.coverBand}
+        />
+      ) : null}
+
       {!editing ? (
-        <Pressable style={styles.editBtn} onPress={startEdit} hitSlop={8} accessibilityLabel="愛犬プロフィールを編集">
-          <IconEditSmall />
+        <Pressable
+          style={[styles.editBtn, isAlbum && styles.editBtnAlbum]}
+          onPress={startEdit}
+          hitSlop={8}
+          accessibilityLabel="愛犬プロフィールを編集"
+        >
+          <IconEditSmall color={isAlbum ? '#fff' : colors.textMuted} />
         </Pressable>
       ) : null}
 
-      <View style={styles.col}>
-        <View style={[styles.avatarWrap, editing && styles.avatarWrapEditing]}>
-          <View style={styles.avatar}>
+      <View style={[styles.col, isAlbum && styles.colAlbum]}>
+        <View style={[styles.avatarWrap, editing && styles.avatarWrapEditing, isAlbum && styles.avatarWrapAlbum]}>
+          <View style={[styles.avatar, isAlbum && styles.avatarAlbum]}>
             {photoRemoved && !photoUri ? (
               <DogPawPlaceholder size={40} fill={colors.dogPhotoPlaceholderPaw} />
             ) : photoPreview ?? dog.photo_url ? (
@@ -256,11 +274,21 @@ export function DogIdentityProfile({ dog, userId, onUpdated }: Props) {
           </View>
         ) : (
           <>
-            <Text style={styles.name}>{dog.name}</Text>
+            <Text style={[styles.name, isAlbum && styles.nameAlbum]}>{dog.name}</Text>
             {metaParts.length > 0 ? (
-              <Text style={styles.meta} numberOfLines={2}>
-                {metaParts.join(' · ')}
-              </Text>
+              isAlbum ? (
+                <View style={styles.metaPillRow}>
+                  {metaParts.map((part) => (
+                    <View key={part} style={styles.metaPill}>
+                      <Text style={styles.metaPillTxt}>{part}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.meta} numberOfLines={2}>
+                  {metaParts.join(' · ')}
+                </Text>
+              )
             ) : null}
           </>
         )}
@@ -271,14 +299,21 @@ export function DogIdentityProfile({ dog, userId, onUpdated }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { position: 'relative', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
+  wrapAlbum: { paddingTop: 0, paddingHorizontal: 0, paddingBottom: 0, marginBottom: 4 },
+  coverBand: {
+    height: 128,
+  },
   editBtn: { position: 'absolute', top: 8, right: 16, zIndex: 2, padding: 4 },
+  editBtnAlbum: { top: 12, right: 16 },
   col: { alignItems: 'center', width: '100%' },
+  colAlbum: { marginTop: -56, paddingHorizontal: 16 },
   avatarWrap: {
     position: 'relative',
     width: 88,
     height: 88,
     overflow: 'visible',
   },
+  avatarWrapAlbum: { width: 112, height: 112 },
   /** 編集時：カメラFABがはみ出す分の余白（旧マイページと同系） */
   avatarWrapEditing: { marginBottom: 12, width: 96, height: 96 },
   avatar: {
@@ -289,6 +324,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  avatarAlbum: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    borderWidth: 4,
+    borderColor: '#fff',
   },
   avatarImg: { width: '100%', height: '100%' },
   camFab: {
@@ -320,7 +362,24 @@ const styles = StyleSheet.create({
   photoRemoveBtn: { marginTop: 8, paddingVertical: 6 },
   photoRemoveTxt: { fontSize: 13, fontWeight: '700', color: '#E84335' },
   name: { marginTop: 12, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  nameAlbum: { marginTop: 14, fontSize: 30, fontWeight: '800', color: colors.text },
   meta: { marginTop: 6, fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  metaPillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  metaPill: {
+    backgroundColor: '#fff',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  metaPillTxt: { fontSize: 12, fontWeight: '700', color: colors.text },
   editFields: { alignSelf: 'stretch', width: '100%', marginTop: 12 },
   textInput: {
     backgroundColor: colors.background,

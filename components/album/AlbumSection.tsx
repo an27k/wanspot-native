@@ -85,7 +85,7 @@ export function AlbumSection() {
       {!loading && photos.length === 0 ? (
         <Pressable style={styles.empty} onPress={() => router.push('/(tabs)/camera')}>
           <Ionicons name="camera-outline" size={28} color={colors.textMuted} />
-          <Text style={styles.emptyTxt}>カメラタブで「今日の1枚」を残そう</Text>
+          <Text style={styles.emptyTxt}>アルバムタブで「今日の1枚」を残そう</Text>
         </Pressable>
       ) : (
         <View style={styles.grid}>

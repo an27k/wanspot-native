@@ -8,6 +8,12 @@ export const CACHE_TTL = {
   TODAY_PHOTO_MS: 60 * 60_000,
   ALBUM_MS: 10 * 60_000,
   WEATHER_MS: 10 * 60_000,
+  GEO_MS: 30 * 60_000,
+  ARTICLES_MS: 10 * 60_000,
+  SUGGEST_TAGS_MS: 15 * 60_000,
+  SPOT_LIKES_MS: 5 * 60_000,
+  RECOMMEND_MS: 12 * 60_000,
+  DOG_PROFILE_MS: 10 * 60_000,
 } as const
 
 type CacheEntry<T> = {
@@ -54,7 +60,9 @@ export function invalidateAllCache(): void {
   store.clear()
 }
 
-/** キャッシュがあれば即返し、期限切れ時のみ fetcher を実行 */
+const inflight = new Map<string, Promise<unknown>>()
+
+/** キャッシュがあれば即返し、期限切れ時のみ fetcher を実行（同一キーの同時呼び出しは1回にまとめる） */
 export async function fetchWithCache<T>(
   key: string,
   ttlMs: number,
@@ -65,7 +73,18 @@ export async function fetchWithCache<T>(
     const cached = readCache<T>(key)
     if (cached !== undefined) return { data: cached, fromCache: true }
   }
-  const data = await fetcher()
-  writeCache(key, data)
-  return { data, fromCache: false }
+
+  const pending = inflight.get(key) as Promise<{ data: T; fromCache: boolean }> | undefined
+  if (pending) return pending
+
+  const task = (async () => {
+    const data = await fetcher()
+    writeCache(key, data)
+    return { data, fromCache: false as const }
+  })().finally(() => {
+    inflight.delete(key)
+  })
+
+  inflight.set(key, task)
+  return task
 }

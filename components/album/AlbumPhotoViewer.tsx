@@ -8,7 +8,7 @@ type Props = {
   onClose: () => void
 }
 
-/** アルバムの全画面写真表示（マイページ・カメラタブ共通） */
+/** アルバムの全画面写真表示（マイページ・アルバムタブ共通） */
 export function AlbumPhotoViewer({ photo, onClose }: Props) {
   return (
     <Modal visible={photo != null} transparent animationType="fade" onRequestClose={onClose}>

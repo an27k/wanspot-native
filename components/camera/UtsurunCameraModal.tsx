@@ -79,9 +79,16 @@ export function UtsurunCameraModal({ visible, onClose, onConfirm }: Props) {
     setBusy(true)
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     try {
-      const raw = await cameraRef.current?.takePictureAsync({ quality: 1, shutterSound: true })
-      void runFlash()
-      if (!raw?.uri) return
+      const raw = await cameraRef.current?.takePictureAsync({
+        quality: 0.92,
+        shutterSound: true,
+        skipProcessing: false,
+      })
+      await runFlash()
+      if (!raw?.uri) {
+        setStep('camera')
+        return
+      }
 
       setStep('print')
       setPreview(null)
@@ -93,16 +100,18 @@ export function UtsurunCameraModal({ visible, onClose, onConfirm }: Props) {
     } catch {
       setStep('camera')
       setPreview(null)
+      flashOpacity.setValue(0)
     } finally {
       setBusy(false)
     }
-  }, [busy, step, runFlash, revealPrint, printOpacity])
+  }, [busy, step, runFlash, revealPrint, printOpacity, flashOpacity])
 
   const retake = useCallback(() => {
     setPreview(null)
     printOpacity.setValue(0)
+    flashOpacity.setValue(0)
     setStep('camera')
-  }, [printOpacity])
+  }, [printOpacity, flashOpacity])
 
   const confirm = useCallback(async () => {
     if (!preview || busy) return
@@ -145,14 +154,15 @@ export function UtsurunCameraModal({ visible, onClose, onConfirm }: Props) {
   return (
     <Modal visible animationType="slide" onRequestClose={handleClose}>
       <View style={styles.root}>
+        <CameraView
+          ref={cameraRef}
+          style={[StyleSheet.absoluteFillObject, step !== 'camera' && styles.cameraHidden]}
+          facing="back"
+        />
         {step === 'camera' ? (
           <>
-            <CameraView ref={cameraRef} style={StyleSheet.absoluteFillObject} facing="back" />
             <UtsurunLiveOverlay />
-            <Animated.View
-              pointerEvents="none"
-              style={[styles.flash, { opacity: flashOpacity }]}
-            />
+            <Animated.View pointerEvents="none" style={[styles.flash, { opacity: flashOpacity }]} />
             <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
               <Pressable onPress={handleClose} style={styles.iconBtn} hitSlop={12}>
                 <Ionicons name="close" size={28} color="#fff" />
@@ -210,6 +220,7 @@ export function UtsurunCameraModal({ visible, onClose, onConfirm }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
+  cameraHidden: { opacity: 0 },
   permWait: { flex: 1, backgroundColor: '#000' },
   permRoot: {
     flex: 1,

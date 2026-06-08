@@ -127,6 +127,38 @@ export async function takePhoto(): Promise<PickedImage | null> {
 }
 
 /**
+ * アルバム用：画像または動画をライブラリから選択（クロップなし）
+ */
+export async function pickMemoryMedia(): Promise<{ uri: string; mimeType: string } | null> {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+  if (status !== 'granted') {
+    Alert.alert(
+      '権限が必要です',
+      '設定アプリから写真ライブラリへのアクセスを許可してください。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '設定を開く', onPress: () => Linking.openSettings() },
+      ]
+    )
+    return null
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.All,
+    allowsEditing: false,
+    quality: 1,
+    videoMaxDuration: 120,
+  })
+
+  if (result.canceled) return null
+  const asset = result.assets[0]
+  const mimeType =
+    asset.mimeType ??
+    (asset.type === 'video' ? 'video/mp4' : 'image/jpeg')
+  return { uri: asset.uri, mimeType }
+}
+
+/**
  * ユーザーに「ライブラリ / カメラ / キャンセル」のアクションシートを表示
  */
 export function showImagePickerOptions(onPick: (image: PickedImage) => void) {

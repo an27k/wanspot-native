@@ -9,6 +9,7 @@ import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { track } from '@/lib/analytics'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
+import { useDogProfile } from '@/components/dog/useDogProfile'
 import { supabase } from '@/lib/supabase'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
@@ -88,6 +89,7 @@ export function NearbySpotCard({
   onLikeStateChange?: (placeId: string, liked: boolean) => void
 }) {
   const requireAuth = useRequireAuth()
+  const { dog } = useDogProfile()
   const scaleAnim = useRef(new Animated.Value(1)).current
   const [spotId, setSpotId] = useState<string | null>(null)
   const [liked, setLiked] = useState(false)
@@ -180,6 +182,8 @@ export function NearbySpotCard({
         rating: spot.rating,
         address: spot.address,
         reviews: [],
+        dogSize: dog?.size ?? undefined,
+        dogBreed: dog?.breed ?? undefined,
         userContext: {
           walkAreaTags: userWalkTags,
           lat: userLocation?.lat ?? null,

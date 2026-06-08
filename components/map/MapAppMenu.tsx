@@ -34,7 +34,7 @@ export function WalkAlertFab({
     location ?? null,
     tempC,
     dogName,
-    !!location && !needsLocation
+    open && !!location && !needsLocation
   )
 
   const handlePress = () => {

@@ -80,21 +80,10 @@ export async function fetchNearbySpotsForGenre(
 export async function fetchNearbySpotsForGenreWithExpansion(
   location: { lat: number; lng: number },
   genre: MapGenreKey,
-  minSpots = NEARBY_MIN_SPOTS_THRESHOLD
+  _minSpots = NEARBY_MIN_SPOTS_THRESHOLD
 ): Promise<{ spots: PlaceResult[]; error: string | null; radiusM: number }> {
   const steps = NEARBY_RADIUS_EXPANSION_STEPS_M
-  let last: { spots: PlaceResult[]; error: string | null; radiusM: number } = {
-    spots: [],
-    error: null,
-    radiusM: steps[steps.length - 1],
-  }
-
-  for (const radiusM of steps) {
-    const result = await fetchNearbySpotsForGenre(location, radiusM, genre)
-    last = { spots: result.spots, error: result.error, radiusM }
-    if (result.error) return last
-    if (result.spots.length >= minSpots) return last
-  }
-
-  return last
+  const maxRadius = steps[steps.length - 1]
+  const result = await fetchNearbySpotsForGenre(location, maxRadius, genre)
+  return { spots: result.spots, error: result.error, radiusM: maxRadius }
 }

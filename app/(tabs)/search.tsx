@@ -15,7 +15,6 @@ import {
 import { useIsFocused } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
-import * as Location from 'expo-location'
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { AppHeader } from '@/components/AppHeader'
@@ -30,8 +29,10 @@ import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { sortArticlesByScore } from '@/lib/articles/scoring'
-import { CACHE_TTL, fetchWithCache, invalidateCache } from '@/lib/client-cache'
-import { fetchUserWalkAreaTags, fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
+import { CACHE_TTL, fetchWithCache, geoBucket, invalidateCache, isCacheFresh } from '@/lib/client-cache'
+import { getCachedPrefecture, getCachedPrefectureAndMunicipality } from '@/lib/geo-cache'
+import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
+import { resolveSessionLocation } from '@/lib/location-session'
 import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
@@ -75,35 +76,7 @@ function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-async function getPrefecture(lat: number, lng: number): Promise<string> {
-  try {
-    const rows = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng })
-    const r0 = rows[0]
-    if (r0?.region) return r0.region
-    if (r0?.subregion) return r0.subregion
-  } catch {
-    /* ignore */
-  }
-  return '東京'
-}
-
-async function getPrefectureAndMunicipality(
-  lat: number,
-  lng: number
-): Promise<{ prefecture: string | null; municipality: string | null }> {
-  try {
-    const rows = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng })
-    const r0 = rows[0]
-    const prefecture = r0?.region ?? r0?.subregion ?? null
-    const municipality = r0?.city ?? r0?.district ?? r0?.subregion ?? null
-    return {
-      prefecture: typeof prefecture === 'string' ? prefecture : null,
-      municipality: typeof municipality === 'string' ? municipality : null,
-    }
-  } catch {
-    return { prefecture: null, municipality: null }
-  }
-}
+const ARTICLES_CACHE_KEY = 'search:articles:v1'
 
 const IconSearch = () => (
   <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth={2.5} strokeLinecap="round">
@@ -259,7 +232,7 @@ export default function SearchTab() {
             if (!cancelled) setAdsRuntimeReady(true)
             return
           }
-          await new Promise((r) => setTimeout(r, 800))
+          await new Promise((r) => setTimeout(r, 300))
           if (cancelled) return
           await prepareSearchTabAdsOnce()
           adsPrimedRef.current = true
@@ -281,7 +254,10 @@ export default function SearchTab() {
   )
 
   useEffect(() => {
-    Location.getCurrentPositionAsync({}).then((p) => setLocation({ lat: p.coords.latitude, lng: p.coords.longitude })).catch(() => {})
+    void (async () => {
+      const result = await resolveSessionLocation(null)
+      if (result.ok) setLocation(result.location)
+    })()
   }, [])
 
   useFocusEffect(
@@ -359,11 +335,18 @@ export default function SearchTab() {
         if (!cancelled) setSpotLikesCount(0)
         return
       }
-      const { count, error } = await supabase
-        .from('spot_likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-      if (!cancelled) setSpotLikesCount(error ? 0 : (count ?? 0))
+      const { data: count } = await fetchWithCache(
+        `user:spot-likes-count:${user.id}`,
+        CACHE_TTL.SPOT_LIKES_MS,
+        async () => {
+          const { count: n, error } = await supabase
+            .from('spot_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+          return error ? 0 : (n ?? 0)
+        }
+      )
+      if (!cancelled) setSpotLikesCount(count)
     })()
     return () => {
       cancelled = true
@@ -383,22 +366,26 @@ export default function SearchTab() {
     void (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        const prefecture = location ? await getPrefecture(location.lat, location.lng) : undefined
-        const res = await wanspotFetch('/api/spots/suggest-tags', {
-          method: 'POST',
-          json: {
-            userId: user?.id ?? null,
-            lat: location?.lat,
-            lng: location?.lng,
-            prefecture,
-          },
-        })
-        if (!cancelled && res.ok) {
+        const geoKey = location ? geoBucket(location.lat, location.lng) : 'none'
+        const cacheKey = `search:suggest-tags:${user?.id ?? 'anon'}:${geoKey}`
+        const { data: tags } = await fetchWithCache(cacheKey, CACHE_TTL.SUGGEST_TAGS_MS, async () => {
+          const prefecture = location ? await getCachedPrefecture(location.lat, location.lng) : undefined
+          const res = await wanspotFetch('/api/spots/suggest-tags', {
+            method: 'POST',
+            json: {
+              userId: user?.id ?? null,
+              lat: location?.lat,
+              lng: location?.lng,
+              prefecture,
+            },
+          })
+          if (!res.ok) return null
           const data = (await res.json()) as { tags?: string[] }
-          if (Array.isArray(data.tags) && data.tags.length > 0) {
-            setSuggestions(data.tags)
-            setSuggestionsReady(true)
-          }
+          return Array.isArray(data.tags) && data.tags.length > 0 ? data.tags : null
+        })
+        if (!cancelled && tags) {
+          setSuggestions(tags)
+          setSuggestionsReady(true)
         }
       } catch {
         /* ignore */
@@ -415,11 +402,20 @@ export default function SearchTab() {
       setSpotLikesCount(0)
       return
     }
-    const { count, error } = await supabase
-      .from('spot_likes')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-    setSpotLikesCount(error ? 0 : (count ?? 0))
+    invalidateCache(`user:spot-likes-count:${user.id}`)
+    const { data: count } = await fetchWithCache(
+      `user:spot-likes-count:${user.id}`,
+      CACHE_TTL.SPOT_LIKES_MS,
+      async () => {
+        const { count: n, error } = await supabase
+          .from('spot_likes')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+        return error ? 0 : (n ?? 0)
+      },
+      { force: true }
+    )
+    setSpotLikesCount(count)
   }, [])
 
   const handleAiRecommend = useCallback(async (opts?: { force?: boolean; locationOverride?: { lat: number; lng: number } | null }) => {
@@ -439,32 +435,36 @@ export default function SearchTab() {
         setAiLoading(false)
         return
       }
-      const { count, error: cntErr } = await supabase
-        .from('spot_likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-      const n = cntErr ? 0 : (count ?? 0)
+      const n = spotLikesCount ?? 0
       if (n < AI_LIKES_MIN) {
-        setSpotLikesCount(n)
         setAiLoading(false)
         return
       }
-      const walkTags = await fetchUserWalkAreaTags(supabase)
-      const prefecture = loc ? await getPrefecture(loc.lat, loc.lng) : undefined
-      const result = await wanspotFetchJson<{
-        spots?: PlaceResult[]
-        label?: string
-        reason?: string
-      }>('/api/spots/recommend', {
-        method: 'POST',
-        json: {
-          userId: user.id,
-          lat: loc?.lat,
-          lng: loc?.lng,
-          walkAreaTags: walkTags,
-          prefecture,
+      const geoKey = loc ? geoBucket(loc.lat, loc.lng) : 'none'
+      const cacheKey = `search:recommend:${user.id}:${geoKey}`
+      if (force) invalidateCache(cacheKey)
+      const { data: result } = await fetchWithCache(
+        cacheKey,
+        CACHE_TTL.RECOMMEND_MS,
+        async () => {
+          const prefecture = loc ? await getCachedPrefecture(loc.lat, loc.lng) : undefined
+          return wanspotFetchJson<{
+            spots?: PlaceResult[]
+            label?: string
+            reason?: string
+          }>('/api/spots/recommend', {
+            method: 'POST',
+            json: {
+              userId: user.id,
+              lat: loc?.lat,
+              lng: loc?.lng,
+              walkAreaTags: userWalkTags,
+              prefecture,
+            },
+          })
         },
-      })
+        { force }
+      )
       setAiLabel(result.label ?? null)
       setAiReason(result.reason ?? null)
       setAiResults(filterDiscoverRecommendSpots(result.spots ?? []))
@@ -475,28 +475,34 @@ export default function SearchTab() {
     } finally {
       setAiLoading(false)
     }
-  }, [aiLoading, aiResults.length, location])
+  }, [aiLoading, aiResults.length, location, spotLikesCount, userWalkTags])
 
   const handleArticles = useCallback(
     async (opts?: { force?: boolean }) => {
       const force = opts?.force === true
       if (articlesLoading) return
       if (!force && articlesList.length > 0) return
-      setArticlesLoading(true)
+      const cacheWarm = !force && isCacheFresh(ARTICLES_CACHE_KEY, CACHE_TTL.ARTICLES_MS)
+      if (!cacheWarm) setArticlesLoading(true)
       try {
-        const { data } = await supabase
-          .from('articles')
-          .select(
-            'id, title, summary, slug, category, keywords, image_url, created_at, published_at, blocks, spot_links'
-          )
-          .eq('status', 'published')
-          .order('published_at', { ascending: false, nullsFirst: false })
-
-        const rows = (data ?? []) as (ArticleRow & { blocks?: unknown; spot_links?: unknown })[]
+        if (force) invalidateCache(ARTICLES_CACHE_KEY)
+        const { data: rows, fromCache } = await fetchWithCache(
+          ARTICLES_CACHE_KEY,
+          CACHE_TTL.ARTICLES_MS,
+          async () => {
+            const { data } = await supabase
+              .from('articles')
+              .select('id, title, summary, slug, category, keywords, image_url, created_at, published_at')
+              .eq('status', 'published')
+              .order('published_at', { ascending: false, nullsFirst: false })
+            return (data ?? []) as ArticleRow[]
+          },
+          { force }
+        )
 
         const geo =
           location != null
-            ? await getPrefectureAndMunicipality(location.lat, location.lng)
+            ? await getCachedPrefectureAndMunicipality(location.lat, location.lng)
             : { prefecture: null as string | null, municipality: null as string | null }
 
         const sorted = sortArticlesByScore(
@@ -519,6 +525,13 @@ export default function SearchTab() {
         )
 
         setArticlesList(sorted)
+        if (!fromCache) {
+          const urls = sorted
+            .map((a) => a.image_url)
+            .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+            .map((u) => resizePlacesImageUrl(u.trim(), 'card'))
+          if (urls.length > 0) void ExpoImage.prefetch(urls.slice(0, 12), 'memory-disk')
+        }
       } catch {
         setArticlesList([])
       } finally {
@@ -527,17 +540,6 @@ export default function SearchTab() {
     },
     [articlesLoading, articlesList.length, location, recentArticleIds]
   )
-
-  /** まとめ記事サムネを一覧取得直後に先読み（スクロール時の待ちを減らす） */
-  useEffect(() => {
-    if (articlesList.length === 0) return
-    const urls = articlesList
-      .map((a) => a.image_url)
-      .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
-      .map((u) => resizePlacesImageUrl(u.trim(), 'card'))
-    if (urls.length === 0) return
-    void ExpoImage.prefetch(urls.slice(0, 16), 'memory-disk')
-  }, [articlesList])
 
   useEffect(() => {
     if (searched) return
@@ -601,12 +603,10 @@ export default function SearchTab() {
         setUserWalkTags(tags)
       }
       let locFresh: { lat: number; lng: number } | null = location
-      try {
-        const pos = await Location.getCurrentPositionAsync({})
-        locFresh = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-        setLocation(locFresh)
-      } catch {
-        /* ignore */
+      const locResult = await resolveSessionLocation(location)
+      if (locResult.ok) {
+        locFresh = locResult.location
+        if (locResult.changed) setLocation(locFresh)
       }
       if (searched && query.trim()) {
         await handleSearch(query, { silent: true })

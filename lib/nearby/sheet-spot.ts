@@ -45,9 +45,9 @@ export function sheetSpotFromUserRow(row: UserSpotRow): SheetSpot | null {
     address: row.address ?? '',
     lat: row.lat,
     lng: row.lng,
-    photoRef: null,
-    rating: null,
-    priceLevel: null,
+    photoRef: row.photoRef,
+    rating: row.rating,
+    priceLevel: row.priceLevel,
     userRatingsTotal: null,
   }
 }

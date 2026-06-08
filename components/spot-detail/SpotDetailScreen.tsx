@@ -1,23 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { Image } from 'expo-image'
 import {
   Alert,
   Animated,
   Dimensions,
   FlatList,
-  KeyboardAvoidingView,
   Linking,
   Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  Platform,
   Pressable,
   ScrollView,
   Share,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -25,6 +21,7 @@ import * as Location from 'expo-location'
 import Svg, { Circle, Path, Polygon, Text as SvgTextNode } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
+import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { IconInstagram } from '@/components/IconInstagram'
@@ -39,6 +36,9 @@ import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { isPendingPlaceRouteId } from '@/lib/spot-detail-pending'
+import { MAP_VISITED_CHECK_COLOR } from '@/lib/nearby/constants'
+import { formatVisitRecordError, recordSpotVisit } from '@/lib/visits-memories'
+import { useDogProfile } from '@/components/dog/useDogProfile'
 import type { PlaceResult } from '@/types/places'
 
 const { width: WIN_W, height: WIN_H } = Dimensions.get('window')
@@ -60,15 +60,13 @@ type Spot = {
   ig_last_checked?: string | null
 }
 
-type AISummary = { keywords: string[]; summary: string }
-
-type Review = {
-  id: string
-  rating: number
-  comment: string | null
-  created_at: string
-  user_id: string
+type AISummary = {
+  keywords: string[]
+  summary: string
+  wanspotRating?: { avg: number; count: number }
 }
+
+const WANSPOT_RATING_THRESHOLD = 3
 
 type DetailJson = {
   photos?: { photo_reference?: string }[]
@@ -101,89 +99,6 @@ function priceLevelFromDetail(d: DetailJson | null): number | null {
   if (!d) return null
   const o = d as Record<string, unknown>
   return normalizePriceLevel(o.price_level ?? o.priceLevel)
-}
-
-/** reviews への upsert。エラー時は message を返す */
-async function syncUserSpotReview(
-  client: SupabaseClient,
-  params: { spotId: string; userId: string; rating: number; comment: string | null }
-): Promise<string | null> {
-  const { spotId, userId, rating, comment } = params
-  if (rating > 0) {
-    const { data: rows } = await client
-      .from('reviews')
-      .select('id')
-      .eq('spot_id', spotId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-    const ids = (rows ?? []).map((x: { id: string }) => x.id).filter(Boolean)
-    const keepId = ids[0]
-    const row = { spot_id: spotId, user_id: userId, rating, comment }
-    if (keepId) {
-      const dupIds = ids.slice(1)
-      if (dupIds.length > 0) {
-        await client.from('reviews').delete().in('id', dupIds)
-      }
-      const { error } = await client.from('reviews').update({ rating, comment }).eq('id', keepId)
-      return error?.message ?? null
-    }
-    const { error } = await client.from('reviews').insert(row)
-    return error?.message ?? null
-  }
-  const { error } = await client.from('reviews').delete().eq('spot_id', spotId).eq('user_id', userId)
-  return error?.message ?? null
-}
-
-/** 1ユーザー1件（DBに複製があっても最新のみ） */
-function dedupeReviewsLatestPerUser(rows: Review[]): Review[] {
-  const m = new Map<string, Review>()
-  for (const r of rows) {
-    const prev = m.get(r.user_id)
-    if (!prev || new Date(r.created_at).getTime() > new Date(prev.created_at).getTime()) m.set(r.user_id, r)
-  }
-  return Array.from(m.values()).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-}
-
-/** 同一コメント文の重複を除く（空コメントはユーザー単位の1件のみ残すのでそのまま通す） */
-function dedupeReviewsByCommentText(rows: Review[]): Review[] {
-  const seen = new Set<string>()
-  const out: Review[] = []
-  for (const r of rows) {
-    const key = (r.comment ?? '').trim()
-    if (key.length === 0) {
-      out.push(r)
-      continue
-    }
-    if (seen.has(key)) continue
-    seen.add(key)
-    out.push(r)
-  }
-  return out
-}
-
-function dedupeReviewsForDisplay(rows: Review[]): Review[] {
-  return dedupeReviewsByCommentText(dedupeReviewsLatestPerUser(rows))
-}
-
-type CheckInCommentRow = { user_id: string; comment: string | null; created_at: string }
-
-/** 同一 user は最新1件、同一コメント文は1回だけ（パパ/ママの声用） */
-function dedupeCheckInCommentsForAdvice(rows: CheckInCommentRow[]): string[] {
-  const sorted = [...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-  const byUser = new Map<string, string>()
-  for (const row of sorted) {
-    const c = typeof row.comment === 'string' ? row.comment.trim() : ''
-    if (!c || byUser.has(row.user_id)) continue
-    byUser.set(row.user_id, c)
-  }
-  const seenText = new Set<string>()
-  const out: string[] = []
-  for (const c of byUser.values()) {
-    if (seenText.has(c)) continue
-    seenText.add(c)
-    out.push(c)
-  }
-  return out
 }
 
 const IconChevronLeft = () => (
@@ -277,12 +192,11 @@ export default function SpotDetailScreen({
 }) {
   const router = useRouter()
   const requireAuth = useRequireAuth()
+  const { dog } = useDogProfile()
   const insets = useSafeAreaInsets()
   const likeScale = useRef(new Animated.Value(1)).current
   const instagramAutoFetchSent = useRef<string | null>(null)
   const photoListRef = useRef<FlatList<string>>(null)
-  /** モーダル表示時点の評価・コメント（変更検知・未保存クローズ確認用） */
-  const checkInBaselineRef = useRef<{ rating: number; comment: string } | null>(null)
 
   const [spot, setSpot] = useState<Spot | null>(null)
   const [likeCount, setLikeCount] = useState(0)
@@ -294,27 +208,13 @@ export default function SpotDetailScreen({
   const [aiLoading, setAiLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [reviews, setReviews] = useState<Review[]>([])
   const [googleRating, setGoogleRating] = useState<number | null>(null)
   const [googlePriceLevel, setGooglePriceLevel] = useState<number | null>(null)
   const [googleAddress, setGoogleAddress] = useState<string | null>(null)
   const [checkedIn, setCheckedIn] = useState(false)
-  const [showCheckInModal, setShowCheckInModal] = useState(false)
-  const [checkInRating, setCheckInRating] = useState(0)
-  const [checkInComment, setCheckInComment] = useState('')
-  const [checkInSubmitting, setCheckInSubmitting] = useState(false)
+  const [visitRecording, setVisitRecording] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [checkInToastMessage, setCheckInToastMessage] = useState<string | null>(null)
-  const [checkInPrefillLoading, setCheckInPrefillLoading] = useState(false)
-  const [checkInCommentsForOwnerAdvice, setCheckInCommentsForOwnerAdvice] = useState<string[]>([])
-  const [ownerAdviceText, setOwnerAdviceText] = useState<string | null>(null)
-  const [ownerAdviceLoading, setOwnerAdviceLoading] = useState(false)
-
-  const loadReviews = useCallback(async (sId: string) => {
-    const { data } = await supabase.from('reviews').select('*').eq('spot_id', sId).order('created_at', { ascending: false })
-    setReviews(dedupeReviewsForDisplay((data ?? []) as Review[]))
-  }, [])
-
   useEffect(() => {
     const init = async () => {
       let resolvedSpotId = spotId
@@ -353,7 +253,7 @@ export default function SpotDetailScreen({
       const [
         { count: likeC },
         myLikeResult,
-        myCheckIn,
+        myVisit,
       ] = await Promise.all([
         supabase.from('spot_likes').select('*', { count: 'exact', head: true }).eq('spot_id', resolvedSpotId),
         user
@@ -366,17 +266,19 @@ export default function SpotDetailScreen({
           : Promise.resolve({ data: null }),
         user
           ? supabase
-              .from('check_ins')
-              .select('id, rating, comment')
+              .from('visits')
+              .select('id')
               .eq('spot_id', resolvedSpotId)
               .eq('user_id', user.id)
+              .eq('soft_deleted', false)
+              .limit(1)
               .maybeSingle()
           : Promise.resolve({ data: null }),
       ])
 
       setLikeCount(likeC ?? 0)
       setLiked(!!myLikeResult.data)
-      setCheckedIn(!!myCheckIn.data)
+      setCheckedIn(!!myVisit.data)
 
       if (detailRes?.photos?.length) {
         setPhotoRefs(detailRes.photos.slice(0, 8).map((p) => p.photo_reference).filter(Boolean) as string[])
@@ -409,54 +311,42 @@ export default function SpotDetailScreen({
           .catch((): null => null),
       ])
 
-      wanspotFetchJson<{ keywords?: string[]; summary?: string }>('/api/ai-summary', {
-        method: 'POST',
-        json: {
-          place_id: spotData.place_id,
-          name: spotData.name,
-          category: spotData.category,
-          rating: spotData.rating,
-          address: spotData.address,
-          reviews: detailRes?.reviews?.slice(0, 5).map((r) => r.text).filter(Boolean) ?? [],
-          userContext: {
-            walkAreaTags: walkTags,
-            lat: posCtx?.lat ?? null,
-            lng: posCtx?.lng ?? null,
+      wanspotFetchJson<{ keywords?: string[]; summary?: string; wanspotRating?: { avg: number; count: number } }>(
+        '/api/ai-summary',
+        {
+          method: 'POST',
+          json: {
+            place_id: spotData.place_id,
+            spot_id: spotData.id,
+            name: spotData.name,
+            category: spotData.category,
+            rating: spotData.rating,
+            address: spotData.address,
+            reviews: detailRes?.reviews?.slice(0, 5).map((r) => r.text).filter(Boolean) ?? [],
+            dogSize: dog?.size ?? undefined,
+            dogBreed: dog?.breed ?? undefined,
+            userContext: {
+              walkAreaTags: walkTags,
+              lat: posCtx?.lat ?? null,
+              lng: posCtx?.lng ?? null,
+            },
           },
-        },
-      })
+        }
+      )
         .then((json) => {
-          if (json.keywords && json.summary) setAiSummary({ keywords: json.keywords, summary: json.summary })
+          if (json.keywords && json.summary) {
+            setAiSummary({
+              keywords: json.keywords,
+              summary: json.summary,
+              wanspotRating: json.wanspotRating,
+            })
+          }
         })
         .catch(() => {})
         .finally(() => setAiLoading(false))
-
-      await loadReviews(resolvedSpotId)
-
-      const { data: rawCheckInRows } = await supabase
-        .from('check_ins')
-        .select('user_id, comment, created_at')
-        .eq('spot_id', resolvedSpotId)
-        .not('comment', 'is', null)
-
-      const adviceComments = dedupeCheckInCommentsForAdvice((rawCheckInRows ?? []) as CheckInCommentRow[])
-      setCheckInCommentsForOwnerAdvice(adviceComments)
-
-      if (adviceComments.length >= 1) {
-        setOwnerAdviceLoading(true)
-        wanspotFetchJson<{ advice?: string }>('/api/spots/owner-advice', {
-          method: 'POST',
-          json: { place_id: spotData.place_id, comments: adviceComments },
-        })
-          .then((json) => {
-            if (json.advice && typeof json.advice === 'string') setOwnerAdviceText(json.advice)
-          })
-          .catch(() => {})
-          .finally(() => setOwnerAdviceLoading(false))
-      }
     }
     void init()
-  }, [spotId, pendingPlace, router, loadReviews])
+  }, [spotId, pendingPlace, router, dog?.size, dog?.breed])
 
   useEffect(() => {
     if (photoRefs.length === 0) return
@@ -524,81 +414,6 @@ export default function SpotDetailScreen({
     return () => clearTimeout(t)
   }, [checkInToastMessage])
 
-  useEffect(() => {
-    if (!showCheckInModal || !spot || !userId) {
-      checkInBaselineRef.current = null
-      return
-    }
-    if (!checkedIn) {
-      setCheckInRating(0)
-      setCheckInComment('')
-      setCheckInPrefillLoading(false)
-      checkInBaselineRef.current = { rating: 0, comment: '' }
-      return
-    }
-    checkInBaselineRef.current = null
-    let cancelled = false
-    setCheckInPrefillLoading(true)
-    void (async () => {
-      const [{ data: ci }, { data: rev }] = await Promise.all([
-        supabase.from('check_ins').select('rating, comment').eq('spot_id', spot.id).eq('user_id', userId).maybeSingle(),
-        supabase
-          .from('reviews')
-          .select('rating, comment')
-          .eq('spot_id', spot.id)
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ])
-
-      let r = 0
-      let c = ''
-      const ciRow = ci as { rating?: number | null; comment?: string | null } | null
-      const revRow = rev as { rating?: number | null; comment?: string | null } | null
-      if (ciRow) {
-        if (typeof ciRow.rating === 'number' && ciRow.rating > 0) r = ciRow.rating
-      }
-      if (revRow) {
-        const rr = typeof revRow.rating === 'number' ? revRow.rating : 0
-        if (rr > r) r = rr
-      }
-      const cFromCi = typeof ciRow?.comment === 'string' ? ciRow.comment.trim() : ''
-      const cFromRev = typeof revRow?.comment === 'string' ? revRow.comment.trim() : ''
-      c = cFromCi || cFromRev
-      if (!cancelled) {
-        setCheckInRating(r)
-        setCheckInComment(c)
-        setCheckInPrefillLoading(false)
-        checkInBaselineRef.current = { rating: r, comment: c.trim() }
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [showCheckInModal, checkedIn, spot?.id, userId, spot])
-
-  const isCheckInDirty = () => {
-    const b = checkInBaselineRef.current
-    if (!b) return false
-    return checkInRating !== b.rating || checkInComment.trim() !== b.comment
-  }
-
-  const tryCloseCheckInModal = () => {
-    if (checkInPrefillLoading) {
-      setShowCheckInModal(false)
-      return
-    }
-    if (isCheckInDirty()) {
-      Alert.alert('確認', '変更は保存されません。閉じますか？', [
-        { text: 'キャンセル', style: 'cancel' },
-        { text: '閉じる', onPress: () => setShowCheckInModal(false) },
-      ])
-      return
-    }
-    setShowCheckInModal(false)
-  }
-
   const toggleLike = async () => {
     if (!spot || likeLoading) return
     if (!requireAuth('いいねするにはログインしてください。')) return
@@ -621,108 +436,24 @@ export default function SpotDetailScreen({
     }
   }
 
-  const submitNewCheckIn = async () => {
-    if (!spot || checkInSubmitting || checkedIn) return
+  const recordVisitTap = async () => {
+    if (!spot || visitRecording) return
     if (!requireAuth('チェックインするにはログインしてください。')) return
     if (!userId) return
-    if (checkInRating < 1) {
-      Alert.alert('', '評価をお願いします')
-      return
-    }
-    setCheckInSubmitting(true)
+    setVisitRecording(true)
     try {
-      const comment = checkInComment.trim() || null
-      const rating = checkInRating > 0 ? checkInRating : 0
-      const payload: Record<string, unknown> = {
-        spot_id: spot.id,
-        user_id: userId,
-        rating: checkInRating > 0 ? checkInRating : null,
-        comment,
-      }
-      const { error: insErr } = await supabase.from('check_ins').insert(payload)
-      if (insErr) {
-        await supabase.from('check_ins').insert({ spot_id: spot.id, user_id: userId })
-      }
-      const reviewErr = await syncUserSpotReview(supabase, { spotId: spot.id, userId, rating, comment })
-      if (reviewErr) {
-        Alert.alert('レビュー保存エラー', reviewErr)
+      const result = await recordSpotVisit(userId, spot.id)
+      if (!result.ok) {
+        const detail = result.error ? formatVisitRecordError(result.error) : 'unknown error'
+        console.warn('[recordVisitTap]', detail)
+        Alert.alert('記録に失敗しました', detail)
         return
       }
-      await loadReviews(spot.id)
       setCheckedIn(true)
-      setCheckInRating(0)
-      setCheckInComment('')
-      setShowCheckInModal(false)
-      setCheckInToastMessage('行ったを記録しました')
-      track('spot_checked_in', { spot_id: spot.id })
+      setCheckInToastMessage(result.created ? '行ったを記録しました' : '本日は記録済みです')
+      if (result.created) track('spot_checked_in', { spot_id: spot.id })
     } finally {
-      setCheckInSubmitting(false)
-    }
-  }
-
-  const saveCheckInEdits = async () => {
-    if (!spot || checkInSubmitting || !checkedIn) return
-    if (!requireAuth('チェックインを更新するにはログインしてください。')) return
-    if (!userId) return
-    if (checkInRating < 1) {
-      Alert.alert('', '評価をお願いします')
-      return
-    }
-    const b = checkInBaselineRef.current
-    if (b && checkInRating === b.rating && checkInComment.trim() === b.comment) {
-      Alert.alert('', '変更はありません')
-      return
-    }
-    setCheckInSubmitting(true)
-    try {
-      const comment = checkInComment.trim() || null
-      const rating = checkInRating > 0 ? checkInRating : 0
-      const ratingVal = rating > 0 ? rating : null
-      const { error: upCiErr } = await supabase
-        .from('check_ins')
-        .update({ rating: ratingVal, comment })
-        .eq('spot_id', spot.id)
-        .eq('user_id', userId)
-      if (upCiErr) {
-        Alert.alert('保存エラー', upCiErr.message)
-        return
-      }
-      const reviewErr = await syncUserSpotReview(supabase, { spotId: spot.id, userId, rating, comment })
-      if (reviewErr) {
-        Alert.alert('レビュー保存エラー', reviewErr)
-        return
-      }
-      await loadReviews(spot.id)
-      setShowCheckInModal(false)
-      setCheckInToastMessage('記録を更新しました')
-      checkInBaselineRef.current = { rating: checkInRating, comment: checkInComment.trim() }
-    } finally {
-      setCheckInSubmitting(false)
-    }
-  }
-
-  const removeCheckInWithConfirm = () => {
-    Alert.alert('確認', '本当に取り消しますか？この操作は元に戻せません', [
-      { text: 'キャンセル', style: 'cancel' },
-      { text: '取り消す', style: 'destructive', onPress: () => void executeRemoveCheckIn() },
-    ])
-  }
-
-  const executeRemoveCheckIn = async () => {
-    if (!spot || checkInSubmitting) return
-    if (!requireAuth('チェックインを取り消すにはログインしてください。')) return
-    if (!userId) return
-    setCheckInSubmitting(true)
-    try {
-      await supabase.from('check_ins').delete().eq('spot_id', spot.id).eq('user_id', userId)
-      await supabase.from('reviews').delete().eq('spot_id', spot.id).eq('user_id', userId)
-      setCheckedIn(false)
-      setShowCheckInModal(false)
-      setCheckInRating(0)
-      setCheckInComment('')
-      await loadReviews(spot.id)
-    } finally {
-      setCheckInSubmitting(false)
+      setVisitRecording(false)
     }
   }
 
@@ -741,10 +472,9 @@ export default function SpotDetailScreen({
     setShowShareSheet(false)
   }
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })
-
   const displayRating = googleRating ?? spot?.rating ?? null
+  const showWanspotRating =
+    aiSummary?.wanspotRating != null && aiSummary.wanspotRating.count >= WANSPOT_RATING_THRESHOLD
 
   const onPhotoScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = e.nativeEvent.contentOffset.x
@@ -899,13 +629,17 @@ export default function SpotDetailScreen({
             </Pressable>
             <Pressable
               style={[styles.actHalf, checkedIn && styles.actHalfCheck]}
-              onPress={() => {
-                if (!requireAuth('チェックインするにはログインしてください。')) return
-                setShowCheckInModal(true)
-              }}
+              onPress={() => void recordVisitTap()}
+              disabled={visitRecording}
             >
-              <IconPaw size={16} color={checkedIn ? '#FF8A1F' : '#2b2a28'} />
-              <Text style={styles.actLbl}>{checkedIn ? '行った ✓' : '行った'}</Text>
+              <Ionicons
+                name={checkedIn ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                size={20}
+                color={checkedIn ? MAP_VISITED_CHECK_COLOR : '#2b2a28'}
+              />
+              <Text style={[styles.actLbl, checkedIn && styles.actLblCheck]}>
+                {checkedIn ? '行った ✓' : '行った'}
+              </Text>
             </Pressable>
           </View>
 
@@ -965,16 +699,26 @@ export default function SpotDetailScreen({
           </View>
 
           <View style={styles.card}>
-            <View style={styles.aiHead}>
-              <View style={styles.aiHeadIcon}>
-                <IconPaw size={13} color="#FF8A1F" />
-              </View>
-              <Text style={styles.aiHeadLbl}>AI まとめ</Text>
-            </View>
             {aiLoading ? (
               <RunningDog label="AIまとめを生成中..." />
             ) : aiSummary ? (
               <>
+                <View style={styles.wanspotHeadRow}>
+                  <View style={styles.wanspotHeadLeft}>
+                    <Image
+                      source={require('@/assets/images/wanspot_icon_orange.png')}
+                      style={styles.wanspotHeadIcon}
+                      contentFit="contain"
+                    />
+                    <Text style={styles.wanspotHeadLbl}>wanspot</Text>
+                  </View>
+                  {showWanspotRating && aiSummary.wanspotRating ? (
+                    <View style={styles.wanspotRatingRow}>
+                      <Text style={styles.wanspotRatingNum}>{aiSummary.wanspotRating.avg.toFixed(1)}</Text>
+                      <IconStarSm filled />
+                    </View>
+                  ) : null}
+                </View>
                 <View style={styles.kwRow}>
                   {aiSummary.keywords.map((tag) => (
                     <View key={tag} style={styles.kwPill}>
@@ -988,123 +732,8 @@ export default function SpotDetailScreen({
               <PowState label="AIまとめを生成できませんでした" />
             )}
           </View>
-
-          <View style={styles.card}>
-            <Text style={styles.sectionLbl}>みんなのレビュー</Text>
-            {reviews.length === 0 ? (
-              <Text style={styles.revHint}>「行った」ボタンを押すとレビューを残せます</Text>
-            ) : (
-              reviews.map((r, i) => (
-                <View key={r.id} style={[styles.revItem, i < reviews.length - 1 && styles.revBorder]}>
-                  <View style={styles.revTop}>
-                    <View style={styles.revStarsWrap}>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <IconStarSm key={s} filled={s <= r.rating} />
-                      ))}
-                    </View>
-                    <View style={styles.revDateCol}>
-                      <Text style={styles.revDate} numberOfLines={1}>
-                        {formatDate(r.created_at)}
-                      </Text>
-                    </View>
-                  </View>
-                  {r.comment ? <Text style={styles.revComment}>{r.comment}</Text> : null}
-                </View>
-              ))
-            )}
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.sectionLbl}>パパ/ママの声</Text>
-            {checkInCommentsForOwnerAdvice.length >= 1 ? (
-              ownerAdviceLoading ? (
-                <RunningDog label="まとめを生成中..." />
-              ) : ownerAdviceText ? (
-                <>
-                  <Text style={styles.aiBody}>{ownerAdviceText}</Text>
-                  <Text style={styles.adviceFoot}>
-                    コメントは任意ですが、AIがワンちゃんオーナーへのアドバイスとして参考にさせていただきます。
-                  </Text>
-                </>
-              ) : (
-                <PowState label="まとめを生成できませんでした" />
-              )
-            ) : (
-              <Text style={styles.revHint}>みんなの声をコメントで聞かせてね。</Text>
-            )}
-          </View>
         </View>
       </ScrollView>
-
-      <Modal visible={showCheckInModal} transparent animationType="slide" onRequestClose={tryCloseCheckInModal}>
-        <KeyboardAvoidingView
-          style={styles.checkInKeyboardRoot}
-          enabled={Platform.OS === 'ios'}
-          behavior="padding"
-          keyboardVerticalOffset={0}
-        >
-          <Pressable style={styles.modalBg} onPress={tryCloseCheckInModal}>
-            <Pressable style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 12) }]} onPress={(e) => e.stopPropagation()}>
-              <ScrollView
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="interactive"
-                showsVerticalScrollIndicator={false}
-                bounces={false}
-                contentContainerStyle={styles.checkInSheetScrollContent}
-              >
-                <View style={styles.sheetGrab} />
-                <Text style={styles.sheetTitle}>{spot.name}</Text>
-                <Text style={styles.sheetHint}>評価をお願いします</Text>
-                {checkInPrefillLoading && checkedIn ? (
-                  <RunningDog label="読み込み中..." />
-                ) : (
-                  <>
-                    <View style={styles.starsRow}>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Pressable key={s} onPress={() => setCheckInRating(s)} disabled={checkInSubmitting}>
-                          <IconStar filled={s <= checkInRating} />
-                        </Pressable>
-                      ))}
-                    </View>
-                    <TextInput
-                      style={styles.ta}
-                      value={checkInComment}
-                      onChangeText={setCheckInComment}
-                      placeholder="コメント（任意）"
-                      placeholderTextColor="#aaa"
-                      multiline
-                      editable={!checkInSubmitting}
-                    />
-                    <Text style={styles.taFoot}>AIが学習に活用しますが、外部に公開されることはありません。</Text>
-                    {checkedIn ? (
-                      <>
-                        <Pressable
-                          style={styles.primaryBtn}
-                          onPress={() => void saveCheckInEdits()}
-                          disabled={checkInSubmitting || checkInPrefillLoading || checkInRating < 1}
-                        >
-                          <Text style={styles.primaryBtnTxt}>{checkInSubmitting ? '保存中...' : '保存する'}</Text>
-                        </Pressable>
-                        <Pressable style={styles.secondaryBtn} onPress={removeCheckInWithConfirm} disabled={checkInSubmitting}>
-                          <Text style={styles.secondaryBtnTxt}>{checkInSubmitting ? '処理中...' : '行ったを取り消す'}</Text>
-                        </Pressable>
-                      </>
-                    ) : (
-                      <Pressable
-                        style={styles.primaryBtn}
-                        onPress={() => void submitNewCheckIn()}
-                        disabled={checkInSubmitting || checkInRating < 1}
-                      >
-                        <Text style={styles.primaryBtnTxt}>{checkInSubmitting ? '記録中...' : '行った！'}</Text>
-                      </Pressable>
-                    )}
-                  </>
-                )}
-              </ScrollView>
-            </Pressable>
-          </Pressable>
-        </KeyboardAvoidingView>
-      </Modal>
 
       <Modal visible={showShareSheet} transparent animationType="fade" onRequestClose={() => setShowShareSheet(false)}>
         <Pressable style={styles.shareOverlay} onPress={() => setShowShareSheet(false)}>
@@ -1227,8 +856,9 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
   },
   actHalfLiked: { backgroundColor: '#FFF6E5', borderColor: '#f0e4c4' },
-  actHalfCheck: { backgroundColor: '#FF8A1F', borderColor: '#FF8A1F' },
+  actHalfCheck: { backgroundColor: '#E8F5E9', borderColor: MAP_VISITED_CHECK_COLOR },
   actLbl: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
+  actLblCheck: { color: MAP_VISITED_CHECK_COLOR },
   metaCard: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -1302,10 +932,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  aiHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  aiHeadIcon: { width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
-  aiHeadLbl: { fontSize: 12, fontWeight: '700', color: '#aaa', letterSpacing: 0.6, lineHeight: 16 },
-  sectionLbl: { fontSize: 12, fontWeight: '700', color: '#aaa', letterSpacing: 0.6, marginBottom: 12 },
+  wanspotHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  wanspotHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  wanspotHeadIcon: { width: 22, height: 22 },
+  wanspotHeadLbl: { fontSize: 14, fontWeight: '800', color: '#2b2a28', letterSpacing: 0.2 },
+  wanspotRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  wanspotRatingNum: { fontSize: 16, fontWeight: '800', color: '#2b2a28' },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kwPill: { backgroundColor: '#FF8A1F', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   kwTxt: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },

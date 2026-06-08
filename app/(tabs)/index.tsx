@@ -4,7 +4,6 @@ import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSharedValue } from 'react-native-reanimated'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
-import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
@@ -22,7 +21,6 @@ import {
   DEFAULT_MAP_GENRE,
   MAP_GENRE_COLOR,
   MAP_LIKE_COLOR,
-  MAP_VISITED_CHECK_COLOR,
   NEARBY_MAP_GENRE_STORAGE_KEY,
   NEARBY_RADIUS_M,
   type MapGenreKey,
@@ -42,7 +40,7 @@ import { calcDistanceMeters, isWithinRadiusM } from '@/lib/nearby/geo'
 import { isSameMapFilter, mapFilterLabel, type MapFilter } from '@/lib/nearby/map-filter'
 import { sortPlacesByScore } from '@/lib/nearby/place-score'
 import { sheetSpotFromPlace, sheetSpotFromUserRow, type SheetSpot } from '@/lib/nearby/sheet-spot'
-import { fetchCheckedInSpotsForUser, fetchLikedSpotsForUser } from '@/lib/fetch-user-spot-lists'
+import { fetchLikedSpotsForUser } from '@/lib/fetch-user-spot-lists'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { openSpotDetail } from '@/lib/open-spot-detail'
 import { useWeather } from '@/lib/weather/use-weather'
@@ -84,13 +82,12 @@ export default function NearbyPage() {
 
   const [genre, setGenre] = useState<MapGenreKey>(DEFAULT_MAP_GENRE)
   const [genreReady, setGenreReady] = useState(false)
-  const [activeFilter, setActiveFilter] = useState<MapFilter | null>(null)
+  const [activeFilter, setActiveFilter] = useState<MapFilter | null>({ kind: 'like' })
   const [nearbyPlaces, setNearbyPlaces] = useState<PlaceResult[]>([])
   const [spotsLoading, setSpotsLoading] = useState(false)
   const [spotsFetchError, setSpotsFetchError] = useState('')
 
   const [likedRows, setLikedRows] = useState<SheetSpot[]>([])
-  const [visitedRows, setVisitedRows] = useState<SheetSpot[]>([])
   const [userListsLoading, setUserListsLoading] = useState(false)
 
   const [dogName, setDogName] = useState<string | null>(null)
@@ -106,9 +103,15 @@ export default function NearbyPage() {
 
   const sheetTab: NearbySheetTab = useMemo(() => {
     if (activeFilter?.kind === 'like') return 'like'
-    if (activeFilter?.kind === 'visited') return 'visited'
     return 'score'
   }, [activeFilter])
+
+  useFocusEffect(
+    useCallback(() => {
+      setActiveFilter({ kind: 'like' })
+      requestAnimationFrame(() => sheetControl.current?.open())
+    }, [])
+  )
 
   useEffect(() => {
     void (async () => {
@@ -250,7 +253,6 @@ export default function NearbyPage() {
       } = await supabase.auth.getUser()
       if (!user) {
         setLikedRows([])
-        setVisitedRows([])
         setUserListsLoading(false)
         return
       }
@@ -259,26 +261,21 @@ export default function NearbyPage() {
       const cacheKey = `nearby:user-lists:${user.id}:${locKey}`
 
       if (!force && isCacheFresh(cacheKey, CACHE_TTL.USER_LISTS_MS)) {
-        const cached = readCache<{ liked: SheetSpot[]; visited: SheetSpot[] }>(cacheKey)
+        const cached = readCache<{ liked: SheetSpot[] }>(cacheKey)
         if (cached) {
           setLikedRows(cached.liked)
-          setVisitedRows(cached.visited)
           return
         }
       }
 
-      const stale = readCache<{ liked: SheetSpot[]; visited: SheetSpot[] }>(cacheKey)
+      const stale = readCache<{ liked: SheetSpot[] }>(cacheKey)
       if (stale) {
         setLikedRows(stale.liked)
-        setVisitedRows(stale.visited)
       } else if (force || !getCacheEntry(cacheKey)) {
         setUserListsLoading(true)
       }
 
-      const [likedRes, visitedRes] = await Promise.all([
-        fetchLikedSpotsForUser(supabase, user.id),
-        fetchCheckedInSpotsForUser(supabase, user.id),
-      ])
+      const likedRes = await fetchLikedSpotsForUser(supabase, user.id)
 
       const origin = location
       const filterRow = (rows: UserSpotRow[]) => {
@@ -295,20 +292,18 @@ export default function NearbyPage() {
       }
 
       const liked = likedRes.ok ? filterRow(likedRes.spots) : []
-      const visited = visitedRes.ok ? filterRow(visitedRes.spots) : []
-      writeCache(cacheKey, { liked, visited })
+      writeCache(cacheKey, { liked })
       setLikedRows(liked)
-      setVisitedRows(visited)
       setUserListsLoading(false)
     },
     [location?.lat, location?.lng]
   )
 
-  useFocusEffect(
-    useCallback(() => {
-      void loadUserLists(false)
-    }, [loadUserLists])
-  )
+  useEffect(() => {
+    if (activeFilter?.kind !== 'like') return
+    if (!location) return
+    void loadUserLists(false)
+  }, [activeFilter?.kind, location?.lat, location?.lng, loadUserLists])
 
   const scoreSheetSpots = useMemo(() => {
     const sorted = sortPlacesByScore(nearbyPlaces, location)
@@ -323,9 +318,8 @@ export default function NearbyPage() {
   const sheetItems = useMemo(() => {
     if (!activeFilter) return []
     if (activeFilter.kind === 'like') return likedRows
-    if (activeFilter.kind === 'visited') return visitedRows
     return scoreSheetSpots
-  }, [activeFilter, likedRows, visitedRows, scoreSheetSpots])
+  }, [activeFilter, likedRows, scoreSheetSpots])
 
   const mapMarkers = activeFilter ? sheetItems : []
 
@@ -344,11 +338,6 @@ export default function NearbyPage() {
     }
     return set
   }, [likedRows, likedOverrides])
-
-  const visitedPlaceIds = useMemo(
-    () => new Set(visitedRows.map((r) => r.placeId).filter(Boolean)),
-    [visitedRows]
-  )
 
   const handleToggleLike = useCallback(
     async (spot: SheetSpot) => {
@@ -392,9 +381,7 @@ export default function NearbyPage() {
   const emptyCopy =
     sheetTab === 'like'
       ? { title: '近くのいいねはまだありません', hint: '気になるスポットにいいねしてみましょう。' }
-      : sheetTab === 'visited'
-        ? { title: '近くの記録はまだありません', hint: '行ったスポットを記録してみましょう。' }
-        : { title: '近くにスポットが見つかりませんでした', hint: '別のジャンルを試すか、位置情報をご確認ください。' }
+      : { title: '近くにスポットが見つかりませんでした', hint: '別のジャンルを試すか、位置情報をご確認ください。' }
 
   const sheetListExpanded = activeFilter !== null && sheetIndex >= 1
   const showRecenter = activeFilter === null
@@ -405,7 +392,7 @@ export default function NearbyPage() {
       return <GenreIcon genre={activeFilter.genre} size={22} color={MAP_GENRE_COLOR[activeFilter.genre]} />
     }
     if (activeFilter.kind === 'like') return <HeartHeaderIcon />
-    return <Ionicons name="checkmark-circle" size={24} color={MAP_VISITED_CHECK_COLOR} />
+    return null
   }, [activeFilter])
 
   const headerTitle = activeFilter ? mapFilterLabel(activeFilter) : ''
@@ -421,7 +408,7 @@ export default function NearbyPage() {
             <NearbyMapView
               markers={mapMarkers}
               likedPlaceIds={likedPlaceIds}
-              visitedPlaceIds={visitedPlaceIds}
+              visitedPlaceIds={new Set<string>()}
               selectedSpot={selectedSpot}
               userLocation={location}
               onSelectSpot={setSelectedSpot}

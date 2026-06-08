@@ -10,6 +10,7 @@ import { HEART_ICON } from '@/lib/constants'
 import { formatDistanceLabel, calcDistanceMeters } from '@/lib/nearby/geo'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
+import { useDogProfile } from '@/components/dog/useDogProfile'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 
@@ -81,6 +82,7 @@ export function NearbySheetSpotCard({
   onToggleLike?: () => void
   onClose?: () => void
 }) {
+  const { dog } = useDogProfile()
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
   const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
@@ -102,6 +104,8 @@ export function NearbySheetSpotCard({
         rating: spot.rating,
         address: spot.address,
         reviews: [],
+        dogSize: dog?.size ?? undefined,
+        dogBreed: dog?.breed ?? undefined,
         userContext: {
           walkAreaTags: userWalkTags,
           lat: userLocation?.lat ?? null,

@@ -27,7 +27,6 @@ const JPEG_QUALITY = 90
 const GRAIN_OPACITY = 0.12
 const LIGHTLEAK_OPACITY = 0.18
 const VIGNETTE_OPACITY = 0.72
-const BLUR_SIGMA = 0.4
 const DATE_COLOR = '#FF9628'
 
 const overlayCache = new Map<number, SkImage>()
@@ -111,19 +110,19 @@ export async function applyUtsurunFilter(sourceUri: string): Promise<PickedImage
   const surface = Skia.Surface.Make(width, height)
   if (!surface) throw new Error('描画サーフェスの作成に失敗しました')
   const canvas = surface.getCanvas()
+  canvas.clear(Skia.Color('black'))
   const fullRect = Skia.XYWHRect(0, 0, width, height)
 
-  // 1–3: 色グレード + 微ブラー
+  // 1: 色グレード（ColorFilter を Paint に直接。ImageFilter チェーンは実機で写真が描画されないことがある）
   const colorCF = Skia.ColorFilter.MakeMatrix(UTSURUN_COLOR_MATRIX)
-  const colorIF = Skia.ImageFilter.MakeColorFilter(colorCF, null)
-  const blurIF = Skia.ImageFilter.MakeBlur(BLUR_SIGMA, BLUR_SIGMA, TileMode.Clamp, colorIF)
   const srcRect = Skia.XYWHRect(0, 0, photo.width(), photo.height())
   const dstRect = Skia.XYWHRect(0, 0, width, height)
-  const basePaint = Skia.Paint()
-  basePaint.setImageFilter(blurIF)
-  canvas.drawImageRect(photo, srcRect, dstRect, basePaint)
+  const photoPaint = Skia.Paint()
+  photoPaint.setColorFilter(colorCF)
+  photoPaint.setAntiAlias(true)
+  canvas.drawImageRect(photo, srcRect, dstRect, photoPaint)
 
-  // 4: grain（タイル repeat・overlay）
+  // 2: grain（タイル repeat・overlay）
   const grain = await loadBundledSkiaImage(GRAIN_MOD)
   const grainPaint = Skia.Paint()
   grainPaint.setShader(

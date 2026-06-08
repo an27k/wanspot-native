@@ -1,5 +1,9 @@
+import { useState } from 'react'
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { DogAlertFace } from '@/components/map/DogAlertFace'
+import { WalkAlertGauge } from '@/components/map/WalkAlertGauge'
+import { colors } from '@/constants/colors'
 import {
   WALK_ALERT_LEVELS,
   walkAlertFromTemp,
@@ -26,6 +30,7 @@ export function WalkAlertModal({
   dailyAdvice?: WalkDailyAdvice | null
   adviceLoading?: boolean
 }) {
+  const [guideExpanded, setGuideExpanded] = useState(false)
   const level: WalkAlertLevel | null = tempC == null ? null : walkAlertFromTemp(tempC)
 
   const emptyMessage = needsLocation
@@ -37,6 +42,7 @@ export function WalkAlertModal({
   const adviceText = dailyAdvice?.text ?? level?.advice ?? ''
   const adviceDate = dailyAdvice?.dateLabel
   const adviceArea = dailyAdvice?.areaLabel
+  const metaLine = [adviceDate, adviceArea].filter(Boolean).join(' · ')
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -46,46 +52,72 @@ export function WalkAlertModal({
 
           {level ? (
             <>
-              <View style={styles.hero}>
-                <DogAlertFace size={104} level={level.key} ringColor={level.color} tempC={tempC} />
-                <View style={styles.heroText}>
-                  <Text style={[styles.levelLabel, { color: level.color }]}>{level.label}</Text>
-                  {tempC != null ? <Text style={styles.temp}>現在 {tempC}℃</Text> : null}
+              <View style={styles.headerRow}>
+                <View style={styles.headerLeft}>
+                  <View style={styles.miniGauge}>
+                    <WalkAlertGauge
+                      size={34}
+                      color={colors.background}
+                      ringColor={level.color}
+                      iconColor={level.color}
+                      tempC={tempC}
+                      filled
+                    />
+                  </View>
+                  <Text style={styles.headerStatus}>
+                    <Text style={[styles.levelInline, { color: level.color }]}>{level.label}</Text>
+                    {tempC != null ? (
+                      <Text style={styles.tempInline}> · 現在{tempC}℃</Text>
+                    ) : null}
+                  </Text>
                 </View>
+                <Pressable
+                  style={styles.guideToggle}
+                  onPress={() => setGuideExpanded((v) => !v)}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: guideExpanded }}
+                >
+                  <Text style={styles.guideToggleTxt}>温度ガイド</Text>
+                  <Ionicons
+                    name={guideExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={14}
+                    color={colors.textMuted}
+                  />
+                </Pressable>
               </View>
 
+              {metaLine ? <Text style={styles.metaLine}>{metaLine}</Text> : null}
+
+              {guideExpanded ? (
+                <View style={styles.inlineGuide}>
+                  {WALK_ALERT_LEVELS.map((lv) => {
+                    const active = lv.key === level.key
+                    return (
+                      <View
+                        key={lv.key}
+                        style={[styles.scaleRow, active && styles.scaleRowOn, active && { borderColor: lv.color }]}
+                      >
+                        <DogAlertFace size={26} level={lv.key} ringColor={lv.color} />
+                        <View style={styles.scaleTextCol}>
+                          <Text style={[styles.scaleLabel, active && { color: lv.color }]}>{lv.label}</Text>
+                          <Text style={styles.scaleRange}>{lv.rangeLabel}</Text>
+                        </View>
+                        {active ? <View style={[styles.activeDot, { backgroundColor: lv.color }]} /> : null}
+                      </View>
+                    )
+                  })}
+                </View>
+              ) : null}
+
               <View style={styles.adviceBox}>
-                {adviceDate || adviceArea ? (
-                  <View style={styles.adviceMeta}>
-                    {adviceDate ? <Text style={styles.adviceDate}>{adviceDate}</Text> : <View />}
-                    {adviceArea ? (
-                      <Text style={styles.adviceArea} numberOfLines={1}>
-                        {adviceArea}
-                      </Text>
-                    ) : null}
-                  </View>
-                ) : null}
                 {adviceLoading && !dailyAdvice ? (
                   <View style={styles.adviceLoading}>
-                    <ActivityIndicator size="small" color="#888" />
+                    <ActivityIndicator size="small" color={colors.brandDark} />
                     <Text style={styles.adviceLoadingTxt}>今日の散歩アドバイスを作成中…</Text>
                   </View>
                 ) : (
                   <Text style={styles.advice}>{adviceText}</Text>
                 )}
-              </View>
-
-              <View style={styles.scale}>
-                {WALK_ALERT_LEVELS.map((lv) => {
-                  const active = lv.key === level.key
-                  return (
-                    <View key={lv.key} style={[styles.scaleRow, active && styles.scaleRowOn]}>
-                      <DogAlertFace size={30} level={lv.key} ringColor={lv.color} />
-                      <Text style={[styles.scaleLabel, active && { color: lv.color }]}>{lv.label}</Text>
-                      <Text style={styles.scaleRange}>{lv.rangeLabel}</Text>
-                    </View>
-                  )
-                })}
               </View>
             </>
           ) : (
@@ -99,7 +131,7 @@ export function WalkAlertModal({
             </>
           )}
 
-          <Pressable style={styles.closeBtn} onPress={onClose}>
+          <Pressable style={styles.closeBtn} onPress={onClose} accessibilityRole="button">
             <Text style={styles.closeTxt}>閉じる</Text>
           </Pressable>
         </Pressable>
@@ -111,78 +143,110 @@ export function WalkAlertModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(43, 42, 40, 0.42)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
   },
   card: {
     width: '100%',
-    maxWidth: 360,
-    backgroundColor: '#fff',
-    borderRadius: 22,
+    maxWidth: 380,
+    backgroundColor: colors.cardBg,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#ebebeb',
-    padding: 20,
+    borderColor: colors.border,
+    padding: 22,
     shadowColor: '#000',
-    shadowOpacity: 0.16,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
   },
-  kicker: { fontSize: 12, fontWeight: '800', color: '#aaa', letterSpacing: 1 },
-  hero: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 12 },
-  heroText: { flex: 1, gap: 2 },
-  levelLabel: { fontSize: 28, fontWeight: '900' },
-  temp: { fontSize: 15, fontWeight: '700', color: '#6b6a66' },
-  adviceBox: {
+  kicker: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  headerRow: {
     marginTop: 14,
-    backgroundColor: '#f7f6f3',
-    borderRadius: 14,
-    padding: 14,
-    gap: 8,
-    minHeight: 96,
-  },
-  adviceMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
   },
-  adviceDate: { fontSize: 12, fontWeight: '800', color: '#888', flexShrink: 0 },
-  adviceArea: { fontSize: 12, fontWeight: '700', color: '#aaa', flex: 1, textAlign: 'right' },
-  advice: { fontSize: 15, lineHeight: 24, color: '#2b2a28' },
-  adviceLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
-  adviceLoadingTxt: { fontSize: 13, color: '#888' },
-  scale: { marginTop: 16, gap: 4 },
+  headerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minWidth: 0 },
+  miniGauge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  headerStatus: { flex: 1, flexShrink: 1 },
+  levelInline: { fontSize: 17, fontWeight: '900' },
+  tempInline: { fontSize: 15, fontWeight: '700', color: colors.textLight },
+  guideToggle: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingLeft: 8 },
+  guideToggleTxt: { fontSize: 12, fontWeight: '800', color: colors.textMuted },
+  metaLine: {
+    marginTop: 6,
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  inlineGuide: { marginTop: 10, gap: 6 },
   scaleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderRadius: 12,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  scaleRowOn: { backgroundColor: '#FFFBEC' },
-  scaleLabel: { fontSize: 14, fontWeight: '800', color: '#888', width: 64 },
-  scaleRange: { fontSize: 13, color: '#aaa' },
-  noData: { marginTop: 16, fontSize: 14, color: '#888', lineHeight: 22 },
+  scaleRowOn: {
+    backgroundColor: '#FFFBF5',
+    borderColor: colors.brand,
+  },
+  scaleTextCol: { flex: 1, gap: 1 },
+  scaleLabel: { fontSize: 14, fontWeight: '800', color: colors.textLight },
+  scaleRange: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
+  activeDot: { width: 7, height: 7, borderRadius: 4 },
+  adviceBox: {
+    marginTop: 12,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    minHeight: 88,
+  },
+  advice: { fontSize: 16, lineHeight: 26, fontWeight: '600', color: colors.text },
+  adviceLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  adviceLoadingTxt: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
+  noData: { marginTop: 16, fontSize: 15, lineHeight: 24, fontWeight: '600', color: colors.textLight },
   locationBtn: {
-    marginTop: 14,
+    marginTop: 16,
     alignSelf: 'stretch',
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#FF8A1F',
+    paddingVertical: 14,
+    borderRadius: 999,
+    backgroundColor: colors.brand,
     alignItems: 'center',
   },
-  locationBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  locationBtnTxt: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
   closeBtn: {
-    marginTop: 18,
-    alignSelf: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 28,
+    marginTop: 16,
+    alignSelf: 'stretch',
+    paddingVertical: 14,
     borderRadius: 999,
     backgroundColor: '#2b2a28',
+    alignItems: 'center',
   },
-  closeTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  closeTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
 })

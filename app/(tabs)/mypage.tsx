@@ -64,31 +64,6 @@ export default function SettingsTab() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionCaption}>スポット</Text>
-          <View style={styles.card}>
-            <Pressable
-              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-              onPress={() => router.push('/likes')}
-              accessibilityLabel="いいねしたスポット"
-            >
-              <Ionicons name="heart-outline" size={20} color={SETTINGS_ICON_COLOR} />
-              <Text style={styles.rowTxt}>いいねしたスポット</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCC" />
-            </Pressable>
-            <View style={styles.rowDivider} />
-            <Pressable
-              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-              onPress={() => router.push('/checkins')}
-              accessibilityLabel="行ったスポット"
-            >
-              <Ionicons name="checkmark-circle" size={20} color={SETTINGS_ICON_COLOR} />
-              <Text style={styles.rowTxt}>行ったスポット</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCC" />
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.section}>
           <Text style={styles.sectionCaption}>サポート</Text>
           <View style={styles.card}>
             <Pressable

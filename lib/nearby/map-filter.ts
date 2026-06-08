@@ -14,7 +14,6 @@ const RESTAURANT_GOOGLE_TYPES = new Set(['restaurant', 'meal_takeaway', 'bar', '
 export type MapFilter =
   | { kind: 'genre'; genre: MapGenreKey }
   | { kind: 'like' }
-  | { kind: 'visited' }
 
 export function isSameMapFilter(a: MapFilter | null, b: MapFilter): boolean {
   if (!a) return false
@@ -25,7 +24,6 @@ export function isSameMapFilter(a: MapFilter | null, b: MapFilter): boolean {
 
 export function mapFilterLabel(f: MapFilter): string {
   if (f.kind === 'like') return 'いいね'
-  if (f.kind === 'visited') return '行った'
   const labels: Record<MapGenreKey, string> = {
     cafe: 'カフェ',
     park: '公園',

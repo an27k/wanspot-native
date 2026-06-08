@@ -6,6 +6,7 @@ import Svg, { Path, Polygon } from 'react-native-svg'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
+import { useDogProfile } from '@/components/dog/useDogProfile'
 import { HEART_ICON } from '@/lib/constants'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
@@ -74,6 +75,7 @@ export function SearchDiscoverResultCard({
   onBeforeNavigate,
 }: Props) {
   const requireAuth = useRequireAuth()
+  const { dog } = useDogProfile()
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
   const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
@@ -136,6 +138,8 @@ export function SearchDiscoverResultCard({
         rating: spot.rating,
         address: spot.address,
         reviews: [],
+        dogSize: dog?.size ?? undefined,
+        dogBreed: dog?.breed ?? undefined,
         userContext: {
           walkAreaTags: userWalkTags,
           lat: userLocation?.lat ?? null,

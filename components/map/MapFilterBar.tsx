@@ -1,13 +1,11 @@
 import type { ReactNode } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import Svg, { Path } from 'react-native-svg'
 import { GenreIcon } from '@/components/nearby/GenreIcon'
 import {
   MAP_GENRE_CHIPS,
   MAP_GENRE_COLOR,
   MAP_LIKE_COLOR,
-  MAP_VISITED_CHECK_COLOR,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
 import { isSameMapFilter, type MapFilter } from '@/lib/nearby/map-filter'
@@ -52,6 +50,12 @@ export function MapFilterBar({
         contentContainerStyle={styles.row}
         style={styles.scroll}
       >
+        {chip(
+          { kind: 'like' },
+          <HeartIcon color={MAP_LIKE_COLOR} />,
+          'いいね',
+          MAP_LIKE_COLOR
+        )}
         {MAP_GENRE_CHIPS.map((g) =>
           chip(
             { kind: 'genre', genre: g.key as MapGenreKey },
@@ -59,18 +63,6 @@ export function MapFilterBar({
             g.label,
             MAP_GENRE_COLOR[g.key]
           )
-        )}
-        {chip(
-          { kind: 'like' },
-          <HeartIcon color={MAP_LIKE_COLOR} />,
-          'いいね',
-          MAP_LIKE_COLOR
-        )}
-        {chip(
-          { kind: 'visited' },
-          <Ionicons name="checkmark-circle" size={16} color={MAP_VISITED_CHECK_COLOR} />,
-          '行った',
-          MAP_VISITED_CHECK_COLOR
         )}
       </ScrollView>
     </View>

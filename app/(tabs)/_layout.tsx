@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { GlassTabBar } from '@/components/navigation/GlassTabBar'
+import { AlbumTabIcon } from '@/components/icons/AlbumTabIcon'
 import { track } from '@/lib/analytics'
 
 export default function TabsLayout() {
@@ -51,13 +52,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="camera"
         options={{
-          title: 'カメラ',
+          title: 'アルバム',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'camera' : 'camera-outline'}
-              color={color}
-              size={focused ? 26 : 24}
-            />
+            <AlbumTabIcon color={color} size={focused ? 26 : 24} />
           ),
         }}
         listeners={{ focus: () => track('tab_viewed', { tab_name: 'camera' }) }}
