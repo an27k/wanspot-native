@@ -335,8 +335,6 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
         target={vlogStats.target}
       />
 
-      <Text style={styles.sectionTitle}>アルバム</Text>
-
       {upload ? (
         <View style={styles.uploadBar}>
           <BrandLoader size={32} />
@@ -418,7 +416,6 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: GRID_PAD, gap: 14, marginTop: 4, paddingBottom: 8 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
   addBtn: {
     marginTop: 8,
     alignItems: 'center',

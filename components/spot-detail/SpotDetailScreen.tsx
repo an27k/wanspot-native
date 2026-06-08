@@ -700,17 +700,15 @@ export default function SpotDetailScreen({
 
           <View style={styles.card}>
             {aiLoading ? (
-              <RunningDog label="AIまとめを生成中..." />
+              <RunningDog label="ワンスポAIレビューを生成中..." />
             ) : aiSummary ? (
               <>
                 <View style={styles.wanspotHeadRow}>
                   <View style={styles.wanspotHeadLeft}>
-                    <Image
-                      source={require('@/assets/images/wanspot_icon_orange.png')}
-                      style={styles.wanspotHeadIcon}
-                      contentFit="contain"
-                    />
-                    <Text style={styles.wanspotHeadLbl}>wanspot</Text>
+                    <View style={styles.wanspotHeadPaw}>
+                      <IconPaw size={11} color="#aaa" />
+                    </View>
+                    <Text style={styles.wanspotHeadLbl}>ワンスポAIレビュー</Text>
                   </View>
                   {showWanspotRating && aiSummary.wanspotRating ? (
                     <View style={styles.wanspotRatingRow}>
@@ -729,7 +727,7 @@ export default function SpotDetailScreen({
                 <Text style={styles.aiBody}>{aiSummary.summary}</Text>
               </>
             ) : (
-              <PowState label="AIまとめを生成できませんでした" />
+              <PowState label="ワンスポAIレビューを生成できませんでした" />
             )}
           </View>
         </View>
@@ -938,8 +936,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
   },
-  wanspotHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  wanspotHeadIcon: { width: 22, height: 22 },
+  wanspotHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 },
+  wanspotHeadPaw: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
   wanspotHeadLbl: { fontSize: 14, fontWeight: '800', color: '#2b2a28', letterSpacing: 0.2 },
   wanspotRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   wanspotRatingNum: { fontSize: 16, fontWeight: '800', color: '#2b2a28' },

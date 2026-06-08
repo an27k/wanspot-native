@@ -775,7 +775,7 @@ export default function SearchTab() {
                   }}
                 >
                   <IconBulb fill={discoverMode === 'articles' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>まとめ記事</Text>
+                  <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>ワンスポまとめ</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.discTab, discoverMode === 'ai_plan' && styles.discTabOn]}

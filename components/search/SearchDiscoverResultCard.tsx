@@ -212,10 +212,10 @@ export function SearchDiscoverResultCard({
             <View style={styles.aiBtnIcon}>
               <IconPaw size={11} color="#aaa" />
             </View>
-            <Text style={styles.aiBtnTxt}>AIまとめを見る</Text>
+            <Text style={styles.aiBtnTxt}>ワンスポAIレビューを見る</Text>
           </Pressable>
         ) : null}
-        {aiLoading ? <RunningDog label="AIまとめを生成中..." /> : null}
+        {aiLoading ? <RunningDog label="ワンスポAIレビューを生成中..." /> : null}
         {aiSummary && !aiLoading ? (
           <View style={styles.aiBox}>
             <View style={styles.kwRow}>

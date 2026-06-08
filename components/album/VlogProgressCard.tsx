@@ -1,8 +1,9 @@
 import { AppState, Dimensions, StyleSheet, Text, View } from 'react-native'
-import { useEffect, useState } from 'react'
-import { Ionicons } from '@expo/vector-icons'
+import { useEffect, useId, useState } from 'react'
 import { useIsFocused } from '@react-navigation/native'
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import { VlogLiquidGauge } from '@/components/album/VlogLiquidGauge'
+import { VlogClipboardIcon } from '@/components/icons/VlogClipboardIcon'
 
 type Props = {
   dogName?: string | null
@@ -15,6 +16,7 @@ type Props = {
 export function VlogProgressCard({ dogName, progress, remaining, current, target }: Props) {
   const isFocused = useIsFocused()
   const [appActive, setAppActive] = useState(AppState.currentState === 'active')
+  const gradId = useId().replace(/:/g, '')
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
@@ -31,7 +33,17 @@ export function VlogProgressCard({ dogName, progress, remaining, current, target
     <View style={styles.card}>
       <View style={styles.headRow}>
         <View style={styles.iconWrap}>
-          <Ionicons name="film" size={20} color="#fff" />
+          <Svg width={40} height={40} style={StyleSheet.absoluteFillObject}>
+            <Defs>
+              <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor="#FFC247" />
+                <Stop offset="0.5" stopColor="#F4A02A" />
+                <Stop offset="1" stopColor="#FF6F43" />
+              </LinearGradient>
+            </Defs>
+            <Rect x={0} y={0} width={40} height={40} rx={12} fill={`url(#${gradId})`} />
+          </Svg>
+          <VlogClipboardIcon size={22} color="#fff" />
         </View>
         <View style={styles.headText}>
           <Text style={styles.title}>{title}</Text>
@@ -60,9 +72,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,138,31,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   headText: { flex: 1, gap: 2 },
   title: { fontSize: 16, fontWeight: '800', color: '#fff' },

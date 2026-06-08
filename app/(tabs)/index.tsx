@@ -106,13 +106,6 @@ export default function NearbyPage() {
     return 'score'
   }, [activeFilter])
 
-  useFocusEffect(
-    useCallback(() => {
-      setActiveFilter({ kind: 'like' })
-      requestAnimationFrame(() => sheetControl.current?.open())
-    }, [])
-  )
-
   useEffect(() => {
     void (async () => {
       try {
@@ -258,12 +251,16 @@ export default function NearbyPage() {
       }
 
       const locKey = location ? geoBucket(location.lat, location.lng) : 'none'
-      const cacheKey = `nearby:user-lists:${user.id}:${locKey}`
+      const cacheKey = `nearby:user-lists:v2:${user.id}:${locKey}`
+
+      const needsPhotoRefresh = (rows: SheetSpot[]) =>
+        rows.some((s) => s.placeId.length > 0 && !s.photoRef)
 
       if (!force && isCacheFresh(cacheKey, CACHE_TTL.USER_LISTS_MS)) {
         const cached = readCache<{ liked: SheetSpot[] }>(cacheKey)
-        if (cached) {
+        if (cached && !needsPhotoRefresh(cached.liked)) {
           setLikedRows(cached.liked)
+          setUserListsLoading(false)
           return
         }
       }
@@ -304,6 +301,22 @@ export default function NearbyPage() {
     if (!location) return
     void loadUserLists(false)
   }, [activeFilter?.kind, location?.lat, location?.lng, loadUserLists])
+
+  useEffect(() => {
+    if (activeFilter?.kind !== 'like') return
+    if (userListsLoading) return
+    requestAnimationFrame(() => sheetControl.current?.open())
+  }, [activeFilter?.kind, userListsLoading, likedRows.length])
+
+  useFocusEffect(
+    useCallback(() => {
+      setActiveFilter({ kind: 'like' })
+      if (location) {
+        void loadUserLists(false)
+      }
+      requestAnimationFrame(() => sheetControl.current?.open())
+    }, [location?.lat, location?.lng, loadUserLists])
+  )
 
   const scoreSheetSpots = useMemo(() => {
     const sorted = sortPlacesByScore(nearbyPlaces, location)

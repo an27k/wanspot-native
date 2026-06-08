@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react'
 import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Path } from 'react-native-svg'
+import { AlbumCoverGradient } from '@/components/album/AlbumCoverGradient'
 import { DogPawPlaceholder } from '@/components/DogPawPlaceholder'
 import { FormField } from '@/components/onboarding/FormField'
 import {
@@ -139,14 +139,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
 
   return (
     <View style={[styles.wrap, isAlbum && styles.wrapAlbum]}>
-      {isAlbum ? (
-        <LinearGradient
-          colors={['#FFC247', '#F4A02A', '#FF6F43']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.coverBand}
-        />
-      ) : null}
+      {isAlbum ? <AlbumCoverGradient /> : null}
 
       {!editing ? (
         <Pressable
@@ -300,9 +293,6 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
 const styles = StyleSheet.create({
   wrap: { position: 'relative', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
   wrapAlbum: { paddingTop: 0, paddingHorizontal: 0, paddingBottom: 0, marginBottom: 4 },
-  coverBand: {
-    height: 128,
-  },
   editBtn: { position: 'absolute', top: 8, right: 16, zIndex: 2, padding: 4 },
   editBtnAlbum: { top: 12, right: 16 },
   col: { alignItems: 'center', width: '100%' },
