@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { colors } from '@/constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { TOKENS } from '@/constants/color-tokens'
@@ -358,7 +359,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     zIndex: 55,
-    backgroundColor: '#2b2a28',
+    backgroundColor: colors.textPrimary,
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,

@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { BrandLoader } from '@/components/common/BrandLoader'
 import { DogFaceMark } from '@/components/common/DogFaceMark'
+import { colors } from '@/constants/colors'
 
 export const RunningDog = ({ label = '読み込み中...', size = 96 }: { label?: string; size?: number }) => (
   <View style={styles.runWrap}>
@@ -34,7 +35,7 @@ const styles = StyleSheet.create({
   retryBtn: {
     backgroundColor: '#f5f5f5',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     borderRadius: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,

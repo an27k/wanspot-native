@@ -272,8 +272,8 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
               isAlbum ? (
                 <View style={styles.metaPillRow}>
                   {metaParts.map((part) => (
-                    <View key={part} style={styles.metaPill}>
-                      <Text style={styles.metaPillTxt}>{part}</Text>
+                    <View key={part} style={[styles.metaPill, styles.metaPillAlbum]}>
+                      <Text style={[styles.metaPillTxt, styles.metaPillTxtAlbum]}>{part}</Text>
                     </View>
                   ))}
                 </View>
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   photoRemoveBtn: { marginTop: 8, paddingVertical: 6 },
   photoRemoveTxt: { fontSize: 13, fontWeight: '700', color: '#E84335' },
   name: { marginTop: 12, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  nameAlbum: { marginTop: 14, fontSize: 30, fontWeight: '800', color: colors.text },
+  nameAlbum: { marginTop: 14, fontSize: 30, fontWeight: '800', color: '#fff' },
   meta: { marginTop: 6, fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
   metaPillRow: {
     flexDirection: 'row',
@@ -370,6 +370,11 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   metaPillTxt: { fontSize: 12, fontWeight: '700', color: colors.text },
+  metaPillAlbum: {
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  metaPillTxtAlbum: { color: '#fff' },
   editFields: { alignSelf: 'stretch', width: '100%', marginTop: 12 },
   textInput: {
     backgroundColor: colors.background,

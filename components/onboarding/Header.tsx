@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { Logo } from '@/components/Logo'
+import { colors } from '@/constants/colors'
 
 export function Header({ progress, total }: { progress: number; total: number }) {
   return (
@@ -28,6 +29,6 @@ const styles = StyleSheet.create({
   appName: { fontSize: 20, fontWeight: '800', color: '#1A1A1A' },
   progressDots: { flexDirection: 'row', gap: 6 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#E0E0E0' },
-  dotActive: { backgroundColor: '#FF8A1F' },
+  dotActive: { backgroundColor: colors.primary },
 })
 

@@ -8,16 +8,8 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated'
-import Svg, {
-  Circle,
-  ClipPath,
-  Defs,
-  G,
-  LinearGradient as SvgLinearGradient,
-  Path,
-  Rect,
-  Stop,
-} from 'react-native-svg'
+import { colors } from '@/constants/colors'
+import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from 'react-native-svg'
 
 const AnimatedG = Animated.createAnimatedComponent(G)
 const AnimatedRect = Animated.createAnimatedComponent(Rect)
@@ -40,7 +32,7 @@ const PAD = 3
 export function VlogLiquidGauge({ progress, animating = true, width = 248, height = 40 }: Props) {
   const uid = useId().replace(/:/g, '')
   const clipId = `liquidClip-${uid}`
-  const gradId = `liquidGrad-${uid}`
+  const fillColor = colors.primary
 
   const clamped = Math.max(0, Math.min(1, progress))
   const bodyW = width - NUB_W - 6
@@ -126,11 +118,6 @@ export function VlogLiquidGauge({ progress, animating = true, width = 248, heigh
           <ClipPath id={clipId}>
             <Rect x={innerX} y={innerY} width={innerW} height={innerH} rx={9} />
           </ClipPath>
-          <SvgLinearGradient id={gradId} x1="0" y1="1" x2="1" y2="0">
-            <Stop offset="0" stopColor="#FFC247" />
-            <Stop offset="0.5" stopColor="#F4A02A" />
-            <Stop offset="1" stopColor="#FF6F43" />
-          </SvgLinearGradient>
         </Defs>
 
         <Rect
@@ -155,10 +142,10 @@ export function VlogLiquidGauge({ progress, animating = true, width = 248, heigh
         />
 
         <G clipPath={`url(#${clipId})`}>
-          <AnimatedRect animatedProps={liquidProps} x={innerX} width={innerW} fill={`url(#${gradId})`} />
+          <AnimatedRect animatedProps={liquidProps} x={innerX} width={innerW} fill={fillColor} />
           {clamped > 0.02 ? (
             <AnimatedG animatedProps={waveGroupProps}>
-              <AnimatedPath animatedProps={wavePathProps} fill={`url(#${gradId})`} opacity={0.95} />
+              <AnimatedPath animatedProps={wavePathProps} fill={fillColor} opacity={0.95} />
             </AnimatedG>
           ) : null}
           {clamped > 0.05 ? (

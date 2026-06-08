@@ -37,8 +37,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
             {state.routes.map((route, index) => {
               const { options } = descriptors[route.key]
               const focused = state.index === index
-              const activeColor = options.tabBarActiveTintColor ?? colors.brandDark
-              const inactiveColor = options.tabBarInactiveTintColor ?? colors.textMuted
+              const activeColor = options.tabBarActiveTintColor ?? colors.primary
+              const inactiveColor = options.tabBarInactiveTintColor ?? colors.textSecondary
               const color = focused ? activeColor : inactiveColor
               const icon = options.tabBarIcon?.({
                 focused,
@@ -143,6 +143,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrapActive: {
-    backgroundColor: 'rgba(255,216,77,0.30)',
+    backgroundColor: colors.tintWeak,
   },
 })

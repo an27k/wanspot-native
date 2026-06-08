@@ -13,9 +13,10 @@ import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
+import { colors } from '@/constants/colors'
 
 const IconStar = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="#FF8A1F" stroke="#FF8A1F" strokeWidth={1.5}>
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
@@ -43,9 +44,9 @@ const IconGoogle = () => (
 )
 
 const IconMoney = ({ filled }: { filled: boolean }) => (
-  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? '#FF8A1F' : '#e8e8e8'}>
+  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? colors.primary : '#e8e8e8'}>
     <Circle cx="12" cy="12" r="10" />
-    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? '#2b2a28' : '#bbb'} fontWeight="bold">
+    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? colors.textPrimary : '#bbb'} fontWeight="bold">
       ¥
     </SvgText>
   </Svg>
@@ -143,7 +144,7 @@ export function NearbySheetSpotCard({
           accessibilityRole="button"
           accessibilityLabel="閉じる"
         >
-          <Ionicons name="close" size={18} color="#2b2a28" />
+          <Ionicons name="close" size={18} color={colors.textPrimary} />
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
@@ -224,7 +225,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     marginBottom: 12,
   },
   cardCompact: { marginBottom: 0 },
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 3,
@@ -255,8 +256,8 @@ const styles = StyleSheet.create({
   spotCat: {
     fontSize: 12,
     fontWeight: '700',
-    backgroundColor: '#FFF1E3',
-    color: '#2b2a28',
+    backgroundColor: colors.tintStrong,
+    color: colors.textPrimary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateSmall: { fontSize: 12, color: '#888' },
   distSmall: { fontSize: 12, color: '#aaa' },
-  spotName: { fontWeight: '700', fontSize: 14, color: '#2b2a28' },
+  spotName: { fontWeight: '700', fontSize: 14, color: colors.textPrimary },
   spotAddr: { fontSize: 12, color: '#aaa' },
   aiBtn: {
     marginTop: 8,
@@ -290,8 +291,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: '#FF8A1F',
-    color: '#2b2a28',
+    backgroundColor: colors.primary,
+    color: colors.textPrimary,
   },
   aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },

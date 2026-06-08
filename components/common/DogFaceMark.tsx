@@ -1,4 +1,5 @@
 import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg'
+import { colors } from '@/constants/colors'
 
 export const DOG_FACE_YELLOW = '#FDCB2E'
 export const DOG_FACE_OUTLINE = '#1A1A1A'
@@ -52,7 +53,7 @@ export function DogFaceMark({
       </G>
       {showSparkles ? (
         <G opacity={sparkleOpacity}>
-          <Circle cx={78} cy={18} r={4.5} fill="#FF8A1F" />
+          <Circle cx={78} cy={18} r={4.5} fill={colors.primary} />
           <Circle cx={88} cy={28} r={3} fill="#FFC94A" />
           <Circle cx={70} cy={10} r={2.5} fill="#FFB347" />
         </G>

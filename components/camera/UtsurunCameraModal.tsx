@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native'
+import { colors } from '@/constants/colors'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Image } from 'expo-image'
 import * as Haptics from 'expo-haptics'
@@ -224,12 +225,12 @@ const styles = StyleSheet.create({
   permWait: { flex: 1, backgroundColor: '#000' },
   permRoot: {
     flex: 1,
-    backgroundColor: '#f7f6f3',
+    backgroundColor: colors.paper,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
   },
-  permTitle: { fontSize: 17, fontWeight: '800', color: '#2b2a28' },
+  permTitle: { fontSize: 17, fontWeight: '800', color: colors.textPrimary },
   permBody: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 22 },
   flash: {
     ...StyleSheet.absoluteFillObject,
@@ -312,13 +313,13 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     flex: 1,
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
   },
   primaryBtnDisabled: { opacity: 0.55 },
-  primaryBtnTxt: { fontSize: 15, fontWeight: '800', color: '#2b2a28' },
+  primaryBtnTxt: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
   secondaryBtn: {
     flex: 1,
     borderRadius: 14,

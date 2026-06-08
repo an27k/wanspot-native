@@ -66,7 +66,7 @@ export default function ReviewAlbumTab() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.cardBg },
+  root: { flex: 1, backgroundColor: colors.paper },
   dogLoad: { paddingVertical: 32, alignItems: 'center' },
   noDog: {
     marginTop: 16,

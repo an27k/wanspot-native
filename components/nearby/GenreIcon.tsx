@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Rect } from 'react-native-svg'
 import { MAP_GENRE_CHIPS, type MapGenreKey } from '@/lib/nearby/constants'
+import { colors } from '@/constants/colors'
 
 /** 公園はベンチのオリジナル SVG、その他は Ionicons で統一表示する。 */
 export function GenreIcon({
   genre,
   size = 20,
-  color = '#2b2a28',
+  color = colors.textPrimary,
 }: {
   genre: MapGenreKey
   size?: number

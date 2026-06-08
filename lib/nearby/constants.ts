@@ -8,7 +8,7 @@ export const NEARBY_RADIUS_EXPANSION_STEPS_M = [3000, NEARBY_RADIUS_M] as const
 export const NEARBY_MIN_SPOTS_THRESHOLD = 5
 
 /** 行った（チェックイン）ピン・ソートアイコン */
-export const MAP_VISITED_CHECK_COLOR = '#34A853'
+export const MAP_VISITED_CHECK_COLOR = '#2FA56A'
 
 /** ボトムシート初期スナップ（1 = 55%・4枚目スクショ相当） */
 export const NEARBY_DEFAULT_SHEET_INDEX = 1

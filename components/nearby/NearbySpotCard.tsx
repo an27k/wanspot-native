@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
+import { colors } from '@/constants/colors'
 
 function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000
@@ -39,15 +40,15 @@ const IconHeart = ({ filled }: { filled: boolean }) => (
 )
 
 const IconStar = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="#FF8A1F" stroke="#FF8A1F" strokeWidth={1.5}>
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
 
 const IconMoney = ({ filled }: { filled: boolean }) => (
-  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? '#FF8A1F' : '#e8e8e8'}>
+  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? colors.primary : '#e8e8e8'}>
     <Circle cx="12" cy="12" r="10" />
-    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? '#2b2a28' : '#bbb'} fontWeight="bold">
+    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? colors.textPrimary : '#bbb'} fontWeight="bold">
       ¥
     </SvgText>
   </Svg>
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
   },
   cardPhoto: { height: 144, backgroundColor: '#e8e4de', position: 'relative' },
   cardImg: { width: '100%', height: '100%' },
@@ -306,8 +307,8 @@ const styles = StyleSheet.create({
   spotCat: {
     fontSize: 12,
     fontWeight: '700',
-    backgroundColor: '#FFF1E3',
-    color: '#2b2a28',
+    backgroundColor: colors.tintStrong,
+    color: colors.textPrimary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateSmall: { fontSize: 12, color: '#888' },
   distSmall: { fontSize: 12, color: '#aaa' },
-  spotName: { fontWeight: '700', fontSize: 14, color: '#2b2a28' },
+  spotName: { fontWeight: '700', fontSize: 14, color: colors.textPrimary },
   spotAddr: { fontSize: 12, color: '#aaa' },
   aiBtn: {
     marginTop: 8,
@@ -341,8 +342,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: '#FF8A1F',
-    color: '#2b2a28',
+    backgroundColor: colors.primary,
+    color: colors.textPrimary,
   },
   aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },

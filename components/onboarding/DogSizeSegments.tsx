@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { colors } from '@/constants/colors'
 
 export const DOG_SIZE_OPTIONS = [
   { key: 'XS' as const, label: 'XS', desc: '〜4kg · 〜25cm' },
@@ -47,9 +48,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  segOn: { backgroundColor: '#FF8A1F', borderColor: '#FF8A1F', minWidth: '100%' },
+  segOn: { backgroundColor: colors.primary, borderColor: colors.primary, minWidth: '100%' },
   segPressed: { opacity: 0.85 },
   segLbl: { fontSize: 15, fontWeight: '800', color: '#999' },
-  segLblOn: { color: '#2b2a28' },
-  segDesc: { marginTop: 4, fontSize: 12, fontWeight: '600', color: '#2b2a28' },
+  segLblOn: { color: colors.textPrimary },
+  segDesc: { marginTop: 4, fontSize: 12, fontWeight: '600', color: colors.textPrimary },
 })

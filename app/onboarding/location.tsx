@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
+import { colors } from '@/constants/colors'
 
 export default function OnboardingLocationPage() {
   const router = useRouter()
@@ -68,17 +69,17 @@ export default function OnboardingLocationPage() {
 
 const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#fff' },
-  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#2b2a28' },
+  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: colors.textPrimary },
   hint: { fontSize: 13, color: '#888', lineHeight: 20 },
   reassure: { fontSize: 12, color: '#aaa', lineHeight: 18 },
   next: {
     marginTop: 8,
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   nextOff: { opacity: 0.6 },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
+  nextTxt: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
 })

@@ -8,6 +8,7 @@ import {
   MAP_LIKE_COLOR,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
+import { colors } from '@/constants/colors'
 import { isSameMapFilter, type MapFilter } from '@/lib/nearby/map-filter'
 
 const HeartIcon = ({ color, size = 14 }: { color: string; size?: number }) => (
@@ -106,6 +107,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     shadowOpacity: 0.14,
   },
-  chipTxt: { fontSize: 13, fontWeight: '700', color: '#2b2a28' },
+  chipTxt: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
   chipTxtOn: { fontWeight: '800' },
 })

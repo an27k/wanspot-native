@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native'
+import { colors } from '@/constants/colors'
 
 export function MoodCard({
   title,
@@ -37,7 +38,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   moodCardSelected: {
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
   },
   moodCardPressed: {
     opacity: 0.85,

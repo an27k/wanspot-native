@@ -1,28 +1,39 @@
 import { TOKENS } from '@/constants/color-tokens'
 
 export const colors = {
-  /** ブランド主色（Snapchat の黄に相当する wanspot のオレンジ） */
-  brand: '#FF8A1F',
-  /** 主ボタン・CTA 用のややソフトなオレンジ（`brand` より明るめ・濃いテキスト前提） */
-  brandButton: '#FFC785',
-  brandDark: '#E5740A',
-  background: '#ffffff',
-  cardBg: '#f7f6f3',
-  border: '#ebebeb',
+  /** 深めコーラル（白文字OK）— ソリッド CTA・選択 */
+  primary: TOKENS.brand.primary,
+  accent: TOKENS.brand.accent,
+  gold: TOKENS.brand.gold,
+  tintWeak: TOKENS.brand.tintWeak,
+  tintStrong: TOKENS.brand.tintStrong,
+
+  /** @deprecated brand — primary へ */
+  brand: TOKENS.brand.primary,
+  /** @deprecated 選択チップ背景など */
+  brandButton: TOKENS.brand.tintStrong,
+  /** @deprecated 押下・強調 — primary の暗め */
+  brandDark: '#E85A42',
+
+  paper: TOKENS.surface.paper,
+  surface: TOKENS.surface.primary,
+  background: TOKENS.surface.paper,
+  cardBg: TOKENS.surface.paper,
+  border: TOKENS.border.default,
+
   text: TOKENS.text.primary,
-  textMuted: '#aaaaaa',
-  textLight: '#666666',
-  error: '#E84335',
-  /** ワクチン「接種済」スタンプ（文字） */
-  success: '#34A853',
-  /** ワクチン「接種済」スタンプ背景 */
-  successMutedBg: '#F0FDF4',
-  /** 愛犬写真未登録の円背景（オーナー未設定の薄グレー調に合わせる） */
+  textPrimary: TOKENS.text.primary,
+  textSecondary: TOKENS.text.secondary,
+  textMuted: TOKENS.text.secondary,
+  textLight: TOKENS.text.secondary,
+
+  error: TOKENS.semantic.error,
+  success: TOKENS.semantic.success,
+  successGreen: TOKENS.semantic.success,
+  successMutedBg: TOKENS.semantic.successMutedBg,
+
   dogPhotoPlaceholderBg: '#E8E8E8',
-  /** 愛犬写真未登録の肉球アイコン色 */
   dogPhotoPlaceholderPaw: '#A0A0A0',
-  /** ♂・オス・パパ表記用の薄い青 */
   genderMale: '#4A90D9',
-  /** ♀・メス・ママ表記用の赤 */
   genderFemale: '#E84335',
 } as const

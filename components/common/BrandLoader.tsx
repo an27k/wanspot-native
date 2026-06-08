@@ -65,8 +65,8 @@ export function BrandLoader({ size = 96 }: { size?: number }) {
       <Svg width={size} height={size} viewBox="0 0 607 607" accessibilityLabel="読み込み中">
         <Defs>
           <LinearGradient id="dg" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#FFD23F" />
-            <Stop offset="1" stopColor="#FF8A00" />
+            <Stop offset="0" stopColor="#FF5E8A" />
+            <Stop offset="1" stopColor="#FB6B53" />
           </LinearGradient>
         </Defs>
 
@@ -84,7 +84,7 @@ export function BrandLoader({ size = 96 }: { size?: number }) {
         </AnimatedG>
 
         <AnimatedG animatedProps={dogAnimatedProps}>
-          <G transform={BRAND_LOADER_TR} fill="#FFC72E">
+          <G transform={BRAND_LOADER_TR} fill="#FB6B53">
             <Path d={BRAND_LOADER_EAR_PATH} />
           </G>
           <G transform={BRAND_LOADER_TR} fill="#FFFFFF">

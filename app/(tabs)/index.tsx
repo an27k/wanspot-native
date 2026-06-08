@@ -12,6 +12,7 @@ import {
   type NearbySheetHandle,
   type NearbySheetTab,
 } from '@/components/nearby/NearbyBottomSheet'
+import { colors } from '@/constants/colors'
 import { NearbyMapView } from '@/components/map/NearbyMapView'
 import { MapFilterBar } from '@/components/map/MapFilterBar'
 import { WalkAlertFab } from '@/components/map/MapAppMenu'
@@ -513,7 +514,7 @@ export default function NearbyPage() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#f7f6f3' },
+  flex: { flex: 1, backgroundColor: colors.paper },
   mapArea: { flex: 1, zIndex: 1 },
   mapOverlays: {
     position: 'absolute',
@@ -539,15 +540,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     padding: 16,
     gap: 12,
     zIndex: 11,
   },
-  permissionBannerTxt: { fontSize: 14, color: '#2b2a28', lineHeight: 22 },
+  permissionBannerTxt: { fontSize: 14, color: colors.textPrimary, lineHeight: 22 },
   permissionBtnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   permissionBtn: {
-    backgroundColor: '#2b2a28',
+    backgroundColor: colors.textPrimary,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 999,
@@ -557,10 +558,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
   },
   permissionBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  permissionBtnGhostTxt: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
+  permissionBtnGhostTxt: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   errOverlay: {
     position: 'absolute',
     left: 16,

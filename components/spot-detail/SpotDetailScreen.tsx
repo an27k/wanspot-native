@@ -102,7 +102,7 @@ function priceLevelFromDetail(d: DetailJson | null): number | null {
 }
 
 const IconChevronLeft = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2.5} strokeLinecap="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
   </Svg>
 )
@@ -114,7 +114,7 @@ const IconHeart = ({ filled }: { filled: boolean }) => (
 )
 
 const IconStar = ({ filled, size = 28 }: { filled: boolean; size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? '#FF8A1F' : 'none'} stroke={filled ? '#FF8A1F' : '#ddd'} strokeWidth={1.5}>
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? colors.gold : 'none'} stroke={filled ? colors.gold : '#ddd'} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
@@ -135,14 +135,14 @@ function PriceLevel({ level }: { level: number | null }) {
     <View style={styles.priceLevelRow}>
       {[1, 2, 3, 4].map((i) => (
         <Svg key={i} width={px} height={px} viewBox="0 0 24 24">
-          <Circle cx={12} cy={12} r={10} fill={i <= level ? '#FF8A1F' : '#e8e8e8'} />
+          <Circle cx={12} cy={12} r={10} fill={i <= level ? colors.primary : '#e8e8e8'} />
           <SvgTextNode
             x={12}
             y={12}
             textAnchor="middle"
             alignmentBaseline="central"
             fontSize={yenFs}
-            fill={i <= level ? '#2b2a28' : '#bbb'}
+            fill={i <= level ? colors.textPrimary : '#bbb'}
             fontWeight="bold"
           >
             ¥
@@ -163,7 +163,7 @@ const IconGoogle = () => (
 )
 
 const IconShare = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2} strokeLinecap="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
     <Circle cx={18} cy={5} r={3} />
     <Circle cx={6} cy={12} r={3} />
     <Circle cx={18} cy={19} r={3} />
@@ -178,7 +178,7 @@ const IconX = () => (
 )
 
 const IconCopy = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2} strokeLinecap="round">
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
     <Path d="M9 9h10v10H9zM5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
   </Svg>
 )
@@ -635,7 +635,7 @@ export default function SpotDetailScreen({
               <Ionicons
                 name={checkedIn ? 'checkmark-circle' : 'checkmark-circle-outline'}
                 size={20}
-                color={checkedIn ? MAP_VISITED_CHECK_COLOR : '#2b2a28'}
+                color={checkedIn ? MAP_VISITED_CHECK_COLOR : colors.textPrimary}
               />
               <Text style={[styles.actLbl, checkedIn && styles.actLblCheck]}>
                 {checkedIn ? '行った ✓' : '行った'}
@@ -698,7 +698,7 @@ export default function SpotDetailScreen({
             </View>
           </View>
 
-          <View style={styles.card}>
+          <View style={[styles.card, styles.aiCard]}>
             {aiLoading ? (
               <RunningDog label="ワンスポAIレビューを生成中..." />
             ) : aiSummary ? (
@@ -762,13 +762,13 @@ export default function SpotDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f7f6f3' },
+  screen: { flex: 1, backgroundColor: colors.paper },
   toast: {
     position: 'absolute',
     left: 16,
     right: 16,
     zIndex: 55,
-    backgroundColor: '#2b2a28',
+    backgroundColor: colors.textPrimary,
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -819,15 +819,19 @@ const styles = StyleSheet.create({
   noPhotoTxt: { fontSize: 12, color: '#bbb' },
   pad: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
   },
-  catPill: { alignSelf: 'flex-start', backgroundColor: '#FFF1E3', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, marginBottom: 8 },
-  catTxt: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
-  h1: { fontSize: 20, fontWeight: '800', color: '#2b2a28', lineHeight: 26 },
+  aiCard: {
+    backgroundColor: colors.tintWeak,
+    borderColor: colors.border,
+  },
+  catPill: { alignSelf: 'flex-start', backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, marginBottom: 8 },
+  catTxt: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
+  h1: { fontSize: 20, fontWeight: '800', color: colors.textPrimary, lineHeight: 26 },
   addrRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 8 },
   addr: { flex: 1, fontSize: 12, color: '#aaa', lineHeight: 18 },
   shareSm: {
@@ -836,7 +840,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#fafafa',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -851,11 +855,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
   },
   actHalfLiked: { backgroundColor: '#FFF6E5', borderColor: '#f0e4c4' },
   actHalfCheck: { backgroundColor: '#E8F5E9', borderColor: MAP_VISITED_CHECK_COLOR },
-  actLbl: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
+  actLbl: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   actLblCheck: { color: MAP_VISITED_CHECK_COLOR },
   metaCard: {
     flexDirection: 'row',
@@ -863,7 +867,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     minHeight: 92,
     overflow: 'hidden',
   },
@@ -871,7 +875,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderRightWidth: 1,
-    borderRightColor: '#ebebeb',
+    borderRightColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -916,7 +920,7 @@ const styles = StyleSheet.create({
     minHeight: 28,
     alignSelf: 'stretch',
   },
-  rateNum: { fontSize: 20, fontWeight: '800', color: '#2b2a28' },
+  rateNum: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
   rateDash: { fontSize: 18, fontWeight: '800', color: '#ccc' },
   priceLevelRow: { flexDirection: 'row', gap: 2, alignItems: 'center', flexShrink: 0 },
   priceQ: { fontSize: 14, fontWeight: '800', color: '#ccc', lineHeight: META_STAR_PX },
@@ -926,7 +930,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#fafafa',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -938,13 +942,13 @@ const styles = StyleSheet.create({
   },
   wanspotHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 },
   wanspotHeadPaw: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
-  wanspotHeadLbl: { fontSize: 14, fontWeight: '800', color: '#2b2a28', letterSpacing: 0.2 },
+  wanspotHeadLbl: { fontSize: 14, fontWeight: '800', color: colors.primary, letterSpacing: 0.2 },
   wanspotRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  wanspotRatingNum: { fontSize: 16, fontWeight: '800', color: '#2b2a28' },
+  wanspotRatingNum: { fontSize: 16, fontWeight: '800', color: colors.gold },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  kwPill: { backgroundColor: '#FF8A1F', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  kwTxt: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
-  aiBody: { fontSize: 14, lineHeight: 22, color: '#555' },
+  kwPill: { backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  kwTxt: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  aiBody: { fontSize: 14, lineHeight: 22, color: colors.textSecondary },
   revHint: { fontSize: 14, color: '#aaa', textAlign: 'center', paddingVertical: 16 },
   revItem: { paddingBottom: 12 },
   revBorder: { borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
@@ -976,29 +980,29 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   sheetGrab: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#e8e8e8', alignSelf: 'center', marginBottom: 8 },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: '#2b2a28' },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
   sheetHint: { fontSize: 14, color: '#aaa' },
   starsRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginVertical: 8 },
   ta: {
     minHeight: 80,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ebebeb',
-    backgroundColor: '#f7f6f3',
+    borderColor: colors.border,
+    backgroundColor: colors.paper,
     padding: 12,
     fontSize: 14,
-    color: '#2b2a28',
+    color: colors.textPrimary,
     textAlignVertical: 'top',
   },
   taFoot: { fontSize: 12, color: '#aaa', lineHeight: 18 },
   primaryBtn: {
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: 'center',
     marginTop: 8,
   },
-  primaryBtnTxt: { fontSize: 16, fontWeight: '800', color: '#2b2a28' },
+  primaryBtnTxt: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
   secondaryBtn: { backgroundColor: '#f5f5f5', paddingVertical: 14, borderRadius: 16, alignItems: 'center' },
   secondaryBtnTxt: { fontSize: 14, fontWeight: '700', color: '#888' },
   shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
@@ -1008,7 +1012,7 @@ const styles = StyleSheet.create({
   shareX: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#000' },
   shareLine: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#06C755' },
   shareCopy: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#f5f5f5' },
-  shareLbl: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
+  shareLbl: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
   shareLblW: { fontSize: 12, fontWeight: '700', color: '#fff' },
   cancelShare: { marginTop: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center' },
   cancelShareTxt: { fontSize: 14, fontWeight: '700', color: '#888' },

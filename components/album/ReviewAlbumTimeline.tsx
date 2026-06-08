@@ -10,13 +10,14 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { BrandLoader } from '@/components/common/BrandLoader'
 import { VlogProgressCard } from '@/components/album/VlogProgressCard'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
-import { computeVlogProgress } from '@/lib/album/vlog-progress'
+import { computeVlogProgress, countReviewedSpots } from '@/lib/album/vlog-progress'
 import { pickMemoryMedia } from '@/lib/image-picker'
 import {
   formatVisitDate,
@@ -53,7 +54,7 @@ function StarRow({ value, onChange }: { value: number; onChange: (n: number) => 
     <View style={styles.starRow}>
       {[1, 2, 3, 4, 5].map((n) => (
         <Pressable key={n} onPress={() => onChange(n)} hitSlop={6}>
-          <Ionicons name={n <= value ? 'star' : 'star-outline'} size={22} color="#FF8A1F" />
+          <Ionicons name={n <= value ? 'star' : 'star-outline'} size={22} color={colors.gold} />
         </Pressable>
       ))}
     </View>
@@ -145,7 +146,7 @@ function PlateDetailModal({
                   key={n}
                   name={n <= plate.rating! ? 'star' : 'star-outline'}
                   size={16}
-                  color="#FF8A1F"
+                  color={colors.gold}
                 />
               ))}
             </View>
@@ -242,7 +243,7 @@ function FeedTile({
       <View style={styles.tileGrad} />
       {plate.rating ? (
         <View style={styles.tileStar}>
-          <Ionicons name="star" size={12} color="#FF8A1F" />
+          <Ionicons name="star" size={12} color={colors.gold} />
           <Text style={styles.tileStarTxt}>{plate.rating}</Text>
         </View>
       ) : null}
@@ -262,6 +263,7 @@ function FeedTile({
 }
 
 export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload }: Props) {
+  const router = useRouter()
   const [upload, setUpload] = useState<UploadState | null>(null)
   const [visitPickerOpen, setVisitPickerOpen] = useState(false)
   const [detailPlate, setDetailPlate] = useState<VisitPlate | null>(null)
@@ -301,9 +303,10 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
   )
 
   const vlogStats = useMemo(() => {
-    const memoryCount = plates.reduce((sum, p) => sum + p.memories.length, 0)
-    return computeVlogProgress(memoryCount)
+    return computeVlogProgress(countReviewedSpots(plates))
   }, [plates])
+
+  const displayDogName = dogName?.trim() || '愛犬'
 
   const openAddFlow = () => {
     if (!userId) {
@@ -317,6 +320,14 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
     setVisitPickerOpen(true)
   }
 
+  const onMainCta = () => {
+    if (plates.length === 0) {
+      router.push('/(tabs)/search')
+      return
+    }
+    openAddFlow()
+  }
+
   if (!userId) {
     return (
       <View style={styles.guest}>
@@ -327,6 +338,16 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.intro}>
+        <Text style={styles.introTitle}>
+          おでかけをレビューして、{displayDogName}のVLOGを自動で作ろう🐶
+        </Text>
+        <Text style={styles.introSub}>
+          レビューやコメント、写真・動画が多いほど、VLOGの内容も豊かになるよ
+        </Text>
+        <Text style={styles.introClosing}>誰にも公開されない、あなただけの思い出。</Text>
+      </View>
+
       <VlogProgressCard
         dogName={dogName}
         progress={vlogStats.progress}
@@ -346,14 +367,9 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
 
       {loading && plates.length === 0 ? (
         <View style={styles.loaderWrap}>
-          <RunningDog label="アルバムを読み込み中..." />
+          <RunningDog label="レビューを読み込み中..." />
         </View>
-      ) : plates.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>誰にも公開されない自分だけのアルバムを残そう!</Text>
-          <Text style={styles.emptySub}>アップロードした画像や動画が自動でVLOGになるよ🐶</Text>
-        </View>
-      ) : (
+      ) : plates.length > 0 ? (
         <View style={styles.grid}>
           {plates.map((plate) => (
             <FeedTile
@@ -364,10 +380,10 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
             />
           ))}
         </View>
-      )}
+      ) : null}
 
-      <Pressable style={styles.addBtn} onPress={openAddFlow}>
-        <Text style={styles.addBtnTxt}>思い出を追加</Text>
+      <Pressable style={styles.addBtn} onPress={onMainCta}>
+        <Text style={styles.addBtnTxt}>{plates.length === 0 ? 'スポットを探す' : '思い出を追加'}</Text>
       </Pressable>
 
       <Modal visible={visitPickerOpen} animationType="slide" onRequestClose={() => setVisitPickerOpen(false)}>
@@ -416,15 +432,34 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: GRID_PAD, gap: 14, marginTop: 4, paddingBottom: 8 },
+  intro: { gap: 8, paddingHorizontal: 2, marginBottom: 2 },
+  introTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    lineHeight: 26,
+  },
+  introSub: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    lineHeight: 22,
+  },
+  introClosing: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
   addBtn: {
     marginTop: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 999,
     paddingVertical: 16,
-    backgroundColor: '#FF8A1F',
-    shadowColor: '#FF6B5E',
-    shadowOpacity: 0.35,
+    backgroundColor: colors.primary,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.28,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
@@ -435,31 +470,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
   },
   uploadTxt: { fontSize: 13, fontWeight: '600', color: colors.text },
   loaderWrap: { paddingVertical: 40, alignItems: 'center' },
-  emptyState: { paddingVertical: 32, paddingHorizontal: 12, alignItems: 'center', gap: 10 },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  emptySub: { fontSize: 14, fontWeight: '600', color: colors.textMuted, textAlign: 'center', lineHeight: 22 },
   guest: { padding: 24, alignItems: 'center' },
-  guestTxt: { fontSize: 14, color: colors.textMuted, textAlign: 'center' },
+  guestTxt: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
   tile: {
     width: TILE_W,
     height: TILE_H,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#e8e4de',
+    backgroundColor: colors.border,
   },
   tileEmpty: {
     alignItems: 'center',
@@ -467,8 +493,8 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: colors.brand,
-    backgroundColor: '#FFF8F0',
+    borderColor: colors.primary,
+    backgroundColor: colors.tintWeak,
   },
   tileEmptyTxt: { fontSize: 13, fontWeight: '800', color: colors.brandDark },
   tileEmptySub: { fontSize: 11, fontWeight: '600', color: colors.textMuted, paddingHorizontal: 8 },
@@ -536,13 +562,13 @@ const styles = StyleSheet.create({
   starRow: { flexDirection: 'row', gap: 4 },
   saveBtn: {
     marginTop: 8,
-    backgroundColor: '#2b2a28',
+    backgroundColor: colors.textPrimary,
     borderRadius: 999,
     paddingVertical: 12,
     alignItems: 'center',
   },
   saveBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  pickerRoot: { flex: 1, backgroundColor: colors.cardBg },
+  pickerRoot: { flex: 1, backgroundColor: colors.paper },
   pickerHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -571,7 +597,7 @@ const styles = StyleSheet.create({
   },
   spotRowName: { fontSize: 15, fontWeight: '700', color: colors.text },
   spotRowCat: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
-  detailRoot: { flex: 1, backgroundColor: colors.cardBg },
+  detailRoot: { flex: 1, backgroundColor: colors.paper },
   detailHead: {
     flexDirection: 'row',
     alignItems: 'center',

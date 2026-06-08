@@ -20,8 +20,8 @@ export default function TabsLayout() {
         lazy: true,
         /** true だと非アクティブタブの更新が止まり、再フォーカス時にネイティブ広告周りが「消えた」ように見えることがある */
         freezeOnBlur: false,
-        tabBarActiveTintColor: colors.brandDark,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarShowLabel: false,
       }}
     >
@@ -52,7 +52,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="camera"
         options={{
-          title: 'アルバム',
+          title: 'レビュー',
           tabBarIcon: ({ color, focused }) => (
             <AlbumTabIcon color={color} size={focused ? 26 : 24} />
           ),

@@ -10,6 +10,7 @@ import { formatAiPlanDogDisplayName } from '@/lib/ai-plan/formatters'
 import { checkAiPlanFeasibility } from '@/lib/wanspot-api'
 import { SegmentedControl } from '@/components/common/SegmentedControl'
 import { MoodCard } from '@/components/common/MoodCard'
+import { colors } from '@/constants/colors'
 
 export type DurationPick = 'half_day' | 'full_day'
 export type TravelPick = 'walking' | 'driving'
@@ -443,11 +444,11 @@ const styles = StyleSheet.create({
     borderColor: '#F0F0F0',
     padding: 12,
   },
-  sizeRowOn: { backgroundColor: '#FF8A1F', borderColor: '#E5740A' },
+  sizeRowOn: { backgroundColor: colors.primary, borderColor: colors.brandDark },
   sizeRowTxt: { fontSize: 12, fontWeight: '700', color: '#1A1A1A' },
   ctaInline: { paddingHorizontal: 16, marginTop: 4 },
   ctaButton: {
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -456,7 +457,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
-  ctaButtonPressed: { backgroundColor: '#E5740A', transform: [{ scale: 0.98 }] },
+  ctaButtonPressed: { backgroundColor: colors.brandDark, transform: [{ scale: 0.98 }] },
   ctaText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
   ctaTextDisabled: { color: '#999' },
 })

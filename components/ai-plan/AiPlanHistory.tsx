@@ -1,6 +1,7 @@
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { TOKENS } from '@/constants/color-tokens'
 import type { AiPlanHistoryRow, AiPlanMood, AiPlanTravelMode } from '@/components/ai-plan/types'
+import { colors } from '@/constants/colors'
 
 function fmtDate(iso: string): string {
   const d = new Date(iso)
@@ -166,7 +167,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },

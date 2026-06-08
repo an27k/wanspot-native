@@ -1,6 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { GenreIcon } from '@/components/nearby/GenreIcon'
 import { MAP_GENRE_CHIPS, type MapGenreKey } from '@/lib/nearby/constants'
+import { colors } from '@/constants/colors'
 
 export function NearbyGenrePicker({
   visible,
@@ -35,7 +36,7 @@ export function NearbyGenrePicker({
                   accessibilityState={{ selected: active }}
                 >
                   <View style={[styles.iconCircle, active && styles.iconCircleOn]}>
-                    <GenreIcon genre={g.key} size={22} color={active ? '#2b2a28' : '#777'} />
+                    <GenreIcon genre={g.key} size={22} color={active ? colors.textPrimary : '#777'} />
                   </View>
                   <Text style={[styles.tileTxt, active && styles.tileTxtOn]}>{g.label}</Text>
                 </Pressable>
@@ -59,7 +60,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     padding: 16,
     shadowColor: '#000',
     shadowOpacity: 0.12,
@@ -67,19 +68,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
-  title: { fontSize: 14, fontWeight: '800', color: '#2b2a28', marginBottom: 12 },
+  title: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tile: {
     width: '31%',
     alignItems: 'center',
     paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: '#f7f6f3',
+    backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: '#efefef',
     gap: 6,
   },
-  tileOn: { backgroundColor: '#FFF1E3', borderColor: '#FF8A1F' },
+  tileOn: { backgroundColor: colors.tintStrong, borderColor: colors.primary },
   iconCircle: {
     width: 40,
     height: 40,
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconCircleOn: { backgroundColor: '#FF8A1F', borderColor: '#FF8A1F' },
+  iconCircleOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   tileTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
-  tileTxtOn: { color: '#2b2a28' },
+  tileTxtOn: { color: colors.textPrimary },
 })

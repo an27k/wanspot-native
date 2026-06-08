@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { colors } from '@/constants/colors'
 import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -186,7 +187,7 @@ export default function DogPage() {
               />
             ) : (
               <View style={styles.photoPlaceholder}>
-                <Ionicons name="camera" size={28} color="#FF8A1F" />
+                <Ionicons name="camera" size={28} color={colors.primary} />
               </View>
             )}
           </Pressable>
@@ -446,9 +447,9 @@ const styles = StyleSheet.create({
     width: 104,
     height: 104,
     borderRadius: 52,
-    backgroundColor: '#FFF1E3',
+    backgroundColor: colors.tintStrong,
     borderWidth: 2,
-    borderColor: '#FF8A1F',
+    borderColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -492,9 +493,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#F0EFEC',
   },
-  optionHalfOn: { backgroundColor: '#FF8A1F' },
+  optionHalfOn: { backgroundColor: colors.primary },
   optionHalfTxt: { fontSize: 14, fontWeight: '700', color: '#999' },
-  optionHalfTxtOn: { color: '#2b2a28' },
+  optionHalfTxtOn: { color: colors.textPrimary },
   ctaContainer: {
     position: 'absolute',
     left: 0,
@@ -507,13 +508,13 @@ const styles = StyleSheet.create({
     borderTopColor: '#EEE',
   },
   ctaButton: {
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
-  ctaButtonPressed: { backgroundColor: '#E5740A', transform: [{ scale: 0.98 }] },
+  ctaButtonPressed: { backgroundColor: colors.brandDark, transform: [{ scale: 0.98 }] },
   ctaText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
   ctaTextDisabled: { color: '#999' },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
@@ -543,7 +544,7 @@ const styles = StyleSheet.create({
   },
   breedList: { maxHeight: 320 },
   breedRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  breedRowOn: { backgroundColor: '#FFF1E3' },
+  breedRowOn: { backgroundColor: colors.tintStrong },
   breedRowTxt: { fontSize: 15, color: '#1A1A1A' },
   birthdayCard: {
     backgroundColor: '#FAFAF8',
@@ -554,10 +555,10 @@ const styles = StyleSheet.create({
   },
   modalDone: {
     marginTop: 12,
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  modalDoneTxt: { fontSize: 15, fontWeight: '800', color: '#2b2a28' },
+  modalDoneTxt: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
 })

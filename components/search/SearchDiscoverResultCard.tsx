@@ -13,6 +13,7 @@ import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
+import { colors } from '@/constants/colors'
 
 function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000
@@ -51,7 +52,7 @@ const IconGoogle = () => (
 )
 
 const IconStar = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="#FF8A1F" stroke="#FF8A1F" strokeWidth={1.5}>
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
@@ -234,7 +235,7 @@ export function SearchDiscoverResultCard({
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: '#ebebeb' },
+  card: { borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border },
   thumbWrap: { width: '100%', height: 144, backgroundColor: '#e8e4de', position: 'relative' },
   thumb: { width: '100%', height: '100%' },
   ph: { backgroundColor: '#e8e4de' },
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -258,13 +259,13 @@ const styles = StyleSheet.create({
   },
   body: { padding: 12, gap: 4 },
   row1: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  catPill: { backgroundColor: '#FFF1E3', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  catTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
+  catPill: { backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  catTxt: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dist: { fontSize: 12, color: '#aaa' },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateTxt: { fontSize: 12, color: '#888' },
-  name: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
+  name: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
   addr: { fontSize: 12, color: '#aaa' },
   aiFooter: { paddingHorizontal: 12, paddingBottom: 12, gap: 4 },
   aiBtn: {
@@ -290,8 +291,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: '#FF8A1F',
-    color: '#2b2a28',
+    backgroundColor: colors.primary,
+    color: colors.textPrimary,
   },
   aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
 })

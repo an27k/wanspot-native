@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { NearbySheetSpotCard } from '@/components/nearby/NearbySheetSpotCard'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
+import { colors } from '@/constants/colors'
 
 /** ハンドル＋ジャンル行＋× が視認できる折りたたみ高さ（タブバー上） */
 const PEEK_HEADER_H = 82
@@ -155,7 +156,7 @@ export const NearbyBottomSheet = forwardRef<NearbySheetHandle, NearbyBottomSheet
           accessibilityRole="button"
           accessibilityLabel="リストを閉じる"
         >
-          <Ionicons name="close" size={22} color="#2b2a28" />
+          <Ionicons name="close" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
     </View>
@@ -223,7 +224,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
   },
   handle: { backgroundColor: '#ccc', width: 40 },
   sheetHead: { paddingHorizontal: 16, paddingBottom: 8 },
@@ -237,7 +238,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerText: { flex: 1, gap: 2 },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: '#2b2a28' },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
   headerCount: { fontSize: 13, fontWeight: '600', color: '#888' },
   closeBtn: {
     width: 36,
@@ -249,14 +250,14 @@ const styles = StyleSheet.create({
   },
   listContent: { paddingHorizontal: 16, paddingBottom: 24 },
   empty: { alignItems: 'center', paddingVertical: 32, gap: 8, paddingHorizontal: 16 },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: '#2b2a28' },
+  emptyTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
   emptyHint: { fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 20 },
   discoverBtn: {
     marginTop: 12,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: '#2b2a28',
+    backgroundColor: colors.textPrimary,
   },
   discoverBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
 })

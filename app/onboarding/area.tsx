@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { colors } from '@/constants/colors'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
@@ -196,16 +197,16 @@ export default function WalkAreaOnboardingPage() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#fff' },
   main: { flex: 1, backgroundColor: '#fff' },
-  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#2b2a28' },
+  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: colors.textPrimary },
   hint: { fontSize: 12, color: '#888', lineHeight: 18 },
   next: {
     marginTop: 8,
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   nextOff: { opacity: 0.45 },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
+  nextTxt: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
 })

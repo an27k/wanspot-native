@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { Animated, Dimensions, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
+import { colors } from '@/constants/colors'
 
 interface PostOnboardingTutorialModalProps {
   visible: boolean
@@ -211,7 +212,7 @@ const styles = StyleSheet.create({
   },
   heartText: {
     fontSize: 28,
-    color: '#FF8A1F',
+    color: colors.primary,
   },
   heartTextSmall: {
     fontSize: 20,
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   titleHighlight: {
-    color: '#FF8A1F',
+    color: colors.primary,
     fontSize: 24,
   },
   body: {
@@ -242,14 +243,14 @@ const styles = StyleSheet.create({
   },
   ctaButton: {
     width: '100%',
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   ctaButtonPressed: {
-    backgroundColor: '#E5740A',
+    backgroundColor: colors.brandDark,
     transform: [{ scale: 0.98 }],
   },
   ctaText: {

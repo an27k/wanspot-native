@@ -3,6 +3,7 @@ import Svg, { Path, Rect } from 'react-native-svg'
 import { IconAiBadge } from '@/components/common/IconAiBadge'
 import { HEART_ICON } from '@/lib/constants'
 import { MAP_VISITED_CHECK_COLOR } from '@/lib/nearby/constants'
+import { colors } from '@/constants/colors'
 
 export type NearbySortKey = 'score' | 'like' | 'visited'
 
@@ -12,7 +13,7 @@ const IconHeart = ({ size = 20 }: { size?: number }) => (
   </Svg>
 )
 
-const IconCheck = ({ size = 20, color = '#2b2a28' }: { size?: number; color?: string }) => (
+const IconCheck = ({ size = 20, color = colors.textPrimary }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Rect x={3} y={3} width={18} height={18} rx={6} stroke={color} strokeWidth={2} />
     <Path d="M7.6 12.4l2.9 2.9 6-6.6" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     padding: 16,
     gap: 8,
     shadowColor: '#000',
@@ -93,18 +94,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
-  title: { fontSize: 14, fontWeight: '800', color: '#2b2a28', marginBottom: 4 },
+  title: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 4 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     padding: 10,
     borderRadius: 14,
-    backgroundColor: '#f7f6f3',
+    backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: '#efefef',
   },
-  rowOn: { backgroundColor: '#FFF1E3', borderColor: '#FF8A1F' },
+  rowOn: { backgroundColor: colors.tintStrong, borderColor: colors.primary },
   iconCircle: {
     width: 44,
     height: 44,
@@ -115,9 +116,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconCircleOn: { borderColor: '#FF8A1F' },
+  iconCircleOn: { borderColor: colors.primary },
   rowText: { flex: 1 },
   rowLabel: { fontSize: 14, fontWeight: '800', color: '#888' },
-  rowLabelOn: { color: '#2b2a28' },
+  rowLabelOn: { color: colors.textPrimary },
   rowSub: { fontSize: 11, color: '#aaa', marginTop: 2 },
 })

@@ -4,6 +4,7 @@ import { WalkAlertGauge } from '@/components/map/WalkAlertGauge'
 import { WalkAlertModal } from '@/components/map/WalkAlertModal'
 import { useWalkDailyAdvice } from '@/lib/weather/use-walk-daily-advice'
 import { walkAlertFromTemp } from '@/lib/weather/walk-alert'
+import { colors } from '@/constants/colors'
 
 /**
  * 地図左上のお散歩アラートボタン。
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

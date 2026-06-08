@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { colors } from '@/constants/colors'
 import * as Location from 'expo-location'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -26,7 +27,7 @@ import { wanspotFetch } from '@/lib/wanspot-api'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 
 const IconChevronLeft = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2.5} strokeLinecap="round">
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
   </Svg>
 )
@@ -150,7 +151,7 @@ export default function CheckinsPage() {
         </TouchableOpacity>
         <View style={styles.titleRow}>
           <View style={styles.titleLeft}>
-            <IconPaw size={18} color="#2b2a28" />
+            <IconPaw size={18} color={colors.textPrimary} />
             <Text style={styles.h1}>行った</Text>
             <Text style={styles.count}>（累計 {loadState === 'success' ? spots.length : '—'}）</Text>
           </View>
@@ -221,19 +222,19 @@ export default function CheckinsPage() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f7f6f3' },
+  screen: { flex: 1, backgroundColor: colors.paper },
   center: { justifyContent: 'center', alignItems: 'center' },
   header: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#ebebeb',
+    borderBottomColor: colors.border,
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
   backBtn: { marginBottom: 4, alignSelf: 'flex-start' },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   titleLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  h1: { fontSize: 20, fontWeight: '700', color: '#2b2a28' },
+  h1: { fontSize: 20, fontWeight: '700', color: colors.textPrimary },
   count: { fontSize: 14, fontWeight: '700', color: '#aaa' },
   sortPill: {
     flexDirection: 'row',
@@ -242,7 +243,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#2b2a28',
+    backgroundColor: colors.textPrimary,
   },
   sortPillTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
   errBox: {
@@ -250,18 +251,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
   },
-  errTitle: { fontSize: 14, fontWeight: '700', color: '#2b2a28', marginBottom: 8 },
+  errTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
   errBody: { fontSize: 12, color: '#888', marginBottom: 12 },
   retry: {
     width: '100%',
     paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     alignItems: 'center',
   },
-  retryTxt: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
+  retryTxt: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 48 },
   emptyTxt: { fontSize: 14, fontWeight: '700', color: '#aaa', textAlign: 'center' },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', padding: 24 },
@@ -269,10 +270,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   sortLine: { paddingVertical: 12, paddingHorizontal: 16 },
-  sortLineOn: { backgroundColor: '#FFF1E3' },
+  sortLineOn: { backgroundColor: colors.tintStrong },
   sortLineTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
 })

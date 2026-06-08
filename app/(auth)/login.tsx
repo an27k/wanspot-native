@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     ...oauthGooglePressableBase,
     marginTop: 14,
   },
-  btnGoogleTxt: { fontWeight: '800', fontSize: 16, color: '#2b2a28' },
+  btnGoogleTxt: { fontWeight: '800', fontSize: 16, color: colors.textPrimary },
   btnApple: {
     ...oauthApplePressableBase,
     marginTop: 10,

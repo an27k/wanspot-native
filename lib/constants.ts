@@ -9,11 +9,11 @@ export const HEART_ICON = {
 } as const
 
 export const COLORS = {
-  primary: '#FF8A1F',
+  primary: TOKENS.brand.primary,
   black: TOKENS.text.primary,
-  bg: '#f7f6f3',
+  bg: TOKENS.surface.paper,
   /** テキスト・バッジなどセマンティックな「いいね」表記用（ハートSVGよりやや濃くても可） */
-  like: '#C9A227',
-  border: '#ebebeb',
-  muted: '#aaa',
+  like: TOKENS.brand.gold,
+  border: TOKENS.border.default,
+  muted: TOKENS.text.secondary,
 } as const

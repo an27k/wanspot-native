@@ -233,7 +233,7 @@ export function AlbumMosaic({ userId, todayPhoto, onCaptureToday, onRetakeToday,
                   onPress={onCaptureToday}
                   disabled={saving}
                 >
-                  <Ionicons name="camera" size={28} color="#2b2a28" />
+                  <Ionicons name="camera" size={28} color={colors.textPrimary} />
                   <Text style={styles.todayCtaTxt}>今日の1枚を撮る</Text>
                 </Pressable>
               )
@@ -279,13 +279,13 @@ const styles = StyleSheet.create({
   },
   tileImg: { width: '100%', height: '100%' },
   todayCta: {
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     padding: 12,
   },
-  todayCtaTxt: { fontSize: 13, fontWeight: '800', color: '#2b2a28', textAlign: 'center' },
+  todayCtaTxt: { fontSize: 13, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
   dateLbl: {
     position: 'absolute',
     left: 6,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.85)',
   },
-  dateTxt: { fontSize: 11, fontWeight: '800', color: '#FF8A1F' },
+  dateTxt: { fontSize: 11, fontWeight: '800', color: colors.primary },
   retakeBtn: {
     position: 'absolute',
     right: 6,
@@ -313,9 +313,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
-    backgroundColor: '#FF8A1F',
+    backgroundColor: colors.primary,
   },
-  todayBadgeTxt: { fontSize: 10, fontWeight: '800', color: '#2b2a28' },
+  todayBadgeTxt: { fontSize: 10, fontWeight: '800', color: colors.textPrimary },
   emptyHint: {
     marginTop: 12,
     fontSize: 12,

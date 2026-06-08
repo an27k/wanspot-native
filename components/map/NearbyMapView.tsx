@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { colors } from '@/constants/colors'
 import ClusteredMapView from 'react-native-map-clustering'
 import { Marker, PROVIDER_GOOGLE, type Region } from 'react-native-maps'
 import { Ionicons } from '@expo/vector-icons'
@@ -54,10 +55,10 @@ function SheetVeil({ animatedIndex }: { animatedIndex: SharedValue<number> }) {
       <Svg width="100%" height="100%">
         <Defs>
           <SvgLinearGradient id="sheetVeil" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#2b2a28" stopOpacity={0} />
+            <Stop offset="0" stopColor={colors.textPrimary} stopOpacity={0} />
             <Stop offset="0.45" stopColor="#3a3936" stopOpacity={0.1} />
-            <Stop offset="0.78" stopColor="#f7f6f3" stopOpacity={0.55} />
-            <Stop offset="1" stopColor="#f7f6f3" stopOpacity={0.92} />
+            <Stop offset="0.78" stopColor={colors.paper} stopOpacity={0.55} />
+            <Stop offset="1" stopColor={colors.paper} stopOpacity={0.92} />
           </SvgLinearGradient>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#sheetVeil)" />
@@ -95,7 +96,7 @@ function ClusterBadge({ count, size, gradId }: { count: number; size: number; gr
             <Stop offset="68%" stopColor="#FFFFFF" stopOpacity={0.32} />
             <Stop offset="84%" stopColor="#FFF5E8" stopOpacity={0.14} />
             <Stop offset="96%" stopColor="#FFE0B8" stopOpacity={0.05} />
-            <Stop offset="100%" stopColor="#FF8A1F" stopOpacity={0} />
+            <Stop offset="100%" stopColor={colors.primary} stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Circle cx={cx} cy={cx} r={size / 2 + feather - 1} fill={`url(#${badgeGradId})`} />
@@ -115,7 +116,7 @@ function ClusterBlob({ count, gradId }: { count: number; gradId: string }) {
           <RadialGradient id={gradId} cx="50%" cy="50%" r="50%">
             <Stop offset="0%" stopColor="#FF9E2C" stopOpacity={0.28} />
             <Stop offset="40%" stopColor="#FFC06A" stopOpacity={0.14} />
-            <Stop offset="100%" stopColor="#FF8A1F" stopOpacity={0} />
+            <Stop offset="100%" stopColor={colors.primary} stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Circle cx={glow / 2} cy={glow / 2} r={glow / 2} fill={`url(#${gradId})`} />
@@ -287,8 +288,8 @@ export function NearbyMapView({
         rotateEnabled={false}
         pitchEnabled={false}
         loadingEnabled
-        clusterColor="#FF8A1F"
-        clusterTextColor="#2b2a28"
+        clusterColor={colors.primary}
+        clusterTextColor={colors.textPrimary}
         radius={48}
         maxZoom={18}
         minZoom={1}
@@ -365,7 +366,7 @@ export function NearbyMapView({
           accessibilityRole="button"
           accessibilityLabel="現在地に戻る"
         >
-          <Ionicons name="navigate" size={22} color={userLocation ? '#2b2a28' : '#aaa'} />
+          <Ionicons name="navigate" size={22} color={userLocation ? colors.textPrimary : '#aaa'} />
         </TouchableOpacity>
       ) : null}
     </View>
@@ -378,7 +379,7 @@ const styles = StyleSheet.create({
   clusterTxt: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#E5740A',
+    color: colors.brandDark,
   },
   recenterBtn: {
     position: 'absolute',
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -422,11 +423,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     padding: 16,
     gap: 8,
   },
-  configTitle: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
+  configTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   configHint: { fontSize: 12, color: '#888', lineHeight: 18 },
   mapHint: {
     position: 'absolute',
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     zIndex: 6,
   },
   mapHintTxt: { fontSize: 11, color: '#888', lineHeight: 16, textAlign: 'center' },
