@@ -1,14 +1,19 @@
-// wanspot カラートークン v7 — 暖色グラデ・ブランド刷新（native / web 記事で共有）
+// wanspot カラートークン v8 — restraint（液体・アバターリングのみグラデ）
 export const TOKENS = {
   gradient: {
+    /** 液体・アバターリングのみ */
     sunset: ['#FF5E8A', '#FF7E5F', '#FEB47B'] as const,
   },
   brand: {
     primary: '#FB6B53',
+    /** pill 等の濃いコーラル文字 */
+    pillText: '#B23A28',
     accent: '#FF5E8A',
     gold: '#FFB347',
     tintWeak: '#FFF0EC',
     tintStrong: '#FFE3DA',
+    /** VLOG カード（ダークの器） */
+    vessel: '#1E1B19',
     /** @deprecated 旧 yellow — primary へ */
     yellow: '#FB6B53',
     /** @deprecated 旧 yellowLight — tintWeak へ */

@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react'
 import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
-import { AlbumCoverGradient } from '@/components/album/AlbumCoverGradient'
+import { AvatarSunsetRing } from '@/components/dog/AvatarSunsetRing'
 import { DogPawPlaceholder } from '@/components/DogPawPlaceholder'
 import { FormField } from '@/components/onboarding/FormField'
 import {
@@ -36,6 +37,7 @@ type Props = {
 
 /** 愛犬アイデンティティ表示＋編集（ワクチンは含まない。旧マイページから移設） */
 export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default' }: Props) {
+  const insets = useSafeAreaInsets()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editName, setEditName] = useState('')
@@ -136,33 +138,43 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
   if (age) metaParts.push(age)
 
   const isAlbum = variant === 'album'
+  const avatarSize = isAlbum ? 112 : 88
+
+  const avatarInner = (
+    <>
+      {photoRemoved && !photoUri ? (
+        <DogPawPlaceholder size={40} fill={colors.dogPhotoPlaceholderPaw} />
+      ) : photoPreview ?? dog.photo_url ? (
+        <Image source={{ uri: photoPreview ?? dog.photo_url! }} style={styles.avatarImg} resizeMode="cover" />
+      ) : (
+        <DogPawPlaceholder size={40} fill={colors.dogPhotoPlaceholderPaw} />
+      )}
+    </>
+  )
 
   return (
     <View style={[styles.wrap, isAlbum && styles.wrapAlbum]}>
-      {isAlbum ? <AlbumCoverGradient /> : null}
-
       {!editing ? (
         <Pressable
-          style={[styles.editBtn, isAlbum && styles.editBtnAlbum]}
+          style={[
+            styles.editBtn,
+            isAlbum && [styles.editBtnAlbum, { top: insets.top + 8 }],
+          ]}
           onPress={startEdit}
-          hitSlop={8}
+          hitSlop={12}
           accessibilityLabel="愛犬プロフィールを編集"
         >
-          <IconEditSmall color={isAlbum ? '#fff' : colors.textMuted} />
+          <IconEditSmall color={isAlbum ? colors.textSecondary : colors.textMuted} />
         </Pressable>
       ) : null}
 
       <View style={[styles.col, isAlbum && styles.colAlbum]}>
         <View style={[styles.avatarWrap, editing && styles.avatarWrapEditing, isAlbum && styles.avatarWrapAlbum]}>
-          <View style={[styles.avatar, isAlbum && styles.avatarAlbum]}>
-            {photoRemoved && !photoUri ? (
-              <DogPawPlaceholder size={40} fill={colors.dogPhotoPlaceholderPaw} />
-            ) : photoPreview ?? dog.photo_url ? (
-              <Image source={{ uri: photoPreview ?? dog.photo_url! }} style={styles.avatarImg} resizeMode="cover" />
-            ) : (
-              <DogPawPlaceholder size={40} fill={colors.dogPhotoPlaceholderPaw} />
-            )}
-          </View>
+          {isAlbum ? (
+            <AvatarSunsetRing size={avatarSize}>{avatarInner}</AvatarSunsetRing>
+          ) : (
+            <View style={styles.avatar}>{avatarInner}</View>
+          )}
           {editing ? (
             <Pressable
               style={styles.camFab}
@@ -292,18 +304,24 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
 
 const styles = StyleSheet.create({
   wrap: { position: 'relative', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
-  wrapAlbum: { paddingTop: 0, paddingHorizontal: 0, paddingBottom: 0, marginBottom: 4 },
-  editBtn: { position: 'absolute', top: 8, right: 16, zIndex: 2, padding: 4 },
-  editBtnAlbum: { top: 12, right: 16 },
+  wrapAlbum: {
+    paddingTop: 0,
+    paddingHorizontal: 16,
+    paddingBottom: 0,
+    marginBottom: 4,
+    backgroundColor: colors.paper,
+  },
+  editBtn: { position: 'absolute', top: 8, right: 16, zIndex: 10, padding: 8 },
+  editBtnAlbum: { right: 16 },
   col: { alignItems: 'center', width: '100%' },
-  colAlbum: { marginTop: -56, paddingHorizontal: 16 },
+  colAlbum: { marginTop: 16, paddingHorizontal: 0 },
   avatarWrap: {
     position: 'relative',
     width: 88,
     height: 88,
     overflow: 'visible',
   },
-  avatarWrapAlbum: { width: 112, height: 112 },
+  avatarWrapAlbum: { width: 124, height: 124 },
   /** 編集時：カメラFABがはみ出す分の余白（旧マイページと同系） */
   avatarWrapEditing: { marginBottom: 12, width: 96, height: 96 },
   avatar: {
@@ -352,7 +370,7 @@ const styles = StyleSheet.create({
   photoRemoveBtn: { marginTop: 8, paddingVertical: 6 },
   photoRemoveTxt: { fontSize: 13, fontWeight: '700', color: '#E84335' },
   name: { marginTop: 12, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  nameAlbum: { marginTop: 14, fontSize: 30, fontWeight: '800', color: '#fff' },
+  nameAlbum: { marginTop: 14, fontSize: 28, fontWeight: '800', color: colors.textPrimary },
   meta: { marginTop: 6, fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
   metaPillRow: {
     flexDirection: 'row',
@@ -371,10 +389,10 @@ const styles = StyleSheet.create({
   },
   metaPillTxt: { fontSize: 12, fontWeight: '700', color: colors.text },
   metaPillAlbum: {
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    borderColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: colors.tintWeak,
+    borderColor: colors.border,
   },
-  metaPillTxtAlbum: { color: '#fff' },
+  metaPillTxtAlbum: { color: colors.pillText },
   editFields: { alignSelf: 'stretch', width: '100%', marginTop: 12 },
   textInput: {
     backgroundColor: colors.background,

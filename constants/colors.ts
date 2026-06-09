@@ -3,6 +3,8 @@ import { TOKENS } from '@/constants/color-tokens'
 export const colors = {
   /** 深めコーラル（白文字OK）— ソリッド CTA・選択 */
   primary: TOKENS.brand.primary,
+  pillText: TOKENS.brand.pillText,
+  vessel: TOKENS.brand.vessel,
   accent: TOKENS.brand.accent,
   gold: TOKENS.brand.gold,
   tintWeak: TOKENS.brand.tintWeak,

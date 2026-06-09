@@ -1,13 +1,16 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ReviewAlbumTimeline } from '@/components/album/ReviewAlbumTimeline'
+import { ReviewTutorialModal } from '@/components/album/ReviewTutorialModal'
 import { DogIdentityProfile } from '@/components/dog/DogIdentityProfile'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { track } from '@/lib/analytics'
+import { hasSeenReviewTutorial } from '@/lib/review/tutorial-storage'
 import { fetchVisitPlates, type VisitPlate } from '@/lib/visits-memories'
 
 /** アルバムタブ（route: camera） */
@@ -16,6 +19,8 @@ export default function ReviewAlbumTab() {
   const { dog, setDog, userId, loading: dogLoading } = useDogProfile()
   const [plates, setPlates] = useState<VisitPlate[]>([])
   const [albumLoading, setAlbumLoading] = useState(true)
+  const [tutorialOpen, setTutorialOpen] = useState(false)
+  const [tutorialChecked, setTutorialChecked] = useState(false)
 
   const loadAlbum = useCallback(async () => {
     if (!userId) {
@@ -34,6 +39,23 @@ export default function ReviewAlbumTab() {
       void loadAlbum()
     }, [loadAlbum])
   )
+
+  useEffect(() => {
+    if (tutorialChecked) return
+    let cancelled = false
+    void (async () => {
+      const seen = await hasSeenReviewTutorial()
+      if (cancelled) return
+      setTutorialChecked(true)
+      if (!seen) {
+        track('tutorial_view')
+        setTutorialOpen(true)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [tutorialChecked])
 
   const padBottom = insets.bottom + TAB_BAR_HEIGHT + 24
 
@@ -59,8 +81,10 @@ export default function ReviewAlbumTab() {
           plates={plates}
           loading={albumLoading}
           onReload={() => void loadAlbum()}
+          onOpenTutorial={() => setTutorialOpen(true)}
         />
       </ScrollView>
+      <ReviewTutorialModal visible={tutorialOpen} onClose={() => setTutorialOpen(false)} />
     </View>
   )
 }

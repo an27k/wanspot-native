@@ -41,6 +41,7 @@ type Props = {
   plates: VisitPlate[]
   loading: boolean
   onReload: () => void
+  onOpenTutorial?: () => void
 }
 
 type UploadState = {
@@ -262,7 +263,7 @@ function FeedTile({
   )
 }
 
-export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload }: Props) {
+export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload, onOpenTutorial }: Props) {
   const router = useRouter()
   const [upload, setUpload] = useState<UploadState | null>(null)
   const [visitPickerOpen, setVisitPickerOpen] = useState(false)
@@ -350,10 +351,9 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
 
       <VlogProgressCard
         dogName={dogName}
-        progress={vlogStats.progress}
-        remaining={vlogStats.remaining}
-        current={vlogStats.current}
-        target={vlogStats.target}
+        count={vlogStats.current}
+        max={vlogStats.target}
+        onHelpPress={onOpenTutorial}
       />
 
       {upload ? (
@@ -458,11 +458,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 16,
     backgroundColor: colors.primary,
-    shadowColor: colors.accent,
-    shadowOpacity: 0.28,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   addBtnTxt: { fontSize: 16, fontWeight: '800', color: '#fff' },
   uploadBar: {

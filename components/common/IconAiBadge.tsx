@@ -1,18 +1,10 @@
 import Svg, {
   Circle,
-  Defs,
   G,
-  LinearGradient,
   Path,
-  Stop,
   Text as SvgText,
 } from 'react-native-svg'
-
-const AI_GRADIENT = {
-  top: '#8B5CF6',
-  mid: '#5B8DEF',
-  bottom: '#38BDF8',
-} as const
+import { colors } from '@/constants/colors'
 
 /** 4点スパークル（円の切れ目右上） */
 function SparklePath({ fill, scale = 1, x = 0, y = 0 }: { fill: string; scale?: number; x?: number; y?: number }) {
@@ -28,7 +20,7 @@ function SparklePath({ fill, scale = 1, x = 0, y = 0 }: { fill: string; scale?: 
 
 /**
  * 現在地タブ「AIおすすめ」用アイコン。
- * 紫→青グラデの「AI」＋欠けた円＋右上スパークル。
+ * restraint v8: 単色 primary ＋欠けた円＋右上スパークル。
  */
 export function IconAiBadge({
   size = 22,
@@ -38,9 +30,8 @@ export function IconAiBadge({
   /** 未選択時など単色表示 */
   monochrome?: string
 }) {
-  const gradId = `aiBadgeGrad-${size}`
-  const fill = monochrome ?? `url(#${gradId})`
-  const stroke = monochrome ?? `url(#${gradId})`
+  const fill = monochrome ?? colors.primary
+  const stroke = monochrome ?? colors.primary
   const vb = 48
   const cx = 24
   const cy = 24
@@ -53,16 +44,6 @@ export function IconAiBadge({
 
   return (
     <Svg width={size} height={size} viewBox={`0 0 ${vb} ${vb}`} accessibilityLabel="AIおすすめ">
-      {!monochrome ? (
-        <Defs>
-          <LinearGradient id={gradId} x1="24" y1="4" x2="24" y2="44" gradientUnits="userSpaceOnUse">
-            <Stop offset="0" stopColor={AI_GRADIENT.top} />
-            <Stop offset="0.55" stopColor={AI_GRADIENT.mid} />
-            <Stop offset="1" stopColor={AI_GRADIENT.bottom} />
-          </LinearGradient>
-        </Defs>
-      ) : null}
-
       <Circle
         cx={cx}
         cy={cy}

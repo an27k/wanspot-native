@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { View } from 'react-native'
-import Svg, { Circle, Defs, G, LinearGradient, Path, Stop } from 'react-native-svg'
+import Svg, { Circle, G, Path } from 'react-native-svg'
+import { colors } from '@/constants/colors'
 import Animated, {
   Easing,
   cancelAnimation,
@@ -63,13 +64,6 @@ export function BrandLoader({ size = 96 }: { size?: number }) {
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} viewBox="0 0 607 607" accessibilityLabel="読み込み中">
-        <Defs>
-          <LinearGradient id="dg" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#FF5E8A" />
-            <Stop offset="1" stopColor="#FB6B53" />
-          </LinearGradient>
-        </Defs>
-
         <AnimatedG animatedProps={dotsAnimatedProps}>
           {BRAND_LOADER_DOTS.map((dot) => (
             <Circle
@@ -77,7 +71,7 @@ export function BrandLoader({ size = 96 }: { size?: number }) {
               cx={dot.cx}
               cy={dot.cy}
               r={dot.r}
-              fill="url(#dg)"
+              fill={colors.primary}
               opacity={dot.opacity}
             />
           ))}

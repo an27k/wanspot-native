@@ -63,7 +63,7 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>ワンちゃんの写真を撮影するため、カメラへのアクセスを許可してください。</string>
+	<string>ワンちゃんやプロフィールの写真を撮影するため、カメラへのアクセスを許可してください。</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Allow $(PRODUCT_NAME) to access your location</string>
 	<key>NSLocationAlwaysUsageDescription</key>

@@ -30,8 +30,8 @@ export const PowState = ({
 
 const styles = StyleSheet.create({
   runWrap: { alignItems: 'center', gap: 12, paddingVertical: 32 },
-  runLabel: { fontSize: 12, color: '#aaa' },
-  powLabel: { fontSize: 14, color: '#aaa' },
+  runLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  powLabel: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   retryBtn: {
     backgroundColor: '#f5f5f5',
     borderWidth: 1,
@@ -40,5 +40,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
-  retryTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
+  retryTxt: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
 })
