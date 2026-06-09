@@ -129,13 +129,13 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
   }
 
   const age = dog.birthday?.trim() ? calcDogAge(dog.birthday) : null
-  const hasSym = dog.gender === 'male' || dog.gender === 'female'
 
   const metaParts: string[] = []
   if (dog.breed?.trim()) metaParts.push(dog.breed.trim())
   if (dog.size) metaParts.push(DOG_SIZE_LABEL[dog.size])
-  if (hasSym) metaParts.push(dog.gender === 'male' ? 'オス' : 'メス')
   if (age) metaParts.push(age)
+
+  const genderSymbol = dog.gender === 'male' ? '♂' : dog.gender === 'female' ? '♀' : null
 
   const isAlbum = variant === 'album'
   const avatarSize = isAlbum ? 112 : 88
@@ -168,7 +168,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
         </Pressable>
       ) : null}
 
-      <View style={[styles.col, isAlbum && styles.colAlbum]}>
+      <View style={[styles.col, isAlbum && [styles.colAlbum, { marginTop: insets.top + 8 }]]}>
         <View style={[styles.avatarWrap, editing && styles.avatarWrapEditing, isAlbum && styles.avatarWrapAlbum]}>
           {isAlbum ? (
             <AvatarSunsetRing size={avatarSize}>{avatarInner}</AvatarSunsetRing>
@@ -279,7 +279,20 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
           </View>
         ) : (
           <>
-            <Text style={[styles.name, isAlbum && styles.nameAlbum]}>{dog.name}</Text>
+            <View style={[styles.nameRow, isAlbum && styles.nameRowAlbum]}>
+              <Text style={[styles.name, isAlbum && styles.nameAlbum]}>{dog.name}</Text>
+              {genderSymbol ? (
+                <Text
+                  style={[
+                    styles.nameGender,
+                    isAlbum && styles.nameGenderAlbum,
+                    dog.gender === 'male' ? styles.symMale : styles.symFemale,
+                  ]}
+                >
+                  {genderSymbol}
+                </Text>
+              ) : null}
+            </View>
             {metaParts.length > 0 ? (
               isAlbum ? (
                 <View style={styles.metaPillRow}>
@@ -314,7 +327,7 @@ const styles = StyleSheet.create({
   editBtn: { position: 'absolute', top: 8, right: 16, zIndex: 10, padding: 8 },
   editBtnAlbum: { right: 16 },
   col: { alignItems: 'center', width: '100%' },
-  colAlbum: { marginTop: 16, paddingHorizontal: 0 },
+  colAlbum: { paddingHorizontal: 0 },
   avatarWrap: {
     position: 'relative',
     width: 88,
@@ -369,8 +382,18 @@ const styles = StyleSheet.create({
   },
   photoRemoveBtn: { marginTop: 8, paddingVertical: 6 },
   photoRemoveTxt: { fontSize: 13, fontWeight: '700', color: '#E84335' },
-  name: { marginTop: 12, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  nameAlbum: { marginTop: 14, fontSize: 28, fontWeight: '800', color: colors.textPrimary },
+  name: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  nameAlbum: { fontSize: 28, fontWeight: '800', color: colors.textPrimary },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    gap: 6,
+  },
+  nameRowAlbum: { marginTop: 14 },
+  nameGender: { fontSize: 20, fontWeight: '800', lineHeight: 24 },
+  nameGenderAlbum: { fontSize: 26, lineHeight: 30 },
   meta: { marginTop: 6, fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
   metaPillRow: {
     flexDirection: 'row',

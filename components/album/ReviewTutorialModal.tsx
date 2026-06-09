@@ -28,7 +28,7 @@ const STEPS = [
   {
     icon: 'star' as const,
     title: 'レビュー',
-    body: 'コメントや写真・動画を残す',
+    body: '評価やコメント、写真・動画でVLOGの内容が変わる',
   },
   {
     icon: 'film' as const,

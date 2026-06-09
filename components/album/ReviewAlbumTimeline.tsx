@@ -339,22 +339,19 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.intro}>
-        <Text style={styles.introTitle}>
-          おでかけをレビューして、{displayDogName}のVLOGを自動で作ろう🐶
-        </Text>
-        <Text style={styles.introSub}>
-          レビューやコメント、写真・動画が多いほど、VLOGの内容も豊かになるよ
-        </Text>
-        <Text style={styles.introClosing}>誰にも公開されない、あなただけの思い出。</Text>
-      </View>
-
       <VlogProgressCard
         dogName={dogName}
         count={vlogStats.current}
         max={vlogStats.target}
         onHelpPress={onOpenTutorial}
       />
+
+      <View style={styles.intro}>
+        <Text style={styles.introTitle}>{displayDogName}のVLOGを作ろう！</Text>
+        <Text style={styles.introSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+          お出かけしたスポットを記録すると自動で動画編集してお届け🐾
+        </Text>
+      </View>
 
       {upload ? (
         <View style={styles.uploadBar}>
@@ -432,7 +429,7 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: GRID_PAD, gap: 14, marginTop: 4, paddingBottom: 8 },
-  intro: { gap: 8, paddingHorizontal: 2, marginBottom: 2 },
+  intro: { gap: 6, paddingHorizontal: 2, marginTop: 2 },
   introTitle: {
     fontSize: 17,
     fontWeight: '800',
@@ -440,16 +437,10 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   introSub: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
-  introClosing: {
     fontSize: 13,
     fontWeight: '600',
     color: colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   addBtn: {
     marginTop: 8,

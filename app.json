@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/wanspot_icon_orange.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFC830"
+      "backgroundColor": "#FF7E5F"
     },
     "ios": {
       "supportsTablet": false,
@@ -48,7 +48,7 @@
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/wanspot_icon_orange.png",
-        "backgroundColor": "#FFC830"
+        "backgroundColor": "#FF7E5F"
       },
       "predictiveBackGestureEnabled": false
     },
