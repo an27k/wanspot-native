@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Modal,
   Pressable,
@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { TutorialSampleVideo, TutorialVideoFallback } from '@/components/album/TutorialSampleVideo'
 import { colors } from '@/constants/colors'
 import { track } from '@/lib/analytics'
 import { markReviewTutorialSeen } from '@/lib/review/tutorial-storage'
@@ -41,6 +42,17 @@ export function ReviewTutorialModal({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const [page, setPage] = useState(0)
+  const [videoFailed, setVideoFailed] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
+
+  useEffect(() => {
+    if (!visible || page !== 0) {
+      setVideoReady(false)
+      return
+    }
+    const t = setTimeout(() => setVideoReady(true), 350)
+    return () => clearTimeout(t)
+  }, [page, visible])
 
   const finish = useCallback(
     async (event: 'tutorial_skip' | 'tutorial_complete') => {
@@ -77,11 +89,11 @@ export function ReviewTutorialModal({ visible, onClose }: Props) {
           {page === 0 ? (
             <>
               <View style={styles.videoSlot}>
-                <View style={styles.videoFallback}>
-                  <Ionicons name="play-circle" size={56} color="#fff" />
-                  <Text style={styles.videoFallbackTxt}>サンプルVLOGプレビュー</Text>
-                  <Text style={styles.videoHint}>assets/review/sample-vlog.mp4 を差し替え</Text>
-                </View>
+                {videoFailed || !videoReady ? (
+                  <TutorialVideoFallback />
+                ) : (
+                  <TutorialSampleVideo onFailed={() => setVideoFailed(true)} />
+                )}
               </View>
               <Text style={styles.lead}>5スポットのレビューで、こんなVLOGが手に入る</Text>
             </>
@@ -149,9 +161,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.vessel,
   },
-  videoFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16 },
-  videoFallbackTxt: { fontSize: 15, fontWeight: '800', color: '#fff', textAlign: 'center' },
-  videoHint: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.55)', textAlign: 'center' },
   lead: {
     fontSize: 17,
     fontWeight: '800',

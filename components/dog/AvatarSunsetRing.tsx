@@ -9,17 +9,28 @@ const GAP = 3
 type Props = {
   size: number
   children: ReactNode
+  /** 5/5 アンロック時 — リングをやや明るく */
+  energized?: boolean
 }
 
 /** サンセットの細いリング（グラデ使用箇所の1つ） */
-export function AvatarSunsetRing({ size, children }: Props) {
+export function AvatarSunsetRing({ size, children, energized }: Props) {
   const outer = size + (RING + GAP) * 2
   return (
     <LinearGradient
       colors={[...GRADIENT_SUNSET]}
       start={GRADIENT_SUNSET_POINTS.start}
       end={GRADIENT_SUNSET_POINTS.end}
-      style={[styles.ring, { width: outer, height: outer, borderRadius: outer / 2, padding: RING }]}
+      style={[
+        styles.ring,
+        {
+          width: outer,
+          height: outer,
+          borderRadius: outer / 2,
+          padding: RING,
+          opacity: energized ? 1 : 0.92,
+        },
+      ]}
     >
       <View style={[styles.gap, { borderRadius: (outer - RING * 2) / 2, padding: GAP }]}>
         <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }}>{children}</View>

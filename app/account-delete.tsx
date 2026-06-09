@@ -12,7 +12,6 @@ import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '@/context/AuthContext'
-import { signOutGoogle } from '@/lib/google-signin'
 import { supabase } from '@/lib/supabase'
 import { wanspotFetch } from '@/lib/wanspot-api'
 
@@ -32,11 +31,6 @@ export default function AccountDeleteScreen() {
       await supabase.auth.signOut({ scope: 'local' })
     } catch {
       /* サーバー側で既に削除済みでもローカルセッションは消す */
-    }
-    try {
-      await signOutGoogle()
-    } catch {
-      /* ignore */
     }
     try {
       await signOut()

@@ -30,21 +30,27 @@ const FRONT_AMP = 5.5
 const FRONT_FREQ = 1.0
 const BACK_AMP = 4.5
 const BACK_FREQ = 1.4
+const WEAVE_AMP = 2.2
+const WEAVE_FREQ = 2.8
 const FLOOR = 0.18
 const FILL_RANGE = 0.82
 const BUBBLE_COUNT = 6
+const SPARKLE_COUNT = 10
+
+export type VlogGaugeMode = 'collecting' | 'nearUnlock' | 'unlocked' | 'generating'
 
 type Props = {
-  count: number
+  fillRatio: number
+  displayCount: number
   max?: number
   dogName?: string | null
   animating?: boolean
+  gaugeMode?: VlogGaugeMode
   onHelpPress?: () => void
 }
 
-function visualFill(count: number, max: number) {
-  const ratio = Math.max(0, Math.min(count, max)) / Math.max(1, max)
-  return FLOOR + FILL_RANGE * ratio
+function clampFill(ratio: number) {
+  return FLOOR + FILL_RANGE * Math.max(0, Math.min(1, ratio))
 }
 
 function buildWavePath(
@@ -54,7 +60,8 @@ function buildWavePath(
   phase: number,
   amp: number,
   freq: number,
-  ampMul: number
+  ampMul: number,
+  weave = 0
 ) {
   'worklet'
   const path = Skia.Path.Make()
@@ -63,7 +70,10 @@ function buildWavePath(
   path.moveTo(0, height)
   for (let i = 0; i <= segments; i++) {
     const x = (i / segments) * width
-    const y = waterY + Math.sin((x / width) * Math.PI * 2 * freq + phase) * effectiveAmp
+    const base = Math.sin((x / width) * Math.PI * 2 * freq + phase) * effectiveAmp
+    const weaveLayer =
+      weave > 0 ? Math.sin((x / width) * Math.PI * 2 * WEAVE_FREQ + phase * 1.6) * WEAVE_AMP * weave : 0
+    const y = waterY + base + weaveLayer
     if (i === 0) path.lineTo(0, y)
     else path.lineTo(x, y)
   }
@@ -78,7 +88,8 @@ function buildMeniscusPath(
   phase: number,
   amp: number,
   freq: number,
-  ampMul: number
+  ampMul: number,
+  weave = 0
 ) {
   'worklet'
   const path = Skia.Path.Make()
@@ -86,34 +97,14 @@ function buildMeniscusPath(
   const effectiveAmp = amp * ampMul
   for (let i = 0; i <= segments; i++) {
     const x = (i / segments) * width
-    const y = waterY + Math.sin((x / width) * Math.PI * 2 * freq + phase) * effectiveAmp
+    const base = Math.sin((x / width) * Math.PI * 2 * freq + phase) * effectiveAmp
+    const weaveLayer =
+      weave > 0 ? Math.sin((x / width) * Math.PI * 2 * WEAVE_FREQ + phase * 1.6) * WEAVE_AMP * weave : 0
+    const y = waterY + base + weaveLayer
     if (i === 0) path.moveTo(x, y)
     else path.lineTo(x, y)
   }
   return path
-}
-
-function useBubbleDerived(
-  index: number,
-  width: number,
-  height: number,
-  time: ReturnType<typeof useSharedValue<number>>,
-  fillLevel: ReturnType<typeof useSharedValue<number>>
-) {
-  return useDerivedValue(() => {
-    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP
-    const waterY = height * (1 - fillLevel.value) + bob
-    const liquidH = Math.max(0, height - waterY)
-    if (liquidH < 12) {
-      return { cx: 0, cy: 0, r: 0, opacity: 0 }
-    }
-    const seed = index * 1.73
-    const cycle = (time.value * 0.12 + seed) % 1
-    const cx = width * (0.12 + ((index * 0.14) % 0.76))
-    const cy = waterY + liquidH * (1 - cycle) * 0.85
-    const opacity = cycle > 0.85 ? 0 : 0.08 + (index % 3) * 0.04
-    return { cx, cy, r: 1.2 + (index % 3) * 0.5, opacity }
-  })
 }
 
 function LiquidBubble({
@@ -129,28 +120,100 @@ function LiquidBubble({
   time: ReturnType<typeof useSharedValue<number>>
   fillLevel: ReturnType<typeof useSharedValue<number>>
 }) {
-  const bubble = useBubbleDerived(index, width, height, time, fillLevel)
-  const cx = useDerivedValue(() => bubble.value.cx)
-  const cy = useDerivedValue(() => bubble.value.cy)
-  const r = useDerivedValue(() => bubble.value.r)
-  const opacity = useDerivedValue(() => bubble.value.opacity)
+  const cx = useDerivedValue(() => {
+    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP
+    const waterY = height * (1 - fillLevel.value) + bob
+    const liquidH = Math.max(0, height - waterY)
+    if (liquidH < 12) return 0
+    return width * (0.12 + ((index * 0.14) % 0.76))
+  })
+  const cy = useDerivedValue(() => {
+    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP
+    const waterY = height * (1 - fillLevel.value) + bob
+    const liquidH = Math.max(0, height - waterY)
+    if (liquidH < 12) return 0
+    const seed = index * 1.73
+    const cycle = (time.value * 0.12 + seed) % 1
+    return waterY + liquidH * (1 - cycle) * 0.85
+  })
+  const r = useDerivedValue(() => 1.2 + (index % 3) * 0.5)
+  const opacity = useDerivedValue(() => {
+    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP
+    const waterY = height * (1 - fillLevel.value) + bob
+    const liquidH = Math.max(0, height - waterY)
+    if (liquidH < 12) return 0
+    const seed = index * 1.73
+    const cycle = (time.value * 0.12 + seed) % 1
+    return cycle > 0.85 ? 0 : 0.08 + (index % 3) * 0.04
+  })
   return <Circle cx={cx} cy={cy} r={r} color="rgba(255,255,255,0.9)" opacity={opacity} />
 }
 
+function SurfaceSparkle({
+  index,
+  width,
+  height,
+  time,
+  fillLevel,
+}: {
+  index: number
+  width: number
+  height: number
+  time: ReturnType<typeof useSharedValue<number>>
+  fillLevel: ReturnType<typeof useSharedValue<number>>
+}) {
+  const cx = useDerivedValue(() => {
+    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP * 0.35
+    const waterY = height * (1 - fillLevel.value) + bob
+    const drift = (time.value * (0.04 + index * 0.008) + index * 0.31) % 1
+    return width * (0.08 + drift * 0.84)
+  })
+  const cy = useDerivedValue(() => {
+    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP * 0.35
+    const waterY = height * (1 - fillLevel.value) + bob
+    return waterY + Math.sin(time.value * 2 + index) * 1.2 - 2
+  })
+  const opacity = useDerivedValue(() => 0.25 + ((index % 4) + 1) * 0.12)
+  return <Circle cx={cx} cy={cy} r={1.1} color="#fff" opacity={opacity} />
+}
+
 export function VlogLiquidGauge({
-  count,
+  fillRatio,
+  displayCount,
   max = 5,
   dogName,
   animating = true,
+  gaugeMode = 'collecting',
   onHelpPress,
 }: Props) {
   const width = Dimensions.get('window').width - 32
   const height = CARD_H
-  const targetFill = visualFill(count, max)
+  const targetFill = clampFill(fillRatio)
 
   const fillLevel = useSharedValue(targetFill)
   const ampBoost = useSharedValue(1)
+  const bobDamp = useSharedValue(1)
+  const weaveMix = useSharedValue(0)
+  const edgeGlow = useSharedValue(0)
   const time = useSharedValue(0)
+  const animatingSv = useSharedValue(animating ? 1 : 0)
+
+  useEffect(() => {
+    animatingSv.value = animating ? 1 : 0
+  }, [animating, animatingSv])
+
+  useEffect(() => {
+    weaveMix.value = withTiming(gaugeMode === 'generating' ? 1 : 0, { duration: 400 })
+    edgeGlow.value = withTiming(gaugeMode === 'nearUnlock' ? 1 : 0, { duration: 500 })
+    if (gaugeMode === 'unlocked') {
+      bobDamp.value = withSequence(
+        withTiming(0.15, { duration: 350, easing: Easing.out(Easing.cubic) }),
+        withTiming(1, { duration: 600, easing: Easing.out(Easing.quad) })
+      )
+    } else {
+      bobDamp.value = withTiming(1, { duration: 300 })
+    }
+  }, [gaugeMode, weaveMix, edgeGlow, bobDamp])
 
   const clipRRect = useMemo(
     () => Skia.RRectXY(Skia.XYWHRect(0, 0, width, height), CARD_RADIUS, CARD_RADIUS),
@@ -160,39 +223,40 @@ export function VlogLiquidGauge({
   useEffect(() => {
     fillLevel.value = withTiming(targetFill, { duration: 700, easing: Easing.out(Easing.cubic) })
     ampBoost.value = withSequence(
-      withTiming(1.4, { duration: 120 }),
+      withTiming(gaugeMode === 'nearUnlock' ? 1.55 : 1.4, { duration: 120 }),
       withTiming(1, { duration: 420, easing: Easing.out(Easing.quad) })
     )
-  }, [targetFill, ampBoost, fillLevel])
+  }, [targetFill, ampBoost, fillLevel, gaugeMode])
 
   useFrameCallback((frame) => {
     'worklet'
-    if (!animating) return
+    if (animatingSv.value === 0) return
     time.value = frame.timestamp / 1000
-  }, animating)
+  })
 
   const backWavePath = useDerivedValue(() => {
-    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP
+    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP * bobDamp.value
     const waterY = height * (1 - fillLevel.value) + bob
     const phase = time.value * Math.PI * 2 * 0.35 + Math.PI * 0.35
-    return buildWavePath(width, height, waterY, phase, BACK_AMP, BACK_FREQ, ampBoost.value)
+    return buildWavePath(width, height, waterY, phase, BACK_AMP, BACK_FREQ, ampBoost.value, weaveMix.value)
   })
 
   const frontWavePath = useDerivedValue(() => {
-    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP
+    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP * bobDamp.value
     const waterY = height * (1 - fillLevel.value) + bob
     const phase = time.value * Math.PI * 2 * 0.5
-    return buildWavePath(width, height, waterY, phase, FRONT_AMP, FRONT_FREQ, ampBoost.value)
+    return buildWavePath(width, height, waterY, phase, FRONT_AMP, FRONT_FREQ, ampBoost.value, weaveMix.value)
   })
 
   const meniscusPath = useDerivedValue(() => {
-    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP
+    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP * bobDamp.value
     const waterY = height * (1 - fillLevel.value) + bob
     const phase = time.value * Math.PI * 2 * 0.5
-    return buildMeniscusPath(width, waterY, phase, FRONT_AMP, FRONT_FREQ, ampBoost.value)
+    return buildMeniscusPath(width, waterY, phase, FRONT_AMP, FRONT_FREQ, ampBoost.value, weaveMix.value)
   })
 
   const title = dogName?.trim() ? `${dogName.trim()}のVLOG` : 'VLOG'
+  const showSparkles = gaugeMode === 'unlocked' || gaugeMode === 'nearUnlock'
 
   return (
     <View style={[styles.card, { width, height, borderRadius: CARD_RADIUS }]}>
@@ -207,7 +271,23 @@ export function VlogLiquidGauge({
           {Array.from({ length: BUBBLE_COUNT }, (_, i) => (
             <LiquidBubble key={i} index={i} width={width} height={height} time={time} fillLevel={fillLevel} />
           ))}
+          {showSparkles
+            ? Array.from({ length: SPARKLE_COUNT }, (_, i) => (
+                <SurfaceSparkle key={`s-${i}`} index={i} width={width} height={height} time={time} fillLevel={fillLevel} />
+              ))
+            : null}
         </Group>
+        {gaugeMode === 'nearUnlock' ? (
+          <Rect
+            x={1}
+            y={1}
+            width={width - 2}
+            height={height - 2}
+            color="rgba(255,220,180,0.22)"
+            style="stroke"
+            strokeWidth={2}
+          />
+        ) : null}
       </Canvas>
 
       <View style={styles.topScrim} pointerEvents="none" />
@@ -225,7 +305,7 @@ export function VlogLiquidGauge({
             </Pressable>
           ) : null}
           <Text style={styles.fraction}>
-            {count}/{max}
+            {displayCount}/{max}
           </Text>
         </View>
       </View>

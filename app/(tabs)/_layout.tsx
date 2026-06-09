@@ -3,11 +3,13 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { GlassTabBar } from '@/components/navigation/GlassTabBar'
 import { AlbumTabIcon } from '@/components/icons/AlbumTabIcon'
+import { TabBarScrollProvider } from '@/context/TabBarScrollContext'
 import { track } from '@/lib/analytics'
 
 export default function TabsLayout() {
   return (
-    <Tabs
+    <TabBarScrollProvider>
+      <Tabs
       initialRouteName="search"
       /** 非表示タブを切り離さず、切替時の空白・遅延を減らす */
       detachInactiveScreens={false}
@@ -53,6 +55,7 @@ export default function TabsLayout() {
         name="camera"
         options={{
           title: 'レビュー',
+          freezeOnBlur: true,
           tabBarIcon: ({ color, focused }) => (
             <AlbumTabIcon color={color} size={focused ? 26 : 24} />
           ),
@@ -74,5 +77,6 @@ export default function TabsLayout() {
         listeners={{ focus: () => track('tab_viewed', { tab_name: 'mypage' }) }}
       />
     </Tabs>
+    </TabBarScrollProvider>
   )
 }

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { compressImageToJpeg } from '@/lib/images/compress-image'
 
 export const MEMORIES_BUCKET = 'memories'
 const SIGNED_URL_TTL_SEC = 3600
@@ -275,18 +276,28 @@ export async function uploadMemoryFile(
   onProgress?: (ratio: number) => void
 ): Promise<{ path: string; mediaType: 'image' | 'video' } | null> {
   onProgress?.(0.1)
-  const ext = mimeType.startsWith('video/') ? (mimeType.includes('quicktime') ? 'mov' : 'mp4') : 'jpg'
+  let uploadUri = uri
+  let uploadMime = mimeType
+
+  if (!mimeType.startsWith('video/')) {
+    const compressed = await compressImageToJpeg(uri, 1200)
+    if (!compressed) return null
+    uploadUri = compressed.uri
+    uploadMime = 'image/jpeg'
+  }
+
+  const ext = uploadMime.startsWith('video/') ? (uploadMime.includes('quicktime') ? 'mov' : 'mp4') : 'jpg'
   const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-  const res = await fetch(uri)
+  const res = await fetch(uploadUri)
   const buf = await res.arrayBuffer()
   onProgress?.(0.4)
   const { error } = await supabase.storage.from(MEMORIES_BUCKET).upload(path, buf, {
-    contentType: mimeType,
+    contentType: uploadMime,
     upsert: false,
   })
   onProgress?.(1)
   if (error) return null
-  return { path, mediaType: mimeType.startsWith('video/') ? 'video' : 'image' }
+  return { path, mediaType: uploadMime.startsWith('video/') ? 'video' : 'image' }
 }
 
 export async function insertMemory(params: {

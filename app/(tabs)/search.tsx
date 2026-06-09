@@ -15,6 +15,7 @@ import {
 import { useIsFocused } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
+import Animated from 'react-native-reanimated'
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { AppHeader } from '@/components/AppHeader'
@@ -26,6 +27,7 @@ import { PowState, RunningDog } from '@/components/DogStates'
 import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { sortArticlesByScore } from '@/lib/articles/scoring'
@@ -164,6 +166,10 @@ export default function SearchTab() {
   const [spotLikesCount, setSpotLikesCount] = useState<number | null>(null)
   const restoredRef = useRef(false)
   const scrollYRef = useRef(0)
+  const updateScrollY = useCallback((y: number) => {
+    scrollYRef.current = y
+  }, [])
+  const tabBarScrollHandler = useTabBarScroll(updateScrollY)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
   const [pullRefreshing, setPullRefreshing] = useState(false)
@@ -672,7 +678,7 @@ export default function SearchTab() {
 
   return (
     <View style={styles.root}>
-      <ScrollView
+      <Animated.ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
         scrollEnabled={!showAiPlan}
@@ -684,9 +690,7 @@ export default function SearchTab() {
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={() => Keyboard.dismiss()}
         scrollEventThrottle={16}
-        onScroll={(e) => {
-          scrollYRef.current = e.nativeEvent.contentOffset.y
-        }}
+        onScroll={tabBarScrollHandler}
         refreshControl={
           <RefreshControl
             refreshing={pullRefreshing}
@@ -941,7 +945,7 @@ export default function SearchTab() {
           ) : null}
         </View>
         ) : null}
-      </ScrollView>
+      </Animated.ScrollView>
 
       {showAiPlan ? (
         <View style={[styles.aiPlanOverlay, { top: aiPlanChromeVisible ? headerH : 0 }]}>

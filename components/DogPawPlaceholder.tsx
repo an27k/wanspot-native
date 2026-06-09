@@ -1,14 +1,7 @@
-import { Image } from 'expo-image'
+import { IconPaw } from '@/components/IconPaw'
+import { colors } from '@/constants/colors'
 
-const FACE = require('@/assets/images/wanspot_dog_face.png')
-
-/** 犬写真プレースホルダ（顔のみ） */
-export function DogPawPlaceholder({ size = 40 }: { size?: number; fill?: string }) {
-  return (
-    <Image
-      source={FACE}
-      style={{ width: size, height: size * 0.82, opacity: 0.9 }}
-      contentFit="contain"
-    />
-  )
+/** 犬写真プレースホルダ（SVG のみ — PNG デコード回避） */
+export function DogPawPlaceholder({ size = 40, fill = colors.dogPhotoPlaceholderPaw }: { size?: number; fill?: string }) {
+  return <IconPaw size={size} color={fill} />
 }

@@ -1,7 +1,9 @@
+import * as WebBrowser from 'expo-web-browser'
 import { supabase } from '@/lib/supabase'
-import { signInWithGoogle } from '@/lib/google-signin'
 
-/** Supabase Dashboard の Redirect URLs に登録すること */
+WebBrowser.maybeCompleteAuthSession()
+
+/** Supabase Dashboard → Authentication → URL Configuration に登録 */
 export const OAUTH_REDIRECT_TO = 'wanspot://auth/callback'
 
 function parseOAuthParams(url: string | null | undefined): Record<string, string> {
@@ -37,6 +39,11 @@ function parseOAuthParams(url: string | null | undefined): Record<string, string
 }
 
 export type OAuthSignInResult = { error: Error | null; cancelled?: boolean }
+
+/** Supabase URL / anon key があれば Web OAuth 可能（Google クライアント ID はアプリ不要） */
+export function isSupabaseOAuthReady(): boolean {
+  return true
+}
 
 /**
  * コールバック URL（wanspot://auth/callback?... / #...）からセッションを確立する。
@@ -76,21 +83,48 @@ export async function applyOAuthCallbackUrl(url: string | null | undefined): Pro
   }
 }
 
+/**
+ * Google — Supabase signInWithOAuth + expo-web-browser（シークレットは Supabase 側のみ）
+ */
+export async function signInWithGoogleOAuth(): Promise<OAuthSignInResult> {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: OAUTH_REDIRECT_TO,
+        skipBrowserRedirect: true,
+      },
+    })
+
+    if (error) {
+      return { error: new Error(error.message) }
+    }
+    if (!data?.url) {
+      return { error: new Error('OAuth URL の取得に失敗しました') }
+    }
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, OAUTH_REDIRECT_TO)
+
+    if (result.type === 'cancel' || result.type === 'dismiss') {
+      return { error: null, cancelled: true }
+    }
+
+    if (result.type !== 'success') {
+      return { error: new Error('Googleログインが完了しませんでした') }
+    }
+
+    return applyOAuthCallbackUrl(result.url)
+  } catch (e) {
+    return { error: e instanceof Error ? e : new Error(String(e)) }
+  }
+}
+
 export async function signInWithOAuthProvider(
   provider: 'google' | 'apple'
 ): Promise<OAuthSignInResult> {
   if (provider === 'google') {
-    const result = await signInWithGoogle()
-    if (!result.success) {
-      if (result.reason === 'cancelled' || result.reason === 'in_progress') {
-        return { error: null, cancelled: true }
-      }
-      return { error: new Error(result.message ?? 'Googleサインインに失敗しました') }
-    }
-    return { error: null }
+    return signInWithGoogleOAuth()
   }
 
-  // Apple はネイティブ実装（lib/apple-signin.ts）を利用する想定
-  console.warn('[oauth-supabase] Apple is now handled by lib/apple-signin.ts')
-  return { error: new Error('Apple Sign-In はネイティブ方式をご利用ください') }
+  return { error: new Error('Apple Sign-In はネイティブ方式（lib/apple-signin.ts）をご利用ください') }
 }

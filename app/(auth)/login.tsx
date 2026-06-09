@@ -18,7 +18,7 @@ import { colors } from '@/constants/colors'
 import { useAuth } from '@/context/AuthContext'
 import { isAppleSignInAvailable, signInWithApple } from '@/lib/apple-signin'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
-import { isGoogleSignInConfigured, signInWithGoogle } from '@/lib/google-signin'
+import { isSupabaseOAuthReady, signInWithGoogleOAuth } from '@/lib/oauth-supabase'
 
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { Logo } from '@/components/Logo'
@@ -35,8 +35,8 @@ export default function LoginScreen() {
   const [oauthLoading, setOauthLoading] = useState<'google' | 'apple' | null>(null)
   const [error, setError] = useState('')
   const [appleNativeAvailable, setAppleNativeAvailable] = useState(false)
-  const googleSignInReady = isGoogleSignInConfigured()
-  const showOAuthSection = googleSignInReady || appleNativeAvailable
+  const googleOAuthReady = isSupabaseOAuthReady()
+  const showOAuthSection = googleOAuthReady || appleNativeAvailable
 
   useEffect(() => {
     void isAppleSignInAvailable().then(setAppleNativeAvailable)
@@ -55,21 +55,21 @@ export default function LoginScreen() {
     await completeLoginNavigation(router)
   }
 
-  const handleGoogleSignIn = async () => {
-    if (oauthLoading !== null || loading || !googleSignInReady) return
+  const handleGoogleOAuth = async () => {
+    if (oauthLoading !== null || loading || !googleOAuthReady) return
 
     setOauthLoading('google')
     setError('')
     try {
-      const res = await signInWithGoogle()
-      if (res.success) {
-        await completeLoginNavigation(router)
+      const { error, cancelled } = await signInWithGoogleOAuth()
+      if (cancelled) return
+      if (error) {
+        Alert.alert('エラー', error.message)
         return
       }
-      if (res.reason === 'cancelled' || res.reason === 'in_progress') return
-      Alert.alert('エラー', res.message ?? 'Googleサインインに失敗しました')
+      await completeLoginNavigation(router)
     } catch (error) {
-      Alert.alert('エラー', error instanceof Error ? error.message : 'Googleサインインに失敗しました')
+      Alert.alert('エラー', error instanceof Error ? error.message : 'Googleログインに失敗しました')
     } finally {
       setOauthLoading(null)
     }
@@ -159,11 +159,11 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            {googleSignInReady ? (
+            {googleOAuthReady ? (
               <Pressable
                 style={[styles.btnGoogle, oauthLoading !== null && styles.oauthDis]}
                 disabled={oauthLoading !== null || loading}
-                onPress={() => void handleGoogleSignIn()}
+                onPress={() => void handleGoogleOAuth()}
               >
                 {oauthLoading === 'google' ? (
                   <LoadingDogSvg size={24} />
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     ...oauthGooglePressableBase,
     marginTop: 14,
   },
-  btnGoogleTxt: { fontWeight: '800', fontSize: 16, color: colors.textPrimary },
+  btnGoogleTxt: { fontWeight: '800', fontSize: 16, color: '#fff' },
   btnApple: {
     ...oauthApplePressableBase,
     marginTop: 10,

@@ -11,13 +11,20 @@ import {
   View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
+import { SafeRemoteImage } from '@/components/common/SafeRemoteImage'
 import { BrandLoader } from '@/components/common/BrandLoader'
 import { VlogProgressCard } from '@/components/album/VlogProgressCard'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
-import { computeVlogProgress, countReviewedSpots } from '@/lib/album/vlog-progress'
+import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
+import { buildVlogRenderPayload } from '@/lib/vlog/build-payload'
+import {
+  requestVlogRender,
+  simulateVlogGenerationStages,
+  type VlogRenderStage,
+} from '@/lib/vlog/render-client'
+import { track } from '@/lib/analytics'
 import { pickMemoryMedia } from '@/lib/image-picker'
 import {
   formatVisitDate,
@@ -159,7 +166,13 @@ function PlateDetailModal({
             {plate.memories.map((m) => (
               <Pressable key={m.id} style={styles.detailThumbWrap} onLongPress={() => deleteMemory(m.id)}>
                 {m.signedUrl ? (
-                  <Image source={{ uri: m.signedUrl }} style={styles.detailThumb} contentFit="cover" />
+                  <SafeRemoteImage
+                    uri={m.signedUrl}
+                    style={styles.detailThumb}
+                    contentFit="cover"
+                    recyclingKey={m.id}
+                    fallback={<View style={[styles.detailThumb, styles.thumbPlaceholder]} />}
+                  />
                 ) : (
                   <View style={[styles.detailThumb, styles.thumbPlaceholder]} />
                 )}
@@ -237,7 +250,13 @@ function FeedTile({
   return (
     <Pressable style={styles.tile} onPress={onOpen}>
       {cover?.signedUrl ? (
-        <Image source={{ uri: cover.signedUrl }} style={styles.tileImg} contentFit="cover" />
+        <SafeRemoteImage
+          uri={cover.signedUrl}
+          style={styles.tileImg}
+          contentFit="cover"
+          recyclingKey={cover.id}
+          fallback={<View style={[styles.tileImg, styles.thumbPlaceholder]} />}
+        />
       ) : (
         <View style={[styles.tileImg, styles.thumbPlaceholder]} />
       )}
@@ -268,6 +287,9 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
   const [upload, setUpload] = useState<UploadState | null>(null)
   const [visitPickerOpen, setVisitPickerOpen] = useState(false)
   const [detailPlate, setDetailPlate] = useState<VisitPlate | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [generationStage, setGenerationStage] = useState<VlogRenderStage>('selecting')
+  const [generateBusy, setGenerateBusy] = useState(false)
 
   const runUpload = useCallback(
     async (visitId: string, spotId: string) => {
@@ -303,11 +325,38 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
     [userId, onReload]
   )
 
-  const vlogStats = useMemo(() => {
-    return computeVlogProgress(countReviewedSpots(plates))
-  }, [plates])
+  const vlogStats = useMemo(() => computeVlogProgressFromPlates(plates), [plates])
 
   const displayDogName = dogName?.trim() || '愛犬'
+
+  const handleGenerateVlog = useCallback(async () => {
+    if (generateBusy || generating || !vlogStats.isUnlocked || !userId) return
+    setGenerateBusy(true)
+    setGenerating(true)
+    setGenerationStage('selecting')
+    track('vlog_generate_start')
+
+    const payload = buildVlogRenderPayload(plates, displayDogName)
+
+    try {
+      await simulateVlogGenerationStages(setGenerationStage)
+      const res = await requestVlogRender(payload)
+      if (res.ok) {
+        track('vlog_generate_success')
+        router.push({ pathname: '/vlog/preview', params: { uri: res.result.videoUrl } })
+        return
+      }
+      if (res.error.code === 'not_ready') {
+        track('vlog_generate_demo')
+        router.push({ pathname: '/vlog/preview', params: { demo: '1' } })
+        return
+      }
+      Alert.alert('VLOG生成に失敗しました', res.error.message)
+    } finally {
+      setGenerating(false)
+      setGenerateBusy(false)
+    }
+  }, [generateBusy, generating, vlogStats.isUnlocked, userId, plates, displayDogName, router])
 
   const openAddFlow = () => {
     if (!userId) {
@@ -341,17 +390,22 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
     <View style={styles.wrap}>
       <VlogProgressCard
         dogName={dogName}
-        count={vlogStats.current}
-        max={vlogStats.target}
+        progress={vlogStats}
         onHelpPress={onOpenTutorial}
+        generating={generating}
+        generationStage={generationStage}
+        generateBusy={generateBusy}
+        onGeneratePress={() => void handleGenerateVlog()}
       />
 
-      <View style={styles.intro}>
-        <Text style={styles.introTitle}>{displayDogName}のVLOGを作ろう！</Text>
-        <Text style={styles.introSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-          お出かけしたスポットを記録すると自動で動画編集してお届け🐾
-        </Text>
-      </View>
+      {!vlogStats.isUnlocked && !generating ? (
+        <View style={styles.intro}>
+          <Text style={styles.introTitle}>{displayDogName}のVLOGを作ろう！</Text>
+          <Text style={styles.introSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+            5スポット・各2枚以上の思い出で今月のVLOGが完成🐾
+          </Text>
+        </View>
+      ) : null}
 
       {upload ? (
         <View style={styles.uploadBar}>

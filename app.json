@@ -84,12 +84,6 @@
         }
       ],
       [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.573139399424-cgqe3u58m724rpjsm5uu0u1t69qor80m"
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photosPermission": "ワンちゃんやプロフィールの写真を設定するため、写真ライブラリへのアクセスを許可してください。",

@@ -1,6 +1,7 @@
 import * as Linking from 'expo-linking'
 import { useCallback, useMemo } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import Animated from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -12,6 +13,7 @@ import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
 import { useAuth } from '@/context/AuthContext'
 
@@ -31,6 +33,7 @@ export default function SettingsTab() {
   )
 
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 16
+  const tabBarScrollHandler = useTabBarScroll()
 
   if (loading && !dog) {
     return (
@@ -42,7 +45,11 @@ export default function SettingsTab() {
 
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={{ paddingBottom: padBottom, gap: 8 }}>
+      <Animated.ScrollView
+        onScroll={tabBarScrollHandler}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: padBottom, gap: 8 }}
+      >
         <AppHeader />
 
         <View style={styles.section}>
@@ -127,7 +134,7 @@ export default function SettingsTab() {
             </View>
           </Pressable>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   )
 }

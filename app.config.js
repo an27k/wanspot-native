@@ -43,7 +43,7 @@ module.exports = ({ config }) => {
 
   return {
     ...config,
-    plugins: [...plugins, 'expo-image'],
+    plugins: [...plugins, 'expo-image', 'expo-video'],
     extra: {
       ...config.extra,
       supabaseUrl,

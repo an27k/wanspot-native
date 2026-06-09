@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react'
-import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
 import { AvatarSunsetRing } from '@/components/dog/AvatarSunsetRing'
-import { DogPawPlaceholder } from '@/components/DogPawPlaceholder'
+import { SafeDogAvatar } from '@/components/dog/SafeDogAvatar'
+import { IconPaw } from '@/components/IconPaw'
 import { FormField } from '@/components/onboarding/FormField'
 import {
   dogBirthdayYearBounds,
@@ -33,10 +34,11 @@ type Props = {
   userId: string
   onUpdated: (dog: DogProfile) => void
   variant?: 'default' | 'album'
+  ringEnergized?: boolean
 }
 
 /** 愛犬アイデンティティ表示＋編集（ワクチンは含まない。旧マイページから移設） */
-export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default' }: Props) {
+export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default', ringEnergized }: Props) {
   const insets = useSafeAreaInsets()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -143,11 +145,15 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
   const avatarInner = (
     <>
       {photoRemoved && !photoUri ? (
-        <DogPawPlaceholder size={40} fill={colors.dogPhotoPlaceholderPaw} />
+        <View style={styles.avatarPlaceholder}>
+          <IconPaw size={40} color={colors.dogPhotoPlaceholderPaw} />
+        </View>
       ) : photoPreview ?? dog.photo_url ? (
-        <Image source={{ uri: photoPreview ?? dog.photo_url! }} style={styles.avatarImg} resizeMode="cover" />
+        <SafeDogAvatar uri={photoPreview ?? dog.photo_url} size={40} />
       ) : (
-        <DogPawPlaceholder size={40} fill={colors.dogPhotoPlaceholderPaw} />
+        <View style={styles.avatarPlaceholder}>
+          <IconPaw size={40} color={colors.dogPhotoPlaceholderPaw} />
+        </View>
       )}
     </>
   )
@@ -171,7 +177,9 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
       <View style={[styles.col, isAlbum && [styles.colAlbum, { marginTop: insets.top + 8 }]]}>
         <View style={[styles.avatarWrap, editing && styles.avatarWrapEditing, isAlbum && styles.avatarWrapAlbum]}>
           {isAlbum ? (
-            <AvatarSunsetRing size={avatarSize}>{avatarInner}</AvatarSunsetRing>
+            <AvatarSunsetRing size={avatarSize} energized={ringEnergized}>
+              {avatarInner}
+            </AvatarSunsetRing>
           ) : (
             <View style={styles.avatar}>{avatarInner}</View>
           )}
@@ -354,6 +362,11 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
   },
   avatarImg: { width: '100%', height: '100%' },
+  avatarPlaceholder: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   camFab: {
     position: 'absolute',
     bottom: 4,
