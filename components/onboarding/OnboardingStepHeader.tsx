@@ -6,11 +6,14 @@ import { colors } from '@/constants/colors'
 type Props = {
   /** 1 始まりの現在ステップ */
   step: number
+  /** 位置許可済みなら 2、フォールバックなら 3 */
+  totalSteps?: number
 }
 
-/** 3ステップ統一の進行ドット + ブランド行 */
-export function OnboardingStepHeader({ step }: Props) {
-  const activeIndex = Math.max(0, Math.min(ONBOARDING_TOTAL_STEPS - 1, step - 1))
+/** オンボーディング進行ドット + ブランド行 */
+export function OnboardingStepHeader({ step, totalSteps = ONBOARDING_TOTAL_STEPS }: Props) {
+  const steps = Math.max(1, totalSteps)
+  const activeIndex = Math.max(0, Math.min(steps - 1, step - 1))
   return (
     <View style={styles.headRow}>
       <View style={styles.brandRow}>
@@ -18,7 +21,7 @@ export function OnboardingStepHeader({ step }: Props) {
         <Text style={styles.brandTxt}>wanspot</Text>
       </View>
       <View style={styles.dots}>
-        {Array.from({ length: ONBOARDING_TOTAL_STEPS }, (_, i) => (
+        {Array.from({ length: steps }, (_, i) => (
           <View
             key={i}
             style={[styles.dot, { backgroundColor: i <= activeIndex ? colors.primary : '#e0e0e0' }]}

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { compressImageToJpeg } from '@/lib/images/compress-image'
+import { logUserEvent } from '@/lib/user-events'
 
 export const MEMORIES_BUCKET = 'memories'
 const SIGNED_URL_TTL_SEC = 3600
@@ -43,22 +44,32 @@ const VISIT_COLUMNS = 'id, user_id, spot_id, visited_at, comment, rating, soft_d
 const MEMORY_COLUMNS =
   'id, user_id, visit_id, spot_id, media_url, media_type, thumbnail_url, soft_deleted, created_at'
 
+export type VisitRecordSource = 'detail_button' | 'review' | 'checkin' | 'other'
+
 export type VisitRecordError = {
   table: string
   message: string
   code?: string
+  /** PGRST205 等 — テーブル未作成の可能性 */
+  isSchemaError?: boolean
 }
 
 function toRecordError(table: string, error: { message?: string; code?: string } | null): VisitRecordError {
+  const code = error?.code
+  const message = error?.message ?? 'unknown error'
   return {
     table,
-    message: error?.message ?? 'unknown error',
-    code: error?.code,
+    message,
+    code,
+    isSchemaError: code === 'PGRST205' || /schema cache/i.test(message),
   }
 }
 
 export function formatVisitRecordError(err: VisitRecordError): string {
   const code = err.code ? `[${err.code}] ` : ''
+  if (err.isSchemaError) {
+    return `${err.table}: サーバー設定の更新が必要です。しばらくしてから再試行してください。`
+  }
   return `${err.table}: ${code}${err.message}`
 }
 
@@ -161,10 +172,11 @@ export async function hasVisitForSpot(userId: string, spotId: string): Promise<b
   return !!data
 }
 
-/** 同日・同スポットの visit がなければ insert。将来 check_ins 一本化前提で check_ins も最小 upsert。 */
+/** 同日・同スポットの visit がなければ insert。check_ins は best-effort（失敗しても visits 成功なら OK）。 */
 export async function recordSpotVisit(
   userId: string,
-  spotId: string
+  spotId: string,
+  source: VisitRecordSource = 'detail_button'
 ): Promise<{ ok: boolean; visitId?: string; created?: boolean; error?: VisitRecordError }> {
   const { start, end } = localDayBounds()
   const { data: existing, error: existingErr } = await supabase
@@ -183,28 +195,18 @@ export async function recordSpotVisit(
   }
 
   if (existing?.id) {
-    const { data: ci, error: ciSelErr } = await supabase
-      .from('check_ins')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('spot_id', spotId)
-      .maybeSingle()
-    if (ciSelErr) {
-      console.warn('[recordSpotVisit] check_ins.select', ciSelErr.code, ciSelErr.message)
-    }
-    if (!ci) {
-      const { error: ciInsErr } = await supabase.from('check_ins').insert({ user_id: userId, spot_id: spotId })
-      if (ciInsErr) {
-        console.warn('[recordSpotVisit] check_ins.insert', ciInsErr.code, ciInsErr.message)
-        return { ok: false, error: toRecordError('check_ins', ciInsErr) }
-      }
-    }
+    void syncCheckInBestEffort(userId, spotId)
     return { ok: true, visitId: existing.id as string, created: false }
   }
 
   const { data: inserted, error: insertErr } = await supabase
     .from('visits')
-    .insert({ user_id: userId, spot_id: spotId, visited_at: new Date().toISOString() })
+    .insert({
+      user_id: userId,
+      spot_id: spotId,
+      visited_at: new Date().toISOString(),
+      source,
+    })
     .select('id')
     .single()
 
@@ -214,25 +216,32 @@ export async function recordSpotVisit(
   }
 
   const visitId = inserted.id as string
+  void syncCheckInBestEffort(userId, spotId)
+  logUserEvent({ eventType: 'visit', spotId, userId, props: { source, created: true } })
 
-  const { data: ci, error: ciSelErr } = await supabase
-    .from('check_ins')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('spot_id', spotId)
-    .maybeSingle()
-  if (ciSelErr) {
-    console.warn('[recordSpotVisit] check_ins.select', ciSelErr.code, ciSelErr.message)
-  }
-  if (!ci) {
+  return { ok: true, visitId, created: true }
+}
+
+async function syncCheckInBestEffort(userId: string, spotId: string): Promise<void> {
+  try {
+    const { data: ci, error: ciSelErr } = await supabase
+      .from('check_ins')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('spot_id', spotId)
+      .maybeSingle()
+    if (ciSelErr) {
+      console.warn('[recordSpotVisit] check_ins.select', ciSelErr.code, ciSelErr.message)
+      return
+    }
+    if (ci) return
     const { error: ciInsErr } = await supabase.from('check_ins').insert({ user_id: userId, spot_id: spotId })
     if (ciInsErr) {
       console.warn('[recordSpotVisit] check_ins.insert', ciInsErr.code, ciInsErr.message)
-      return { ok: false, error: toRecordError('check_ins', ciInsErr) }
     }
+  } catch (e) {
+    console.warn('[recordSpotVisit] check_ins', e instanceof Error ? e.message : String(e))
   }
-
-  return { ok: true, visitId, created: true }
 }
 
 export async function createVisitForSpot(userId: string, spotId: string, visitedAt?: string): Promise<VisitRow | null> {

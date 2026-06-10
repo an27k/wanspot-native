@@ -38,6 +38,7 @@ import { ensureSpotId } from '@/lib/ensureSpot'
 import { isPendingPlaceRouteId } from '@/lib/spot-detail-pending'
 import { MAP_VISITED_CHECK_COLOR } from '@/lib/nearby/constants'
 import { formatVisitRecordError, recordSpotVisit } from '@/lib/visits-memories'
+import { logUserEvent } from '@/lib/user-events'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import type { PlaceResult } from '@/types/places'
 
@@ -214,7 +215,11 @@ export default function SpotDetailScreen({
   const [checkedIn, setCheckedIn] = useState(false)
   const [visitRecording, setVisitRecording] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
-  const [checkInToastMessage, setCheckInToastMessage] = useState<string | null>(null)
+  const [visitToast, setVisitToast] = useState<{
+    message: string
+    tone: 'success' | 'error'
+    retry?: boolean
+  } | null>(null)
   useEffect(() => {
     const init = async () => {
       let resolvedSpotId = spotId
@@ -279,6 +284,9 @@ export default function SpotDetailScreen({
       setLikeCount(likeC ?? 0)
       setLiked(!!myLikeResult.data)
       setCheckedIn(!!myVisit.data)
+      if (user) {
+        logUserEvent({ eventType: 'spot_view', spotId: resolvedSpotId, userId: user.id })
+      }
 
       if (detailRes?.photos?.length) {
         setPhotoRefs(detailRes.photos.slice(0, 8).map((p) => p.photo_reference).filter(Boolean) as string[])
@@ -409,10 +417,11 @@ export default function SpotDetailScreen({
   }, [loading, spot])
 
   useEffect(() => {
-    if (!checkInToastMessage) return
-    const t = setTimeout(() => setCheckInToastMessage(null), 2000)
+    if (!visitToast) return
+    const ms = visitToast.tone === 'error' ? 5000 : 2000
+    const t = setTimeout(() => setVisitToast(null), ms)
     return () => clearTimeout(t)
-  }, [checkInToastMessage])
+  }, [visitToast])
 
   const toggleLike = async () => {
     if (!spot || likeLoading) return
@@ -425,11 +434,13 @@ export default function SpotDetailScreen({
         await supabase.from('spot_likes').delete().eq('spot_id', spot.id).eq('user_id', userId)
         setLiked(false)
         setLikeCount((c) => c - 1)
+        logUserEvent({ eventType: 'unlike', spotId: spot.id, userId })
       } else {
         await supabase.from('spot_likes').insert({ spot_id: spot.id, user_id: userId })
         setLiked(true)
         setLikeCount((c) => c + 1)
         track('spot_liked', { spot_id: spot.id })
+        logUserEvent({ eventType: 'like', spotId: spot.id, userId })
       }
     } finally {
       setLikeLoading(false)
@@ -442,15 +453,18 @@ export default function SpotDetailScreen({
     if (!userId) return
     setVisitRecording(true)
     try {
-      const result = await recordSpotVisit(userId, spot.id)
+      const result = await recordSpotVisit(userId, spot.id, 'detail_button')
       if (!result.ok) {
-        const detail = result.error ? formatVisitRecordError(result.error) : 'unknown error'
+        const detail = result.error ? formatVisitRecordError(result.error) : '記録に失敗しました'
         console.warn('[recordVisitTap]', detail)
-        Alert.alert('記録に失敗しました', detail)
+        setVisitToast({ message: detail, tone: 'error', retry: true })
         return
       }
       setCheckedIn(true)
-      setCheckInToastMessage(result.created ? '行ったを記録しました' : '本日は記録済みです')
+      setVisitToast({
+        message: result.created ? '行ったを記録しました' : '本日は記録済みです',
+        tone: 'success',
+      })
       if (result.created) track('spot_checked_in', { spot_id: spot.id })
     } finally {
       setVisitRecording(false)
@@ -506,10 +520,17 @@ export default function SpotDetailScreen({
 
   return (
     <View style={styles.screen}>
-      {checkInToastMessage ? (
-        <View style={[styles.toast, { bottom: bottomInset }]}>
-          <Text style={styles.toastTxt}>{checkInToastMessage}</Text>
-        </View>
+      {visitToast ? (
+        <Pressable
+          style={[styles.toast, { bottom: bottomInset }, visitToast.tone === 'error' && styles.toastErr]}
+          onPress={visitToast.retry ? () => void recordVisitTap() : undefined}
+          disabled={!visitToast.retry}
+        >
+          <Text style={styles.toastTxt}>
+            {visitToast.message}
+            {visitToast.retry ? '（タップで再試行）' : ''}
+          </Text>
+        </Pressable>
       ) : null}
 
       <View style={[styles.backFab, { top: Math.max(16, insets.top) }]}>
@@ -774,6 +795,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
+  toastErr: {
+    backgroundColor: '#3a2a28',
+    borderColor: colors.error,
+  },
   toastTxt: { color: '#fff', fontWeight: '700', textAlign: 'center', fontSize: 14 },
   backFab: { position: 'absolute', left: 16, zIndex: 20 },
   fabBtn: {
@@ -942,7 +967,7 @@ const styles = StyleSheet.create({
   },
   wanspotHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 },
   wanspotHeadPaw: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
-  wanspotHeadLbl: { fontSize: 14, fontWeight: '800', color: colors.primary, letterSpacing: 0.2 },
+  wanspotHeadLbl: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, letterSpacing: 0.2 },
   wanspotRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   wanspotRatingNum: { fontSize: 16, fontWeight: '800', color: colors.gold },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },

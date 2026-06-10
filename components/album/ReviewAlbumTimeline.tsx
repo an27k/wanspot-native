@@ -18,13 +18,14 @@ import { VlogProgressCard } from '@/components/album/VlogProgressCard'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
-import { buildVlogRenderPayload } from '@/lib/vlog/build-payload'
+import { buildVlogRenderPayloadAsync } from '@/lib/vlog/build-payload'
 import {
   requestVlogRender,
   simulateVlogGenerationStages,
   type VlogRenderStage,
 } from '@/lib/vlog/render-client'
 import { track } from '@/lib/analytics'
+import { logUserEvent } from '@/lib/user-events'
 import { pickMemoryMedia } from '@/lib/image-picker'
 import {
   formatVisitDate,
@@ -335,8 +336,9 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
     setGenerating(true)
     setGenerationStage('selecting')
     track('vlog_generate_start')
+    logUserEvent({ eventType: 'vlog_generate', userId, props: { spot_count: vlogStats.completeUnits } })
 
-    const payload = buildVlogRenderPayload(plates, displayDogName)
+    const payload = await buildVlogRenderPayloadAsync(plates, displayDogName)
 
     try {
       await simulateVlogGenerationStages(setGenerationStage)

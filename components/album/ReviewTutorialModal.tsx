@@ -18,32 +18,37 @@ import { markReviewTutorialSeen } from '@/lib/review/tutorial-storage'
 type Props = {
   visible: boolean
   onClose: () => void
+  dogName?: string | null
 }
 
 const STEPS = [
   {
     icon: 'paw' as const,
     title: 'おでかけ',
-    body: '行ったスポットがレビューの素材になる',
+    body: 'スポット詳細で「行った」を押して、レビューの素材を集める',
   },
   {
     icon: 'star' as const,
     title: 'レビュー',
-    body: '評価やコメント、写真・動画でVLOGの内容が変わる',
+    body: '写真・動画を2枚以上つけると1スポット分。1枚なら半分たまる',
   },
   {
     icon: 'film' as const,
     title: '5スポットでVLOG',
-    body: 'レビューが溜まると自動でVLOG完成',
+    body: '5スポットぶんレビューが溜まると、自動でVLOGが完成する',
   },
 ]
 
-export function ReviewTutorialModal({ visible, onClose }: Props) {
+export function ReviewTutorialModal({ visible, onClose, dogName }: Props) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const [page, setPage] = useState(0)
   const [videoFailed, setVideoFailed] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
+
+  const displayDogName = dogName?.trim() || '愛犬'
+  const mainCopy = `おでかけを5スポットぶんレビューすると、${displayDogName}のVLOGが自動でできあがるよ🐶`
+  const subCopy = '写真・動画を2枚以上つけると1スポット分。多いほどVLOGが豊かになるよ'
 
   useEffect(() => {
     if (!visible || page !== 0) {
@@ -95,7 +100,8 @@ export function ReviewTutorialModal({ visible, onClose }: Props) {
                   <TutorialSampleVideo onFailed={() => setVideoFailed(true)} />
                 )}
               </View>
-              <Text style={styles.lead}>5スポットのレビューで、こんなVLOGが手に入る</Text>
+              <Text style={styles.lead}>{mainCopy}</Text>
+              <Text style={styles.leadSub}>{subCopy}</Text>
             </>
           ) : null}
 
@@ -118,8 +124,10 @@ export function ReviewTutorialModal({ visible, onClose }: Props) {
           {page === 2 ? (
             <View style={styles.final}>
               <Ionicons name="search" size={48} color={colors.primary} />
-              <Text style={styles.finalTitle}>最初の1スポットをレビューしよう</Text>
-              <Text style={styles.finalBody}>スポット詳細で「行った」→ レビューや写真を追加</Text>
+              <Text style={styles.finalTitle}>最初の1スポットからはじめよう</Text>
+              <Text style={styles.finalBody}>
+                スポット詳細で「行った」→ レビュータブで写真・動画を2枚以上追加
+              </Text>
             </View>
           ) : null}
         </ScrollView>
@@ -167,6 +175,13 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     textAlign: 'center',
     lineHeight: 26,
+  },
+  leadSub: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 21,
   },
   steps: { gap: 16 },
   stepRow: {

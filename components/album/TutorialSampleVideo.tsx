@@ -3,6 +3,7 @@ import { InteractionManager, Pressable, StyleSheet, Text, View } from 'react-nat
 import { Ionicons } from '@expo/vector-icons'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { REVIEW_TUTORIAL_SAMPLE_VLOG } from '@/lib/review/sample-vlog-video'
+import { DISABLE_TUTORIAL_VIDEO } from '@/lib/debug/review-crash-flags'
 
 type Props = {
   onFailed: () => void
@@ -62,7 +63,7 @@ export function TutorialSampleVideo({ onFailed }: Props) {
     }
   }, [failed, playbackReady, player])
 
-  if (failed || !playbackReady) return null
+  if (DISABLE_TUTORIAL_VIDEO || failed || !playbackReady) return null
 
   return (
     <Pressable

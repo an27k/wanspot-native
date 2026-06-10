@@ -16,8 +16,9 @@ import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
 import { useAuth } from '@/context/AuthContext'
+import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 
-export default function SettingsTab() {
+function SettingsTab() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { signOut } = useAuth()
@@ -172,3 +173,11 @@ const styles = StyleSheet.create({
   dangerTitle: { fontSize: 14, fontWeight: '700', color: '#E84335' },
   dangerSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
 })
+
+export default function SettingsTabScreen() {
+  return (
+    <ScreenErrorBoundary label="settings">
+      <SettingsTab />
+    </ScreenErrorBoundary>
+  )
+}

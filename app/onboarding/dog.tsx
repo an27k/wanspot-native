@@ -30,7 +30,8 @@ import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHead
 import { TapSelectRow } from '@/components/onboarding/TapSelectRow'
 import { filterDogBreeds } from '@/lib/dog-breeds'
 import { showImagePickerOptions } from '@/lib/image-picker'
-import { OB_DOG_KEY, OB_LOCATION_KEY } from '@/lib/onboarding-constants'
+import { OB_DOG_KEY, OB_LOCATION_GRANTED } from '@/lib/onboarding-constants'
+import { completeOnboarding } from '@/lib/onboarding-complete'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 
@@ -47,8 +48,9 @@ export default function DogPage() {
 
   useEffect(() => {
     void (async () => {
-      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
-      if (!raw) router.replace('/onboarding/location')
+      const granted = await AsyncStorage.getItem(OB_LOCATION_GRANTED)
+      if (granted === null) router.replace('/onboarding/location')
+      else setOnboardingTotalSteps(granted === '1' ? 2 : 3)
     })()
   }, [router])
 
@@ -73,6 +75,7 @@ export default function DogPage() {
   const [vaccineDateModal, setVaccineDateModal] = useState<'combo' | 'rabies' | null>(null)
   const [vaccineExpanded, setVaccineExpanded] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [onboardingTotalSteps, setOnboardingTotalSteps] = useState(3)
 
   const dogBirthdayYmd = ownerBirthdayToYmd(dogYear, dogMonth, dogDay)
   const dogYBounds = dogBirthdayYearBounds()
@@ -144,6 +147,12 @@ export default function DogPage() {
           ...(prevPhotoUrl ? { photo_url: prevPhotoUrl } : {}),
         })
       )
+      const locationGranted = (await AsyncStorage.getItem(OB_LOCATION_GRANTED)) === '1'
+      if (locationGranted) {
+        const result = await completeOnboarding({ walkAreaTags: [], router })
+        if (!result.ok) Alert.alert('保存に失敗しました', result.message)
+        return
+      }
       router.push('/onboarding/area')
     } finally {
       setSubmitting(false)
@@ -166,7 +175,7 @@ export default function DogPage() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <OnboardingStepHeader step={2} />
+        <OnboardingStepHeader step={2} totalSteps={onboardingTotalSteps} />
 
         <Text style={styles.title}>愛犬のことを{'\n'}教えてください</Text>
         <Text style={styles.sub}>

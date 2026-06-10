@@ -25,6 +25,7 @@ import { AiPlanTab } from '@/components/ai-plan/AiPlanTab'
 import { SearchDiscoverResultCard } from '@/components/search/SearchDiscoverResultCard'
 import { PowState, RunningDog } from '@/components/DogStates'
 import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
+import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useTabBarScroll } from '@/hooks/useTabBarScroll'
@@ -140,7 +141,7 @@ type ArticleRow = {
   published_at?: string | null
 }
 
-export default function SearchTab() {
+function SearchTab() {
   const router = useRouter()
   const isFocused = useIsFocused()
   const insets = useSafeAreaInsets()
@@ -1086,3 +1087,11 @@ const styles = StyleSheet.create({
   sortItemTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
   sortItemTxtOn: { color: colors.textPrimary },
 })
+
+export default function SearchTabScreen() {
+  return (
+    <ScreenErrorBoundary label="search">
+      <SearchTab />
+    </ScreenErrorBoundary>
+  )
+}

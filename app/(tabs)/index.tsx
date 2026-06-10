@@ -18,6 +18,7 @@ import { MapFilterBar } from '@/components/map/MapFilterBar'
 import { WalkAlertFab } from '@/components/map/MapAppMenu'
 import { GenreIcon } from '@/components/nearby/GenreIcon'
 import { RunningDog } from '@/components/DogStates'
+import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import {
   DEFAULT_MAP_GENRE,
   MAP_GENRE_COLOR,
@@ -70,7 +71,7 @@ const HeartHeaderIcon = () => (
   </Svg>
 )
 
-export default function NearbyPage() {
+function NearbyPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const topSafe = insets.top + 8
@@ -582,3 +583,11 @@ const styles = StyleSheet.create({
     zIndex: 7,
   },
 })
+
+export default function NearbyPageScreen() {
+  return (
+    <ScreenErrorBoundary label="map">
+      <NearbyPage />
+    </ScreenErrorBoundary>
+  )
+}

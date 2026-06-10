@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTabBarScrollContext } from '@/context/TabBarScrollContext'
+import { DISABLE_TABBAR_SCROLL } from '@/lib/debug/review-crash-flags'
 import { colors } from '@/constants/colors'
 
 /** ピル本体の高さ。container の paddingTop と insets と合わせて TAB_BAR_HEIGHT と整合させる */
@@ -40,7 +41,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   }, [resetTabBar, state.index])
 
   const animatedPillWrap = useAnimatedStyle(() => {
-    const p = tabBarProgress.value
+    const p = DISABLE_TABBAR_SCROLL ? 0 : tabBarProgress.value
     const full = pillFullWidthSv.value
     return {
       width: interpolate(p, [0, 1], [full, COLLAPSED_WIDTH], Extrapolation.CLAMP),
@@ -50,7 +51,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   })
 
   const animatedRow = useAnimatedStyle(() => ({
-    justifyContent: tabBarProgress.value > 0.5 ? 'center' : 'space-around',
+    justifyContent: (DISABLE_TABBAR_SCROLL ? 0 : tabBarProgress.value) > 0.5 ? 'center' : 'space-around',
   }))
 
   return (

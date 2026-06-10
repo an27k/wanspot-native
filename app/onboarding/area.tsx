@@ -13,14 +13,11 @@ import {
 import { colors } from '@/constants/colors'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
 import { WalkAreaTagPicker } from '@/components/walk-area/WalkAreaTagPicker'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { defaultBioFromDog } from '@/lib/default-bio'
-import { OB_DOG_KEY, OB_LOCATION_KEY, POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
-import { upsertUserWithWalkAreas } from '@/lib/persist-user-walk-area'
-import { supabase } from '@/lib/supabase'
+import { OB_DOG_KEY, OB_LOCATION_GRANTED, OB_LOCATION_KEY } from '@/lib/onboarding-constants'
+import { completeOnboarding } from '@/lib/onboarding-complete'
 import { walkAreaTagsForUpsert } from '@/lib/walk-area-tags'
 
 export default function WalkAreaOnboardingPage() {
@@ -34,18 +31,24 @@ export default function WalkAreaOnboardingPage() {
 
   useEffect(() => {
     void (async () => {
-      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
-      if (!raw) {
+      const granted = await AsyncStorage.getItem(OB_LOCATION_GRANTED)
+      if (granted === '1') {
+        router.replace('/onboarding/dog')
+        return
+      }
+      if (granted === null) {
         router.replace('/onboarding/location')
         return
       }
+      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
+      if (!raw) return
       try {
         const p = JSON.parse(raw) as { lat?: number; lng?: number }
         if (typeof p.lat === 'number' && typeof p.lng === 'number') {
           setAnchor({ lat: p.lat, lng: p.lng })
         }
       } catch {
-        router.replace('/onboarding/location')
+        /* 位置情報なしでもタグ手入力で続行 */
       }
     })()
   }, [router])
@@ -56,113 +59,17 @@ export default function WalkAreaOnboardingPage() {
     const normalized = walkAreaTagsForUpsert(tags)
     if (normalized.length === 0 || submitting) return
     setSubmitting(true)
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      const rawDog = await AsyncStorage.getItem(OB_DOG_KEY)
-      if (!user || !rawDog) {
-        Alert.alert('エラー', '入力データが見つかりません。最初からやり直してください。')
-        setSubmitting(false)
-        return
-      }
-
-      const dog = JSON.parse(rawDog) as {
-        name?: string
-        year?: string
-        month?: string
-        day?: string
-        breed?: string
-        size?: 'XS' | 'S' | 'M' | 'L' | 'XL'
-        vaccineCombo?: boolean | null
-        vaccineRabies?: boolean | null
-        vaccineComboDate?: string | null
-        vaccineRabiesDate?: string | null
-        photo_url?: string | null
-      }
-
-      const dogSize =
-        dog.size === 'XS' ||
-        dog.size === 'S' ||
-        dog.size === 'M' ||
-        dog.size === 'L' ||
-        dog.size === 'XL'
-          ? dog.size
-          : null
-
-      const dayPart = typeof dog.day === 'string' && dog.day.trim() !== '' ? dog.day.trim() : '1'
-      const birthday =
-        dog.year && dog.month ? ownerBirthdayToYmd(String(dog.year), String(dog.month), dayPart) : null
-
-      const { error: userUpsertError } = await upsertUserWithWalkAreas(supabase, {
-        id: user.id,
-        name: user.email?.split('@')[0]?.trim() || 'ユーザー',
-        parent_type: 'papa',
-        birthday: null,
-        bio: defaultBioFromDog({ name: dog.name, breed: dog.breed }),
-        walkAreaTags: normalized,
-      })
-      if (userUpsertError) {
-        Alert.alert('保存に失敗しました', userUpsertError.message)
-        setSubmitting(false)
-        return
-      }
-
-      const dogExtra = { walk_area_tags: normalized, is_primary: true }
-      const dogBase = {
-        name: dog.name ?? '',
-        birthday,
-        breed: dog.breed ?? null,
-        gender: null,
-        size: dogSize,
-        photo_url: dog.photo_url ?? null,
-        rabies_vaccinated: dog.vaccineRabies === true,
-        vaccine_vaccinated: dog.vaccineCombo === true,
-        rabies_vaccinated_at: dog.vaccineRabiesDate || null,
-        vaccine_vaccinated_at: dog.vaccineComboDate || null,
-      }
-      const isNewColumnMissing = (err: { message?: string } | null) =>
-        !!err?.message && (err.message.includes('walk_area_tags') || err.message.includes('is_primary'))
-
-      const { data: existingDog, error: dogSelErr } = await supabase
-        .from('dogs')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle()
-      if (dogSelErr) {
-        Alert.alert('保存に失敗しました（愛犬）', dogSelErr.message)
-        setSubmitting(false)
-        return
-      }
-      const runDogWrite = async (payload: Record<string, unknown>) =>
-        existingDog?.id
-          ? supabase.from('dogs').update(payload).eq('id', existingDog.id)
-          : supabase.from('dogs').insert({ user_id: user.id, ...payload })
-
-      let dogWrite = await runDogWrite({ ...dogBase, ...dogExtra })
-      if (dogWrite.error && isNewColumnMissing(dogWrite.error)) {
-        dogWrite = await runDogWrite(dogBase)
-      }
-      if (dogWrite.error) {
-        Alert.alert('保存に失敗しました（愛犬）', dogWrite.error.message)
-        setSubmitting(false)
-        return
-      }
-
-      await Promise.all([
-        AsyncStorage.removeItem(OB_DOG_KEY),
-        AsyncStorage.removeItem('ob_size'),
-        AsyncStorage.removeItem('ob_area'),
-        AsyncStorage.removeItem(OB_LOCATION_KEY),
-      ])
-      await AsyncStorage.setItem(POST_ONBOARDING_TUTORIAL_KEY, '1')
-    } catch (e) {
-      Alert.alert('エラー', e instanceof Error ? e.message : String(e))
+    const rawDog = await AsyncStorage.getItem(OB_DOG_KEY)
+    if (!rawDog) {
+      Alert.alert('エラー', '入力データが見つかりません。最初からやり直してください。')
       setSubmitting(false)
       return
     }
-    setSubmitting(false)
-    router.replace('/(tabs)/search')
+    const result = await completeOnboarding({ walkAreaTags: normalized, router })
+    if (!result.ok) {
+      Alert.alert('保存に失敗しました', result.message)
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -173,11 +80,11 @@ export default function WalkAreaOnboardingPage() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <OnboardingStepHeader step={3} />
+        <OnboardingStepHeader step={3} totalSteps={3} />
 
         <Text style={styles.h2}>よく散歩する{'\n'}エリアを選んでください</Text>
         <Text style={styles.hint}>
-          近くのおすすめに使います。現在地から選びました、調整できます。あとから設定でも変更できます。
+          位置情報が使えない場合のフォールバックです。近くのおすすめに使います。あとから設定でも変更できます。
         </Text>
 
         <WalkAreaTagPicker anchor={anchor} value={tags} onChange={setTags} />

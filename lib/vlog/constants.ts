@@ -1,8 +1,8 @@
 /** v9.5 較正パラメータ — 実VLOG数本で更新する */
 export const QUALITY_YIELD = 0.55
 
-/** 層2 絶対品質ゲート（YIELD±0.1で救済率が大きく動く） */
-export const ABSOLUTE_QUALITY_THRESHOLD = 0.58
+/** 層2 絶対品質ゲート（YIELD + 0.03） */
+export const ABSOLUTE_QUALITY_THRESHOLD = QUALITY_YIELD + 0.03
 
 export const VLOG_COMPLETION_TARGET = 5
 export const MIN_MEDIA_PER_UNIT = 2

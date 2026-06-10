@@ -1,4 +1,4 @@
-import { AppState, InteractionManager, StyleSheet, View } from 'react-native'
+import { AppState, InteractionManager, StyleSheet, Text, View } from 'react-native'
 import { useEffect, useMemo, useState } from 'react'
 import { useIsFocused } from '@react-navigation/native'
 import { VlogGeneratingPanel } from '@/components/album/VlogGeneratingPanel'
@@ -6,6 +6,7 @@ import { VlogLiquidGauge, type VlogGaugeMode } from '@/components/album/VlogLiqu
 import { VlogSpotNudgeChip } from '@/components/album/VlogSpotNudgeChip'
 import { VlogUnlockPanel } from '@/components/album/VlogUnlockPanel'
 import { colors } from '@/constants/colors'
+import { DISABLE_LIQUID_GAUGE } from '@/lib/debug/review-crash-flags'
 import type { VlogProgress } from '@/lib/album/vlog-progress'
 import type { VlogRenderStage } from '@/lib/vlog/render-client'
 
@@ -71,15 +72,23 @@ export function VlogProgressCard({
 
   return (
     <View style={styles.wrap}>
-      <VlogLiquidGauge
-        fillRatio={progress.progress}
-        displayCount={progress.completeUnits}
-        max={progress.target}
-        dogName={dogName}
-        animating={isFocused && appActive}
-        gaugeMode={gaugeMode}
-        onHelpPress={onHelpPress}
-      />
+      {DISABLE_LIQUID_GAUGE ? (
+        <View style={styles.simpleGauge}>
+          <Text style={styles.simpleGaugeTxt}>
+            {progress.completeUnits}/{progress.target} スポット
+          </Text>
+        </View>
+      ) : (
+        <VlogLiquidGauge
+          fillRatio={progress.progress}
+          displayCount={progress.completeUnits}
+          max={progress.target}
+          dogName={dogName}
+          animating={isFocused && appActive}
+          gaugeMode={gaugeMode}
+          onHelpPress={onHelpPress}
+        />
+      )}
 
       {!generating && progress.nudgeSpot ? (
         <VlogSpotNudgeChip spotName={progress.nudgeSpot.spotName} />
@@ -107,4 +116,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: colors.vessel,
   },
+  simpleGauge: {
+    height: CARD_H,
+    marginHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: colors.vessel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  simpleGaugeTxt: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
 })

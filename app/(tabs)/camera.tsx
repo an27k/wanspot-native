@@ -111,7 +111,7 @@ export default function ReviewAlbumTab() {
             onOpenTutorial={() => setTutorialOpen(true)}
           />
         </Animated.ScrollView>
-        <ReviewTutorialModal visible={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+        <ReviewTutorialModal visible={tutorialOpen} onClose={() => setTutorialOpen(false)} dogName={dog?.name} />
       </View>
     </ScreenErrorBoundary>
   )
