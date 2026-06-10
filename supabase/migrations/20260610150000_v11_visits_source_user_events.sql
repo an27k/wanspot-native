@@ -124,7 +124,7 @@ create index if not exists user_events_type_created_idx
   on public.user_events (event_type, created_at desc);
 
 comment on table public.user_events is
-  '行動イベントログ（分析用）。正データは visits/spot_likes 等。集計は service-role のみ。'
+  '行動イベントログ（分析用）。正データは visits/spot_likes 等。集計は service-role のみ。';
 -- TODO(プライバシー): 広告・マーケ用途前にプライバシーポリシーと App Store ラベル更新。外部提供なし。
 
 alter table public.user_events enable row level security;
