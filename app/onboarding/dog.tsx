@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Image } from 'expo-image'
-import * as Haptics from 'expo-haptics'
 import {
   Alert,
+  FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -13,52 +14,33 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { colors } from '@/constants/colors'
 import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { CenterSnapPicker } from '@/components/CenterSnapPicker'
-import { dogBirthdayYearBounds, OwnerBirthdayPickers, ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
-import { Header } from '@/components/onboarding/Header'
-import { FormField } from '@/components/onboarding/FormField'
 import { Ionicons } from '@expo/vector-icons'
-import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
+import {
+  dogBirthdayYearBounds,
+  OwnerBirthdayPickers,
+  ownerBirthdayToYmd,
+} from '@/components/OwnerBirthdayPickers'
+import { DogSizeSegments, type DogSizeKey } from '@/components/onboarding/DogSizeSegments'
+import { FormField } from '@/components/onboarding/FormField'
+import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
+import { TapSelectRow } from '@/components/onboarding/TapSelectRow'
+import { filterDogBreeds } from '@/lib/dog-breeds'
+import { showImagePickerOptions } from '@/lib/image-picker'
+import { OB_DOG_KEY, OB_LOCATION_GRANTED } from '@/lib/onboarding-constants'
+import { completeOnboarding } from '@/lib/onboarding-complete'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { showImagePickerOptions } from '@/lib/image-picker'
 
-const BREEDS = [
-  'トイプードル',
-  'チワワ',
-  'ダックスフンド',
-  'ポメラニアン',
-  'ミニチュアシュナウザー',
-  'フレンチブルドッグ',
-  '柴犬',
-  'ヨークシャーテリア',
-  'マルチーズ',
-  'シーズー',
-  'ゴールデンレトリバー',
-  'キャバリアキングチャールズスパニエル',
-  'パピヨン',
-  'ウェルシュコーギー',
-  'ラブラドールレトリバー',
-  'ビションフリーゼ',
-  'ボーダーコリー',
-  'パグ',
-  'シベリアンハスキー',
-  'イタリアングレイハウンド',
-  'ジャックラッセルテリア',
-  'サモエド',
-  '日本スピッツ',
-  '秋田犬',
-  'ミニチュアピンシャー',
-  'ウエストハイランドホワイトテリア',
-  'ボストンテリア',
-  'アメリカンコッカースパニエル',
-  'ビーグル',
-  'MIX（ミックス犬）',
-  'その他',
-] as const
+function formatBirthdayLabel(y: string, m: string, d: string): string {
+  const ymd = ownerBirthdayToYmd(y, m, d)
+  if (!ymd) return ''
+  const [, mo, da] = ymd.split('-')
+  return `${y}年${Number(mo)}月${Number(da)}日`
+}
 
 export default function DogPage() {
   const router = useRouter()
@@ -66,81 +48,72 @@ export default function DogPage() {
 
   useEffect(() => {
     void (async () => {
-      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
-      if (!raw) router.replace('/onboarding/location')
+      const granted = await AsyncStorage.getItem(OB_LOCATION_GRANTED)
+      if (granted === null) router.replace('/onboarding/location')
+      else setOnboardingTotalSteps(granted === '1' ? 2 : 3)
     })()
   }, [router])
+
   const [name, setName] = useState('')
+  const [breed, setBreed] = useState('')
+  const [size, setSize] = useState<DogSizeKey | null>(null)
   const [dogYear, setDogYear] = useState('')
   const [dogMonth, setDogMonth] = useState('')
   const [dogDay, setDogDay] = useState('')
-  const [breed, setBreed] = useState('')
-  const [gender, setGender] = useState<'male' | 'female' | null>(null)
+  const [dogPhotoUri, setDogPhotoUri] = useState<string | null>(null)
   const [vaccineCombo, setVaccineCombo] = useState<boolean | null>(null)
   const [vaccineRabies, setVaccineRabies] = useState<boolean | null>(null)
-  const [dogPhotoUri, setDogPhotoUri] = useState<string | null>(null)
-  const [photoError, setPhotoError] = useState('')
+  const [comboY, setComboY] = useState('')
+  const [comboM, setComboM] = useState('')
+  const [comboD, setComboD] = useState('')
+  const [rabiesY, setRabiesY] = useState('')
+  const [rabiesM, setRabiesM] = useState('')
+  const [rabiesD, setRabiesD] = useState('')
+  const [breedModal, setBreedModal] = useState(false)
+  const [breedQuery, setBreedQuery] = useState('')
+  const [birthdayModal, setBirthdayModal] = useState(false)
+  const [vaccineDateModal, setVaccineDateModal] = useState<'combo' | 'rabies' | null>(null)
+  const [vaccineExpanded, setVaccineExpanded] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [onboardingTotalSteps, setOnboardingTotalSteps] = useState(3)
 
   const dogBirthdayYmd = ownerBirthdayToYmd(dogYear, dogMonth, dogDay)
   const dogYBounds = dogBirthdayYearBounds()
+  const breedHits = useMemo(() => filterDogBreeds(breedQuery), [breedQuery])
+
   const canNext =
-    !!dogBirthdayYmd &&
-    !!name.trim() &&
-    !!breed &&
-    gender !== null &&
-    vaccineCombo !== null &&
-    vaccineRabies !== null
+    !!name.trim() && !!breed && size !== null && !!dogBirthdayYmd
 
   const handlePickDogPhoto = () => {
     showImagePickerOptions(async (image) => {
       setDogPhotoUri(image.uri)
-      setPhotoError('')
-
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
         const userId = user?.id
         if (!userId) {
           Alert.alert('エラー', 'ログインが必要です')
           return
         }
-
-        const fileExt = 'jpg'
-        const filePath = `dogs/${userId}-${Date.now()}.${fileExt}`
-
+        const filePath = `dogs/${userId}-${Date.now()}.jpg`
         const response = await fetch(image.uri)
         const arrayBuffer = await response.arrayBuffer()
-
-        // FIXME: Supabase Dashboard で avatars バケットの RLS ポリシーを確認
-        // - INSERT: authenticated ユーザーが自分のフォルダにアップロード可能
-        // - SELECT: 全ユーザーが読み取り可能（公開URL利用のため）
-        // - UPDATE/DELETE: 自分のファイルのみ
         const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(filePath, arrayBuffer, {
-            contentType: 'image/jpeg',
-            upsert: true,
-          })
-
+          .upload(filePath, arrayBuffer, { contentType: 'image/jpeg', upsert: true })
         if (uploadError) {
           Alert.alert('エラー', '写真のアップロードに失敗しました')
           setDogPhotoUri(null)
           return
         }
-
         const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
-        const publicUrl = data.publicUrl
-
-        const obDog = JSON.parse((await AsyncStorage.getItem('ob_dog')) || '{}')
+        const prev = JSON.parse((await AsyncStorage.getItem(OB_DOG_KEY)) || '{}')
         await AsyncStorage.setItem(
-          'ob_dog',
-          JSON.stringify({
-            ...obDog,
-            photo_url: publicUrl,
-          })
+          OB_DOG_KEY,
+          JSON.stringify({ ...prev, photo_url: data.publicUrl })
         )
-      } catch (error) {
-        console.error('[onboarding/dog] photo upload error:', error)
+      } catch {
         Alert.alert('エラー', '写真のアップロードに失敗しました')
         setDogPhotoUri(null)
       }
@@ -150,24 +123,37 @@ export default function DogPage() {
   const goNext = async () => {
     if (!canNext || submitting) return
     setSubmitting(true)
-    setPhotoError('')
     try {
-      const prev = JSON.parse((await AsyncStorage.getItem('ob_dog')) || '{}')
+      const prev = JSON.parse((await AsyncStorage.getItem(OB_DOG_KEY)) || '{}')
       const prevPhotoUrl = typeof prev?.photo_url === 'string' ? prev.photo_url : null
+      const comboDate =
+        vaccineCombo === true ? ownerBirthdayToYmd(comboY, comboM, comboD) : null
+      const rabiesDate =
+        vaccineRabies === true ? ownerBirthdayToYmd(rabiesY, rabiesM, rabiesD) : null
 
-      const obDogPayload = JSON.stringify({
-        name,
-        year: dogYear,
-        month: dogMonth,
-        day: dogDay,
-        breed,
-        gender,
-        vaccineCombo,
-        vaccineRabies,
-        ...(prevPhotoUrl ? { photo_url: prevPhotoUrl } : {}),
-      })
-      await AsyncStorage.setItem('ob_dog', obDogPayload)
-      router.push('/onboarding/size')
+      await AsyncStorage.setItem(
+        OB_DOG_KEY,
+        JSON.stringify({
+          name: name.trim(),
+          year: dogYear,
+          month: dogMonth,
+          day: dogDay,
+          breed,
+          size,
+          vaccineCombo,
+          vaccineRabies,
+          vaccineComboDate: comboDate,
+          vaccineRabiesDate: rabiesDate,
+          ...(prevPhotoUrl ? { photo_url: prevPhotoUrl } : {}),
+        })
+      )
+      const locationGranted = (await AsyncStorage.getItem(OB_LOCATION_GRANTED)) === '1'
+      if (locationGranted) {
+        const result = await completeOnboarding({ walkAreaTags: [], router })
+        if (!result.ok) Alert.alert('保存に失敗しました', result.message)
+        return
+      }
+      router.push('/onboarding/area')
     } finally {
       setSubmitting(false)
     }
@@ -176,21 +162,25 @@ export default function DogPage() {
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
   const padTop = insets.top + 16
 
-  const breedRows = [{ value: '', label: '—' }, ...BREEDS.map((b) => ({ value: b, label: b }))]
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: padTop, paddingBottom: padBottom + CTA_HEIGHT }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: padTop, paddingBottom: padBottom + CTA_HEIGHT },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Header progress={2} total={5} />
+        <OnboardingStepHeader step={2} totalSteps={onboardingTotalSteps} />
 
         <Text style={styles.title}>愛犬のことを{'\n'}教えてください</Text>
+        <Text style={styles.sub}>
+          プロフィールに使います。あとからいつでも変更できます。
+        </Text>
 
         <View style={styles.photoSection}>
           <Pressable
@@ -198,15 +188,21 @@ export default function DogPage() {
             style={({ pressed }) => [styles.photoCircle, pressed && styles.photoCirclePressed]}
           >
             {dogPhotoUri ? (
-              <Image source={{ uri: dogPhotoUri }} style={styles.photoPreview} contentFit="cover" {...remoteImageExpoProps} />
+              <Image
+                source={{ uri: dogPhotoUri }}
+                style={styles.photoPreview}
+                contentFit="cover"
+                {...remoteImageExpoProps}
+              />
             ) : (
               <View style={styles.photoPlaceholder}>
-                <Ionicons name="camera-outline" size={28} color="#BBB" />
+                <Ionicons name="camera" size={28} color={colors.primary} />
               </View>
             )}
           </Pressable>
-          <Text style={styles.photoLabel}>{dogPhotoUri ? '写真を変更' : '写真を追加（任意）'}</Text>
-          {photoError ? <Text style={styles.err}>{photoError}</Text> : null}
+          <Text style={styles.photoLabel}>
+            {dogPhotoUri ? '写真を変更' : '写真を追加（任意）'}
+          </Text>
         </View>
 
         <FormField label="名前" required>
@@ -220,85 +216,104 @@ export default function DogPage() {
           />
         </FormField>
 
-        <FormField label="生年月日" required hint="正確な日付がわからない場合は、推定でOKです">
-          <View style={styles.birthdayCard}>
-            <OwnerBirthdayPickers
-              compact
-              year={dogYear}
-              month={dogMonth}
-              day={dogDay}
-              onChangeYear={(v) => {
-                setDogYear(v)
-                void Haptics.selectionAsync()
-              }}
-              onChangeMonth={(v) => {
-                setDogMonth(v)
-                void Haptics.selectionAsync()
-              }}
-              onChangeDay={(v) => {
-                setDogDay(v)
-                void Haptics.selectionAsync()
-              }}
-              yearMin={dogYBounds.min}
-              yearMax={dogYBounds.max}
-              fieldLabel=""
-              hint=""
-            />
-          </View>
-        </FormField>
-
         <FormField label="犬種" required>
-          <View style={styles.pickerCard}>
-            <CenterSnapPicker listKey="dog-breed" data={breedRows} value={breed} onChange={setBreed} />
-          </View>
+          <TapSelectRow
+            label="犬種"
+            value={breed}
+            placeholder="タップして犬種を選ぶ"
+            onPress={() => {
+              setBreedQuery('')
+              setBreedModal(true)
+            }}
+          />
         </FormField>
 
-        <FormField label="性別" required>
-          <View style={styles.row2}>
-            {(['male', 'female'] as const).map((g) => {
-              const on = gender === g
-              return (
-                <Pressable
-                  key={g}
-                  onPress={() => setGender(g)}
-                  style={({ pressed }) => [
-                    styles.optionHalf,
-                    on && styles.optionHalfOn,
-                    pressed && styles.optionHalfPressed,
-                  ]}
-                >
-                  <Text style={[styles.optionHalfTxt, on && { color: '#1A1A1A' }]}>{g === 'male' ? '♂' : '♀'}</Text>
-                </Pressable>
-              )
-            })}
-          </View>
+        <FormField label="サイズ" required hint="選ぶと体重・体高の目安が表示されます">
+          <DogSizeSegments value={size} onChange={setSize} />
         </FormField>
 
-        {[
-          { label: '混合ワクチン3回', state: vaccineCombo, set: setVaccineCombo },
-          { label: '狂犬病ワクチン', state: vaccineRabies, set: setVaccineRabies },
-        ].map(({ label, state, set }) => (
-          <FormField key={label} label={label} required>
-            <View style={styles.row2}>
-              {[true, false].map((v) => {
-                const on = state === v
-                return (
-                  <Pressable
-                    key={String(v)}
-                    onPress={() => set(v)}
-                    style={({ pressed }) => [
-                      styles.optionHalf,
-                      on && styles.optionHalfOn,
-                      pressed && styles.optionHalfPressed,
-                    ]}
-                  >
-                    <Text style={[styles.optionHalfTxtSm, on && { color: '#1A1A1A' }]}>{v ? 'YES' : 'NO'}</Text>
-                  </Pressable>
-                )
-              })}
+        <FormField label="誕生日" required hint="正確な日付がわからない場合は、推定でOK">
+          <TapSelectRow
+            label="誕生日"
+            value={formatBirthdayLabel(dogYear, dogMonth, dogDay)}
+            placeholder="タップして日付を選ぶ"
+            onPress={() => setBirthdayModal(true)}
+          />
+        </FormField>
+
+        <View style={styles.vaccineWrap}>
+          <Pressable
+            style={styles.vaccineHead}
+            onPress={() => setVaccineExpanded((v) => !v)}
+          >
+            <Text style={styles.vaccineTitle}>ワクチン（任意）</Text>
+            <Text style={styles.vaccineHint}>あとから設定でも大丈夫です</Text>
+            <Ionicons
+              name={vaccineExpanded ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color="#aaa"
+              style={styles.vaccineChevron}
+            />
+          </Pressable>
+
+          {vaccineExpanded ? (
+            <View style={styles.vaccineBody}>
+              <Text style={styles.vaccineLbl}>混合ワクチン</Text>
+              <View style={styles.row2}>
+                {([true, false] as const).map((v) => {
+                  const on = vaccineCombo === v
+                  return (
+                    <Pressable
+                      key={String(v)}
+                      onPress={() => setVaccineCombo(v)}
+                      style={[styles.optionHalf, on && styles.optionHalfOn]}
+                    >
+                      <Text style={[styles.optionHalfTxt, on && styles.optionHalfTxtOn]}>
+                        {v ? '済' : '未'}
+                      </Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+              {vaccineCombo === true ? (
+                <TapSelectRow
+                  subdued
+                  label="混合ワクチン接種日（任意）"
+                  value={formatBirthdayLabel(comboY, comboM, comboD)}
+                  placeholder="わかる範囲でOK"
+                  onPress={() => setVaccineDateModal('combo')}
+                />
+              ) : null}
+
+              <Text style={[styles.vaccineLbl, { marginTop: 12 }]}>狂犬病ワクチン</Text>
+              <View style={styles.row2}>
+                {([true, false] as const).map((v) => {
+                  const on = vaccineRabies === v
+                  return (
+                    <Pressable
+                      key={String(v)}
+                      onPress={() => setVaccineRabies(v)}
+                      style={[styles.optionHalf, on && styles.optionHalfOn]}
+                    >
+                      <Text style={[styles.optionHalfTxt, on && styles.optionHalfTxtOn]}>
+                        {v ? '済' : '未'}
+                      </Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+              {vaccineRabies === true ? (
+                <TapSelectRow
+                  subdued
+                  label="狂犬病接種日（任意）"
+                  value={formatBirthdayLabel(rabiesY, rabiesM, rabiesD)}
+                  placeholder="わかる範囲でOK"
+                  onPress={() => setVaccineDateModal('rabies')}
+                />
+              ) : null}
             </View>
-          </FormField>
-        ))}
+          ) : null}
+        </View>
       </ScrollView>
 
       <View style={[styles.ctaContainer, { paddingBottom: insets.bottom + 32 }]}>
@@ -316,6 +331,102 @@ export default function DogPage() {
           </Text>
         </Pressable>
       </View>
+
+      <Modal visible={breedModal} transparent animationType="slide" onRequestClose={() => setBreedModal(false)}>
+        <View style={styles.modalRoot}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setBreedModal(false)} />
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>犬種を選ぶ</Text>
+            <TextInput
+              style={styles.searchInp}
+              value={breedQuery}
+              onChangeText={setBreedQuery}
+              placeholder="犬種名で検索"
+              placeholderTextColor="#BBB"
+              autoCorrect={false}
+            />
+            <FlatList
+              data={breedHits}
+              keyExtractor={(item) => item}
+              style={styles.breedList}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[styles.breedRow, breed === item && styles.breedRowOn]}
+                  onPress={() => {
+                    setBreed(item)
+                    setBreedModal(false)
+                  }}
+                >
+                  <Text style={styles.breedRowTxt}>{item}</Text>
+                </Pressable>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={vaccineDateModal !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setVaccineDateModal(null)}
+      >
+        <View style={styles.modalRootCenter}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setVaccineDateModal(null)} />
+          <View style={styles.modalCardCenter}>
+            <Text style={styles.modalTitle}>
+              {vaccineDateModal === 'rabies' ? '狂犬病ワクチン接種日' : '混合ワクチン接種日'}
+            </Text>
+            <View style={styles.birthdayCard}>
+              <OwnerBirthdayPickers
+                compact
+                fieldLabel=""
+                hint=""
+                year={vaccineDateModal === 'rabies' ? rabiesY : comboY}
+                month={vaccineDateModal === 'rabies' ? rabiesM : comboM}
+                day={vaccineDateModal === 'rabies' ? rabiesD : comboD}
+                onChangeYear={vaccineDateModal === 'rabies' ? setRabiesY : setComboY}
+                onChangeMonth={vaccineDateModal === 'rabies' ? setRabiesM : setComboM}
+                onChangeDay={vaccineDateModal === 'rabies' ? setRabiesD : setComboD}
+                yearMin={dogYBounds.min}
+                yearMax={dogYBounds.max}
+              />
+            </View>
+            <Pressable style={styles.modalDone} onPress={() => setVaccineDateModal(null)}>
+              <Text style={styles.modalDoneTxt}>決定</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={birthdayModal} transparent animationType="fade" onRequestClose={() => setBirthdayModal(false)}>
+        <View style={styles.modalRoot}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setBirthdayModal(false)} />
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>誕生日</Text>
+            <Text style={styles.modalHint}>正確な日付がわからない場合は、推定でOK</Text>
+            <View style={styles.birthdayCard}>
+              <OwnerBirthdayPickers
+                compact
+                year={dogYear}
+                month={dogMonth}
+                day={dogDay}
+                onChangeYear={setDogYear}
+                onChangeMonth={setDogMonth}
+                onChangeDay={setDogDay}
+                yearMin={dogYBounds.min}
+                yearMax={dogYBounds.max}
+                fieldLabel=""
+                hint=""
+              />
+            </View>
+            <Pressable style={styles.modalDone} onPress={() => setBirthdayModal(false)}>
+              <Text style={styles.modalDoneTxt}>決定</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   )
 }
@@ -324,36 +435,39 @@ const CTA_HEIGHT = 92
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 120,
-  },
+  scrollContent: { paddingHorizontal: 24 },
   title: {
     fontSize: 26,
     fontWeight: '700',
     color: '#1A1A1A',
     lineHeight: 36,
-    marginTop: 16,
-    marginBottom: 32,
+    marginTop: 8,
     letterSpacing: 0.3,
   },
-  photoSection: { alignItems: 'center', marginBottom: 32 },
+  sub: {
+    fontSize: 13,
+    color: '#888',
+    lineHeight: 20,
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  photoSection: { alignItems: 'center', marginBottom: 28 },
   photoCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#F0EFEC',
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    backgroundColor: colors.tintStrong,
+    borderWidth: 2,
+    borderColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
     marginBottom: 8,
   },
-  photoCirclePressed: { opacity: 0.7, transform: [{ scale: 0.97 }] },
+  photoCirclePressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   photoPreview: { width: '100%', height: '100%' },
   photoPlaceholder: { justifyContent: 'center', alignItems: 'center' },
-  photoLabel: { fontSize: 12, color: '#999' },
-  err: { fontSize: 12, color: '#E84335', marginTop: 10 },
+  photoLabel: { fontSize: 13, fontWeight: '600', color: '#888' },
   textInput: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -364,37 +478,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1A1A1A',
   },
-  pickerCard: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+  vaccineWrap: {
+    marginTop: 8,
+    marginBottom: 16,
     borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-  },
-  birthdayCard: {
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderColor: '#EEE',
+    backgroundColor: '#FAFAF8',
+    overflow: 'hidden',
   },
-  row2: { flexDirection: 'row', gap: 12 },
+  vaccineHead: { padding: 14 },
+  vaccineTitle: { fontSize: 13, fontWeight: '700', color: '#999' },
+  vaccineHint: { fontSize: 11, color: '#bbb', marginTop: 4 },
+  vaccineChevron: { position: 'absolute', right: 14, top: 16 },
+  vaccineBody: { paddingHorizontal: 14, paddingBottom: 14, gap: 8 },
+  vaccineLbl: { fontSize: 12, fontWeight: '600', color: '#aaa' },
+  row2: { flexDirection: 'row', gap: 10 },
   optionHalf: {
     flex: 1,
-    height: 48,
-    borderRadius: 12,
+    height: 44,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F5F4F0',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
+    backgroundColor: '#F0EFEC',
   },
-  optionHalfOn: { backgroundColor: '#FFC107' },
-  optionHalfPressed: { transform: [{ scale: 0.97 }], opacity: 0.85 },
-  optionHalfTxt: { fontSize: 24, fontWeight: '700', color: '#999' },
-  optionHalfTxtSm: { fontSize: 14, fontWeight: '700', color: '#999' },
+  optionHalfOn: { backgroundColor: colors.primary },
+  optionHalfTxt: { fontSize: 14, fontWeight: '700', color: '#999' },
+  optionHalfTxtOn: { color: colors.textPrimary },
   ctaContainer: {
     position: 'absolute',
     left: 0,
@@ -407,13 +517,57 @@ const styles = StyleSheet.create({
     borderTopColor: '#EEE',
   },
   ctaButton: {
-    backgroundColor: '#FFC107',
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
-  ctaButtonPressed: { backgroundColor: '#FFB300', transform: [{ scale: 0.98 }] },
+  ctaButtonPressed: { backgroundColor: colors.brandDark, transform: [{ scale: 0.98 }] },
   ctaText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
   ctaTextDisabled: { color: '#999' },
+  modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalRootCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 },
+  modalCardCenter: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalTitle: { fontSize: 16, fontWeight: '800', color: '#1A1A1A', marginBottom: 12 },
+  modalHint: { fontSize: 12, color: '#888', marginBottom: 12 },
+  searchInp: {
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    marginBottom: 8,
+  },
+  breedList: { maxHeight: 320 },
+  breedRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  breedRowOn: { backgroundColor: colors.tintStrong },
+  breedRowTxt: { fontSize: 15, color: '#1A1A1A' },
+  birthdayCard: {
+    backgroundColor: '#FAFAF8',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#EEE',
+  },
+  modalDone: {
+    marginTop: 12,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalDoneTxt: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
 })

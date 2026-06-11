@@ -1,49 +1,54 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useEffect, useState } from 'react'
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native'
+import { colors } from '@/constants/colors'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
+import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
 import { WalkAreaTagPicker } from '@/components/walk-area/WalkAreaTagPicker'
-import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
+import { OB_DOG_KEY, OB_LOCATION_GRANTED, OB_LOCATION_KEY } from '@/lib/onboarding-constants'
+import { completeOnboarding } from '@/lib/onboarding-complete'
 import { walkAreaTagsForUpsert } from '@/lib/walk-area-tags'
-
-const STEP_DOTS = 5
 
 export default function WalkAreaOnboardingPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const [anchor, setAnchor] = useState<{ lat: number; lng: number } | null>(null)
   const [tags, setTags] = useState<string[]>([])
-  const [wideNearby, setWideNearby] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const padTop = insets.top + 16
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
 
   useEffect(() => {
     void (async () => {
-      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
-      if (!raw) {
+      const granted = await AsyncStorage.getItem(OB_LOCATION_GRANTED)
+      if (granted === '1') {
+        router.replace('/onboarding/dog')
+        return
+      }
+      if (granted === null) {
         router.replace('/onboarding/location')
         return
       }
+      const raw = await AsyncStorage.getItem(OB_LOCATION_KEY)
+      if (!raw) return
       try {
         const p = JSON.parse(raw) as { lat?: number; lng?: number }
         if (typeof p.lat === 'number' && typeof p.lng === 'number') {
           setAnchor({ lat: p.lat, lng: p.lng })
         }
       } catch {
-        router.replace('/onboarding/location')
+        /* 位置情報なしでもタグ手入力で続行 */
       }
     })()
   }, [router])
@@ -52,15 +57,19 @@ export default function WalkAreaOnboardingPage() {
 
   const goNext = async () => {
     const normalized = walkAreaTagsForUpsert(tags)
-    if (normalized.length === 0) return
-    await AsyncStorage.setItem(
-      'ob_area',
-      JSON.stringify({
-        tags: normalized,
-        useLocationBased: wideNearby,
-      })
-    )
-    router.push('/onboarding/owner')
+    if (normalized.length === 0 || submitting) return
+    setSubmitting(true)
+    const rawDog = await AsyncStorage.getItem(OB_DOG_KEY)
+    if (!rawDog) {
+      Alert.alert('エラー', '入力データが見つかりません。最初からやり直してください。')
+      setSubmitting(false)
+      return
+    }
+    const result = await completeOnboarding({ walkAreaTags: normalized, router })
+    if (!result.ok) {
+      Alert.alert('保存に失敗しました', result.message)
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -71,40 +80,21 @@ export default function WalkAreaOnboardingPage() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <View style={styles.headRow}>
-          <View style={styles.brandRow}>
-            <OnboardingBrand />
-            <Text style={styles.brandTxt}>wanspot</Text>
-          </View>
-          <View style={styles.dots}>
-            {Array.from({ length: STEP_DOTS }, (_, i) => (
-              <View key={i} style={[styles.dot, { backgroundColor: i <= 3 ? '#FFD84D' : '#e0e0e0' }]} />
-            ))}
-          </View>
-        </View>
+        <OnboardingStepHeader step={3} totalSteps={3} />
 
-        <Text style={styles.h2}>
-          よく散歩する{'\n'}エリアを選んでください
+        <Text style={styles.h2}>よく散歩する{'\n'}エリアを選んでください</Text>
+        <Text style={styles.hint}>
+          位置情報が使えない場合のフォールバックです。近くのおすすめに使います。あとから設定でも変更できます。
         </Text>
-        <Text style={styles.hint}>現在地から約10km以内の主要エリアを提案しています。検索で他の地域も選べます（1つ以上必須）。</Text>
 
         <WalkAreaTagPicker anchor={anchor} value={tags} onChange={setTags} />
 
-        <View style={styles.switchRow}>
-          <View style={styles.switchTextCol}>
-            <Text style={styles.switchTitle}>近くのスポットを広めに表示</Text>
-            <Text style={styles.switchSub}>オンにすると、一覧の距離の初期値を約3kmにします（あとから変更可）</Text>
-          </View>
-          <Switch
-            value={wideNearby}
-            onValueChange={setWideNearby}
-            trackColor={{ false: '#e0e0e0', true: '#FFE8A8' }}
-            thumbColor={wideNearby ? colors.brand : '#f4f4f4'}
-          />
-        </View>
-
-        <TouchableOpacity style={[styles.next, !canNext && styles.nextOff]} onPress={() => void goNext()} disabled={!canNext}>
-          <Text style={styles.nextTxt}>次へ →</Text>
+        <TouchableOpacity
+          style={[styles.next, (!canNext || submitting) && styles.nextOff]}
+          onPress={() => void goNext()}
+          disabled={!canNext || submitting}
+        >
+          <Text style={styles.nextTxt}>{submitting ? '保存中...' : 'はじめる'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -114,35 +104,16 @@ export default function WalkAreaOnboardingPage() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#fff' },
   main: { flex: 1, backgroundColor: '#fff' },
-  headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandTxt: { fontWeight: '800', fontSize: 14, color: '#2b2a28' },
-  dots: { flexDirection: 'row', gap: 4 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#2b2a28' },
-  hint: { fontSize: 12, color: '#aaa', lineHeight: 18 },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    backgroundColor: '#f7f6f3',
-    borderWidth: 1,
-    borderColor: '#ebebeb',
-  },
-  switchTextCol: { flex: 1 },
-  switchTitle: { fontSize: 14, fontWeight: '700', color: '#2b2a28', marginBottom: 4 },
-  switchSub: { fontSize: 11, color: '#888', lineHeight: 16 },
+  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: colors.textPrimary },
+  hint: { fontSize: 12, color: '#888', lineHeight: 18 },
   next: {
     marginTop: 8,
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#FFD84D',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   nextOff: { opacity: 0.45 },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
+  nextTxt: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
 })

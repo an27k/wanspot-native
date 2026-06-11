@@ -1,17 +1,19 @@
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '@/constants/colors'
-import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { GlassTabBar } from '@/components/navigation/GlassTabBar'
+import { AlbumTabIcon } from '@/components/icons/AlbumTabIcon'
+import { TabBarScrollProvider } from '@/context/TabBarScrollContext'
 import { track } from '@/lib/analytics'
-import { featureFlags } from '@/lib/feature-flags'
 
 export default function TabsLayout() {
-  const insets = useSafeAreaInsets()
   return (
-    <Tabs
+    <TabBarScrollProvider>
+      <Tabs
+      initialRouteName="search"
       /** 非表示タブを切り離さず、切替時の空白・遅延を減らす */
       detachInactiveScreens={false}
+      tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         /** shift は両画面が一瞬 opacity 0 付近を通り「真っ白」に見えやすいのでオフ */
@@ -20,20 +22,21 @@ export default function TabsLayout() {
         lazy: true,
         /** true だと非アクティブタブの更新が止まり、再フォーカス時にネイティブ広告周りが「消えた」ように見えることがある */
         freezeOnBlur: false,
-        tabBarActiveTintColor: colors.brand,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          height: TAB_BAR_HEIGHT + insets.bottom,
-          paddingBottom: insets.bottom,
-          // ラベルを消すので、アイコンが中央に来るように少し上方向へ
-          paddingTop: 10,
-        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarShowLabel: false,
       }}
     >
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: '検索',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'search' : 'search-outline'} color={color} size={focused ? 26 : 24} />
+          ),
+        }}
+        listeners={{ focus: () => track('tab_viewed', { tab_name: 'search' }) }}
+      />
       <Tabs.Screen
         name="index"
         options={{
@@ -49,36 +52,23 @@ export default function TabsLayout() {
         listeners={{ focus: () => track('tab_viewed', { tab_name: 'index' }) }}
       />
       <Tabs.Screen
-        name="search"
+        name="camera"
         options={{
-          title: '検索',
+          title: 'レビュー',
+          freezeOnBlur: true,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'search' : 'search-outline'} color={color} size={focused ? 26 : 24} />
+            <AlbumTabIcon color={color} size={focused ? 26 : 24} />
           ),
         }}
-        listeners={{ focus: () => track('tab_viewed', { tab_name: 'search' }) }}
-      />
-      <Tabs.Screen
-        name="events"
-        options={{
-          title: featureFlags.events ? 'イベント' : 'プラン',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'calendar' : 'calendar-outline'}
-              color={color}
-              size={focused ? 26 : 24}
-            />
-          ),
-        }}
-        listeners={{ focus: () => track('tab_viewed', { tab_name: 'events' }) }}
+        listeners={{ focus: () => track('tab_viewed', { tab_name: 'camera' }) }}
       />
       <Tabs.Screen
         name="mypage"
         options={{
-          title: 'マイページ',
+          title: '設定',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? 'person-circle' : 'person-circle-outline'}
+              name={focused ? 'settings' : 'settings-outline'}
               color={color}
               size={focused ? 26 : 24}
             />
@@ -87,5 +77,6 @@ export default function TabsLayout() {
         listeners={{ focus: () => track('tab_viewed', { tab_name: 'mypage' }) }}
       />
     </Tabs>
+    </TabBarScrollProvider>
   )
 }

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { colors } from '@/constants/colors'
 
 type Option = { label: string; value: string; icon?: string; disabled?: boolean }
 
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F4F0',
   },
   optionSelected: {
-    backgroundColor: '#FFD84D',
+    backgroundColor: colors.primary,
   },
   optionPressed: {
     opacity: 0.85,

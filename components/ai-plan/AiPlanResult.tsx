@@ -11,16 +11,18 @@ import { AiPlanSummaryCard } from '@/components/ai-plan/AiPlanSummaryCard'
 import { AiPlanTimelineNode } from '@/components/ai-plan/AiPlanTimelineNode'
 import type { AiPlanCore, AiPlanLeg, AiPlanMood, AiPlanStop, AiPlanTravelMode } from '@/components/ai-plan/types'
 import { TOKENS } from '@/constants/color-tokens'
-import { spotPhotoUrl } from '@/lib/wanspot-api'
+import { fetchSpotPhotoRefFromDetail, resolveSpotPhotoUri } from '@/lib/wanspot-api'
 
 /** タブ内表示のためネイティブ pop ジェスチャの対象外 — iOS は左端スワイプで onBack を再現 */
 const IOS_EDGE_BACK_WIDTH = 24
 const IOS_EDGE_SWIPE_DX = 56
-/** 固定オーバーレイのため、ヘッダー「戻る」と被らないよう上端を空ける */
-const IOS_EDGE_BACK_TOP_INSET = 56
+/** 固定サブヘッダー分 — 左端スワイプの当たり判定 */
+const SUB_HEADER_H = 48
+const IOS_EDGE_BACK_TOP_INSET = SUB_HEADER_H
 
 type SpotRow = {
   id: string
+  place_id: string | null
   lat: number | null
   lng: number | null
   name: string | null
@@ -92,26 +94,40 @@ export function AiPlanResult({
       const { data } = await supabase
         .from('spots')
         .select(
-          'id, name, address, category, lat, lng, photo_ref, rating, price_level, google_types, extended_category'
+          'id, place_id, name, address, category, lat, lng, photo_ref, rating, price_level, google_types, extended_category'
         )
         .in('id', ids)
       const map: Record<string, SpotRow> = {}
       for (const row of (data ?? []) as SpotRow[]) {
         if (row?.id) map[row.id] = row
       }
-      setSpotById(map)
+
+      // DB の photo_ref は Google 側で期限切れになりやすい → Detail API で最新 ref を取得
+      await Promise.all(
+        Object.entries(map).map(async ([spotId, row]) => {
+          const pid = row.place_id
+          if (typeof pid !== 'string' || pid.length === 0) return
+          const freshRef = await fetchSpotPhotoRefFromDetail(pid)
+          if (freshRef) map[spotId] = { ...row, photo_ref: freshRef }
+        })
+      )
+
+      setSpotById({ ...map })
     })()
   }, [stops])
 
   useEffect(() => {
     const rows = Object.values(spotById)
     if (rows.length === 0) return
-    const urls = rows
-      .map((r) => spotPhotoUrl(r.photo_ref ?? null))
+    const urls = stops
+      .map((s) => {
+        const row = spotById[s.spot_id]
+        return resolveSpotPhotoUri(row?.photo_ref ?? null, s.photo_url ?? null, 'card')
+      })
       .filter((u): u is string => u != null && u.length > 0)
     if (urls.length === 0) return
     void Image.prefetch(urls, 'memory-disk')
-  }, [spotById])
+  }, [spotById, stops])
 
   const mergedStops: AiPlanStop[] = useMemo(() => {
     return stops.map((s) => {
@@ -134,17 +150,17 @@ export function AiPlanResult({
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.subHeader}>
+        <Pressable onPress={onBack} style={styles.headerBack} hitSlop={8}>
+          <Text style={styles.headerBackTxt}>← 戻る</Text>
+        </Pressable>
+        <Pressable onPress={handleMore} style={styles.headerMore} hitSlop={8}>
+          <Text style={styles.headerMoreTxt}>⋯</Text>
+        </Pressable>
+      </View>
+
       {/* タブ内のため RN Stack のスワイプ pop は効かない — 左端ストリップで同等の戻りを実装 */}
       <ScrollView style={styles.root} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Pressable onPress={onBack} style={styles.headerBack} hitSlop={8}>
-            <Text style={styles.headerBackTxt}>← 戻る</Text>
-          </Pressable>
-          <Pressable onPress={handleMore} style={styles.headerMore} hitSlop={8}>
-            <Text style={styles.headerMoreTxt}>⋯</Text>
-          </Pressable>
-        </View>
-
         <AiPlanRouteMap stops={mergedStops} />
 
         <AiPlanSummaryCard plan={plan} legs={legs} mood={mood} travelMode={travelMode} />
@@ -201,13 +217,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
   },
-  header: {
+  subHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    height: SUB_HEADER_H,
     paddingHorizontal: 16,
-    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: TOKENS.border.subtle,
     backgroundColor: TOKENS.surface.primary,

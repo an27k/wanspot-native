@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,7 +8,9 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { colors } from '@/constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { TOKENS } from '@/constants/color-tokens'
 import { sendAreaRequest } from '@/lib/wanspot-api'
 
@@ -157,7 +158,7 @@ export function AiPlanError({
             >
               {sending ? (
                 <View style={styles.sendingRow}>
-                  <ActivityIndicator color={TOKENS.text.primary} />
+                  <LoadingDogSvg size={20} />
                   <Text style={styles.sendButtonTxt}>送信中...</Text>
                 </View>
               ) : (
@@ -358,7 +359,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     zIndex: 55,
-    backgroundColor: '#2b2a28',
+    backgroundColor: colors.textPrimary,
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,

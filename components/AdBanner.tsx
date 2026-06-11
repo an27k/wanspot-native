@@ -1,5 +1,6 @@
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads'
 import { View, Text, Platform, StyleSheet } from 'react-native'
+import { colors } from '@/constants/colors'
 
 const adUnitId = __DEV__
   ? TestIds.BANNER
@@ -56,6 +57,6 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     height: 50,
-    backgroundColor: '#ebebeb',
+    backgroundColor: colors.border,
   },
 })

@@ -24,10 +24,26 @@ module.exports = ({ config }) => {
 
   const amplitudeApiKey = process.env.EXPO_PUBLIC_AMPLITUDE_API_KEY || ''
   const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || ''
+  const googleMapsAndroidApiKey =
+    process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY || googleMapsApiKey
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || ''
+
+  const plugins = (config.plugins ?? []).map((entry) => {
+    if (entry === 'react-native-maps') {
+      return [
+        'react-native-maps',
+        {
+          iosGoogleMapsApiKey: googleMapsApiKey,
+          androidGoogleMapsApiKey: googleMapsAndroidApiKey,
+        },
+      ]
+    }
+    return entry
+  })
 
   return {
     ...config,
-    plugins: [...(config.plugins ?? []), 'expo-image'],
+    plugins: [...plugins, 'expo-image', 'expo-video'],
     extra: {
       ...config.extra,
       supabaseUrl,
@@ -36,6 +52,8 @@ module.exports = ({ config }) => {
       wanspotSiteUrl,
       amplitudeApiKey,
       googleMapsApiKey,
+      googleMapsAndroidApiKey,
+      googleWebClientId,
     },
   }
 }

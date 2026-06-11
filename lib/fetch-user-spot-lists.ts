@@ -55,12 +55,27 @@ async function fetchBatchDetailsMerged(placeIds: string[]): Promise<Record<strin
   return merged
 }
 
-async function overrideAddressesFromBatchDetails(spots: UserSpotRow[]): Promise<UserSpotRow[]> {
+function normalizePriceLevel(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === '') return null
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isFinite(n)) return null
+  return Math.max(0, Math.min(4, Math.round(n)))
+}
+
+async function mergePlacesDetailsFromBatch(spots: UserSpotRow[]): Promise<UserSpotRow[]> {
   if (spots.length === 0) return spots
   const details = await fetchBatchDetailsMerged(spots.map((s) => s.place_id))
   return spots.map((s) => {
-    const line = addressFromBatchDetail(details[s.place_id])
-    return line ? { ...s, address: line } : s
+    const detail = details[s.place_id]
+    const address = addressFromBatchDetail(detail) ?? s.address
+    const photoRef =
+      typeof detail?.photo_ref === 'string' && detail.photo_ref.trim().length > 0
+        ? detail.photo_ref.trim()
+        : s.photoRef
+    const rating =
+      typeof detail?.rating === 'number' && Number.isFinite(detail.rating) ? detail.rating : s.rating
+    const priceLevel = normalizePriceLevel(detail?.price_level) ?? s.priceLevel
+    return { ...s, address, photoRef, rating, priceLevel }
   })
 }
 
@@ -74,6 +89,9 @@ export type UserSpotRow = {
   lng: number | null
   likeCount: number
   savedAt: string | null
+  photoRef: string | null
+  rating: number | null
+  priceLevel: number | null
 }
 
 type FetchResult =
@@ -140,7 +158,10 @@ export async function fetchLikedSpotsForUser(
           lng: (raw.lng as number | null) ?? null,
           likeCount: likeCountBySpotId[id] ?? 0,
           savedAt: null as string | null,
-        } satisfies Omit<UserSpotRow, 'savedAt'> & { savedAt: string | null },
+          photoRef: null,
+          rating: null,
+          priceLevel: null,
+        } satisfies UserSpotRow,
       ]
     })
   )
@@ -150,8 +171,8 @@ export async function fetchLikedSpotsForUser(
     if (s) spots.push({ ...s, savedAt: savedAtById.get(id) ?? null })
   }
 
-  const withPlacesAddress = await overrideAddressesFromBatchDetails(spots)
-  return { ok: true, spots: withPlacesAddress }
+  const withPlacesDetails = await mergePlacesDetailsFromBatch(spots)
+  return { ok: true, spots: withPlacesDetails }
 }
 
 export async function fetchCheckedInSpotsForUser(
@@ -214,7 +235,10 @@ export async function fetchCheckedInSpotsForUser(
           lng: (raw.lng as number | null) ?? null,
           likeCount: likeCountBySpotId[id] ?? 0,
           savedAt: null as string | null,
-        } satisfies Omit<UserSpotRow, 'savedAt'> & { savedAt: string | null },
+          photoRef: null,
+          rating: null,
+          priceLevel: null,
+        } satisfies UserSpotRow,
       ]
     })
   )
@@ -224,6 +248,6 @@ export async function fetchCheckedInSpotsForUser(
     if (s) spots.push({ ...s, savedAt: savedAtById.get(id) ?? null })
   }
 
-  const withPlacesAddress = await overrideAddressesFromBatchDetails(spots)
-  return { ok: true, spots: withPlacesAddress }
+  const withPlacesDetails = await mergePlacesDetailsFromBatch(spots)
+  return { ok: true, spots: withPlacesDetails }
 }

@@ -14,18 +14,20 @@ const pressableRow: ViewStyle = {
   justifyContent: 'center',
 }
 
-/** Google: 白背景＋枠（Apple と border 幅を揃えて同じボックスモデルに） */
-export const oauthGooglePressableBase: ViewStyle = {
-  ...pressableRow,
-  backgroundColor: '#fff',
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-}
-
-/** Apple: 黒背景＋同色の 1px 枠（Google と外寸・内側余白を一致） */
-export const oauthApplePressableBase: ViewStyle = {
+/** Google / Apple 共通: 黒背景・同色枠（Apple HIG 準拠） */
+export const oauthProviderPressableBase: ViewStyle = {
   ...pressableRow,
   backgroundColor: '#000',
   borderWidth: 1,
   borderColor: '#000',
+}
+
+export const oauthGooglePressableBase = oauthProviderPressableBase
+export const oauthApplePressableBase = oauthProviderPressableBase
+
+/** OAuth ボタン文言（白・同一） */
+export const oauthProviderTextStyle = {
+  fontWeight: '800' as const,
+  fontSize: 16,
+  color: '#fff',
 }

@@ -13,21 +13,32 @@ import {
   View,
 } from 'react-native'
 import { useIsFocused } from '@react-navigation/native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
-import * as Location from 'expo-location'
+import Animated from 'react-native-reanimated'
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { AppHeader } from '@/components/AppHeader'
+import { IconAiPlan } from '@/components/common/IconAiPlan'
 import { AdNativeCard } from '@/components/AdNativeCard'
+import { AiPlanTab } from '@/components/ai-plan/AiPlanTab'
 import { SearchDiscoverResultCard } from '@/components/search/SearchDiscoverResultCard'
 import { PowState, RunningDog } from '@/components/DogStates'
+import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
+import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import { colors } from '@/constants/colors'
+import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { sortArticlesByScore } from '@/lib/articles/scoring'
-import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
+import { CACHE_TTL, fetchWithCache, geoBucket, invalidateCache, isCacheFresh } from '@/lib/client-cache'
+import { getCachedPrefecture, getCachedPrefectureAndMunicipality } from '@/lib/geo-cache'
+import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
+import { resolveSessionLocation } from '@/lib/location-session'
 import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
+import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
@@ -38,6 +49,7 @@ const SEARCH_STORAGE_KEY = 'search_state_v1'
 const SEARCH_RESTORE_FLAG = 'search_pending_restore'
 
 type SortKey = 'default' | 'rating' | 'distance'
+type DiscoverMode = 'ai' | 'articles' | 'ai_plan'
 
 const DEFAULT_SUGGESTIONS = [
   'ドッグキャンプ',
@@ -67,35 +79,7 @@ function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-async function getPrefecture(lat: number, lng: number): Promise<string> {
-  try {
-    const rows = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng })
-    const r0 = rows[0]
-    if (r0?.region) return r0.region
-    if (r0?.subregion) return r0.subregion
-  } catch {
-    /* ignore */
-  }
-  return '東京'
-}
-
-async function getPrefectureAndMunicipality(
-  lat: number,
-  lng: number
-): Promise<{ prefecture: string | null; municipality: string | null }> {
-  try {
-    const rows = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng })
-    const r0 = rows[0]
-    const prefecture = r0?.region ?? r0?.subregion ?? null
-    const municipality = r0?.city ?? r0?.district ?? r0?.subregion ?? null
-    return {
-      prefecture: typeof prefecture === 'string' ? prefecture : null,
-      municipality: typeof municipality === 'string' ? municipality : null,
-    }
-  } catch {
-    return { prefecture: null, municipality: null }
-  }
-}
+const ARTICLES_CACHE_KEY = 'search:articles:v1'
 
 const IconSearch = () => (
   <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth={2.5} strokeLinecap="round">
@@ -143,11 +127,7 @@ const IconThumbUp = ({ fill }: { fill: string }) => (
   </Svg>
 )
 /** 炎は絵文字と同じくらいの視認性のシルエット。絵文字は端末により多色のままになり `color` が効かないため、他タブと同じ #fff / #888 を SVG で統一 */
-const IconHot = ({ fill }: { fill: string }) => (
-  <Svg width={17} height={17} viewBox="0 0 24 24" fill={fill}>
-    <Path d="M12 22a7 7 0 007-7c0-2.8-1.8-5.2-3.5-7-.2 1.6-1.1 2.8-2.2 3.4C12.8 10 12 8.2 12 6c0-1.1.3-2.1.8-3-3.5 2.5-5.8 5.6-5.8 9a7 7 0 007 10z" />
-  </Svg>
-)
+// (trend feature removed)
 
 type ArticleRow = {
   id: string
@@ -161,15 +141,18 @@ type ArticleRow = {
   published_at?: string | null
 }
 
-export default function SearchTab() {
+function SearchTab() {
   const router = useRouter()
   const isFocused = useIsFocused()
+  const insets = useSafeAreaInsets()
   const scrollRef = useRef<ScrollView>(null)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<PlaceResult[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
-  const [discoverMode, setDiscoverMode] = useState<'ai' | 'hot' | 'articles'>('articles')
+  const [discoverMode, setDiscoverMode] = useState<DiscoverMode>('articles')
+  /** AIプランの結果表示中は検索ヘッダー/タブを隠して全画面に */
+  const [aiPlanChromeVisible, setAiPlanChromeVisible] = useState(true)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('default')
   const [showSort, setShowSort] = useState(false)
@@ -179,20 +162,62 @@ export default function SearchTab() {
   const [aiLabel, setAiLabel] = useState<string | null>(null)
   const [aiReason, setAiReason] = useState<string | null>(null)
   const [aiResults, setAiResults] = useState<PlaceResult[]>([])
-  const [hotLoading, setHotLoading] = useState(false)
-  const [hotResults, setHotResults] = useState<PlaceResult[]>([])
-  const [hotLabel, setHotLabel] = useState<string | null>(null)
   const [articlesList, setArticlesList] = useState<ArticleRow[]>([])
   const [articlesLoading, setArticlesLoading] = useState(false)
   const [spotLikesCount, setSpotLikesCount] = useState<number | null>(null)
   const restoredRef = useRef(false)
   const scrollYRef = useRef(0)
+  const updateScrollY = useCallback((y: number) => {
+    scrollYRef.current = y
+  }, [])
+  const tabBarScrollHandler = useTabBarScroll(updateScrollY)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
   const [pullRefreshing, setPullRefreshing] = useState(false)
   const [recentArticleIds, setRecentArticleIds] = useState<string[]>([])
   const [adsRuntimeReady, setAdsRuntimeReady] = useState(false)
   const adsPrimedRef = useRef(false)
+  /** AIプラン表示時、検索ヘッダーの高さぶん下げてオーバーレイ配置する */
+  const [headerH, setHeaderH] = useState(0)
+  const [showObTutorial, setShowObTutorial] = useState(false)
+  const [obTutorialDogName, setObTutorialDogName] = useState('')
+
+  useFocusEffect(
+    useCallback(() => {
+      void (async () => {
+        try {
+          const v = await AsyncStorage.getItem(POST_ONBOARDING_TUTORIAL_KEY)
+          if (v !== '1') return
+          setShowObTutorial(true)
+          const {
+            data: { user },
+          } = await supabase.auth.getUser()
+          if (!user) {
+            setObTutorialDogName('')
+            return
+          }
+          const { data: dogRow } = await supabase
+            .from('dogs')
+            .select('name')
+            .eq('user_id', user.id)
+            .maybeSingle()
+          const n = typeof dogRow?.name === 'string' ? dogRow.name.trim() : ''
+          setObTutorialDogName(n)
+        } catch {
+          /* ignore */
+        }
+      })()
+    }, [])
+  )
+
+  const dismissObTutorial = useCallback(async () => {
+    try {
+      await AsyncStorage.removeItem(POST_ONBOARDING_TUTORIAL_KEY)
+    } catch {
+      /* ignore */
+    }
+    setShowObTutorial(false)
+  }, [])
 
   useFocusEffect(
     useCallback(() => {
@@ -214,7 +239,7 @@ export default function SearchTab() {
             if (!cancelled) setAdsRuntimeReady(true)
             return
           }
-          await new Promise((r) => setTimeout(r, 800))
+          await new Promise((r) => setTimeout(r, 300))
           if (cancelled) return
           await prepareSearchTabAdsOnce()
           adsPrimedRef.current = true
@@ -236,13 +261,27 @@ export default function SearchTab() {
   )
 
   useEffect(() => {
-    Location.getCurrentPositionAsync({}).then((p) => setLocation({ lat: p.coords.latitude, lng: p.coords.longitude })).catch(() => {})
+    void (async () => {
+      const result = await resolveSessionLocation(null)
+      if (result.ok) setLocation(result.location)
+    })()
   }, [])
 
   useFocusEffect(
     useCallback(() => {
       void (async () => {
-        const tags = await fetchUserWalkAreaTags(supabase)
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          setUserWalkTags([])
+          return
+        }
+        const { data: tags } = await fetchWithCache(
+          `user:walk-tags:${user.id}`,
+          CACHE_TTL.WALK_TAGS_MS,
+          () => fetchUserWalkAreaTagsByUserId(supabase, user.id)
+        )
         setUserWalkTags(tags)
       })()
     }, [])
@@ -303,11 +342,18 @@ export default function SearchTab() {
         if (!cancelled) setSpotLikesCount(0)
         return
       }
-      const { count, error } = await supabase
-        .from('spot_likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-      if (!cancelled) setSpotLikesCount(error ? 0 : (count ?? 0))
+      const { data: count } = await fetchWithCache(
+        `user:spot-likes-count:${user.id}`,
+        CACHE_TTL.SPOT_LIKES_MS,
+        async () => {
+          const { count: n, error } = await supabase
+            .from('spot_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+          return error ? 0 : (n ?? 0)
+        }
+      )
+      if (!cancelled) setSpotLikesCount(count)
     })()
     return () => {
       cancelled = true
@@ -327,22 +373,26 @@ export default function SearchTab() {
     void (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        const prefecture = location ? await getPrefecture(location.lat, location.lng) : undefined
-        const res = await wanspotFetch('/api/spots/suggest-tags', {
-          method: 'POST',
-          json: {
-            userId: user?.id ?? null,
-            lat: location?.lat,
-            lng: location?.lng,
-            prefecture,
-          },
-        })
-        if (!cancelled && res.ok) {
+        const geoKey = location ? geoBucket(location.lat, location.lng) : 'none'
+        const cacheKey = `search:suggest-tags:${user?.id ?? 'anon'}:${geoKey}`
+        const { data: tags } = await fetchWithCache(cacheKey, CACHE_TTL.SUGGEST_TAGS_MS, async () => {
+          const prefecture = location ? await getCachedPrefecture(location.lat, location.lng) : undefined
+          const res = await wanspotFetch('/api/spots/suggest-tags', {
+            method: 'POST',
+            json: {
+              userId: user?.id ?? null,
+              lat: location?.lat,
+              lng: location?.lng,
+              prefecture,
+            },
+          })
+          if (!res.ok) return null
           const data = (await res.json()) as { tags?: string[] }
-          if (Array.isArray(data.tags) && data.tags.length > 0) {
-            setSuggestions(data.tags)
-            setSuggestionsReady(true)
-          }
+          return Array.isArray(data.tags) && data.tags.length > 0 ? data.tags : null
+        })
+        if (!cancelled && tags) {
+          setSuggestions(tags)
+          setSuggestionsReady(true)
         }
       } catch {
         /* ignore */
@@ -359,11 +409,20 @@ export default function SearchTab() {
       setSpotLikesCount(0)
       return
     }
-    const { count, error } = await supabase
-      .from('spot_likes')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-    setSpotLikesCount(error ? 0 : (count ?? 0))
+    invalidateCache(`user:spot-likes-count:${user.id}`)
+    const { data: count } = await fetchWithCache(
+      `user:spot-likes-count:${user.id}`,
+      CACHE_TTL.SPOT_LIKES_MS,
+      async () => {
+        const { count: n, error } = await supabase
+          .from('spot_likes')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+        return error ? 0 : (n ?? 0)
+      },
+      { force: true }
+    )
+    setSpotLikesCount(count)
   }, [])
 
   const handleAiRecommend = useCallback(async (opts?: { force?: boolean; locationOverride?: { lat: number; lng: number } | null }) => {
@@ -383,32 +442,36 @@ export default function SearchTab() {
         setAiLoading(false)
         return
       }
-      const { count, error: cntErr } = await supabase
-        .from('spot_likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-      const n = cntErr ? 0 : (count ?? 0)
+      const n = spotLikesCount ?? 0
       if (n < AI_LIKES_MIN) {
-        setSpotLikesCount(n)
         setAiLoading(false)
         return
       }
-      const walkTags = await fetchUserWalkAreaTags(supabase)
-      const prefecture = loc ? await getPrefecture(loc.lat, loc.lng) : undefined
-      const result = await wanspotFetchJson<{
-        spots?: PlaceResult[]
-        label?: string
-        reason?: string
-      }>('/api/spots/recommend', {
-        method: 'POST',
-        json: {
-          userId: user.id,
-          lat: loc?.lat,
-          lng: loc?.lng,
-          walkAreaTags: walkTags,
-          prefecture,
+      const geoKey = loc ? geoBucket(loc.lat, loc.lng) : 'none'
+      const cacheKey = `search:recommend:${user.id}:${geoKey}`
+      if (force) invalidateCache(cacheKey)
+      const { data: result } = await fetchWithCache(
+        cacheKey,
+        CACHE_TTL.RECOMMEND_MS,
+        async () => {
+          const prefecture = loc ? await getCachedPrefecture(loc.lat, loc.lng) : undefined
+          return wanspotFetchJson<{
+            spots?: PlaceResult[]
+            label?: string
+            reason?: string
+          }>('/api/spots/recommend', {
+            method: 'POST',
+            json: {
+              userId: user.id,
+              lat: loc?.lat,
+              lng: loc?.lng,
+              walkAreaTags: userWalkTags,
+              prefecture,
+            },
+          })
         },
-      })
+        { force }
+      )
       setAiLabel(result.label ?? null)
       setAiReason(result.reason ?? null)
       setAiResults(filterDiscoverRecommendSpots(result.spots ?? []))
@@ -419,58 +482,34 @@ export default function SearchTab() {
     } finally {
       setAiLoading(false)
     }
-  }, [aiLoading, aiResults.length, location])
-
-  const handleHot = useCallback(
-    async (opts?: { force?: boolean; locationOverride?: { lat: number; lng: number } | null }) => {
-      const force = opts?.force === true
-      const loc = opts?.locationOverride !== undefined ? opts.locationOverride : location
-      if (hotLoading) return
-      if (!force && hotResults.length > 0) return
-      setHotLoading(true)
-      try {
-        const walkTags = await fetchUserWalkAreaTags(supabase)
-        const prefecture = loc ? await getPrefecture(loc.lat, loc.lng) : '東京'
-        const result = await wanspotFetchJson<{ spots?: PlaceResult[]; label?: string }>('/api/spots/hot', {
-          method: 'POST',
-          json: {
-            lat: loc?.lat,
-            lng: loc?.lng,
-            prefecture,
-            walkAreaTags: walkTags,
-          },
-        })
-        setHotLabel(result.label ?? null)
-        setHotResults(filterDiscoverRecommendSpots(result.spots ?? []))
-      } catch {
-        setHotResults([])
-      } finally {
-        setHotLoading(false)
-      }
-    },
-    [hotLoading, hotResults.length, location]
-  )
+  }, [aiLoading, aiResults.length, location, spotLikesCount, userWalkTags])
 
   const handleArticles = useCallback(
     async (opts?: { force?: boolean }) => {
       const force = opts?.force === true
       if (articlesLoading) return
       if (!force && articlesList.length > 0) return
-      setArticlesLoading(true)
+      const cacheWarm = !force && isCacheFresh(ARTICLES_CACHE_KEY, CACHE_TTL.ARTICLES_MS)
+      if (!cacheWarm) setArticlesLoading(true)
       try {
-        const { data } = await supabase
-          .from('articles')
-          .select(
-            'id, title, summary, slug, category, keywords, image_url, created_at, published_at, blocks, spot_links'
-          )
-          .eq('status', 'published')
-          .order('published_at', { ascending: false, nullsFirst: false })
-
-        const rows = (data ?? []) as (ArticleRow & { blocks?: unknown; spot_links?: unknown })[]
+        if (force) invalidateCache(ARTICLES_CACHE_KEY)
+        const { data: rows, fromCache } = await fetchWithCache(
+          ARTICLES_CACHE_KEY,
+          CACHE_TTL.ARTICLES_MS,
+          async () => {
+            const { data } = await supabase
+              .from('articles')
+              .select('id, title, summary, slug, category, keywords, image_url, created_at, published_at')
+              .eq('status', 'published')
+              .order('published_at', { ascending: false, nullsFirst: false })
+            return (data ?? []) as ArticleRow[]
+          },
+          { force }
+        )
 
         const geo =
           location != null
-            ? await getPrefectureAndMunicipality(location.lat, location.lng)
+            ? await getCachedPrefectureAndMunicipality(location.lat, location.lng)
             : { prefecture: null as string | null, municipality: null as string | null }
 
         const sorted = sortArticlesByScore(
@@ -493,6 +532,13 @@ export default function SearchTab() {
         )
 
         setArticlesList(sorted)
+        if (!fromCache) {
+          const urls = sorted
+            .map((a) => a.image_url)
+            .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+            .map((u) => resizePlacesImageUrl(u.trim(), 'card'))
+          if (urls.length > 0) void ExpoImage.prefetch(urls.slice(0, 12), 'memory-disk')
+        }
       } catch {
         setArticlesList([])
       } finally {
@@ -502,22 +548,10 @@ export default function SearchTab() {
     [articlesLoading, articlesList.length, location, recentArticleIds]
   )
 
-  /** まとめ記事サムネを一覧取得直後に先読み（スクロール時の待ちを減らす） */
-  useEffect(() => {
-    if (articlesList.length === 0) return
-    const urls = articlesList
-      .map((a) => a.image_url)
-      .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
-      .map((u) => resizePlacesImageUrl(u.trim(), 'card'))
-    if (urls.length === 0) return
-    void ExpoImage.prefetch(urls.slice(0, 16), 'memory-disk')
-  }, [articlesList])
-
   useEffect(() => {
     if (searched) return
-    if (discoverMode === 'hot') void handleHot()
     if (discoverMode === 'articles') void handleArticles()
-  }, [discoverMode, searched, handleHot, handleArticles])
+  }, [discoverMode, searched, handleArticles])
 
   useEffect(() => {
     if (searched || spotLikesCount === null || spotLikesCount < AI_LIKES_MIN) return
@@ -562,22 +596,29 @@ export default function SearchTab() {
     setPullRefreshing(true)
     try {
       await refreshSpotLikesCount()
-      const tags = await fetchUserWalkAreaTags(supabase)
-      setUserWalkTags(tags)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        invalidateCache(`user:walk-tags:${user.id}`)
+        const { data: tags } = await fetchWithCache(
+          `user:walk-tags:${user.id}`,
+          CACHE_TTL.WALK_TAGS_MS,
+          () => fetchUserWalkAreaTagsByUserId(supabase, user.id),
+          { force: true }
+        )
+        setUserWalkTags(tags)
+      }
       let locFresh: { lat: number; lng: number } | null = location
-      try {
-        const pos = await Location.getCurrentPositionAsync({})
-        locFresh = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-        setLocation(locFresh)
-      } catch {
-        /* ignore */
+      const locResult = await resolveSessionLocation(location)
+      if (locResult.ok) {
+        locFresh = locResult.location
+        if (locResult.changed) setLocation(locFresh)
       }
       if (searched && query.trim()) {
         await handleSearch(query, { silent: true })
       } else if (discoverMode === 'articles') {
         await handleArticles({ force: true })
-      } else if (discoverMode === 'hot') {
-        await handleHot({ force: true, locationOverride: locFresh })
       } else {
         await handleAiRecommend({ force: true, locationOverride: locFresh })
       }
@@ -592,7 +633,6 @@ export default function SearchTab() {
     refreshSpotLikesCount,
     handleSearch,
     handleArticles,
-    handleHot,
     handleAiRecommend,
   ])
 
@@ -614,10 +654,10 @@ export default function SearchTab() {
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
   /** 取得済み結果に対し、タグ・現在地で再ランク（fetch 内でも適用済みだが、タブ復帰後のタグ更新に追従） */
   const discoverResults = useMemo(() => {
-    const raw = discoverMode === 'ai' ? aiResults : hotResults
+    const raw = aiResults
     return rankSpotsByWalkContext(raw, location, userWalkTags)
-  }, [discoverMode, aiResults, hotResults, location, userWalkTags])
-  const discoverLoading = discoverMode === 'ai' ? aiLoading : discoverMode === 'hot' ? hotLoading : articlesLoading
+  }, [aiResults, location, userWalkTags])
+  const discoverLoading = discoverMode === 'ai' ? aiLoading : articlesLoading
 
   const AD_ROW_EVERY = 5
   const shouldShowAdAfter = (index: number, total: number) =>
@@ -634,20 +674,24 @@ export default function SearchTab() {
     })
   }
 
+  /** 「AIプラン」チップ選択時は AiPlanTab を全画面オーバーレイで表示（挙動は従来のまま） */
+  const showAiPlan = !searched && discoverMode === 'ai_plan'
+
   return (
     <View style={styles.root}>
-      <AppHeader />
-      <ScrollView
+      <Animated.ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
+        scrollEnabled={!showAiPlan}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24 },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={() => Keyboard.dismiss()}
         scrollEventThrottle={16}
-        onScroll={(e) => {
-          scrollYRef.current = e.nativeEvent.contentOffset.y
-        }}
+        onScroll={tabBarScrollHandler}
         refreshControl={
           <RefreshControl
             refreshing={pullRefreshing}
@@ -657,6 +701,9 @@ export default function SearchTab() {
           />
         }
       >
+        {/* ヘッダーはコンテンツと一緒に上へ流れる（固定しない） */}
+        <View onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}>
+        <AppHeader />
         <View style={styles.searchHeader}>
           <View style={styles.searchRow}>
             <View style={styles.searchInner}>
@@ -733,7 +780,17 @@ export default function SearchTab() {
                   }}
                 >
                   <IconBulb fill={discoverMode === 'articles' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>まとめ記事</Text>
+                  <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>ワンスポまとめ</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.discTab, discoverMode === 'ai_plan' && styles.discTabOn]}
+                  onPress={() => {
+                    Keyboard.dismiss()
+                    setDiscoverMode('ai_plan')
+                  }}
+                >
+                  <IconAiPlan fill={discoverMode === 'ai_plan' ? '#fff' : '#888'} />
+                  <Text style={[styles.discTabTxt, discoverMode === 'ai_plan' && styles.discTabTxtOn]}>AIプラン</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.discTab, discoverMode === 'ai' && styles.discTabOn]}
@@ -745,21 +802,13 @@ export default function SearchTab() {
                   <IconThumbUp fill={discoverMode === 'ai' ? '#fff' : '#888'} />
                   <Text style={[styles.discTabTxt, discoverMode === 'ai' && styles.discTabTxtOn]}>AIレコメンド</Text>
                 </Pressable>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'hot' && styles.discTabOn]}
-                  onPress={() => {
-                    Keyboard.dismiss()
-                    setDiscoverMode('hot')
-                  }}
-                >
-                  <IconHot fill={discoverMode === 'hot' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'hot' && styles.discTabTxtOn]}>トレンド</Text>
-                </Pressable>
               </View>
             </>
           ) : null}
         </View>
+        </View>
 
+        {!showAiPlan ? (
         <View style={styles.results}>
           {loading ? <RunningDog label="検索中..." /> : null}
           {!loading && searched && results.length === 0 ? <PowState label="見つかりませんでした" /> : null}
@@ -845,9 +894,7 @@ export default function SearchTab() {
                     !(discoverMode === 'ai' && spotLikesCount !== null && spotLikesCount < AI_LIKES_MIN) ? (
                     <View style={{ marginBottom: 4 }}>
                       <Text style={styles.discLabel}>
-                        {discoverMode === 'ai'
-                          ? aiLabel ?? aiReason ?? 'あなたへのおすすめ'
-                          : hotLabel ?? '今話題のスポット'}
+                        {discoverMode === 'ai' ? aiLabel ?? aiReason ?? 'あなたへのおすすめ' : ''}
                       </Text>
                       {discoverMode === 'ai' && aiLabel && aiReason && aiReason.trim() !== aiLabel.trim() ? (
                         <Text style={styles.discSub}>{aiReason}</Text>
@@ -898,7 +945,14 @@ export default function SearchTab() {
             </>
           ) : null}
         </View>
-      </ScrollView>
+        ) : null}
+      </Animated.ScrollView>
+
+      {showAiPlan ? (
+        <View style={[styles.aiPlanOverlay, { top: aiPlanChromeVisible ? headerH : 0 }]}>
+          <AiPlanTab onEmbeddedChromeVisibility={setAiPlanChromeVisible} />
+        </View>
+      ) : null}
 
       <Modal visible={showSort} transparent animationType="fade" onRequestClose={() => setShowSort(false)}>
         <Pressable
@@ -928,14 +982,27 @@ export default function SearchTab() {
           </View>
         </Pressable>
       </Modal>
+
+      <PostOnboardingTutorialModal
+        visible={showObTutorial}
+        dogName={obTutorialDogName}
+        onDismiss={() => void dismissObTutorial()}
+      />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f7f6f3' },
+  root: { flex: 1, backgroundColor: colors.paper },
   scrollContent: { paddingBottom: 24 },
-  searchHeader: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ebebeb', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
+  aiPlanOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.paper,
+  },
+  searchHeader: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: colors.border, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   searchInner: {
     flex: 1,
@@ -945,13 +1012,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
   },
-  input: { flex: 1, fontSize: 12, color: '#2b2a28', paddingVertical: 4 },
-  searchGo: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#FFD84D' },
-  searchGoTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
+  input: { flex: 1, fontSize: 12, color: colors.textPrimary, paddingVertical: 4 },
+  searchGo: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: colors.primary },
+  searchGoTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
   kbDismissBar: {
     alignSelf: 'center',
     marginTop: 6,
@@ -960,9 +1027,9 @@ const styles = StyleSheet.create({
   },
   kbDismissTxt: { fontSize: 12, fontWeight: '700', color: '#2563eb' },
   sortWrap: { position: 'relative' },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#2b2a28' },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: colors.textPrimary },
   sortBtnTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
-  /** キーワードタグ行と（まとめ記事／AI／トレンド）の間の区切り */
+  /** キーワードタグ行と（まとめ記事／AI）の間の区切り */
   discoverTabs: {
     flexDirection: 'row',
     gap: 8,
@@ -981,21 +1048,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#f5f5f5',
   },
-  discTabOn: { backgroundColor: '#2b2a28' },
+  discTabOn: { backgroundColor: colors.textPrimary },
   discTabTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
   discTabTxtOn: { color: '#fff' },
   sugRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
   sug: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e8e8e8', marginRight: 8 },
   sugTxt: { fontSize: 12, color: '#888' },
   results: { padding: 16, gap: 12 },
-  artCard: { borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: '#ebebeb', marginBottom: 12 },
+  artCard: { borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border, marginBottom: 12 },
   artImg: { width: '100%', aspectRatio: 16 / 9 },
   artImgPh: { backgroundColor: '#f5f5f5' },
   artBody: { padding: 16 },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  kwPill: { backgroundColor: '#FFF9E0', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
-  kwPillTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
-  artTitle: { fontSize: 16, fontWeight: '800', color: '#2b2a28', marginBottom: 8 },
+  kwPill: { backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
+  kwPillTxt: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
+  artTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginBottom: 8 },
   artSum: { fontSize: 12, color: '#888', lineHeight: 18 },
   discLabel: { fontSize: 12, fontWeight: '800', color: '#aaa', marginBottom: 4 },
   discSub: { fontSize: 11, fontWeight: '500', color: '#888', marginTop: 2, marginBottom: 2 },
@@ -1007,7 +1074,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     minWidth: 140,
     overflow: 'hidden',
     elevation: 8,
@@ -1016,7 +1083,15 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
   },
   sortItem: { paddingHorizontal: 16, paddingVertical: 12 },
-  sortItemOn: { backgroundColor: '#FFF9E0' },
+  sortItemOn: { backgroundColor: colors.tintStrong },
   sortItemTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
-  sortItemTxtOn: { color: '#2b2a28' },
+  sortItemTxtOn: { color: colors.textPrimary },
 })
+
+export default function SearchTabScreen() {
+  return (
+    <ScreenErrorBoundary label="search">
+      <SearchTab />
+    </ScreenErrorBoundary>
+  )
+}

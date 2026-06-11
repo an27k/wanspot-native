@@ -1,10 +1,11 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { LoadingDogSvg } from '@/components/common/LoadingDog'
-import { IconPaw } from '@/components/IconPaw'
+import { BrandLoader } from '@/components/common/BrandLoader'
+import { DogFaceMark } from '@/components/common/DogFaceMark'
+import { colors } from '@/constants/colors'
 
-export const RunningDog = ({ label = '読み込み中...' }: { label?: string }) => (
+export const RunningDog = ({ label = '読み込み中...', size = 96 }: { label?: string; size?: number }) => (
   <View style={styles.runWrap}>
-    <LoadingDogSvg />
+    <BrandLoader size={size} />
     <Text style={styles.runLabel}>{label}</Text>
   </View>
 )
@@ -17,7 +18,7 @@ export const PowState = ({
   onRetry?: () => void
 }) => (
   <View style={styles.runWrap}>
-    <IconPaw size={40} color="#aaa" />
+    <DogFaceMark size={40} muted />
     <Text style={styles.powLabel}>{label}</Text>
     {onRetry ? (
       <TouchableOpacity style={styles.retryBtn} onPress={onRetry} activeOpacity={0.85}>
@@ -29,15 +30,15 @@ export const PowState = ({
 
 const styles = StyleSheet.create({
   runWrap: { alignItems: 'center', gap: 12, paddingVertical: 32 },
-  runLabel: { fontSize: 12, color: '#aaa' },
-  powLabel: { fontSize: 14, color: '#aaa' },
+  runLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  powLabel: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   retryBtn: {
     backgroundColor: '#f5f5f5',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     borderRadius: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
-  retryTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
+  retryTxt: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
 })

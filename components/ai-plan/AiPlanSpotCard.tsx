@@ -1,10 +1,11 @@
+import { useEffect, useState } from 'react'
 import { Image } from 'expo-image'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { TOKENS } from '@/constants/color-tokens'
 import { getCategoryLabel } from '@/lib/ai-plan/category-labels'
-import { spotPhotoUrl } from '@/lib/wanspot-api'
+import { resolveSpotPhotoUri } from '@/lib/wanspot-api'
 import type { AiPlanStop } from '@/components/ai-plan/types'
 
 const IconStar = () => (
@@ -85,8 +86,13 @@ export function AiPlanSpotCard({
   db: AiPlanSpotDbRow
   onPress: () => void
 }) {
-  const photoRef = db?.photo_ref ?? null
-  const uri = spotPhotoUrl(photoRef)
+  const uri = resolveSpotPhotoUri(db?.photo_ref ?? null, stop.photo_url ?? null, 'card')
+  const [imageFailed, setImageFailed] = useState(false)
+
+  useEffect(() => {
+    setImageFailed(false)
+  }, [uri])
+
   const dwellMinutes = stop.dwell_minutes ?? 0
   const note = stop.note?.trim() ?? ''
   const catLabel = getCategoryLabel(stop)
@@ -100,7 +106,20 @@ export function AiPlanSpotCard({
     <View style={styles.wrap}>
       <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.92}>
         <View style={styles.photoWrap}>
-          {uri ? <Image source={{ uri }} style={styles.photo} contentFit="cover" {...remoteImageExpoProps} /> : null}
+          {uri && !imageFailed ? (
+            <Image
+              source={{ uri }}
+              recyclingKey={uri}
+              style={styles.photo}
+              contentFit="cover"
+              {...listImageExpoProps}
+              onError={() => setImageFailed(true)}
+            />
+          ) : (
+            <View style={styles.photoPlaceholder}>
+              <Text style={styles.photoPlaceholderTxt}>写真なし</Text>
+            </View>
+          )}
           <View style={styles.dwellBadge}>
             <Text style={styles.dwellBadgeTxt}>{dwellMinutes}分滞在</Text>
           </View>
@@ -151,6 +170,17 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   photo: { width: '100%', height: '100%' },
+  photoPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: TOKENS.surface.mapMuted,
+  },
+  photoPlaceholderTxt: {
+    fontSize: 12,
+    color: TOKENS.text.hint,
+    fontWeight: '600',
+  },
   dwellBadge: {
     position: 'absolute',
     top: 8,

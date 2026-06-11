@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { sortMunicipalityNames } from '@/constants/municipality-sort'
 import { listMunicipalities, listPrefectures } from '@/constants/municipality-centers'
 import { sortPrefecturesJis } from '@/constants/prefectures'
@@ -8,6 +10,7 @@ import { formatAiPlanDogDisplayName } from '@/lib/ai-plan/formatters'
 import { checkAiPlanFeasibility } from '@/lib/wanspot-api'
 import { SegmentedControl } from '@/components/common/SegmentedControl'
 import { MoodCard } from '@/components/common/MoodCard'
+import { colors } from '@/constants/colors'
 
 export type DurationPick = 'half_day' | 'full_day'
 export type TravelPick = 'walking' | 'driving'
@@ -125,6 +128,7 @@ export function AiPlanInputForm({
   onCancel: () => void
   areaPreset?: { prefecture: string; municipality: string } | null
 }) {
+  const insets = useSafeAreaInsets()
   const prefs = useMemo(() => sortPrefecturesJis(listPrefectures()), [])
   const [pref, setPref] = useState<string>('')
   const [muni, setMuni] = useState<string>('')
@@ -196,7 +200,11 @@ export function AiPlanInputForm({
 
   return (
     <View style={styles.screen}>
-      <ScrollView style={styles.root} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.root}
+        contentContainerStyle={[styles.scroll, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>エリア</Text>
           <View style={styles.row}>
@@ -274,6 +282,24 @@ export function AiPlanInputForm({
           <Text style={styles.dogSelectChange}>{effectiveSize ? '変更' : '選択'}</Text>
         </Pressable>
 
+        <View style={styles.ctaInline}>
+          <Pressable
+            disabled={!isFormValid}
+            style={({ pressed }) => [
+              styles.ctaButton,
+              !isFormValid && styles.ctaButtonDisabled,
+              pressed && isFormValid && styles.ctaButtonPressed,
+            ]}
+            onPress={() => {
+              if (!duration || !travel || !mood || !effectiveSize) return
+              onSubmit({ prefecture: pref, municipality: muni, duration, travel_mode: travel, mood, dogSize: effectiveSize })
+            }}
+          >
+            <Text style={[styles.ctaText, !isFormValid && styles.ctaTextDisabled]}>この内容でプランを作る</Text>
+            {isFormValid ? <Ionicons name="arrow-forward" size={18} color="#1A1A1A" /> : null}
+          </Pressable>
+        </View>
+
         <Pressable style={styles.cancelBtn} onPress={onCancel}>
           <Text style={styles.cancelTxt}>戻る</Text>
         </Pressable>
@@ -320,24 +346,6 @@ export function AiPlanInputForm({
           </Pressable>
         </Modal>
       </ScrollView>
-
-      <View style={styles.ctaContainer}>
-        <Pressable
-          disabled={!isFormValid}
-          style={({ pressed }) => [
-            styles.ctaButton,
-            !isFormValid && styles.ctaButtonDisabled,
-            pressed && isFormValid && styles.ctaButtonPressed,
-          ]}
-          onPress={() => {
-            if (!duration || !travel || !mood || !effectiveSize) return
-            onSubmit({ prefecture: pref, municipality: muni, duration, travel_mode: travel, mood, dogSize: effectiveSize })
-          }}
-        >
-          <Text style={[styles.ctaText, !isFormValid && styles.ctaTextDisabled]}>この内容でプランを作る</Text>
-          {isFormValid ? <Ionicons name="arrow-forward" size={18} color="#1A1A1A" /> : null}
-        </Pressable>
-      </View>
     </View>
   )
 }
@@ -347,7 +355,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FAFAF8' },
   scroll: {
     paddingTop: 16,
-    paddingBottom: 140,
     gap: 16,
   },
   pressed: { transform: [{ scale: 0.97 }], opacity: 0.9 },
@@ -437,22 +444,11 @@ const styles = StyleSheet.create({
     borderColor: '#F0F0F0',
     padding: 12,
   },
-  sizeRowOn: { backgroundColor: '#FFD84D', borderColor: '#e8c44a' },
+  sizeRowOn: { backgroundColor: colors.primary, borderColor: colors.brandDark },
   sizeRowTxt: { fontSize: 12, fontWeight: '700', color: '#1A1A1A' },
-  ctaContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 32,
-    backgroundColor: '#FAFAF8',
-    borderTopWidth: 1,
-    borderTopColor: '#EEE',
-  },
+  ctaInline: { paddingHorizontal: 16, marginTop: 4 },
   ctaButton: {
-    backgroundColor: '#FFC107',
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -461,7 +457,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
-  ctaButtonPressed: { backgroundColor: '#FFB300', transform: [{ scale: 0.98 }] },
+  ctaButtonPressed: { backgroundColor: colors.brandDark, transform: [{ scale: 0.98 }] },
   ctaText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
   ctaTextDisabled: { color: '#999' },
 })

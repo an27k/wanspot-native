@@ -1,19 +1,19 @@
 import { TOKENS } from '@/constants/color-tokens'
 
-/** いいねハート（塗りつぶし・輪郭。従来の赤より薄い黄色ゴールド系） */
+/** いいねハート（塗りつぶし・輪郭）。アプリ全体で赤に統一（地図ピンの MAP_LIKE_COLOR と同色） */
 export const HEART_ICON = {
   /** いいね済み（塗り） */
-  filled: '#D4B85C',
+  filled: '#FA3C4C',
   /** 未いいねの線 */
   strokeEmpty: '#c8c8c8',
 } as const
 
 export const COLORS = {
-  primary: '#FFD84D',
+  primary: TOKENS.brand.primary,
   black: TOKENS.text.primary,
-  bg: '#f7f6f3',
+  bg: TOKENS.surface.paper,
   /** テキスト・バッジなどセマンティックな「いいね」表記用（ハートSVGよりやや濃くても可） */
-  like: '#C9A227',
-  border: '#ebebeb',
-  muted: '#aaa',
+  like: TOKENS.brand.gold,
+  border: TOKENS.border.default,
+  muted: TOKENS.text.secondary,
 } as const

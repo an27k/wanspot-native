@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Image } from 'expo-image'
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
@@ -9,10 +9,12 @@ import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { track } from '@/lib/analytics'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
+import { useDogProfile } from '@/components/dog/useDogProfile'
 import { supabase } from '@/lib/supabase'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
+import { colors } from '@/constants/colors'
 
 function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000
@@ -38,15 +40,15 @@ const IconHeart = ({ filled }: { filled: boolean }) => (
 )
 
 const IconStar = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="#FFD84D" stroke="#FFD84D" strokeWidth={1.5}>
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
 
 const IconMoney = ({ filled }: { filled: boolean }) => (
-  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? '#FFD84D' : '#e8e8e8'}>
+  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? colors.primary : '#e8e8e8'}>
     <Circle cx="12" cy="12" r="10" />
-    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? '#2b2a28' : '#bbb'} fontWeight="bold">
+    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? colors.textPrimary : '#bbb'} fontWeight="bold">
       ¥
     </SvgText>
   </Svg>
@@ -88,6 +90,7 @@ export function NearbySpotCard({
   onLikeStateChange?: (placeId: string, liked: boolean) => void
 }) {
   const requireAuth = useRequireAuth()
+  const { dog } = useDogProfile()
   const scaleAnim = useRef(new Animated.Value(1)).current
   const [spotId, setSpotId] = useState<string | null>(null)
   const [liked, setLiked] = useState(false)
@@ -95,7 +98,7 @@ export function NearbySpotCard({
   const [likeLoading, setLikeLoading] = useState(false)
   const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
-  const uri = spotPhotoUrl(spot.photo_ref)
+  const uri = spotPhotoUrl(spot.photo_ref, 'thumbnail')
 
   useEffect(() => {
     setLocalLikeCount(likeCount)
@@ -180,6 +183,8 @@ export function NearbySpotCard({
         rating: spot.rating,
         address: spot.address,
         reviews: [],
+        dogSize: dog?.size ?? undefined,
+        dogBreed: dog?.breed ?? undefined,
         userContext: {
           walkAreaTags: userWalkTags,
           lat: userLocation?.lat ?? null,
@@ -207,7 +212,9 @@ export function NearbySpotCard({
   return (
     <TouchableOpacity style={styles.card} onPress={handleOpenDetail} activeOpacity={0.95}>
       <View style={styles.cardPhoto}>
-        {uri ? <Image source={{ uri }} style={styles.cardImg} contentFit="cover" {...remoteImageExpoProps} /> : null}
+        {uri ? (
+          <Image source={{ uri }} style={styles.cardImg} contentFit="cover" recyclingKey={uri} {...listImageExpoProps} />
+        ) : null}
         <View style={styles.heartCol}>
           <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
             <TouchableOpacity
@@ -242,11 +249,13 @@ export function NearbySpotCard({
         <Text style={styles.spotAddr}>{spot.address}</Text>
         {!aiSummary && !aiLoading ? (
           <TouchableOpacity style={styles.aiBtn} onPress={() => void handleAiSummary()}>
-            <IconPaw size={11} color="#aaa" />
-            <Text style={styles.aiBtnTxt}> AIまとめを見る</Text>
+            <View style={styles.aiBtnIcon}>
+              <IconPaw size={11} color="#aaa" />
+            </View>
+            <Text style={styles.aiBtnTxt}>ワンスポAIレビューを見る</Text>
           </TouchableOpacity>
         ) : null}
-        {aiLoading ? <RunningDog label="AIまとめを生成中..." /> : null}
+        {aiLoading ? <RunningDog label="ワンスポAIレビューを生成中..." /> : null}
         {aiSummary && !aiLoading ? (
           <View style={styles.aiBox}>
             <View style={styles.kwRow}>
@@ -270,7 +279,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
   },
   cardPhoto: { height: 144, backgroundColor: '#e8e4de', position: 'relative' },
   cardImg: { width: '100%', height: '100%' },
@@ -286,7 +295,7 @@ const styles = StyleSheet.create({
   likeCnt: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#C9A227',
+    color: HEART_ICON.filled,
     backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -298,8 +307,8 @@ const styles = StyleSheet.create({
   spotCat: {
     fontSize: 12,
     fontWeight: '700',
-    backgroundColor: '#FFF9E0',
-    color: '#2b2a28',
+    backgroundColor: colors.tintStrong,
+    color: colors.textPrimary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
@@ -308,12 +317,13 @@ const styles = StyleSheet.create({
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateSmall: { fontSize: 12, color: '#888' },
   distSmall: { fontSize: 12, color: '#aaa' },
-  spotName: { fontWeight: '700', fontSize: 14, color: '#2b2a28' },
+  spotName: { fontWeight: '700', fontSize: 14, color: colors.textPrimary },
   spotAddr: { fontSize: 12, color: '#aaa' },
   aiBtn: {
     marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -322,7 +332,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e8e8e8',
   },
-  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
+  aiBtnIcon: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
+  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888', lineHeight: 16 },
   aiBox: { marginTop: 8, padding: 12, borderRadius: 12, backgroundColor: '#FFFBEC' },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kw: {
@@ -331,8 +342,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: '#FFD84D',
-    color: '#2b2a28',
+    backgroundColor: colors.primary,
+    color: colors.textPrimary,
   },
   aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },

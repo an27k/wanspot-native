@@ -1,633 +1,593 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  Image,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
-import * as Linking from 'expo-linking'
-import * as Location from 'expo-location'
+import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { useSharedValue } from 'react-native-reanimated'
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useIsFocused } from '@react-navigation/native'
 import Svg, { Path } from 'react-native-svg'
-import { AppHeader } from '@/components/AppHeader'
-import { AdNativeCard } from '@/components/AdNativeCard'
-import { NearbySpotCard } from '@/components/nearby/NearbySpotCard'
-import { RunningDog, PowState } from '@/components/DogStates'
-import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
-import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
-import { adsEnabledForDevice } from '@/lib/ads-policy'
-import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
-import { supabase } from '@/lib/supabase'
+import {
+  NearbyBottomSheet,
+  type NearbySheetHandle,
+  type NearbySheetTab,
+} from '@/components/nearby/NearbyBottomSheet'
 import { colors } from '@/constants/colors'
-import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
-import { track } from '@/lib/analytics'
-import { wanspotFetch } from '@/lib/wanspot-api'
+import { NearbyMapView } from '@/components/map/NearbyMapView'
+import { MapFilterBar } from '@/components/map/MapFilterBar'
+import { WalkAlertFab } from '@/components/map/MapAppMenu'
+import { GenreIcon } from '@/components/nearby/GenreIcon'
+import { RunningDog } from '@/components/DogStates'
+import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
+import {
+  DEFAULT_MAP_GENRE,
+  MAP_GENRE_COLOR,
+  MAP_LIKE_COLOR,
+  NEARBY_MAP_GENRE_STORAGE_KEY,
+  NEARBY_RADIUS_M,
+  type MapGenreKey,
+} from '@/lib/nearby/constants'
+import {
+  CACHE_TTL,
+  geoBucket,
+  getCacheEntry,
+  invalidateCachePrefix,
+  isCacheFresh,
+  readCache,
+  writeCache,
+} from '@/lib/client-cache'
+import { resolveSessionLocation } from '@/lib/location-session'
+import { fetchNearbySpotsForGenreWithExpansion } from '@/lib/nearby/fetch-nearby-spots'
+import { calcDistanceMeters, isWithinRadiusM } from '@/lib/nearby/geo'
+import { isSameMapFilter, mapFilterLabel, type MapFilter } from '@/lib/nearby/map-filter'
+import { sortPlacesByScore } from '@/lib/nearby/place-score'
+import { sheetSpotFromPlace, sheetSpotFromUserRow, type SheetSpot } from '@/lib/nearby/sheet-spot'
+import { fetchLikedSpotsForUser } from '@/lib/fetch-user-spot-lists'
+import { ensureSpotId } from '@/lib/ensureSpot'
+import { openSpotDetail } from '@/lib/open-spot-detail'
+import { useWeather } from '@/lib/weather/use-weather'
+import { supabase } from '@/lib/supabase'
+import type { UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import type { PlaceResult } from '@/types/places'
 
-const ICON_FILTER_FUNNEL = require('@/assets/icon-filter-funnel.png')
+const WALK_ALERT_SIZE = 48
+const FILTER_BAR_H = 52
+const TOP_ROW_GAP = 8
 
-const GENRES = [
-  { key: 'cafe', label: 'カフェ' },
-  { key: 'park', label: '公園' },
-  { key: 'restaurant', label: 'レストラン' },
-  { key: 'veterinary_care', label: '動物病院' },
-  { key: 'pet_hotel', label: 'ペットホテル' },
-  { key: 'pet_store', label: 'ペットショップ' },
-  { key: 'grooming', label: 'トリミング' },
-] as const
-
-const DISTANCES = [
-  { key: 1000, label: '1km' },
-  { key: 3000, label: '3km' },
-  { key: 5000, label: '5km' },
-] as const
-
-type DistanceKey = (typeof DISTANCES)[number]['key']
-
-type SortKey = 'distance' | 'rating' | 'likes'
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'distance', label: '距離順' },
-  { key: 'rating', label: '評価順' },
-  { key: 'likes', label: 'いいね数' },
-]
-
-function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371000
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+function isMapGenreKey(v: string): v is MapGenreKey {
+  return (
+    v === 'cafe' ||
+    v === 'park' ||
+    v === 'restaurant' ||
+    v === 'dog_run' ||
+    v === 'veterinary_care' ||
+    v === 'pet_hotel'
+  )
 }
 
-const IconSort = () => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round">
-    <Path d="M3 6h18M3 12h12M3 18h6" />
+const HeartHeaderIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill={MAP_LIKE_COLOR}>
+    <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
   </Svg>
 )
 
-export default function NearbyPage() {
+function NearbyPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const isFocused = useIsFocused()
-  const [genre, setGenre] = useState('cafe')
-  const [distance, setDistance] = useState<DistanceKey>(1000)
-  const [spots, setSpots] = useState<PlaceResult[]>([])
-  const [loading, setLoading] = useState(false)
+  const topSafe = insets.top + 8
+  const filterBarTop = topSafe + WALK_ALERT_SIZE + TOP_ROW_GAP
+  const overlayTop = filterBarTop + FILTER_BAR_H
+
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [error, setError] = useState('')
-  const [sortKey, setSortKey] = useState<SortKey>('distance')
-  const [showSort, setShowSort] = useState(false)
-  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({})
-  const [spotsFetchError, setSpotsFetchError] = useState('')
-  const [likedOnlyFilter, setLikedOnlyFilter] = useState(false)
-  const [likedPlaceIds, setLikedPlaceIds] = useState<Set<string>>(() => new Set())
-  const [showObTutorial, setShowObTutorial] = useState(false)
-  const [obTutorialDogName, setObTutorialDogName] = useState('')
-  const [userWalkTags, setUserWalkTags] = useState<string[]>([])
-  const [pullRefreshing, setPullRefreshing] = useState(false)
-  const [adsRuntimeReady, setAdsRuntimeReady] = useState(false)
-  const adsPrimedRef = useRef(false)
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false)
+  const [locationError, setLocationError] = useState('')
 
-  useFocusEffect(
-    useCallback(() => {
-      void (async () => {
-        try {
-          const v = await AsyncStorage.getItem(POST_ONBOARDING_TUTORIAL_KEY)
-          if (v === '1') {
-            setShowObTutorial(true)
-            const {
-              data: { user },
-            } = await supabase.auth.getUser()
-            if (user) {
-              const { data: dogRow } = await supabase
-                .from('dogs')
-                .select('name')
-                .eq('user_id', user.id)
-                .maybeSingle()
-              const n = typeof dogRow?.name === 'string' ? dogRow.name.trim() : ''
-              setObTutorialDogName(n)
-            } else {
-              setObTutorialDogName('')
-            }
-          }
-        } catch {
-          /* ignore */
-        }
-        const tags = await fetchUserWalkAreaTags(supabase)
-        setUserWalkTags(tags)
-      })()
-    }, [])
-  )
+  const [genre, setGenre] = useState<MapGenreKey>(DEFAULT_MAP_GENRE)
+  const [genreReady, setGenreReady] = useState(false)
+  const [activeFilter, setActiveFilter] = useState<MapFilter | null>({ kind: 'like' })
+  const [nearbyPlaces, setNearbyPlaces] = useState<PlaceResult[]>([])
+  const [spotsLoading, setSpotsLoading] = useState(false)
+  const [spotsFetchError, setSpotsFetchError] = useState('')
 
-  const dismissObTutorial = useCallback(async () => {
-    try {
-      await AsyncStorage.removeItem(POST_ONBOARDING_TUTORIAL_KEY)
-    } catch {
-      /* ignore */
-    }
-    setShowObTutorial(false)
-  }, [])
+  const [likedRows, setLikedRows] = useState<SheetSpot[]>([])
+  const [userListsLoading, setUserListsLoading] = useState(false)
 
-  // TODO: いいね5件達成時に「AIがもっとぴったりな提案をします」のヒントを
-  // マイページ または いいね一覧画面で表示する仕組みを別途検討
+  const [dogName, setDogName] = useState<string | null>(null)
+  const [selectedSpot, setSelectedSpot] = useState<SheetSpot | null>(null)
+  const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({})
+  const [sheetBottomInset, setSheetBottomInset] = useState(0)
+  const [sheetIndex, setSheetIndex] = useState(-1)
+  const sheetControl = useRef<NearbySheetHandle>(null)
+  const sheetAnimatedIndex = useSharedValue(-1)
 
-  useEffect(() => {
-    const valid = new Set(DISTANCES.map((d) => d.key))
-    if (!valid.has(distance)) setDistance(DISTANCES[0].key)
-  }, [distance])
+  const { data: weather, loading: weatherLoading, needsLocation: weatherNeedsLocation, refetch: refetchWeather } =
+    useWeather(location)
+
+  const sheetTab: NearbySheetTab = useMemo(() => {
+    if (activeFilter?.kind === 'like') return 'like'
+    return 'score'
+  }, [activeFilter])
 
   useEffect(() => {
     void (async () => {
       try {
-        const raw = await AsyncStorage.getItem('ob_area')
-        const prefWide = await AsyncStorage.getItem('pref_nearby_wide')
-        let wide = prefWide === '1'
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw) as { useLocationBased?: boolean }
-            if (parsed?.useLocationBased) wide = true
-          } catch {
-            /* ignore */
-          }
-        }
-        if (wide) setDistance(3000)
+        const saved = await AsyncStorage.getItem(NEARBY_MAP_GENRE_STORAGE_KEY)
+        if (saved && isMapGenreKey(saved)) setGenre(saved)
       } catch {
         /* ignore */
+      } finally {
+        setGenreReady(true)
       }
     })()
   }, [])
+
+  useEffect(() => {
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        setDogName(null)
+        return
+      }
+      const cacheKey = `profile:dog-name:${user.id}`
+      if (isCacheFresh(cacheKey, CACHE_TTL.WALK_TAGS_MS)) {
+        const cached = readCache<string | null>(cacheKey)
+        if (cached !== undefined) {
+          setDogName(cached)
+          return
+        }
+      }
+      const { data } = await supabase.from('dogs').select('name').eq('user_id', user.id).maybeSingle()
+      const name = typeof data?.name === 'string' && data.name.trim() ? data.name.trim() : null
+      writeCache(cacheKey, name)
+      setDogName(name)
+    })()
+  }, [])
+
+  const clearFilter = useCallback(() => {
+    setActiveFilter(null)
+    setSelectedSpot(null)
+    setSheetBottomInset(0)
+    setSheetIndex(-1)
+    sheetControl.current?.close()
+  }, [])
+
+  const handleFilterSelect = useCallback(
+    (f: MapFilter) => {
+      if (isSameMapFilter(activeFilter, f)) {
+        requestAnimationFrame(() => sheetControl.current?.open())
+        return
+      }
+      if (f.kind === 'genre') {
+        setGenre(f.genre)
+        void AsyncStorage.setItem(NEARBY_MAP_GENRE_STORAGE_KEY, f.genre)
+      }
+      setActiveFilter(f)
+      setSelectedSpot(null)
+      requestAnimationFrame(() => sheetControl.current?.open())
+    },
+    [activeFilter]
+  )
+
+  const refreshLocation = useCallback(async () => {
+    const result = await resolveSessionLocation(location)
+    if (!result.ok) {
+      if (result.permissionDenied) {
+        setLocation(null)
+        setLocationPermissionDenied(true)
+        setLocationError('')
+        return false
+      }
+      setLocationError(result.error)
+      return false
+    }
+    setLocationPermissionDenied(false)
+    setLocationError('')
+    if (result.changed) setLocation(result.location)
+    return true
+  }, [location])
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false
       void (async () => {
-        const { status } = await Location.getForegroundPermissionsAsync()
-        if (cancelled) return
-        if (status !== 'granted') {
-          setLocation(null)
-          setLocationPermissionDenied(true)
-          setError('')
-          return
-        }
-        setLocationPermissionDenied(false)
-        try {
-          const pos = await Location.getCurrentPositionAsync({})
-          if (cancelled) return
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-          setError('')
-        } catch {
-          if (!cancelled) setError('位置情報を取得できませんでした')
-        }
+        const ok = await refreshLocation()
+        if (cancelled || !ok) return
       })()
       return () => {
         cancelled = true
       }
-    }, [])
+    }, [refreshLocation])
   )
 
-  const fetchNearbySpots = useCallback(
-    async (opts?: { silent?: boolean }) => {
-      if (!location) return
-      const silent = opts?.silent === true
-      if (!silent) {
-        setLoading(true)
-        setSpotsFetchError('')
-      }
-      const q = `/api/spots/nearby?lat=${location.lat}&lng=${location.lng}&radius=${distance}&type=${genre}`
-      try {
-        const r = await wanspotFetch(q)
-        let data: { spots?: PlaceResult[]; error?: string } = {}
-        try {
-          data = (await r.json()) as { spots?: PlaceResult[]; error?: string }
-        } catch {
-          setSpots([])
-          setSpotsFetchError('スポット情報の解析に失敗しました')
+  const handleSheetIndexChange = useCallback((index: number) => {
+    setSheetIndex(index)
+    if (index >= 0) setSelectedSpot(null)
+  }, [])
+
+  const loadNearbySpots = useCallback(
+    async (force = false) => {
+      if (!location || !genreReady || activeFilter?.kind !== 'genre') return
+
+      const cacheKey = `nearby:spots:${genre}:${geoBucket(location.lat, location.lng)}:exp`
+      if (!force && isCacheFresh(cacheKey, CACHE_TTL.NEARBY_SPOTS_MS)) {
+        const cached = readCache<{ spots: PlaceResult[]; error: string }>(cacheKey)
+        if (cached) {
+          setNearbyPlaces(cached.spots)
+          setSpotsFetchError(cached.error)
           return
         }
-        if (!r.ok) {
-          setSpots([])
-          setSpotsFetchError(
-            typeof data.error === 'string' ? data.error : `スポットの取得に失敗しました (${r.status})`
-          )
-          return
-        }
-        setSpots(data.spots ?? [])
-      } catch {
-        setSpots([])
-        setSpotsFetchError(
-          'ネットワークエラーです。API の URL（EXPO_PUBLIC_WANSPOT_API_URL / https://www.wanspot.app）を確認してください'
-        )
-      } finally {
-        if (!silent) setLoading(false)
       }
+
+      const stale = readCache<{ spots: PlaceResult[]; error: string }>(cacheKey)
+      if (stale) {
+        setNearbyPlaces(stale.spots)
+        setSpotsFetchError(stale.error)
+      } else {
+        setSpotsLoading(true)
+      }
+
+      const { spots, error } = await fetchNearbySpotsForGenreWithExpansion(location, genre)
+      writeCache(cacheKey, { spots, error: error ?? '' })
+      setNearbyPlaces(spots)
+      setSpotsFetchError(error ?? '')
+      setSpotsLoading(false)
     },
-    [location, genre, distance]
+    [location?.lat, location?.lng, genre, genreReady, activeFilter?.kind]
   )
 
   useEffect(() => {
-    void fetchNearbySpots()
-  }, [fetchNearbySpots])
+    void loadNearbySpots()
+  }, [loadNearbySpots])
 
-  useEffect(() => {
-    if (spots.length === 0) return
-    const fetchLikes = async () => {
-      const placeIds = spots.map((s) => s.place_id)
-      const { data } = await supabase.from('spots').select('id, place_id').in('place_id', placeIds)
-      if (!data) return
-      const counts: Record<string, number> = {}
-      await Promise.all(
-        data.map(async (row) => {
-          const { count } = await supabase
-            .from('spot_likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('spot_id', row.id)
-          counts[row.place_id] = count ?? 0
-        })
-      )
-      setLikeCounts(counts)
-    }
-    void fetchLikes()
-  }, [spots])
+  const loadUserLists = useCallback(
+    async (force = false) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        setLikedRows([])
+        setUserListsLoading(false)
+        return
+      }
 
-  const reloadUserLikedPlaceIds = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setLikedPlaceIds(new Set())
-      return
-    }
-    const { data: likes } = await supabase.from('spot_likes').select('spot_id').eq('user_id', user.id)
-    if (!likes?.length) {
-      setLikedPlaceIds(new Set())
-      return
-    }
-    const spotIds = [...new Set(likes.map((l) => l.spot_id).filter(Boolean))]
-    const { data: rows } = await supabase.from('spots').select('place_id').in('id', spotIds)
-    setLikedPlaceIds(new Set((rows ?? []).map((r) => r.place_id).filter(Boolean)))
-  }, [])
+      const locKey = location ? geoBucket(location.lat, location.lng) : 'none'
+      const cacheKey = `nearby:user-lists:v2:${user.id}:${locKey}`
 
-  const onPullRefreshNearby = useCallback(async () => {
-    setPullRefreshing(true)
-    try {
-      await reloadUserLikedPlaceIds()
-      await fetchNearbySpots({ silent: true })
-      const tags = await fetchUserWalkAreaTags(supabase)
-      setUserWalkTags(tags)
-    } finally {
-      setPullRefreshing(false)
-    }
-  }, [fetchNearbySpots, reloadUserLikedPlaceIds])
+      const needsPhotoRefresh = (rows: SheetSpot[]) =>
+        rows.some((s) => s.placeId.length > 0 && !s.photoRef)
 
-  useFocusEffect(
-    useCallback(() => {
-      void reloadUserLikedPlaceIds()
-    }, [reloadUserLikedPlaceIds])
-  )
-
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false
-
-      const run = async () => {
-        try {
-          if (!adsEnabledForDevice()) {
-            if (!cancelled) setAdsRuntimeReady(false)
-            return
-          }
-          if (isAdsMobileSdkInitialized()) {
-            adsPrimedRef.current = true
-            if (!cancelled) setAdsRuntimeReady(true)
-            return
-          }
-          if (adsPrimedRef.current) {
-            if (!cancelled) setAdsRuntimeReady(true)
-            return
-          }
-          // 起動直後の負荷と競合を避ける（検索と同じ安全側の遅延）
-          await new Promise((r) => setTimeout(r, 800))
-          if (cancelled) return
-          await prepareSearchTabAdsOnce()
-          adsPrimedRef.current = true
-          if (!cancelled) setAdsRuntimeReady(true)
-        } catch (e) {
-          console.warn(`prepareSearchTabAds failed (nearby): ${String((e as unknown) ?? '')}`)
-          if (!cancelled) setAdsRuntimeReady(false)
+      if (!force && isCacheFresh(cacheKey, CACHE_TTL.USER_LISTS_MS)) {
+        const cached = readCache<{ liked: SheetSpot[] }>(cacheKey)
+        if (cached && !needsPhotoRefresh(cached.liked)) {
+          setLikedRows(cached.liked)
+          setUserListsLoading(false)
+          return
         }
       }
 
-      void run()
-
-      return () => {
-        cancelled = true
+      const stale = readCache<{ liked: SheetSpot[] }>(cacheKey)
+      if (stale) {
+        setLikedRows(stale.liked)
+      } else if (force || !getCacheEntry(cacheKey)) {
+        setUserListsLoading(true)
       }
-    }, [])
+
+      const likedRes = await fetchLikedSpotsForUser(supabase, user.id)
+
+      const origin = location
+      const filterRow = (rows: UserSpotRow[]) => {
+        if (!origin) return []
+        return rows
+          .map(sheetSpotFromUserRow)
+          .filter((s): s is SheetSpot => s != null)
+          .filter((s) => isWithinRadiusM(origin, s, NEARBY_RADIUS_M))
+          .sort(
+            (a, b) =>
+              calcDistanceMeters(origin.lat, origin.lng, a.lat, a.lng) -
+              calcDistanceMeters(origin.lat, origin.lng, b.lat, b.lng)
+          )
+      }
+
+      const liked = likedRes.ok ? filterRow(likedRes.spots) : []
+      writeCache(cacheKey, { liked })
+      setLikedRows(liked)
+      setUserListsLoading(false)
+    },
+    [location?.lat, location?.lng]
   )
 
-  const handleSpotLikeChange = useCallback((placeId: string, liked: boolean) => {
-    setLikedPlaceIds((prev) => {
-      const next = new Set(prev)
-      if (liked) next.add(placeId)
-      else next.delete(placeId)
-      return next
+  useEffect(() => {
+    if (activeFilter?.kind !== 'like') return
+    if (!location) return
+    void loadUserLists(false)
+  }, [activeFilter?.kind, location?.lat, location?.lng, loadUserLists])
+
+  useEffect(() => {
+    if (activeFilter?.kind !== 'like') return
+    if (userListsLoading) return
+    requestAnimationFrame(() => sheetControl.current?.open())
+  }, [activeFilter?.kind, userListsLoading, likedRows.length])
+
+  useFocusEffect(
+    useCallback(() => {
+      setActiveFilter({ kind: 'like' })
+      if (location) {
+        void loadUserLists(false)
+      }
+      requestAnimationFrame(() => sheetControl.current?.open())
+    }, [location?.lat, location?.lng, loadUserLists])
+  )
+
+  const scoreSheetSpots = useMemo(() => {
+    const sorted = sortPlacesByScore(nearbyPlaces, location)
+    const genreLabel =
+      activeFilter?.kind === 'genre' ? mapFilterLabel(activeFilter) : null
+    return sorted.map((p) => {
+      const row = sheetSpotFromPlace(p)
+      return genreLabel ? { ...row, category: genreLabel } : row
     })
-  }, [])
+  }, [nearbyPlaces, location, activeFilter])
 
-  const sortedSpots = useMemo(() => {
-    const loc = location
-    return [...spots].sort((a, b) => {
-      if (sortKey === 'rating') return (b.rating ?? 0) - (a.rating ?? 0)
-      if (sortKey === 'likes') return (likeCounts[b.place_id] ?? 0) - (likeCounts[a.place_id] ?? 0)
-      if (!loc) return 0
-      return (
-        calcDistance(loc.lat, loc.lng, a.lat, a.lng) - calcDistance(loc.lat, loc.lng, b.lat, b.lng)
-      )
-    })
-  }, [spots, sortKey, likeCounts, location])
+  const sheetItems = useMemo(() => {
+    if (!activeFilter) return []
+    if (activeFilter.kind === 'like') return likedRows
+    return scoreSheetSpots
+  }, [activeFilter, likedRows, scoreSheetSpots])
 
-  const displayedSpots = useMemo(() => {
-    if (!likedOnlyFilter) return sortedSpots
-    return sortedSpots.filter((s) => likedPlaceIds.has(s.place_id))
-  }, [sortedSpots, likedOnlyFilter, likedPlaceIds])
+  const mapMarkers = activeFilter ? sheetItems : []
 
-  const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
+  const handleOpenDetail = useCallback(
+    (spot: SheetSpot) => {
+      openSpotDetail(router, spot)
+    },
+    [router]
+  )
 
-  const AD_ROW_EVERY = 5
-  const shouldShowAdAfter = (index: number, total: number) =>
-    (index + 1) % AD_ROW_EVERY === 0 || (index + 1 === total && total < AD_ROW_EVERY)
+  const likedPlaceIds = useMemo(() => {
+    const set = new Set(likedRows.map((r) => r.placeId).filter(Boolean))
+    for (const [pid, v] of Object.entries(likedOverrides)) {
+      if (v) set.add(pid)
+      else set.delete(pid)
+    }
+    return set
+  }, [likedRows, likedOverrides])
+
+  const handleToggleLike = useCallback(
+    async (spot: SheetSpot) => {
+      const next = !likedPlaceIds.has(spot.placeId)
+      setLikedOverrides((prev) => ({ ...prev, [spot.placeId]: next }))
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/(auth)/login')
+        return
+      }
+      let spotId = spot.spotUuid
+      if (!spotId) {
+        const place: PlaceResult = {
+          place_id: spot.placeId,
+          name: spot.name,
+          category: spot.category,
+          lat: spot.lat,
+          lng: spot.lng,
+          address: spot.address,
+          photo_ref: spot.photoRef,
+          rating: spot.rating,
+          price_level: spot.priceLevel,
+          user_ratings_total: spot.userRatingsTotal,
+        }
+        spotId = await ensureSpotId(place)
+      }
+      if (!spotId) return
+      if (next) {
+        await supabase.from('spot_likes').insert({ user_id: user.id, spot_id: spotId })
+      } else {
+        await supabase.from('spot_likes').delete().eq('user_id', user.id).eq('spot_id', spotId)
+      }
+      invalidateCachePrefix('nearby:user-lists:')
+      void loadUserLists(true)
+    },
+    [likedPlaceIds, router, loadUserLists]
+  )
+
+  const emptyCopy =
+    sheetTab === 'like'
+      ? { title: '近くのいいねはまだありません', hint: '気になるスポットにいいねしてみましょう。' }
+      : { title: '近くにスポットが見つかりませんでした', hint: '別のジャンルを試すか、位置情報をご確認ください。' }
+
+  const sheetListExpanded = activeFilter !== null && sheetIndex >= 1
+  const showRecenter = activeFilter === null
+
+  const headerIcon = useMemo(() => {
+    if (!activeFilter) return null
+    if (activeFilter.kind === 'genre') {
+      return <GenreIcon genre={activeFilter.genre} size={22} color={MAP_GENRE_COLOR[activeFilter.genre]} />
+    }
+    if (activeFilter.kind === 'like') return <HeartHeaderIcon />
+    return null
+  }, [activeFilter])
+
+  const headerTitle = activeFilter ? mapFilterLabel(activeFilter) : ''
+
+  const listLoading =
+    (spotsLoading && sheetTab === 'score') || (userListsLoading && sheetTab !== 'score')
 
   return (
-    <View style={styles.main}>
-      <AppHeader />
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: TAB_BAR_HEIGHT + insets.bottom },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl
-            refreshing={pullRefreshing}
-            onRefresh={onPullRefreshNearby}
-            tintColor={colors.brand}
-            colors={[colors.brand]}
-          />
-        }
-      >
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.genreBar}>
-          {GENRES.map((g) => (
-            <TouchableOpacity
-              key={g.key}
-              onPress={() => setGenre(g.key)}
-              style={[styles.genreChip, genre === g.key ? styles.genreChipOn : styles.genreChipOff]}
-            >
-              <Text style={[styles.genreTxt, genre === g.key ? styles.genreTxtOn : styles.genreTxtOff]}>
-                {g.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        <View style={styles.distRow}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.distScroll}
-            contentContainerStyle={styles.distScrollContent}
-          >
-            {DISTANCES.map((d) => (
-              <TouchableOpacity
-                key={d.key}
-                onPress={() => setDistance(d.key)}
-                style={[styles.distChip, distance === d.key ? styles.distChipOn : styles.distChipOff]}
-              >
-                <Text style={[styles.distTxt, distance === d.key ? styles.distTxtOn : styles.distTxtOff]}>
-                  {d.label}
+    <GestureHandlerRootView style={styles.flex}>
+      <BottomSheetModalProvider>
+        <View style={styles.flex}>
+          <View style={styles.mapArea}>
+            <NearbyMapView
+              markers={mapMarkers}
+              likedPlaceIds={likedPlaceIds}
+              visitedPlaceIds={new Set<string>()}
+              selectedSpot={selectedSpot}
+              userLocation={location}
+              onSelectSpot={setSelectedSpot}
+              onClearSelection={() => setSelectedSpot(null)}
+              onOpenDetail={handleOpenDetail}
+              sheetOpen={sheetListExpanded}
+              showRecenter={showRecenter}
+              sheetAnimatedIndex={sheetAnimatedIndex}
+              bottomInset={sheetBottomInset}
+              topInset={overlayTop}
+              pinGenre={activeFilter?.kind === 'genre' ? activeFilter.genre : undefined}
+            />
+
+            {locationPermissionDenied ? (
+              <View style={[styles.permissionBanner, { top: overlayTop + 8 }]}>
+                <Text style={styles.permissionBannerTxt}>
+                  近くのスポットとお散歩予報には位置情報の許可が必要です（別の許可項目ではありません）。
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          <View style={styles.distRowSpacer} />
-          <View style={styles.distRowActions}>
-            <TouchableOpacity
-              style={[styles.likeFilterBtn, likedOnlyFilter ? styles.likeFilterBtnOn : styles.likeFilterBtnOff]}
-              onPress={() => setLikedOnlyFilter((v) => !v)}
-              accessibilityLabel={likedOnlyFilter ? 'いいねしたお店のみ表示中。タップで全件表示' : 'いいねしたお店のみ表示'}
-              accessibilityRole="button"
-            >
-              <Image
-                source={ICON_FILTER_FUNNEL}
-                style={[styles.likeFilterIcon, likedOnlyFilter && styles.likeFilterIconOn]}
-                resizeMode="contain"
-                accessibilityIgnoresInvertColors
+                <View style={styles.permissionBtnRow}>
+                  <TouchableOpacity style={styles.permissionBtn} onPress={() => void refreshLocation()}>
+                    <Text style={styles.permissionBtnTxt}>許可を確認</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.permissionBtnGhost} onPress={() => void Linking.openSettings()}>
+                    <Text style={styles.permissionBtnGhostTxt}>設定を開く</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+
+            {locationError ? (
+              <Text style={[styles.errOverlay, { top: overlayTop + 8 }]}>{locationError}</Text>
+            ) : null}
+            {spotsFetchError ? (
+              <Text style={[styles.errOverlay, { top: overlayTop + 8 }]}>{spotsFetchError}</Text>
+            ) : null}
+
+            {spotsLoading && activeFilter?.kind === 'genre' ? (
+              <View style={styles.loadingOverlay} pointerEvents="none">
+                <RunningDog label="近くのスポットを探し中..." />
+              </View>
+            ) : null}
+          </View>
+
+          {/* 地図UI（アラート・ジャンル）— リストより下のレイヤー */}
+          <View style={styles.mapOverlays} pointerEvents="box-none">
+            <View style={[styles.walkAlertWrap, { top: topSafe }]}>
+              <WalkAlertFab
+                tempC={weather?.tempC ?? null}
+                loading={weatherLoading}
+                needsLocation={weatherNeedsLocation || locationPermissionDenied}
+                onRequestLocation={() => void refreshLocation().then((ok) => ok && refetchWeather())}
+                location={location}
+                dogName={dogName}
               />
-              <Text style={[styles.likeFilterTxt, likedOnlyFilter && styles.likeFilterTxtOn]}>いいね</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.sortBtn} onPress={() => setShowSort(true)}>
-              <IconSort />
-              <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
-            </TouchableOpacity>
+            </View>
+
+            <MapFilterBar active={activeFilter} onSelect={handleFilterSelect} topInset={filterBarTop} />
+          </View>
+
+          {/* リストは最前面 — 上げたときに地図UIの裏へ隠れる */}
+          <View style={styles.sheetHost} pointerEvents="box-none">
+            <NearbyBottomSheet
+              ref={sheetControl}
+              open={activeFilter !== null}
+              animatedIndex={sheetAnimatedIndex}
+              tab={sheetTab}
+              items={sheetItems}
+              userLocation={location}
+              loading={listLoading}
+              emptyTitle={emptyCopy.title}
+              emptyHint={emptyCopy.hint}
+              onDiscover={() => router.push('/(tabs)/search')}
+              onPressSpot={handleOpenDetail}
+              likedPlaceIds={likedPlaceIds}
+              onToggleLike={(s) => void handleToggleLike(s)}
+              onClose={clearFilter}
+              headerIcon={headerIcon}
+              headerTitle={headerTitle}
+              headerCount={sheetItems.length}
+              onSheetPositionChange={setSheetBottomInset}
+              onSheetIndexChange={handleSheetIndexChange}
+            />
           </View>
         </View>
+      </BottomSheetModalProvider>
 
-        <View style={styles.list}>
-          {locationPermissionDenied ? (
-            <View style={styles.permissionBanner}>
-              <Text style={styles.permissionBannerTxt}>現在地を表示するには位置情報の許可が必要です。</Text>
-              <TouchableOpacity
-                style={styles.permissionBtn}
-                onPress={() => void Linking.openSettings()}
-                accessibilityRole="button"
-                accessibilityLabel="設定アプリを開く"
-              >
-                <Text style={styles.permissionBtnTxt}>設定を開く</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-          {error ? <Text style={styles.err}>{error}</Text> : null}
-          {spotsFetchError ? <Text style={styles.err}>{spotsFetchError}</Text> : null}
-          {loading ? <RunningDog label="近くのスポットを探し中..." /> : null}
-          {!loading && !error && !spotsFetchError && spots.length === 0 && location ? (
-            <PowState label="近くにスポットが見つかりませんでした" />
-          ) : null}
-          {!loading &&
-          !error &&
-          !spotsFetchError &&
-          spots.length > 0 &&
-          likedOnlyFilter &&
-          displayedSpots.length === 0 ? (
-            <PowState label="この条件ではいいねしたお店がありません" />
-          ) : null}
-          {displayedSpots.map((spot, index) => (
-            <View key={spot.place_id}>
-              <NearbySpotCard
-                spot={spot}
-                likeCount={likeCounts[spot.place_id] ?? 0}
-                userLocation={location}
-                userWalkTags={userWalkTags}
-                onOpenDetail={(id) => router.push(`/spots/${id}`)}
-                onLikeStateChange={handleSpotLikeChange}
-              />
-              {isFocused && shouldShowAdAfter(index, displayedSpots.length) ? (
-                <AdNativeCard adsReady={adsRuntimeReady} />
-              ) : null}
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-
-      <Modal visible={showSort} transparent animationType="fade" onRequestClose={() => setShowSort(false)}>
-        <Pressable style={styles.sortOverlay} onPress={() => setShowSort(false)}>
-          <View style={styles.sortMenu}>
-            {SORT_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.key}
-                style={[styles.sortItem, sortKey === opt.key && styles.sortItemOn]}
-                onPress={() => {
-                  setSortKey(opt.key)
-                  setShowSort(false)
-                }}
-              >
-                <Text style={[styles.sortItemTxt, sortKey === opt.key && styles.sortItemTxtOn]}>
-                  {opt.label}
-                  {sortKey === opt.key ? ' ✓' : ''}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
-
-      <PostOnboardingTutorialModal
-        visible={showObTutorial}
-        dogName={obTutorialDogName}
-        onDismiss={dismissObTutorial}
-      />
-    </View>
+    </GestureHandlerRootView>
   )
 }
 
 const styles = StyleSheet.create({
-  main: { flex: 1, backgroundColor: '#f7f6f3' },
-  scroll: { flex: 1 },
-  scrollContent: {},
-  genreBar: {
-    maxHeight: 64,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ebebeb',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+  flex: { flex: 1, backgroundColor: colors.paper },
+  mapArea: { flex: 1, zIndex: 1 },
+  mapOverlays: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    zIndex: 2,
+    elevation: 2,
   },
-  /** 検索の discover タブ（discTab）と同形状のカードボタン。選択のみ黄色 */
-  genreChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    marginRight: 8,
+  sheetHost: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+    elevation: 10,
   },
-  genreChipOn: { backgroundColor: '#FFD84D' },
-  genreChipOff: { backgroundColor: '#f5f5f5' },
-  genreTxt: { fontSize: 12, fontWeight: '800' },
-  genreTxtOn: { color: '#2b2a28' },
-  genreTxtOff: { color: '#888' },
-  distRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ebebeb',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+  walkAlertWrap: {
+    position: 'absolute',
+    left: 16,
   },
-  /** 距離チップは内容幅で左詰め（flex:1 しない） */
-  distScroll: { flexGrow: 0, flexShrink: 1, maxHeight: 40 },
-  distScrollContent: { flexDirection: 'row', alignItems: 'center', flexGrow: 0 },
-  distRowSpacer: { flex: 1, minWidth: 8 },
-  distRowActions: { flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
-  likeFilterBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-    marginRight: 8,
-    borderWidth: 1,
-  },
-  likeFilterIcon: { width: 12, height: 12, tintColor: '#888' },
-  likeFilterIconOn: { tintColor: '#fff' },
-  likeFilterBtnOff: {
-    backgroundColor: '#f5f5f5',
-    borderColor: '#e8e8e8',
-  },
-  likeFilterBtnOn: {
-    backgroundColor: '#2b2a28',
-    borderColor: '#2b2a28',
-  },
-  likeFilterTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
-  likeFilterTxtOn: { color: '#fff' },
-  distChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-    marginRight: 8,
-  },
-  distChipOn: { backgroundColor: '#2b2a28' },
-  distChipOff: { backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e8e8e8' },
-  distTxt: { fontSize: 12 },
-  distTxtOn: { color: '#fff' },
-  distTxtOff: { color: '#888' },
-  sortBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#2b2a28',
-  },
-  sortBtnTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  list: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
   permissionBanner: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
     padding: 16,
     gap: 12,
+    zIndex: 11,
   },
-  permissionBannerTxt: { fontSize: 14, color: '#2b2a28', lineHeight: 22 },
+  permissionBannerTxt: { fontSize: 14, color: colors.textPrimary, lineHeight: 22 },
+  permissionBtnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   permissionBtn: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#2b2a28',
+    backgroundColor: colors.textPrimary,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 999,
   },
-  permissionBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  err: { textAlign: 'center', paddingVertical: 32, color: '#aaa', fontSize: 14 },
-  sortOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 180, paddingRight: 16 },
-  sortMenu: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+  permissionBtnGhost: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#ebebeb',
-    minWidth: 140,
-    overflow: 'hidden',
+    borderColor: colors.border,
   },
-  sortItem: { paddingVertical: 10, paddingHorizontal: 16 },
-  sortItemOn: { backgroundColor: '#FFF9E0' },
-  sortItemTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
-  sortItemTxtOn: { color: '#2b2a28' },
+  permissionBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  permissionBtnGhostTxt: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  errOverlay: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    textAlign: 'center',
+    fontSize: 13,
+    color: '#c44',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    padding: 8,
+    borderRadius: 8,
+    zIndex: 11,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(247,246,243,0.96)',
+    zIndex: 7,
+  },
 })
+
+export default function NearbyPageScreen() {
+  return (
+    <ScreenErrorBoundary label="map">
+      <NearbyPage />
+    </ScreenErrorBoundary>
+  )
+}

@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  ActivityIndicator,
   Alert,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -20,9 +18,10 @@ import { colors } from '@/constants/colors'
 import { useAuth } from '@/context/AuthContext'
 import { isAppleSignInAvailable, signInWithApple } from '@/lib/apple-signin'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
-import { signInWithGoogle } from '@/lib/google-signin'
+import { isSupabaseOAuthReady, signInWithGoogleOAuth } from '@/lib/oauth-supabase'
 
-import { brandLogoSource } from '@/assets/brandLogo'
+import { LoadingDogSvg } from '@/components/common/LoadingDog'
+import { Logo } from '@/components/Logo'
 import { AppleOAuthLabel, GoogleOAuthLabel } from '@/components/auth/OAuthButtonLabels'
 import { oauthApplePressableBase, oauthGooglePressableBase } from '@/components/auth/oauthButtonStyles'
 
@@ -36,6 +35,8 @@ export default function LoginScreen() {
   const [oauthLoading, setOauthLoading] = useState<'google' | 'apple' | null>(null)
   const [error, setError] = useState('')
   const [appleNativeAvailable, setAppleNativeAvailable] = useState(false)
+  const googleOAuthReady = isSupabaseOAuthReady()
+  const showOAuthSection = googleOAuthReady || appleNativeAvailable
 
   useEffect(() => {
     void isAppleSignInAvailable().then(setAppleNativeAvailable)
@@ -54,30 +55,44 @@ export default function LoginScreen() {
     await completeLoginNavigation(router)
   }
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleOAuth = async () => {
+    if (oauthLoading !== null || loading || !googleOAuthReady) return
+
     setOauthLoading('google')
     setError('')
-    const res = await signInWithGoogle()
-    setOauthLoading(null)
-    if (res.success) {
+    try {
+      const { error, cancelled } = await signInWithGoogleOAuth()
+      if (cancelled) return
+      if (error) {
+        Alert.alert('エラー', error.message)
+        return
+      }
       await completeLoginNavigation(router)
-      return
+    } catch (error) {
+      Alert.alert('エラー', error instanceof Error ? error.message : 'Googleログインに失敗しました')
+    } finally {
+      setOauthLoading(null)
     }
-    if (res.error === 'cancelled') return
-    Alert.alert('エラー', res.error ?? 'Googleサインインに失敗しました')
   }
 
   const handleAppleNativeSignIn = async () => {
+    if (oauthLoading !== null || loading || !appleNativeAvailable) return
+
     setOauthLoading('apple')
     setError('')
-    const res = await signInWithApple()
-    setOauthLoading(null)
-    if (res.success) {
-      await completeLoginNavigation(router)
-      return
+    try {
+      const res = await signInWithApple()
+      if (res.success) {
+        await completeLoginNavigation(router)
+        return
+      }
+      if (res.error === 'cancelled') return
+      if (res.error) Alert.alert('エラー', res.error)
+    } catch (error) {
+      Alert.alert('エラー', error instanceof Error ? error.message : 'Appleサインインに失敗しました')
+    } finally {
+      setOauthLoading(null)
     }
-    if (res.error === 'cancelled') return
-    if (res.error) Alert.alert('エラー', res.error)
   }
 
   return (
@@ -94,7 +109,9 @@ export default function LoginScreen() {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.inner}>
-            <Image source={brandLogoSource} style={styles.logo} resizeMode="contain" />
+            <View style={styles.logo}>
+              <Logo size={72} />
+            </View>
             <Text style={styles.title}>wanspot</Text>
             <TextInput
               style={styles.input}
@@ -131,31 +148,30 @@ export default function LoginScreen() {
                 void submit()
               }}
             >
-              {loading ? <ActivityIndicator color={colors.text} /> : <Text style={styles.btnTxt}>ログイン</Text>}
+              {loading ? <LoadingDogSvg size={24} /> : <Text style={styles.btnTxt}>ログイン</Text>}
             </Pressable>
 
-            {/* Android: Google Sign-In は webClientId 未構成（lib/google-signin.ts が iOS 専用）のため非表示。iOS は従来通り */}
-            {Platform.OS === 'android' ? null : (
-              <>
-                <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerTxt}>または</Text>
-                  <View style={styles.dividerLine} />
-                </View>
+            {showOAuthSection ? (
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerTxt}>または</Text>
+                <View style={styles.dividerLine} />
+              </View>
+            ) : null}
 
-                <Pressable
-                  style={[styles.btnGoogle, oauthLoading !== null && styles.oauthDis]}
-                  disabled={oauthLoading !== null || loading}
-                  onPress={() => void handleGoogleSignIn()}
-                >
-                  {oauthLoading === 'google' ? (
-                    <ActivityIndicator color="#2b2a28" />
-                  ) : (
-                    <GoogleOAuthLabel text="Googleでログイン" textStyle={styles.btnGoogleTxt} />
-                  )}
-                </Pressable>
-              </>
-            )}
+            {googleOAuthReady ? (
+              <Pressable
+                style={[styles.btnGoogle, oauthLoading !== null && styles.oauthDis]}
+                disabled={oauthLoading !== null || loading}
+                onPress={() => void handleGoogleOAuth()}
+              >
+                {oauthLoading === 'google' ? (
+                  <LoadingDogSvg size={24} />
+                ) : (
+                  <GoogleOAuthLabel text="Googleでログイン" textStyle={styles.btnGoogleTxt} />
+                )}
+              </Pressable>
+            ) : null}
 
             {appleNativeAvailable ? (
               <Pressable
@@ -164,7 +180,7 @@ export default function LoginScreen() {
                 onPress={() => void handleAppleNativeSignIn()}
               >
                 {oauthLoading === 'apple' ? (
-                  <ActivityIndicator color="#fff" />
+                  <LoadingDogSvg size={24} />
                 ) : (
                   <AppleOAuthLabel text="Appleでログイン" textStyle={styles.btnAppleTxt} />
                 )}
@@ -187,7 +203,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   scrollContent: { flexGrow: 1, padding: 24, justifyContent: 'center' },
   inner: { width: '100%', flexGrow: 1, justifyContent: 'center' },
-  logo: { width: 72, height: 72, alignSelf: 'center' },
+  logo: { alignSelf: 'center', marginBottom: 4 },
   title: {
     fontSize: 28,
     fontWeight: '900',
@@ -230,7 +246,7 @@ const styles = StyleSheet.create({
     ...oauthGooglePressableBase,
     marginTop: 14,
   },
-  btnGoogleTxt: { fontWeight: '800', fontSize: 16, color: '#2b2a28' },
+  btnGoogleTxt: { fontWeight: '800', fontSize: 16, color: '#fff' },
   btnApple: {
     ...oauthApplePressableBase,
     marginTop: 10,

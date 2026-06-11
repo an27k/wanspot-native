@@ -1,7 +1,8 @@
 import Svg, { Ellipse, Path } from 'react-native-svg'
+import { colors } from '@/constants/colors'
 
 /** メインアプリで共通の肉球マーク（viewBox 100×100） */
-export function IconPaw({ size = 14, color = '#FFD84D' }: { size?: number; color?: string }) {
+export function IconPaw({ size = 14, color = colors.primary }: { size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100" aria-hidden>
       <Ellipse cx="20" cy="28" rx="10" ry="13" fill={color} />

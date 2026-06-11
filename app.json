@@ -5,18 +5,18 @@
     "version": "1.0.0",
     "jsEngine": "jsc",
     "orientation": "portrait",
-    "icon": "./assets/images/wanspot_icon_yellowbg.png",
+    "icon": "./assets/images/wanspot_icon_orange.png",
     "userInterfaceStyle": "light",
     "scheme": "wanspot",
     "splash": {
-      "image": "./assets/images/wanspot_image.png",
+      "image": "./assets/images/wanspot_icon_orange.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FF7E5F"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.wanspot.native",
-      "buildNumber": "94",
+      "buildNumber": "96",
       "usesAppleSignIn": true,
       "entitlements": {
         "com.apple.developer.applesignin": [
@@ -48,8 +48,8 @@
       "jsEngine": "hermes",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/wanspot_image.png",
-        "backgroundColor": "#FFD84D"
+        "foregroundImage": "./assets/images/wanspot_icon_orange.png",
+        "backgroundColor": "#FF7E5F"
       },
       "predictiveBackGestureEnabled": false,
       "config": {
@@ -59,7 +59,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/images/wanspot_image.png"
+      "favicon": "./assets/images/wanspot_icon_orange.png"
     },
     "plugins": [
       "expo-router",
@@ -91,18 +91,13 @@
         }
       ],
       [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.573139399424-cgqe3u58m724rpjsm5uu0u1t69qor80m"
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photosPermission": "ワンちゃんやプロフィールの写真を設定するため、写真ライブラリへのアクセスを許可してください。",
           "cameraPermission": "ワンちゃんやプロフィールの写真を撮影するため、カメラへのアクセスを許可してください。"
         }
-      ]
+      ],
+      "react-native-maps"
     ],
     "extra": {
       "supabaseUrl": "",

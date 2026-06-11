@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Image } from 'expo-image'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { supabase } from '@/lib/supabase'
 import { HEART_ICON } from '@/lib/constants'
@@ -10,6 +10,7 @@ import type { PlaceCardEnrichment } from '@/lib/user-spot-list-utils'
 import { calcDistanceMeters } from '@/lib/user-spot-list-utils'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
+import { colors } from '@/constants/colors'
 
 const IconHeart = ({ filled }: { filled: boolean }) => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -25,20 +26,20 @@ const IconHeart = ({ filled }: { filled: boolean }) => (
 )
 
 const IconStar = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="#FFD84D" stroke="#FFD84D" strokeWidth={1.5}>
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
 
 const IconMoney = ({ filled }: { filled: boolean }) => (
-  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? '#FFD84D' : '#e8e8e8'}>
+  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? colors.primary : '#e8e8e8'}>
     <Circle cx="12" cy="12" r="10" />
     <SvgText
       x="12"
       y="16"
       textAnchor="middle"
       fontSize="12"
-      fill={filled ? '#2b2a28' : '#bbb'}
+      fill={filled ? colors.textPrimary : '#bbb'}
       fontWeight="bold"
     >
       ¥
@@ -101,7 +102,7 @@ export function SpotListCard({
 }: SpotListCardProps) {
   const requireAuth = useRequireAuth()
   const photoRef = enrichment?.photo_ref ?? null
-  const uri = spotPhotoUrl(photoRef)
+  const uri = spotPhotoUrl(photoRef, 'thumbnail')
   const displayRating = enrichment?.rating ?? null
   const priceLevel = enrichment?.price_level ?? null
 
@@ -185,7 +186,8 @@ export function SpotListCard({
             source={{ uri }}
             style={styles.photo}
             contentFit="cover"
-            {...remoteImageExpoProps}
+            recyclingKey={uri ?? undefined}
+            {...listImageExpoProps}
           />
         ) : null}
         <View style={styles.heartCol}>
@@ -230,7 +232,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
   },
   photoWrap: { height: 144, backgroundColor: '#e8e4de', position: 'relative' },
   photo: { width: '100%', height: '100%' },
@@ -250,7 +252,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.9)',
-    color: '#C9A227',
+    color: HEART_ICON.filled,
     minWidth: 20,
     textAlign: 'center',
   },
@@ -262,14 +264,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 999,
     fontWeight: '700',
-    backgroundColor: '#FFF9E0',
-    color: '#2b2a28',
+    backgroundColor: colors.tintStrong,
+    color: colors.textPrimary,
   },
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateTxt: { fontSize: 12, color: '#888' },
   dist: { fontSize: 12, color: '#aaa' },
-  name: { fontWeight: '700', fontSize: 14, color: '#2b2a28' },
+  name: { fontWeight: '700', fontSize: 14, color: colors.textPrimary },
   addr: { fontSize: 12, color: '#aaa' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   q: { fontSize: 12, color: '#ccc' },

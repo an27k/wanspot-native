@@ -2,14 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Linking from 'expo-linking'
 import * as Location from 'expo-location'
 import { useState } from 'react'
-import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
+import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { OB_LOCATION_KEY } from '@/lib/onboarding-constants'
-
-const STEP_DOTS = 5
+import { OB_LOCATION_GRANTED, OB_LOCATION_KEY } from '@/lib/onboarding-constants'
+import { colors } from '@/constants/colors'
 
 export default function OnboardingLocationPage() {
   const router = useRouter()
@@ -18,16 +17,21 @@ export default function OnboardingLocationPage() {
   const padTop = insets.top + 16
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
 
+  const continueWithoutLocation = async () => {
+    await AsyncStorage.setItem(OB_LOCATION_GRANTED, '0')
+    router.push('/onboarding/dog')
+  }
+
   const requestAndSave = async () => {
     setBusy(true)
     try {
       const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
         Alert.alert(
-          '位置情報が必要です',
-          '近くの散歩エリアを提案するために、現在地の利用を許可してください。設定アプリからも変更できます。',
+          '現在地を取得できませんでした',
+          '位置情報が使えない場合は、次の画面で散歩エリアを選べます。あとから設定アプリから変更できます。',
           [
-            { text: '閉じる', style: 'cancel' },
+            { text: '散歩エリアを選ぶ', onPress: () => void continueWithoutLocation() },
             ...(canAskAgain !== false ? ([{ text: '再試行', onPress: () => void requestAndSave() }] as const) : []),
             { text: '設定を開く', onPress: () => void Linking.openSettings() },
           ]
@@ -44,6 +48,7 @@ export default function OnboardingLocationPage() {
         if (!last) throw e
         pos = last
       }
+      await AsyncStorage.setItem(OB_LOCATION_GRANTED, '1')
       await AsyncStorage.setItem(
         OB_LOCATION_KEY,
         JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })
@@ -62,47 +67,40 @@ export default function OnboardingLocationPage() {
       contentContainerStyle={{ paddingHorizontal: 20, paddingTop: padTop, paddingBottom: padBottom, gap: 20 }}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.headRow}>
-        <View style={styles.brandRow}>
-          <OnboardingBrand />
-          <Text style={styles.brandTxt}>wanspot</Text>
-        </View>
-        <View style={styles.dots}>
-          {Array.from({ length: STEP_DOTS }, (_, i) => (
-            <View key={i} style={[styles.dot, { backgroundColor: i <= 0 ? '#FFD84D' : '#e0e0e0' }]} />
-          ))}
-        </View>
-      </View>
+      <OnboardingStepHeader step={1} totalSteps={2} />
 
-      <Text style={styles.h2}>位置情報の利用を許可してください</Text>
+      <Text style={styles.h2}>近くのワンちゃんスポットを表示するために</Text>
       <Text style={styles.hint}>
-        wanspotはあなたの現在地をもとに、近くのワンちゃんスポットやイベントを表示します。サービスを利用するために位置情報の許可が必要です。
+        wanspotはあなたの現在地をもとに、近くのワンちゃんスポットの表示とお散歩予報（気温）に位置情報を使います。
       </Text>
+      <Text style={styles.reassure}>許可すると散歩エリアの質問はスキップできます。あとから設定アプリから変更できます。</Text>
 
-      <TouchableOpacity style={[styles.next, busy && styles.nextOff]} onPress={() => void requestAndSave()} disabled={busy}>
-        <Text style={styles.nextTxt}>{busy ? '確認中...' : '次へ'}</Text>
-      </TouchableOpacity>
+      <Pressable style={[styles.next, busy && styles.nextOff]} onPress={() => void requestAndSave()} disabled={busy}>
+        <Text style={styles.nextTxt}>{busy ? '確認中...' : '位置情報を許可して次へ'}</Text>
+      </Pressable>
+
+      <Pressable style={styles.skipBtn} onPress={() => void continueWithoutLocation()} disabled={busy}>
+        <Text style={styles.skipTxt}>スキップ（あとで散歩エリアを選ぶ）</Text>
+      </Pressable>
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#fff' },
-  headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandTxt: { fontWeight: '800', fontSize: 14, color: '#2b2a28' },
-  dots: { flexDirection: 'row', gap: 4 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: '#2b2a28' },
+  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: colors.textPrimary },
   hint: { fontSize: 13, color: '#888', lineHeight: 20 },
+  reassure: { fontSize: 12, color: '#aaa', lineHeight: 18 },
   next: {
     marginTop: 8,
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#FFD84D',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   nextOff: { opacity: 0.6 },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: '#2b2a28' },
+  nextTxt: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  skipBtn: { alignItems: 'center', paddingVertical: 8 },
+  skipTxt: { fontSize: 14, fontWeight: '700', color: colors.textSecondary },
 })

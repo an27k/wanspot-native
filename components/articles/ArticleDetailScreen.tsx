@@ -152,13 +152,13 @@ type Article = {
 }
 
 const IconChevron = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#2b2a28" strokeWidth={2.5} strokeLinecap="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
   </Svg>
 )
 
 const IconStarSm = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="#FFD84D" stroke="#FFD84D" strokeWidth={1.5}>
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
@@ -171,8 +171,8 @@ function PriceLevel({ level }: { level: number | null }) {
     <View style={{ flexDirection: 'row', gap: 2 }}>
       {[1, 2, 3, 4].map((i) => (
         <Svg key={i} width={10} height={10} viewBox="0 0 24 24">
-          <Circle cx={12} cy={12} r={10} fill={i <= level ? '#FFD84D' : '#e8e8e8'} />
-          <SvgTextNode x={12} y={16} textAnchor="middle" fontSize={12} fill={i <= level ? '#2b2a28' : '#bbb'} fontWeight="bold">
+          <Circle cx={12} cy={12} r={10} fill={i <= level ? colors.primary : '#e8e8e8'} />
+          <SvgTextNode x={12} y={16} textAnchor="middle" fontSize={12} fill={i <= level ? colors.textPrimary : '#bbb'} fontWeight="bold">
             ¥
           </SvgTextNode>
         </Svg>
@@ -591,12 +591,12 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f7f6f3' },
+  root: { flex: 1, backgroundColor: colors.paper },
   rootWhite: { flex: 1, backgroundColor: '#fff' },
   empty: { textAlign: 'center', marginTop: 40, color: colors.textMuted },
   backRow: { paddingHorizontal: 16, paddingBottom: 12 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backTxt: { fontSize: 14, fontWeight: '700', color: '#2b2a28' },
+  backTxt: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   hero: { width: '100%', aspectRatio: 16 / 9 },
   pad: { paddingHorizontal: 16 },
   title: { fontSize: 22, fontWeight: '800', color: '#111', marginTop: 8, lineHeight: 30 },
@@ -608,11 +608,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 12,
     borderRadius: 16,
-    backgroundColor: '#FFF9E0',
+    backgroundColor: colors.tintStrong,
     borderWidth: 1,
     borderColor: '#e8c84a',
   },
-  kwTag: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
+  kwTag: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: '#111', marginBottom: 8 },
   sectionTitleMt: { marginTop: 24 },
   textBlock: { fontSize: 14, color: '#374151', lineHeight: 22, marginBottom: 20 },
@@ -625,40 +625,40 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ebebeb',
+    borderColor: colors.border,
   },
   spotImgWrap: { width: '100%', height: 144, backgroundColor: '#e8e4de' },
   spotImg: { width: '100%', height: '100%' },
   spotBody: { padding: 12, gap: 4 },
   spotTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  catPill: { backgroundColor: '#FFF9E0', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  catPillTxt: { fontSize: 12, fontWeight: '700', color: '#2b2a28' },
+  catPill: { backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  catPillTxt: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
   rateMini: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateMiniTxt: { fontSize: 12, color: '#888' },
-  spotName: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
+  spotName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
   spotAddr: { fontSize: 12, color: '#aaa' },
   spotDesc: { fontSize: 12, color: '#666', lineHeight: 18, marginTop: 8 },
   spotCta: {
     marginTop: 12,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: '#FFD84D',
+    backgroundColor: colors.primary,
     alignItems: 'center',
   },
-  spotCtaTxt: { fontSize: 14, fontWeight: '800', color: '#2b2a28' },
+  spotCtaTxt: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
   related: { marginTop: 40, paddingTop: 24, borderTopWidth: 1, borderTopColor: '#eee' },
-  relatedTitle: { fontSize: 14, fontWeight: '800', color: '#2b2a28', marginBottom: 16 },
+  relatedTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 16 },
   relatedCard: { borderRadius: 12, padding: 16, backgroundColor: '#f9f9f9', marginBottom: 12 },
-  relatedName: { fontSize: 14, fontWeight: '800', color: '#2b2a28', marginBottom: 4 },
+  relatedName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 4 },
   relatedDesc: { fontSize: 12, color: '#888', marginBottom: 12 },
   relatedBtn: {
     alignSelf: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#FFD84D',
+    backgroundColor: colors.primary,
   },
-  relatedBtnTxt: { fontSize: 12, fontWeight: '800', color: '#2b2a28' },
+  relatedBtnTxt: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
   relatedNone: { fontSize: 12, color: '#bbb' },
   plQ: { fontSize: 12, color: '#ccc' },
 })

@@ -1,27 +1,41 @@
 import { TOKENS } from '@/constants/color-tokens'
 
 export const colors = {
-  brand: '#FFD84D',
-  /** 主ボタン・CTA 用のやや薄い黄（`brand` よりソフト） */
-  brandButton: '#FFE8A8',
-  brandDark: '#e8c44a',
-  background: '#ffffff',
-  cardBg: '#f7f6f3',
-  border: '#ebebeb',
+  /** 深めコーラル（白文字OK）— ソリッド CTA・選択 */
+  primary: TOKENS.brand.primary,
+  pillText: TOKENS.brand.pillText,
+  vessel: TOKENS.brand.vessel,
+  accent: TOKENS.brand.accent,
+  gold: TOKENS.brand.gold,
+  tintWeak: TOKENS.brand.tintWeak,
+  tintStrong: TOKENS.brand.tintStrong,
+
+  /** @deprecated brand — primary へ */
+  brand: TOKENS.brand.primary,
+  /** @deprecated 選択チップ背景など */
+  brandButton: TOKENS.brand.tintStrong,
+  /** @deprecated 押下・強調 — primary の暗め */
+  brandDark: '#E85A42',
+
+  paper: TOKENS.surface.paper,
+  surface: TOKENS.surface.primary,
+  background: TOKENS.surface.paper,
+  cardBg: TOKENS.surface.paper,
+  border: TOKENS.border.default,
+
   text: TOKENS.text.primary,
-  textMuted: '#aaaaaa',
-  textLight: '#666666',
-  error: '#E84335',
-  /** ワクチン「接種済」スタンプ（文字） */
-  success: '#34A853',
-  /** ワクチン「接種済」スタンプ背景 */
-  successMutedBg: '#F0FDF4',
-  /** 愛犬写真未登録の円背景（オーナー未設定の薄グレー調に合わせる） */
+  textPrimary: TOKENS.text.primary,
+  textSecondary: TOKENS.text.secondary,
+  textMuted: TOKENS.text.secondary,
+  textLight: TOKENS.text.secondary,
+
+  error: TOKENS.semantic.error,
+  success: TOKENS.semantic.success,
+  successGreen: TOKENS.semantic.success,
+  successMutedBg: TOKENS.semantic.successMutedBg,
+
   dogPhotoPlaceholderBg: '#E8E8E8',
-  /** 愛犬写真未登録の肉球アイコン色 */
   dogPhotoPlaceholderPaw: '#A0A0A0',
-  /** ♂・オス・パパ表記用の薄い青 */
   genderMale: '#4A90D9',
-  /** ♀・メス・ママ表記用の赤 */
   genderFemale: '#E84335',
 } as const
