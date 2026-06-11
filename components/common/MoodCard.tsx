@@ -39,6 +39,11 @@ const styles = StyleSheet.create({
   },
   moodCardSelected: {
     backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 2,
   },
   moodCardPressed: {
     opacity: 0.85,
@@ -50,14 +55,14 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   moodTitleSelected: {
-    color: '#1A1A1A',
+    color: '#FFFFFF',
   },
   moodSubtitle: {
     fontSize: 12,
     color: '#999',
   },
   moodSubtitleSelected: {
-    color: '#444',
+    color: 'rgba(255,255,255,0.85)',
   },
 })
 

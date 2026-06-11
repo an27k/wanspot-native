@@ -1,12 +1,13 @@
 import * as Linking from 'expo-linking'
 import { useCallback, useMemo } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { AppHeader } from '@/components/AppHeader'
 import { RunningDog } from '@/components/DogStates'
+import { PressableScale } from '@/components/common/PressableScale'
 import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { DogVaccineSettings } from '@/components/settings/DogVaccineSettings'
 import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
@@ -58,54 +59,37 @@ function SettingsTab() {
           <View style={styles.card}>
             {dog ? <DogVaccineSettings dog={dog} onUpdated={setDog} /> : null}
             {dog ? <View style={styles.rowDivider} /> : null}
-            <Pressable
-              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-              onPress={() => router.push('/settings/walk-area')}
-              accessibilityRole="button"
-              accessibilityLabel="散歩エリア"
-            >
+            <PressableScale style={styles.row} onPress={() => router.push('/settings/walk-area')} accessibilityLabel="散歩エリア">
               <WanspotIconPaw size={20} />
               <Text style={styles.rowTxt}>散歩エリア</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
-            </Pressable>
+            </PressableScale>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionCaption}>サポート</Text>
           <View style={styles.card}>
-            <Pressable
-              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-              onPress={() => openWeb('/contact')}
-              accessibilityLabel="お問い合わせ"
-            >
+            <PressableScale style={styles.row} onPress={() => openWeb('/contact')} accessibilityLabel="お問い合わせ">
               <Ionicons name="mail-outline" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>お問い合わせ</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
-            </Pressable>
+            </PressableScale>
             <View style={styles.rowDivider} />
-            <Pressable
-              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-              onPress={() => openWeb('/privacy')}
-              accessibilityLabel="プライバシーポリシー"
-            >
+            <PressableScale style={styles.row} onPress={() => openWeb('/privacy')} accessibilityLabel="プライバシーポリシー">
               <Ionicons name="shield-checkmark-outline" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>プライバシーポリシー</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
-            </Pressable>
+            </PressableScale>
             <View style={styles.rowDivider} />
-            <Pressable
-              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-              onPress={() => openWeb('/terms')}
-              accessibilityLabel="利用規約"
-            >
+            <PressableScale style={styles.row} onPress={() => openWeb('/terms')} accessibilityLabel="利用規約">
               <Ionicons name="document-text-outline" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>利用規約</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
-            </Pressable>
+            </PressableScale>
             <View style={styles.rowDivider} />
-            <Pressable
-              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+            <PressableScale
+              style={styles.row}
               onPress={async () => {
                 await signOut()
                 router.replace('/(auth)/login')
@@ -115,14 +99,14 @@ function SettingsTab() {
               <Ionicons name="log-out-outline" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>ログアウト</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
-            </Pressable>
+            </PressableScale>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Pressable
+          <PressableScale
+            style={styles.dangerCard}
             onPress={() => router.push('/account-delete')}
-            style={({ pressed }) => [styles.dangerCard, pressed && { opacity: 0.88 }]}
             accessibilityLabel="アカウントを削除"
           >
             <View style={styles.dangerRow}>
@@ -133,7 +117,7 @@ function SettingsTab() {
               </View>
               <Ionicons name="chevron-forward" size={20} color="#CCC" />
             </View>
-          </Pressable>
+          </PressableScale>
         </View>
       </Animated.ScrollView>
     </View>

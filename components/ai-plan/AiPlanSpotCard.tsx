@@ -9,13 +9,13 @@ import { resolveSpotPhotoUri } from '@/lib/wanspot-api'
 import type { AiPlanStop } from '@/components/ai-plan/types'
 
 const IconStar = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill={TOKENS.brand.yellow} stroke={TOKENS.brand.yellow} strokeWidth={1.5}>
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill={TOKENS.brand.gold} stroke={TOKENS.brand.gold} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
 
 const IconMoney = ({ filled }: { filled: boolean }) => (
-  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? TOKENS.brand.yellow : '#e8e8e8'}>
+  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? TOKENS.brand.gold : '#e8e8e8'}>
     <Circle cx="12" cy="12" r="10" />
     <SvgText
       x="12"
@@ -185,15 +185,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: TOKENS.brand.yellow,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   dwellBadgeTxt: {
     fontSize: 11,
     fontWeight: '800',
-    color: TOKENS.text.primary,
+    color: TOKENS.brand.pillText,
   },
   body: { paddingHorizontal: 14, paddingVertical: 14, gap: 4 },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -203,8 +203,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 999,
     fontWeight: '700',
-    backgroundColor: TOKENS.brand.yellowLight,
-    color: TOKENS.text.primary,
+    backgroundColor: TOKENS.brand.tintWeak,
+    color: TOKENS.brand.pillText,
   },
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

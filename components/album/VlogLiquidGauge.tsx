@@ -163,8 +163,6 @@ function SurfaceSparkle({
   fillLevel: ReturnType<typeof useSharedValue<number>>
 }) {
   const cx = useDerivedValue(() => {
-    const bob = Math.sin(time.value * Math.PI * 2 * BOB_HZ) * BOB_AMP * 0.35
-    const waterY = height * (1 - fillLevel.value) + bob
     const drift = (time.value * (0.04 + index * 0.008) + index * 0.31) % 1
     return width * (0.08 + drift * 0.84)
   })

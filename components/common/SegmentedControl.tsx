@@ -36,7 +36,7 @@ export function SegmentedControl({
               <Ionicons
                 name={opt.icon as never}
                 size={18}
-                color={disabled ? '#ccc' : selected ? '#1A1A1A' : '#999'}
+                color={disabled ? '#ccc' : selected ? '#FFFFFF' : '#999'}
               />
             ) : null}
             <Text
@@ -72,6 +72,11 @@ const styles = StyleSheet.create({
   },
   optionSelected: {
     backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 2,
   },
   optionPressed: {
     opacity: 0.85,
@@ -86,7 +91,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   optionTextSelected: {
-    color: '#1A1A1A',
+    color: '#FFFFFF',
     fontWeight: '700',
   },
   optionTextDisabled: {

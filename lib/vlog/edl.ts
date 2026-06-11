@@ -147,7 +147,7 @@ export function buildEDL(params: {
   const weights = selections.map((s) => starWeight(s.rating))
   const spotBeatBudgets = allocateBeats(bodyBeats, weights)
 
-  const flattened: Array<SelectedVlogCut & { spotIndex: number }> = []
+  const flattened: (SelectedVlogCut & { spotIndex: number })[] = []
   selections.forEach((spot, spotIndex) => {
     const budget = spotBeatBudgets[spotIndex] ?? CUT_BEATS_MIN
     const cuts = splitSpotBeatsIntoCuts(budget, spot.cuts)

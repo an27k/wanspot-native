@@ -10,6 +10,7 @@ import { formatAiPlanDogDisplayName } from '@/lib/ai-plan/formatters'
 import { checkAiPlanFeasibility } from '@/lib/wanspot-api'
 import { SegmentedControl } from '@/components/common/SegmentedControl'
 import { MoodCard } from '@/components/common/MoodCard'
+import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { colors } from '@/constants/colors'
 
 export type DurationPick = 'half_day' | 'full_day'
@@ -58,51 +59,60 @@ function SelectorRow({
       <Text style={[styles.selectorTxt, selected ? styles.selectorTxtOn : styles.selectorTxtOff]} numberOfLines={1}>
         {label || '選択'}
       </Text>
-      <Text style={styles.selectorChevron}>▼</Text>
+      <Ionicons name="chevron-down" size={14} color={selected ? colors.primary : '#999'} />
     </Pressable>
   )
 }
 
-function PickerModal({
+/** Instagram 系のボトムシート型ピッカー */
+function PickerSheet({
   visible,
   title,
   items,
+  selectedItem,
   onClose,
   onPick,
 }: {
   visible: boolean
   title: string
   items: string[]
+  selectedItem?: string
   onClose: () => void
   onPick: (item: string) => void
 }) {
+  const insets = useSafeAreaInsets()
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.modalBg} onPress={onClose}>
-        <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>{title}</Text>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.sheetBg} onPress={onClose}>
+        <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + 8 }]} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.sheetGrabber} />
+          <Text style={styles.sheetTitle}>{title}</Text>
           <FlatList
             data={items}
             keyExtractor={(item) => item}
-            style={styles.modalList}
+            style={styles.sheetList}
             keyboardShouldPersistTaps="handled"
-            initialNumToRender={12}
+            initialNumToRender={14}
             maxToRenderPerBatch={10}
             windowSize={10}
             removeClippedSubviews
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.modalRow}
-                onPress={() => {
-                  onPick(item)
-                  onClose()
-                }}
-              >
-                <Text style={styles.modalRowTxt}>{item}</Text>
-              </Pressable>
-            )}
+            renderItem={({ item }) => {
+              const isSelected = item === selectedItem
+              return (
+                <Pressable
+                  style={({ pressed }) => [styles.sheetRow, pressed && styles.sheetRowPressed]}
+                  onPress={() => {
+                    onPick(item)
+                    onClose()
+                  }}
+                >
+                  <Text style={[styles.sheetRowTxt, isSelected && styles.sheetRowTxtOn]}>{item}</Text>
+                  {isSelected ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
+                </Pressable>
+              )
+            }}
           />
-        </View>
+        </Pressable>
       </Pressable>
     </Modal>
   )
@@ -274,7 +284,7 @@ export function AiPlanInputForm({
           onPress={() => setSizePickerOpen(true)}
         >
           <View style={styles.dogSelectLeft}>
-            <Text style={styles.dogSelectIcon}>🐾</Text>
+            <WanspotIconPaw size={18} color={colors.primary} />
             <Text style={styles.dogSelectText} numberOfLines={1} ellipsizeMode="tail">
               {effectiveSize ? `${dogDisplay}（${sizeShort}）でプラン作成` : `${dogDisplay}でプラン作成（サイズ未設定）`}
             </Text>
@@ -296,7 +306,7 @@ export function AiPlanInputForm({
             }}
           >
             <Text style={[styles.ctaText, !isFormValid && styles.ctaTextDisabled]}>この内容でプランを作る</Text>
-            {isFormValid ? <Ionicons name="arrow-forward" size={18} color="#1A1A1A" /> : null}
+            {isFormValid ? <Ionicons name="arrow-forward" size={18} color="#FFFFFF" /> : null}
           </Pressable>
         </View>
 
@@ -304,45 +314,53 @@ export function AiPlanInputForm({
           <Text style={styles.cancelTxt}>戻る</Text>
         </Pressable>
 
-        <PickerModal
+        <PickerSheet
           visible={prefOpen}
           title="都道府県"
           items={prefs}
+          selectedItem={pref || undefined}
           onClose={() => setPrefOpen(false)}
           onPick={(p) => {
             setPref(p)
             setMuni('')
           }}
         />
-        <PickerModal
+        <PickerSheet
           visible={muniOpen}
           title="市区町村"
           items={munis}
+          selectedItem={muni || undefined}
           onClose={() => setMuniOpen(false)}
           onPick={setMuni}
         />
 
-        <Modal visible={sizePickerOpen} transparent animationType="fade" onRequestClose={() => setSizePickerOpen(false)}>
-          <Pressable style={styles.modalBg} onPress={() => setSizePickerOpen(false)}>
-            <View style={styles.sizeModalCard}>
-              <Text style={styles.sizeModalTitle}>サイズを選択</Text>
-              <View style={{ gap: 12 }}>
-                {(Object.keys(SIZE_LABEL) as DogSize[]).map((k) => (
-                  <Pressable
-                    key={k}
-                    style={[styles.sizeRow, (overrideSize ?? dbDogSize) === k && styles.sizeRowOn]}
-                    onPress={() => {
-                      setOverrideSize(k)
-                      setSizePickerOpen(false)
-                    }}
-                  >
-                    <Text style={styles.sizeRowTxt}>
-                      {k} {SIZE_LABEL[k]}
-                    </Text>
-                  </Pressable>
-                ))}
+        <Modal visible={sizePickerOpen} transparent animationType="slide" onRequestClose={() => setSizePickerOpen(false)}>
+          <Pressable style={styles.sheetBg} onPress={() => setSizePickerOpen(false)}>
+            <Pressable
+              style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View style={styles.sheetGrabber} />
+              <Text style={styles.sheetTitle}>サイズを選択</Text>
+              <View style={{ gap: 10 }}>
+                {(Object.keys(SIZE_LABEL) as DogSize[]).map((k) => {
+                  const on = (overrideSize ?? dbDogSize) === k
+                  return (
+                    <Pressable
+                      key={k}
+                      style={[styles.sizeRow, on && styles.sizeRowOn]}
+                      onPress={() => {
+                        setOverrideSize(k)
+                        setSizePickerOpen(false)
+                      }}
+                    >
+                      <Text style={[styles.sizeRowTxt, on && styles.sizeRowTxtOn]}>{SIZE_LABEL[k]}</Text>
+                      {on ? <Ionicons name="checkmark" size={18} color="#fff" /> : null}
+                    </Pressable>
+                  )
+                })}
               </View>
-            </View>
+            </Pressable>
           </Pressable>
         </Modal>
       </ScrollView>
@@ -384,13 +402,12 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5E5',
   },
   selectorOn: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E5E5E5',
+    backgroundColor: colors.tintWeak,
+    borderColor: colors.primary,
   },
   selectorTxt: { fontSize: 14, flex: 1 },
   selectorTxtOn: { color: '#1A1A1A', fontWeight: '600' },
   selectorTxtOff: { color: '#666' },
-  selectorChevron: { fontSize: 9, color: '#999' },
   moodGrid: { flexDirection: 'row', gap: 12 },
   dogSelectRow: {
     flexDirection: 'row',
@@ -412,52 +429,69 @@ const styles = StyleSheet.create({
   dogSelectChange: { fontSize: 13, color: '#999', fontWeight: '600' },
   cancelBtn: { paddingVertical: 12, alignItems: 'center' },
   cancelTxt: { fontSize: 13, fontWeight: '600', color: '#666' },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: 16 },
-  modalCard: {
-    borderRadius: 16,
+  sheetBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    padding: 14,
-    maxHeight: '70%',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    maxHeight: '72%',
   },
-  modalTitle: { fontSize: 14, fontWeight: '700', color: '#1A1A1A', marginBottom: 10 },
-  modalList: { flexGrow: 0 },
-  modalRow: {
-    paddingVertical: 12,
+  sheetGrabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E0DDD8',
+    marginBottom: 12,
+  },
+  sheetTitle: { fontSize: 15, fontWeight: '800', color: '#1A1A1A', marginBottom: 10, textAlign: 'center' },
+  sheetList: { flexGrow: 0 },
+  sheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#F0F0F0',
   },
-  modalRowTxt: { fontSize: 13, color: '#1A1A1A' },
-  sizeModalCard: {
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    padding: 14,
-  },
-  sizeModalTitle: { fontSize: 14, fontWeight: '700', color: '#1A1A1A', marginBottom: 10 },
+  sheetRowPressed: { backgroundColor: '#FAFAF8' },
+  sheetRowTxt: { fontSize: 14, color: '#1A1A1A' },
+  sheetRowTxtOn: { fontWeight: '700', color: colors.primary },
   sizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderRadius: 12,
     backgroundColor: '#F5F4F0',
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    padding: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
   },
-  sizeRowOn: { backgroundColor: colors.primary, borderColor: colors.brandDark },
-  sizeRowTxt: { fontSize: 12, fontWeight: '700', color: '#1A1A1A' },
+  sizeRowOn: { backgroundColor: colors.primary },
+  sizeRowTxt: { fontSize: 13, fontWeight: '700', color: '#1A1A1A' },
+  sizeRowTxtOn: { color: '#fff' },
   ctaInline: { paddingHorizontal: 16, marginTop: 4 },
   ctaButton: {
     backgroundColor: colors.primary,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
+  ctaButtonDisabled: {
+    backgroundColor: '#E5E5E5',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   ctaButtonPressed: { backgroundColor: colors.brandDark, transform: [{ scale: 0.98 }] },
-  ctaText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
+  ctaText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   ctaTextDisabled: { color: '#999' },
 })

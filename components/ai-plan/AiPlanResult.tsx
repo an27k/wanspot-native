@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Image } from 'expo-image'
 import { BackHandler, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
+import { ListEnterItem } from '@/components/common/ListEnterItem'
+import { PressableScale } from '@/components/common/PressableScale'
 import { AiPlanLegDisplay } from '@/components/ai-plan/AiPlanLegDisplay'
 import { AiPlanResultAd } from '@/components/ai-plan/AiPlanResultAd'
 import { AiPlanRouteMap } from '@/components/ai-plan/AiPlanRouteMap'
@@ -11,14 +15,12 @@ import { AiPlanSummaryCard } from '@/components/ai-plan/AiPlanSummaryCard'
 import { AiPlanTimelineNode } from '@/components/ai-plan/AiPlanTimelineNode'
 import type { AiPlanCore, AiPlanLeg, AiPlanMood, AiPlanStop, AiPlanTravelMode } from '@/components/ai-plan/types'
 import { TOKENS } from '@/constants/color-tokens'
+import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { fetchSpotPhotoRefFromDetail, resolveSpotPhotoUri } from '@/lib/wanspot-api'
 
 /** タブ内表示のためネイティブ pop ジェスチャの対象外 — iOS は左端スワイプで onBack を再現 */
 const IOS_EDGE_BACK_WIDTH = 24
 const IOS_EDGE_SWIPE_DX = 56
-/** 固定サブヘッダー分 — 左端スワイプの当たり判定 */
-const SUB_HEADER_H = 48
-const IOS_EDGE_BACK_TOP_INSET = SUB_HEADER_H
 
 type SpotRow = {
   id: string
@@ -40,10 +42,8 @@ export function AiPlanResult({
   legs,
   travelMode,
   mood,
-  planId,
   onBack,
   onPressNew,
-  onMore,
 }: {
   plan: AiPlanCore
   planId?: string | null
@@ -52,9 +52,9 @@ export function AiPlanResult({
   mood: AiPlanMood | undefined
   onBack: () => void
   onPressNew: () => void
-  onMore?: () => void
 }) {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const stops = plan.stops
   const [spotById, setSpotById] = useState<Record<string, SpotRow>>({})
 
@@ -90,6 +90,7 @@ export function AiPlanResult({
   useEffect(() => {
     const ids = stops.map((s) => s.spot_id).filter((id): id is string => typeof id === 'string' && id.length > 0)
     if (ids.length === 0) return
+    let cancelled = false
     void (async () => {
       const { data } = await supabase
         .from('spots')
@@ -101,8 +102,11 @@ export function AiPlanResult({
       for (const row of (data ?? []) as SpotRow[]) {
         if (row?.id) map[row.id] = row
       }
+      if (cancelled) return
+      // 1段階目: DB の情報を即描画（名前・住所・評価・既存写真）
+      setSpotById({ ...map })
 
-      // DB の photo_ref は Google 側で期限切れになりやすい → Detail API で最新 ref を取得
+      // 2段階目: DB の photo_ref は Google 側で期限切れになりやすい → Detail API で最新 ref に差し替え
       await Promise.all(
         Object.entries(map).map(async ([spotId, row]) => {
           const pid = row.place_id
@@ -111,9 +115,12 @@ export function AiPlanResult({
           if (freshRef) map[spotId] = { ...row, photo_ref: freshRef }
         })
       )
-
+      if (cancelled) return
       setSpotById({ ...map })
     })()
+    return () => {
+      cancelled = true
+    }
   }, [stops])
 
   useEffect(() => {
@@ -142,25 +149,14 @@ export function AiPlanResult({
     })
   }, [stops, spotById])
 
-  const handleMore = () => {
-    if (onMore) onMore()
-    // eslint-disable-next-line no-console -- プレースホルダ
-    console.log('[AiPlanResult] more')
-  }
-
   return (
     <View style={styles.wrap}>
-      <View style={styles.subHeader}>
-        <Pressable onPress={onBack} style={styles.headerBack} hitSlop={8}>
-          <Text style={styles.headerBackTxt}>← 戻る</Text>
-        </Pressable>
-        <Pressable onPress={handleMore} style={styles.headerMore} hitSlop={8}>
-          <Text style={styles.headerMoreTxt}>⋯</Text>
-        </Pressable>
-      </View>
-
       {/* タブ内のため RN Stack のスワイプ pop は効かない — 左端ストリップで同等の戻りを実装 */}
-      <ScrollView style={styles.root} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.root}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
         <AiPlanRouteMap stops={mergedStops} />
 
         <AiPlanSummaryCard plan={plan} legs={legs} mood={mood} travelMode={travelMode} />
@@ -169,7 +165,7 @@ export function AiPlanResult({
 
         <View style={styles.timeline}>
           {mergedStops.map((stop, i) => (
-            <View key={stop.spot_id}>
+            <ListEnterItem key={stop.spot_id} index={i} animate>
               <AiPlanTimelineNode index={i} isLast={i === mergedStops.length - 1}>
                 <AiPlanSpotCard
                   stop={stop}
@@ -178,14 +174,25 @@ export function AiPlanResult({
                 />
               </AiPlanTimelineNode>
               {i < mergedStops.length - 1 ? <AiPlanLegDisplay leg={legs[i] ?? null} mode={travelMode} /> : null}
-            </View>
+            </ListEnterItem>
           ))}
         </View>
 
-        <Pressable style={styles.cta} onPress={onPressNew}>
+        <PressableScale style={styles.cta} onPress={onPressNew} accessibilityLabel="別のプランを作る">
+          <Ionicons name="sparkles" size={16} color="#fff" />
           <Text style={styles.ctaTxt}>別のプランを作る</Text>
+        </PressableScale>
+
+        <Pressable onPress={onBack} style={styles.backLink} hitSlop={8} accessibilityRole="button">
+          <Text style={styles.backLinkTxt}>一覧に戻る</Text>
         </Pressable>
       </ScrollView>
+
+      {/* マップ上に浮かせた戻るボタン（Instagram 系の円形フローティング） */}
+      <Pressable onPress={onBack} style={styles.floatBack} hitSlop={8} accessibilityLabel="戻る" accessibilityRole="button">
+        <Ionicons name="chevron-back" size={20} color={TOKENS.text.primary} />
+      </Pressable>
+
       {Platform.OS === 'ios' ? (
         <View
           style={styles.edgeBackStrip}
@@ -205,7 +212,7 @@ const styles = StyleSheet.create({
   edgeBackStrip: {
     position: 'absolute',
     left: 0,
-    top: IOS_EDGE_BACK_TOP_INSET,
+    top: 0,
     bottom: 0,
     width: IOS_EDGE_BACK_WIDTH,
     zIndex: 10,
@@ -217,33 +224,22 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
   },
-  subHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  floatBack: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.94)',
     alignItems: 'center',
-    height: SUB_HEADER_H,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: TOKENS.border.subtle,
-    backgroundColor: TOKENS.surface.primary,
-  },
-  headerBack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  headerBackTxt: {
-    fontSize: 16,
-    color: TOKENS.text.primary,
-    fontWeight: '600',
-  },
-  headerMore: {
-    paddingHorizontal: 4,
-  },
-  headerMoreTxt: {
-    fontSize: 14,
-    color: TOKENS.text.secondary,
-    fontWeight: '600',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 11,
   },
   timeline: {
     paddingHorizontal: 16,
@@ -253,15 +249,32 @@ const styles = StyleSheet.create({
   cta: {
     marginHorizontal: 16,
     marginTop: 8,
-    backgroundColor: TOKENS.brand.yellow,
-    borderRadius: 14,
-    height: 48,
+    backgroundColor: TOKENS.brand.primary,
+    borderRadius: 999,
+    height: 52,
+    flexDirection: 'row',
+    gap: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: TOKENS.brand.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
   },
   ctaTxt: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: TOKENS.text.primary,
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  backLink: {
+    alignSelf: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  backLinkTxt: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: TOKENS.text.secondary,
   },
 })
