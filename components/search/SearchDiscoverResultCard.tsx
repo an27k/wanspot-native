@@ -4,6 +4,7 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Path, Polygon } from 'react-native-svg'
 import { RunningDog } from '@/components/DogStates'
+import { PressableScale } from '@/components/common/PressableScale'
 import { IconPaw } from '@/components/IconPaw'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 import { useDogProfile } from '@/components/dog/useDogProfile'
@@ -13,6 +14,8 @@ import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
+import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { colors } from '@/constants/colors'
 
 function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
@@ -65,6 +68,8 @@ type Props = {
   onOpen: (spotId: string) => void
   onLikesChange?: () => void
   onBeforeNavigate?: () => void
+  /** google = 検索タブのグラデ背景向けダークガラス */
+  chrome?: 'light' | 'google'
 }
 
 export function SearchDiscoverResultCard({
@@ -74,7 +79,9 @@ export function SearchDiscoverResultCard({
   onOpen,
   onLikesChange,
   onBeforeNavigate,
+  chrome = 'light',
 }: Props) {
+  const isGoogle = chrome === 'google'
   const requireAuth = useRequireAuth()
   const { dog } = useDogProfile()
   const [liked, setLiked] = useState(false)
@@ -160,10 +167,10 @@ export function SearchDiscoverResultCard({
     setAiLoading(false)
   }
 
-  return (
-    <View style={styles.card}>
-      <Pressable onPress={() => void handleOpen()}>
-        <View style={styles.thumbWrap}>
+  const inner = (
+    <View style={[styles.card, isGoogle && styles.cardGoogle]}>
+      <PressableScale onPress={() => void handleOpen()}>
+        <View style={[styles.thumbWrap, isGoogle && styles.thumbWrapGoogle]}>
           {photoUrl ? (
             <Image
               source={{ uri: photoUrl }}
@@ -187,55 +194,67 @@ export function SearchDiscoverResultCard({
         </View>
         <View style={styles.body}>
           <View style={styles.row1}>
-            <View style={styles.catPill}>
-              <Text style={styles.catTxt}>{spot.category}</Text>
+            <View style={[styles.catPill, isGoogle && styles.catPillGoogle]}>
+              <Text style={[styles.catTxt, isGoogle && styles.catTxtGoogle]}>{spot.category}</Text>
             </View>
             <View style={styles.metaRight}>
-              {dist ? <Text style={styles.dist}>{dist}</Text> : null}
+              {dist ? <Text style={[styles.dist, isGoogle && styles.distGoogle]}>{dist}</Text> : null}
               {spot.rating != null && spot.rating > 0 ? (
                 <View style={styles.rateRow}>
                   <IconGoogle />
                   <IconStar />
-                  <Text style={styles.rateTxt}>{spot.rating}</Text>
+                  <Text style={[styles.rateTxt, isGoogle && styles.rateTxtGoogle]}>{spot.rating}</Text>
                 </View>
               ) : null}
             </View>
           </View>
-          <Text style={styles.name}>{spot.name}</Text>
-          <Text style={styles.addr} numberOfLines={2}>
+          <Text style={[styles.name, isGoogle && styles.nameGoogle]}>{spot.name}</Text>
+          <Text style={[styles.addr, isGoogle && styles.addrGoogle]} numberOfLines={2}>
             {spot.address}
           </Text>
         </View>
-      </Pressable>
+      </PressableScale>
       <View style={styles.aiFooter}>
         {!aiSummary && !aiLoading ? (
-          <Pressable style={styles.aiBtn} onPress={() => void handleAiSummary()}>
+          <Pressable style={[styles.aiBtn, isGoogle && styles.aiBtnGoogle]} onPress={() => void handleAiSummary()}>
             <View style={styles.aiBtnIcon}>
-              <IconPaw size={11} color="#aaa" />
+              <IconPaw size={11} color={isGoogle ? GOOGLE_HOME.textMuted : '#aaa'} />
             </View>
-            <Text style={styles.aiBtnTxt}>ワンスポAIレビューを見る</Text>
+            <Text style={[styles.aiBtnTxt, isGoogle && styles.aiBtnTxtGoogle]}>ワンスポAIレビューを見る</Text>
           </Pressable>
         ) : null}
         {aiLoading ? <RunningDog label="ワンスポAIレビューを生成中..." /> : null}
         {aiSummary && !aiLoading ? (
-          <View style={styles.aiBox}>
+          <View style={[styles.aiBox, isGoogle && styles.aiBoxGoogle]}>
             <View style={styles.kwRow}>
               {aiSummary.keywords.map((kw) => (
-                <Text key={kw} style={styles.kw}>
+                <Text key={kw} style={[styles.kw, isGoogle && styles.kwGoogle]}>
                   {kw}
                 </Text>
               ))}
             </View>
-            <Text style={styles.aiSum}>{aiSummary.summary}</Text>
+            <Text style={[styles.aiSum, isGoogle && styles.aiSumGoogle]}>{aiSummary.summary}</Text>
           </View>
         ) : null}
       </View>
     </View>
   )
+
+  if (isGoogle) {
+    return <GoogleGlassPanel style={styles.googleShell}>{inner}</GoogleGlassPanel>
+  }
+  return inner
 }
 
 const styles = StyleSheet.create({
+  googleShell: { marginBottom: GOOGLE_HOME.gapCard },
   card: { borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border },
+  cardGoogle: {
+    borderRadius: GOOGLE_HOME.radiusPanel,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+  },
+  thumbWrapGoogle: { borderTopLeftRadius: GOOGLE_HOME.radiusPanel, borderTopRightRadius: GOOGLE_HOME.radiusPanel },
   thumbWrap: { width: '100%', height: 144, backgroundColor: '#e8e4de', position: 'relative' },
   thumb: { width: '100%', height: '100%' },
   ph: { backgroundColor: '#e8e4de' },
@@ -260,13 +279,19 @@ const styles = StyleSheet.create({
   body: { padding: 12, gap: 4 },
   row1: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   catPill: { backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  catPillGoogle: { backgroundColor: 'rgba(255,255,255,0.14)' },
   catTxt: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
+  catTxtGoogle: { color: GOOGLE_HOME.textPrimary, fontWeight: '600' },
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dist: { fontSize: 12, color: '#aaa' },
+  distGoogle: { color: GOOGLE_HOME.textMuted },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateTxt: { fontSize: 12, color: '#888' },
+  rateTxtGoogle: { color: GOOGLE_HOME.textSecondary },
   name: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  nameGoogle: { fontSize: 15, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
   addr: { fontSize: 12, color: '#aaa' },
+  addrGoogle: { color: GOOGLE_HOME.textSecondary },
   aiFooter: { paddingHorizontal: 12, paddingBottom: 12, gap: 4 },
   aiBtn: {
     marginTop: 4,
@@ -283,7 +308,13 @@ const styles = StyleSheet.create({
   },
   aiBtnIcon: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
   aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888', lineHeight: 16 },
+  aiBtnGoogle: {
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  aiBtnTxtGoogle: { color: GOOGLE_HOME.textSecondary },
   aiBox: { marginTop: 4, padding: 12, borderRadius: 12, backgroundColor: '#FFFBEC' },
+  aiBoxGoogle: { backgroundColor: 'rgba(255,255,255,0.08)' },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kw: {
     fontSize: 12,
@@ -295,4 +326,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
+  aiSumGoogle: { color: GOOGLE_HOME.textSecondary },
+  kwGoogle: { backgroundColor: 'rgba(255,138,122,0.55)', color: GOOGLE_HOME.textPrimary },
 })

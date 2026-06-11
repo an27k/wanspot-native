@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import { ADS_ENABLED } from '@/constants/ads'
 
 function parseIOSMajor(version: unknown): number | null {
   if (typeof version === 'string') {
@@ -15,10 +16,11 @@ function parseIOSMajor(version: unknown): number | null {
 }
 
 /**
- * 端末・OS による広告のオンオフ。
- * 以前は iOS 26 + Hermes 向けにオフにしていたが、JSC 利用と iOS 18 側の検証を踏まえ iOS 26 も含めて有効化した。
+ * 広告機能が有効か（マスターフラグ + 端末ポリシー）。
+ * ADS_ENABLED=false 時は SDK 初期化・ATT・リスト注入をすべてスキップ。
  */
 export function adsEnabledForDevice(): boolean {
+  if (!ADS_ENABLED) return false
   return true
 }
 

@@ -15,7 +15,6 @@ import {
 import { colors } from '@/constants/colors'
 import { NearbyMapView } from '@/components/map/NearbyMapView'
 import { MapFilterBar } from '@/components/map/MapFilterBar'
-import { WalkAlertFab } from '@/components/map/MapAppMenu'
 import { GenreIcon } from '@/components/nearby/GenreIcon'
 import { RunningDog } from '@/components/DogStates'
 import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
@@ -45,14 +44,11 @@ import { sheetSpotFromPlace, sheetSpotFromUserRow, type SheetSpot } from '@/lib/
 import { fetchLikedSpotsForUser } from '@/lib/fetch-user-spot-lists'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { openSpotDetail } from '@/lib/open-spot-detail'
-import { useWeather } from '@/lib/weather/use-weather'
 import { supabase } from '@/lib/supabase'
 import type { UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import type { PlaceResult } from '@/types/places'
 
-const WALK_ALERT_SIZE = 48
 const FILTER_BAR_H = 52
-const TOP_ROW_GAP = 8
 
 function isMapGenreKey(v: string): v is MapGenreKey {
   return (
@@ -75,7 +71,7 @@ function NearbyPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const topSafe = insets.top + 8
-  const filterBarTop = topSafe + WALK_ALERT_SIZE + TOP_ROW_GAP
+  const filterBarTop = topSafe
   const overlayTop = filterBarTop + FILTER_BAR_H
 
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -92,16 +88,12 @@ function NearbyPage() {
   const [likedRows, setLikedRows] = useState<SheetSpot[]>([])
   const [userListsLoading, setUserListsLoading] = useState(false)
 
-  const [dogName, setDogName] = useState<string | null>(null)
   const [selectedSpot, setSelectedSpot] = useState<SheetSpot | null>(null)
   const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({})
   const [sheetBottomInset, setSheetBottomInset] = useState(0)
   const [sheetIndex, setSheetIndex] = useState(-1)
   const sheetControl = useRef<NearbySheetHandle>(null)
   const sheetAnimatedIndex = useSharedValue(-1)
-
-  const { data: weather, loading: weatherLoading, needsLocation: weatherNeedsLocation, refetch: refetchWeather } =
-    useWeather(location)
 
   const sheetTab: NearbySheetTab = useMemo(() => {
     if (activeFilter?.kind === 'like') return 'like'
@@ -118,30 +110,6 @@ function NearbyPage() {
       } finally {
         setGenreReady(true)
       }
-    })()
-  }, [])
-
-  useEffect(() => {
-    void (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        setDogName(null)
-        return
-      }
-      const cacheKey = `profile:dog-name:${user.id}`
-      if (isCacheFresh(cacheKey, CACHE_TTL.WALK_TAGS_MS)) {
-        const cached = readCache<string | null>(cacheKey)
-        if (cached !== undefined) {
-          setDogName(cached)
-          return
-        }
-      }
-      const { data } = await supabase.from('dogs').select('name').eq('user_id', user.id).maybeSingle()
-      const name = typeof data?.name === 'string' && data.name.trim() ? data.name.trim() : null
-      writeCache(cacheKey, name)
-      setDogName(name)
     })()
   }, [])
 
@@ -467,19 +435,8 @@ function NearbyPage() {
             ) : null}
           </View>
 
-          {/* 地図UI（アラート・ジャンル）— リストより下のレイヤー */}
+          {/* 地図UI（ジャンルフィルタ）— リストより下のレイヤー。お散歩アラートは検索タブ上部カードへ移設 */}
           <View style={styles.mapOverlays} pointerEvents="box-none">
-            <View style={[styles.walkAlertWrap, { top: topSafe }]}>
-              <WalkAlertFab
-                tempC={weather?.tempC ?? null}
-                loading={weatherLoading}
-                needsLocation={weatherNeedsLocation || locationPermissionDenied}
-                onRequestLocation={() => void refreshLocation().then((ok) => ok && refetchWeather())}
-                location={location}
-                dogName={dogName}
-              />
-            </View>
-
             <MapFilterBar active={activeFilter} onSelect={handleFilterSelect} topInset={filterBarTop} />
           </View>
 
@@ -529,10 +486,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 10,
     elevation: 10,
-  },
-  walkAlertWrap: {
-    position: 'absolute',
-    left: 16,
   },
   permissionBanner: {
     position: 'absolute',

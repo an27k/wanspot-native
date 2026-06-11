@@ -1,17 +1,27 @@
-import { useEffect, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, type ReactNode } from 'react'
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { BlurView } from 'expo-blur'
-import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native'
 import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTabBarScrollContext } from '@/context/TabBarScrollContext'
 import { DISABLE_TABBAR_SCROLL } from '@/lib/debug/review-crash-flags'
+import { SOFT_SPRING } from '@/lib/motion/constants'
 import { colors } from '@/constants/colors'
 
 /** ピル本体の高さ。container の paddingTop と insets と合わせて TAB_BAR_HEIGHT と整合させる */
@@ -19,6 +29,8 @@ export const PILL_HEIGHT = 58
 const PILL_RADIUS = 28
 const HORIZONTAL_MARGIN = 18
 const COLLAPSED_WIDTH = 72
+const INDICATOR_W = 44
+const INDICATOR_H = 36
 
 /**
  * Instagram / iOS の「リキッドグラス」風フローティングタブバー。
@@ -31,6 +43,47 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const pillFullWidth = windowWidth - HORIZONTAL_MARGIN * 2
 
   const pillFullWidthSv = useSharedValue(pillFullWidth)
+
+  /** 選択インジケーター（コーラルティントのピル）をタブ間で spring スライドさせる */
+  const itemLayoutsRef = useRef(new Map<string, { x: number; width: number }>())
+  const indicatorX = useSharedValue(0)
+  const indicatorOpacity = useSharedValue(0)
+  const focusedKey = state.routes[state.index]?.key
+
+  const moveIndicator = useCallback(
+    (key: string | undefined, animated: boolean) => {
+      if (!key) return
+      const l = itemLayoutsRef.current.get(key)
+      if (!l) return
+      const target = l.x + l.width / 2 - INDICATOR_W / 2
+      if (animated) {
+        indicatorX.value = withSpring(target, SOFT_SPRING)
+      } else {
+        indicatorX.value = target
+        indicatorOpacity.value = withTiming(1, { duration: 120 })
+      }
+    },
+    [indicatorOpacity, indicatorX]
+  )
+
+  const onItemLayout = useCallback(
+    (key: string) => (e: LayoutChangeEvent) => {
+      const { x, width } = e.nativeEvent.layout
+      itemLayoutsRef.current.set(key, { x, width })
+      // 初回計測とスクロール連動の再レイアウトは即時追従（タブ切替時のみ spring）
+      if (key === focusedKey) moveIndicator(key, false)
+    },
+    [focusedKey, moveIndicator]
+  )
+
+  useEffect(() => {
+    moveIndicator(focusedKey, true)
+  }, [focusedKey, moveIndicator])
+
+  const animatedIndicator = useAnimatedStyle(() => ({
+    transform: [{ translateX: indicatorX.value }],
+    opacity: indicatorOpacity.value,
+  }))
 
   useEffect(() => {
     pillFullWidthSv.value = pillFullWidth
@@ -70,7 +123,10 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           />
           <View pointerEvents="none" style={styles.glassHighlight} />
 
+          {/* インジケーターとタブの座標原点を揃えるため padding は外側に分離 */}
+          <View style={styles.rowPad}>
           <Animated.View style={[styles.row, animatedRow]}>
+            <Animated.View pointerEvents="none" style={[styles.indicator, animatedIndicator]} />
             {state.routes.map((route, index) => {
               const { options } = descriptors[route.key]
               const focused = state.index === index
@@ -105,12 +161,14 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                   progress={tabBarProgress}
                   onPress={onPress}
                   onLongPress={onLongPress}
+                  onLayout={onItemLayout(route.key)}
                   accessibilityLabel={options.tabBarAccessibilityLabel ?? options.title}
                   icon={icon}
                 />
               )
             })}
           </Animated.View>
+          </View>
         </View>
       </Animated.View>
     </View>
@@ -122,6 +180,7 @@ function TabBarItem({
   progress,
   onPress,
   onLongPress,
+  onLayout,
   accessibilityLabel,
   icon,
 }: {
@@ -129,6 +188,7 @@ function TabBarItem({
   progress: SharedValue<number>
   onPress: () => void
   onLongPress: () => void
+  onLayout: (e: LayoutChangeEvent) => void
   accessibilityLabel?: string
   icon: ReactNode
 }) {
@@ -152,7 +212,7 @@ function TabBarItem({
   })
 
   return (
-    <Animated.View style={[styles.tab, animatedTab]}>
+    <Animated.View style={[styles.tab, animatedTab]} onLayout={onLayout}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={focused ? { selected: true } : {}}
@@ -162,7 +222,7 @@ function TabBarItem({
         style={styles.tabPressable}
         hitSlop={8}
       >
-        <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>{icon}</View>
+        <View style={styles.iconWrap}>{icon}</View>
       </Pressable>
     </Animated.View>
   )
@@ -210,11 +270,25 @@ const styles = StyleSheet.create({
     height: '50%',
     backgroundColor: 'rgba(255,255,255,0.28)',
   },
+  rowPad: {
+    flex: 1,
+    paddingHorizontal: 8,
+  },
   row: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    position: 'relative',
+  },
+  indicator: {
+    position: 'absolute',
+    left: 0,
+    top: '50%',
+    marginTop: -INDICATOR_H / 2,
+    width: INDICATOR_W,
+    height: INDICATOR_H,
+    borderRadius: 18,
+    backgroundColor: colors.tintWeak,
   },
   tab: {
     alignItems: 'center',
@@ -233,8 +307,5 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconWrapActive: {
-    backgroundColor: colors.tintWeak,
   },
 })

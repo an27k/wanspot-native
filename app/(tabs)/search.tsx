@@ -17,22 +17,30 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
 import Animated from 'react-native-reanimated'
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
-import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
-import { AppHeader } from '@/components/AppHeader'
+import { DiscoverFeedCard } from '@/components/search/DiscoverFeedCard'
+import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
+import { SearchHomeHeader } from '@/components/search/SearchHomeHeader'
 import { IconAiPlan } from '@/components/common/IconAiPlan'
+import { ListEnterItem } from '@/components/common/ListEnterItem'
+import { ArticleListSkeleton, SearchResultSkeleton } from '@/components/common/ShimmerSkeleton'
+import { PressableScale } from '@/components/common/PressableScale'
 import { AdNativeCard } from '@/components/AdNativeCard'
 import { AiPlanTab } from '@/components/ai-plan/AiPlanTab'
+import { GlassSearchShell } from '@/components/search/GlassSearchShell'
+import { LikesShortcutCard } from '@/components/search/LikesShortcutCard'
+import { WalkAlertCard } from '@/components/search/WalkAlertCard'
 import { SearchDiscoverResultCard } from '@/components/search/SearchDiscoverResultCard'
 import { PowState, RunningDog } from '@/components/DogStates'
 import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
 import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import { colors } from '@/constants/colors'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { sortArticlesByScore } from '@/lib/articles/scoring'
-import { CACHE_TTL, fetchWithCache, geoBucket, invalidateCache, isCacheFresh } from '@/lib/client-cache'
+import { CACHE_TTL, fetchWithCache, geoBucket, invalidateCache, isCacheFresh, readCache } from '@/lib/client-cache'
 import { getCachedPrefecture, getCachedPrefectureAndMunicipality } from '@/lib/geo-cache'
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
 import { resolveSessionLocation } from '@/lib/location-session'
@@ -40,8 +48,10 @@ import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
+import { shouldInjectListAd } from '@/lib/ads/list-injection'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
+import { perfAsync, perfMark } from '@/lib/perf/marks'
 import { wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -81,14 +91,14 @@ function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
 
 const ARTICLES_CACHE_KEY = 'search:articles:v1'
 
-const IconSearch = () => (
-  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth={2.5} strokeLinecap="round">
+const IconSearch = ({ color = GOOGLE_HOME.textMuted }: { color?: string }) => (
+  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round">
     <Circle cx={11} cy={11} r={8} />
     <Line x1={21} y1={21} x2={16.65} y2={16.65} />
   </Svg>
 )
-const IconClose = () => (
-  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth={2.5} strokeLinecap="round">
+const IconClose = ({ color = GOOGLE_HOME.textMuted }: { color?: string }) => (
+  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round">
     <Line x1={18} y1={6} x2={6} y2={18} />
     <Line x1={6} y1={6} x2={18} y2={18} />
   </Svg>
@@ -181,6 +191,11 @@ function SearchTab() {
   const [headerH, setHeaderH] = useState(0)
   const [showObTutorial, setShowObTutorial] = useState(false)
   const [obTutorialDogName, setObTutorialDogName] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [articlesListEnter, setArticlesListEnter] = useState(true)
+  const [searchListEnter, setSearchListEnter] = useState(true)
+  const [discoverListEnter, setDiscoverListEnter] = useState(true)
+  const [articlesFetchError, setArticlesFetchError] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -218,6 +233,13 @@ function SearchTab() {
     }
     setShowObTutorial(false)
   }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      perfMark('tab:search:focus')
+      return () => perfMark('tab:search:blur')
+    }, [])
+  )
 
   useFocusEffect(
     useCallback(() => {
@@ -450,27 +472,29 @@ function SearchTab() {
       const geoKey = loc ? geoBucket(loc.lat, loc.lng) : 'none'
       const cacheKey = `search:recommend:${user.id}:${geoKey}`
       if (force) invalidateCache(cacheKey)
-      const { data: result } = await fetchWithCache(
-        cacheKey,
-        CACHE_TTL.RECOMMEND_MS,
-        async () => {
-          const prefecture = loc ? await getCachedPrefecture(loc.lat, loc.lng) : undefined
-          return wanspotFetchJson<{
-            spots?: PlaceResult[]
-            label?: string
-            reason?: string
-          }>('/api/spots/recommend', {
-            method: 'POST',
-            json: {
-              userId: user.id,
-              lat: loc?.lat,
-              lng: loc?.lng,
-              walkAreaTags: userWalkTags,
-              prefecture,
-            },
-          })
-        },
-        { force }
+      const { data: result } = await perfAsync('api:recommend', () =>
+        fetchWithCache(
+          cacheKey,
+          CACHE_TTL.RECOMMEND_MS,
+          async () => {
+            const prefecture = loc ? await getCachedPrefecture(loc.lat, loc.lng) : undefined
+            return wanspotFetchJson<{
+              spots?: PlaceResult[]
+              label?: string
+              reason?: string
+            }>('/api/spots/recommend', {
+              method: 'POST',
+              json: {
+                userId: user.id,
+                lat: loc?.lat,
+                lng: loc?.lng,
+                walkAreaTags: userWalkTags,
+                prefecture,
+              },
+            })
+          },
+          { force }
+        )
       )
       setAiLabel(result.label ?? null)
       setAiReason(result.reason ?? null)
@@ -489,28 +513,39 @@ function SearchTab() {
       const force = opts?.force === true
       if (articlesLoading) return
       if (!force && articlesList.length > 0) return
+
+      const cachedRows = readCache<ArticleRow[]>(ARTICLES_CACHE_KEY)
+      if (!force && cachedRows && cachedRows.length > 0 && articlesList.length === 0) {
+        setArticlesList(cachedRows)
+      }
+
       const cacheWarm = !force && isCacheFresh(ARTICLES_CACHE_KEY, CACHE_TTL.ARTICLES_MS)
       if (!cacheWarm) setArticlesLoading(true)
+      setArticlesFetchError(false)
       try {
         if (force) invalidateCache(ARTICLES_CACHE_KEY)
-        const { data: rows, fromCache } = await fetchWithCache(
-          ARTICLES_CACHE_KEY,
-          CACHE_TTL.ARTICLES_MS,
-          async () => {
-            const { data } = await supabase
-              .from('articles')
-              .select('id, title, summary, slug, category, keywords, image_url, created_at, published_at')
-              .eq('status', 'published')
-              .order('published_at', { ascending: false, nullsFirst: false })
-            return (data ?? []) as ArticleRow[]
-          },
-          { force }
+        const geoPromise =
+          location != null
+            ? getCachedPrefectureAndMunicipality(location.lat, location.lng)
+            : Promise.resolve({ prefecture: null as string | null, municipality: null as string | null })
+
+        const { data: rows, fromCache } = await perfAsync('api:articles', () =>
+          fetchWithCache(
+            ARTICLES_CACHE_KEY,
+            CACHE_TTL.ARTICLES_MS,
+            async () => {
+              const { data } = await supabase
+                .from('articles')
+                .select('id, title, summary, slug, category, keywords, image_url, created_at, published_at')
+                .eq('status', 'published')
+                .order('published_at', { ascending: false, nullsFirst: false })
+              return (data ?? []) as ArticleRow[]
+            },
+            { force }
+          )
         )
 
-        const geo =
-          location != null
-            ? await getCachedPrefectureAndMunicipality(location.lat, location.lng)
-            : { prefecture: null as string | null, municipality: null as string | null }
+        const geo = await geoPromise
 
         const sorted = sortArticlesByScore(
           rows.map((r) => ({
@@ -536,11 +571,11 @@ function SearchTab() {
           const urls = sorted
             .map((a) => a.image_url)
             .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
-            .map((u) => resizePlacesImageUrl(u.trim(), 'card'))
-          if (urls.length > 0) void ExpoImage.prefetch(urls.slice(0, 12), 'memory-disk')
+            .map((u) => resizePlacesImageUrl(u.trim(), 'thumbnail'))
+          if (urls.length > 0) void ExpoImage.prefetch(urls.slice(0, 8), 'memory-disk')
         }
       } catch {
-        setArticlesList([])
+        setArticlesFetchError(true)
       } finally {
         setArticlesLoading(false)
       }
@@ -575,7 +610,9 @@ function SearchTab() {
     setSearched(true)
     try {
       const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
-      const res = await wanspotFetch(`/api/spots/search?q=${encodeURIComponent(trimmed)}${locationParam}`)
+      const res = await perfAsync('api:search', () =>
+        wanspotFetch(`/api/spots/search?q=${encodeURIComponent(trimmed)}${locationParam}`)
+      )
       void supabase.auth.getUser().then(({ data: { user } }) => {
         if (!user) return
         void wanspotFetch('/api/search/history', {
@@ -659,9 +696,26 @@ function SearchTab() {
   }, [aiResults, location, userWalkTags])
   const discoverLoading = discoverMode === 'ai' ? aiLoading : articlesLoading
 
-  const AD_ROW_EVERY = 5
-  const shouldShowAdAfter = (index: number, total: number) =>
-    (index + 1) % AD_ROW_EVERY === 0 || (index + 1 === total && total < AD_ROW_EVERY)
+  useEffect(() => {
+    if (!articlesLoading && articlesList.length > 0 && articlesListEnter) {
+      const t = setTimeout(() => setArticlesListEnter(false), 700)
+      return () => clearTimeout(t)
+    }
+  }, [articlesLoading, articlesList.length, articlesListEnter])
+
+  useEffect(() => {
+    if (!loading && sortedResults.length > 0 && searchListEnter) {
+      const t = setTimeout(() => setSearchListEnter(false), 700)
+      return () => clearTimeout(t)
+    }
+  }, [loading, searchListEnter, sortedResults.length])
+
+  useEffect(() => {
+    if (!discoverLoading && discoverResults.length > 0 && discoverListEnter) {
+      const t = setTimeout(() => setDiscoverListEnter(false), 700)
+      return () => clearTimeout(t)
+    }
+  }, [discoverLoading, discoverListEnter, discoverResults.length])
 
   const openSpot = (id: string) => {
     router.push(`/spots/${id}`)
@@ -677,7 +731,13 @@ function SearchTab() {
   /** 「AIプラン」チップ選択時は AiPlanTab を全画面オーバーレイで表示（挙動は従来のまま） */
   const showAiPlan = !searched && discoverMode === 'ai_plan'
 
+  const iconMuted = GOOGLE_HOME.textMuted
+  const iconActive = GOOGLE_HOME.textPrimary
+  const aiIconOff = 'rgba(255,255,255,0.62)'
+  const aiIconOn = '#FFFFFF'
+
   return (
+    <GoogleHomeBackground>
     <View style={styles.root}>
       <Animated.ScrollView
         ref={scrollRef}
@@ -703,18 +763,20 @@ function SearchTab() {
       >
         {/* ヘッダーはコンテンツと一緒に上へ流れる（固定しない） */}
         <View onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}>
-        <AppHeader />
-        <View style={styles.searchHeader}>
+        {!searched ? <SearchHomeHeader /> : <View style={{ paddingTop: insets.top + 8 }} />}
+        <View style={[styles.searchHeader, searched && styles.searchHeaderCompact]}>
           <View style={styles.searchRow}>
-            <View style={styles.searchInner}>
-              <IconSearch />
+            <GlassSearchShell focused={searchFocused} variant="google">
+              <IconSearch color={iconMuted} />
               <TextInput
                 style={styles.input}
                 value={query}
                 onChangeText={setQuery}
                 placeholder="スポット・エリア・キーワード"
-                placeholderTextColor="#aaa"
+                placeholderTextColor={GOOGLE_HOME.searchPlaceholder}
                 onSubmitEditing={() => void handleSearch(query)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
                 returnKeyType="search"
                 blurOnSubmit
               />
@@ -727,13 +789,13 @@ function SearchTab() {
                     setSearched(false)
                   }}
                 >
-                  <IconClose />
+                  <IconClose color={iconMuted} />
                 </Pressable>
               ) : null}
-              <Pressable style={styles.searchGo} onPress={() => void handleSearch(query)}>
+              <PressableScale style={styles.searchGo} onPress={() => void handleSearch(query)}>
                 <Text style={styles.searchGoTxt}>検索</Text>
-              </Pressable>
-            </View>
+              </PressableScale>
+            </GlassSearchShell>
             {searched ? (
               <View style={styles.sortWrap}>
                 <Pressable
@@ -761,7 +823,8 @@ function SearchTab() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={{ marginTop: 8, opacity: suggestionsReady ? 1 : 0.6 }}
+                style={{ marginTop: 12, opacity: suggestionsReady ? 1 : 0.6 }}
+                contentContainerStyle={{ paddingRight: GOOGLE_HOME.padH }}
               >
                 <View style={styles.sugRow}>
                   {suggestions.map((s) => (
@@ -771,37 +834,30 @@ function SearchTab() {
                   ))}
                 </View>
               </ScrollView>
-              <View style={styles.discoverTabs}>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'articles' && styles.discTabOn]}
+              {/* Google アプリ風: 検索バー直下の2つのモードピル（再タップで解除） */}
+              <View style={styles.aiPillRow}>
+                <PressableScale
+                  style={[styles.aiPill, discoverMode === 'ai_plan' && styles.aiPillOn]}
                   onPress={() => {
                     Keyboard.dismiss()
-                    setDiscoverMode('articles')
+                    setDiscoverMode((prev) => (prev === 'ai_plan' ? 'articles' : 'ai_plan'))
                   }}
+                  accessibilityLabel="AIプラン"
                 >
-                  <IconBulb fill={discoverMode === 'articles' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>ワンスポまとめ</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'ai_plan' && styles.discTabOn]}
+                  <IconAiPlan fill={discoverMode === 'ai_plan' ? aiIconOn : aiIconOff} />
+                  <Text style={[styles.aiPillTxt, discoverMode === 'ai_plan' && styles.aiPillTxtOn]}>AIプラン</Text>
+                </PressableScale>
+                <PressableScale
+                  style={[styles.aiPill, discoverMode === 'ai' && styles.aiPillOn]}
                   onPress={() => {
                     Keyboard.dismiss()
-                    setDiscoverMode('ai_plan')
+                    setDiscoverMode((prev) => (prev === 'ai' ? 'articles' : 'ai'))
                   }}
+                  accessibilityLabel="AIレコメンド"
                 >
-                  <IconAiPlan fill={discoverMode === 'ai_plan' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'ai_plan' && styles.discTabTxtOn]}>AIプラン</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'ai' && styles.discTabOn]}
-                  onPress={() => {
-                    Keyboard.dismiss()
-                    setDiscoverMode('ai')
-                  }}
-                >
-                  <IconThumbUp fill={discoverMode === 'ai' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'ai' && styles.discTabTxtOn]}>AIレコメンド</Text>
-                </Pressable>
+                  <IconThumbUp fill={discoverMode === 'ai' ? aiIconOn : aiIconOff} />
+                  <Text style={[styles.aiPillTxt, discoverMode === 'ai' && styles.aiPillTxtOn]}>AIレコメンド</Text>
+                </PressableScale>
               </View>
             </>
           ) : null}
@@ -810,76 +866,95 @@ function SearchTab() {
 
         {!showAiPlan ? (
         <View style={styles.results}>
-          {loading ? <RunningDog label="検索中..." /> : null}
+          {loading ? (
+            <>
+              <SearchResultSkeleton variant="dark" />
+              <SearchResultSkeleton variant="dark" />
+              <SearchResultSkeleton variant="dark" />
+            </>
+          ) : null}
           {!loading && searched && results.length === 0 ? <PowState label="見つかりませんでした" /> : null}
           {!loading &&
             searched &&
             sortedResults.map((spot, index) => (
-              <View key={spot.place_id}>
-                <SearchDiscoverResultCard
-                  spot={spot}
-                  userLocation={location}
-                  userWalkTags={userWalkTags}
-                  onOpen={openSpot}
-                  onLikesChange={refreshSpotLikesCount}
-                  onBeforeNavigate={beforeNavSearch}
-                />
-                {isFocused && shouldShowAdAfter(index, sortedResults.length) ? (
-                  <AdNativeCard adsReady={adsRuntimeReady} />
-                ) : null}
-              </View>
+              <ListEnterItem key={spot.place_id} index={index} animate={searchListEnter}>
+                <View>
+                  <SearchDiscoverResultCard
+                    spot={spot}
+                    userLocation={location}
+                    userWalkTags={userWalkTags}
+                    onOpen={openSpot}
+                    onLikesChange={refreshSpotLikesCount}
+                    onBeforeNavigate={beforeNavSearch}
+                    chrome="google"
+                  />
+                  {isFocused && shouldInjectListAd(index, sortedResults.length) ? (
+                    <AdNativeCard adsReady={adsRuntimeReady} />
+                  ) : null}
+                </View>
+              </ListEnterItem>
             ))}
 
           {!searched ? (
             <>
               {discoverMode === 'articles' ? (
                 <>
-                  {articlesLoading ? <RunningDog label="記事を読み込み中..." /> : null}
-                  {!articlesLoading && articlesList.length === 0 ? <PowState label="公開中の記事がありません" /> : null}
+                  {/* Google アプリ風の中段カード: お散歩アラート（デフォ表示）+ いいねショートカット */}
+                  <View style={styles.middleCards}>
+                    <WalkAlertCard
+                      location={location}
+                      onRequestLocation={() => {
+                        void (async () => {
+                          const result = await resolveSessionLocation(null)
+                          if (result.ok) setLocation(result.location)
+                        })()
+                      }}
+                    />
+                    <LikesShortcutCard />
+                  </View>
+
+                  <View style={styles.feedHeader}>
+                    <IconBulb fill={iconActive} />
+                    <Text style={styles.feedHeaderTxt}>ワンスポまとめ</Text>
+                  </View>
+
+                  {articlesLoading && articlesList.length === 0 ? (
+                    <>
+                      <ArticleListSkeleton variant="dark" />
+                      <ArticleListSkeleton variant="dark" />
+                      <ArticleListSkeleton variant="dark" />
+                    </>
+                  ) : null}
+                  {articlesFetchError && !articlesLoading && articlesList.length === 0 ? (
+                    <PowState label="記事の読み込みに失敗しました" />
+                  ) : null}
+                  {!articlesLoading && !articlesFetchError && articlesList.length === 0 ? (
+                    <PowState label="公開中の記事がありません" />
+                  ) : null}
                   {!articlesLoading &&
                     articlesList.map((article, index) => (
-                      <View key={article.id}>
-                        <Pressable
-                          style={styles.artCard}
-                          onPress={() => {
-                            track('article_clicked', { article_id: article.id })
-                            setRecentArticleIds((prev) => {
-                              if (prev.includes(article.id)) return prev
-                              return [article.id, ...prev].slice(0, 40)
-                            })
-                            router.push(`/articles/${article.slug}`)
-                          }}
-                        >
-                          {article.image_url ? (
-                            <ArticleRemoteImage
-                              uri={resizePlacesImageUrl(article.image_url, 'card')}
-                              style={styles.artImg}
-                              recyclingKey={`article-list-${article.id}`}
-                              priority="normal"
-                            />
-                          ) : (
-                            <View style={[styles.artImg, styles.artImgPh]} />
-                          )}
-                          <View style={styles.artBody}>
-                            {article.keywords?.length > 0 ? (
-                              <View style={styles.kwRow}>
-                                {article.keywords.slice(0, 3).map((k) => (
-                                  <View key={k} style={styles.kwPill}>
-                                    <Text style={styles.kwPillTxt}>{k}</Text>
-                                  </View>
-                                ))}
-                              </View>
-                            ) : null}
-                            <Text style={styles.artTitle}>{article.title}</Text>
-                            <Text style={styles.artSum} numberOfLines={3}>
-                              {article.summary}
-                            </Text>
-                          </View>
-                        </Pressable>
-                        {isFocused && shouldShowAdAfter(index, articlesList.length) ? (
-                          <AdNativeCard adsReady={adsRuntimeReady} />
-                        ) : null}
-                      </View>
+                      <ListEnterItem key={article.id} index={index} animate={articlesListEnter}>
+                        <View>
+                          <DiscoverFeedCard
+                            title={article.title}
+                            summary={article.summary}
+                            imageUrl={article.image_url}
+                            keywords={article.keywords ?? []}
+                            recyclingKey={`article-list-${article.id}`}
+                            onPress={() => {
+                              track('article_clicked', { article_id: article.id })
+                              setRecentArticleIds((prev) => {
+                                if (prev.includes(article.id)) return prev
+                                return [article.id, ...prev].slice(0, 40)
+                              })
+                              router.push(`/articles/${article.slug}`)
+                            }}
+                          />
+                          {isFocused && shouldInjectListAd(index, articlesList.length) ? (
+                            <AdNativeCard adsReady={adsRuntimeReady} />
+                          ) : null}
+                        </View>
+                      </ListEnterItem>
                     ))}
                 </>
               ) : null}
@@ -901,8 +976,11 @@ function SearchTab() {
                       ) : null}
                     </View>
                   ) : null}
-                  {discoverLoading ? (
-                    <RunningDog label={discoverMode === 'ai' ? 'おすすめを読み込み中...' : '読み込み中...'} />
+                  {discoverLoading && discoverResults.length === 0 && discoverMode === 'ai' ? (
+                    <>
+                      <SearchResultSkeleton variant="dark" />
+                      <SearchResultSkeleton variant="dark" />
+                    </>
                   ) : null}
                   {!discoverLoading &&
                   discoverMode === 'ai' &&
@@ -916,21 +994,24 @@ function SearchTab() {
                   {!discoverLoading &&
                     !(discoverMode === 'ai' && spotLikesCount !== null && spotLikesCount < AI_LIKES_MIN) &&
                     discoverResults.map((spot, index) => (
-                      <View key={spot.place_id}>
-                        <SearchDiscoverResultCard
-                          spot={spot}
-                          userLocation={location}
-                          userWalkTags={userWalkTags}
-                          onOpen={openSpot}
-                          onLikesChange={refreshSpotLikesCount}
-                          onBeforeNavigate={async () => {
-                            await AsyncStorage.setItem(SEARCH_RESTORE_FLAG, '1')
-                          }}
-                        />
-                        {isFocused && shouldShowAdAfter(index, discoverResults.length) ? (
-                          <AdNativeCard adsReady={adsRuntimeReady} />
-                        ) : null}
-                      </View>
+                      <ListEnterItem key={spot.place_id} index={index} animate={discoverListEnter}>
+                        <View>
+                          <SearchDiscoverResultCard
+                            spot={spot}
+                            userLocation={location}
+                            userWalkTags={userWalkTags}
+                            onOpen={openSpot}
+                            onLikesChange={refreshSpotLikesCount}
+                            onBeforeNavigate={async () => {
+                              await AsyncStorage.setItem(SEARCH_RESTORE_FLAG, '1')
+                            }}
+                            chrome="google"
+                          />
+                          {isFocused && shouldInjectListAd(index, discoverResults.length) ? (
+                            <AdNativeCard adsReady={adsRuntimeReady} />
+                          ) : null}
+                        </View>
+                      </ListEnterItem>
                     ))}
                   {!loading &&
                     !searched &&
@@ -989,11 +1070,12 @@ function SearchTab() {
         onDismiss={() => void dismissObTutorial()}
       />
     </View>
+    </GoogleHomeBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.paper },
+  root: { flex: 1, backgroundColor: 'transparent' },
   scrollContent: { paddingBottom: 24 },
   aiPlanOverlay: {
     position: 'absolute',
@@ -1002,90 +1084,127 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: colors.paper,
   },
-  searchHeader: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: colors.border, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  searchInner: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+  searchHeader: {
+    paddingHorizontal: GOOGLE_HOME.padH,
+    paddingTop: 4,
+    paddingBottom: 12,
+    backgroundColor: 'transparent',
   },
-  input: { flex: 1, fontSize: 12, color: colors.textPrimary, paddingVertical: 4 },
-  searchGo: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: colors.primary },
-  searchGoTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
+  searchHeaderCompact: {
+    paddingTop: 0,
+    paddingBottom: 10,
+  },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    color: GOOGLE_HOME.searchText,
+    paddingVertical: 2,
+  },
+  searchGo: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  searchGoTxt: { fontSize: 13, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
   kbDismissBar: {
     alignSelf: 'center',
-    marginTop: 6,
+    marginTop: 8,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
-  kbDismissTxt: { fontSize: 12, fontWeight: '700', color: '#2563eb' },
+  kbDismissTxt: { fontSize: 13, fontWeight: '600', color: GOOGLE_HOME.textSecondary },
   sortWrap: { position: 'relative' },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: colors.textPrimary },
-  sortBtnTxt: { fontSize: 12, fontWeight: '800', color: '#fff' },
-  /** キーワードタグ行と（まとめ記事／AI）の間の区切り */
-  discoverTabs: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 10,
-    marginBottom: 8,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  discTab: {
+  sortBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: '#f5f5f5',
+    paddingVertical: 12,
+    borderRadius: GOOGLE_HOME.radiusSearch,
+    backgroundColor: GOOGLE_HOME.pillBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.pillBorder,
   },
-  discTabOn: { backgroundColor: colors.textPrimary },
-  discTabTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
-  discTabTxtOn: { color: '#fff' },
-  sugRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
-  sug: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e8e8e8', marginRight: 8 },
-  sugTxt: { fontSize: 12, color: '#888' },
-  results: { padding: 16, gap: 12 },
-  artCard: { borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border, marginBottom: 12 },
-  artImg: { width: '100%', aspectRatio: 16 / 9 },
-  artImgPh: { backgroundColor: '#f5f5f5' },
-  artBody: { padding: 16 },
-  kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  kwPill: { backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
-  kwPillTxt: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
-  artTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginBottom: 8 },
-  artSum: { fontSize: 12, color: '#888', lineHeight: 18 },
-  discLabel: { fontSize: 12, fontWeight: '800', color: '#aaa', marginBottom: 4 },
-  discSub: { fontSize: 11, fontWeight: '500', color: '#888', marginTop: 2, marginBottom: 2 },
-  aiGate: { alignItems: 'center', paddingVertical: 32 },
-  aiGateTxt: { fontSize: 14, color: '#888' },
-  aiGateSub: { fontSize: 12, color: '#aaa', marginTop: 8 },
-  sortModalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', alignItems: 'flex-end', paddingTop: 100, paddingRight: 16 },
+  sortBtnTxt: { fontSize: 12, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
+  aiPillRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  aiPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    paddingVertical: 13,
+    borderRadius: GOOGLE_HOME.radiusPill,
+    backgroundColor: GOOGLE_HOME.pillBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.pillBorder,
+  },
+  aiPillOn: {
+    backgroundColor: GOOGLE_HOME.pillActiveBg,
+    borderColor: GOOGLE_HOME.pillActiveBorder,
+  },
+  aiPillTxt: { fontSize: 14, fontWeight: '500', letterSpacing: -0.2, color: GOOGLE_HOME.textSecondary },
+  aiPillTxtOn: { color: GOOGLE_HOME.textPrimary, fontWeight: '600' },
+  middleCards: { gap: GOOGLE_HOME.gapCard, marginBottom: GOOGLE_HOME.gapSection },
+  feedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 12,
+    paddingHorizontal: 2,
+  },
+  feedHeaderTxt: {
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    color: GOOGLE_HOME.textPrimary,
+  },
+  sugRow: { flexDirection: 'row', gap: 8, paddingVertical: 2, paddingLeft: 2 },
+  sug: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: GOOGLE_HOME.radiusPill,
+    backgroundColor: GOOGLE_HOME.chipBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.chipBorder,
+    marginRight: 8,
+  },
+  sugTxt: { fontSize: 13, fontWeight: '500', color: GOOGLE_HOME.textSecondary },
+  results: { paddingHorizontal: GOOGLE_HOME.padH, paddingTop: 4, gap: GOOGLE_HOME.gapCard },
+  discLabel: { fontSize: 13, fontWeight: '600', color: GOOGLE_HOME.textSecondary, marginBottom: 6 },
+  discSub: { fontSize: 12, fontWeight: '400', color: GOOGLE_HOME.textMuted, marginTop: 2, marginBottom: 4 },
+  aiGate: { alignItems: 'center', paddingVertical: 36 },
+  aiGateTxt: { fontSize: 14, fontWeight: '500', color: GOOGLE_HOME.textSecondary },
+  aiGateSub: { fontSize: 13, color: GOOGLE_HOME.textMuted, marginTop: 8 },
+  sortModalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'flex-end', paddingTop: 100, paddingRight: 16 },
   sortMenu: {
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: colors.border,
-    minWidth: 140,
+    borderRadius: 18,
+    backgroundColor: 'rgba(28,26,24,0.92)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.panelBorder,
+    minWidth: 148,
     overflow: 'hidden',
     elevation: 8,
     shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
   },
-  sortItem: { paddingHorizontal: 16, paddingVertical: 12 },
-  sortItemOn: { backgroundColor: colors.tintStrong },
-  sortItemTxt: { fontSize: 12, fontWeight: '800', color: '#888' },
-  sortItemTxtOn: { color: colors.textPrimary },
+  sortItem: { paddingHorizontal: 16, paddingVertical: 13 },
+  sortItemOn: { backgroundColor: 'rgba(255,255,255,0.10)' },
+  sortItemTxt: { fontSize: 13, fontWeight: '500', color: GOOGLE_HOME.textMuted },
+  sortItemTxtOn: { color: GOOGLE_HOME.textPrimary, fontWeight: '600' },
 })
 
 export default function SearchTabScreen() {

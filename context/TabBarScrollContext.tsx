@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react'
 import { withSpring, type SharedValue, useSharedValue } from 'react-native-reanimated'
+import { SOFT_SPRING } from '@/lib/motion/constants'
 
-export const TAB_BAR_SPRING = { damping: 18, stiffness: 160, mass: 0.9 } as const
+export const TAB_BAR_SPRING = SOFT_SPRING
 
 type TabBarScrollContextValue = {
   tabBarProgress: SharedValue<number>
