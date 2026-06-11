@@ -134,23 +134,28 @@ export default function SignupScreen() {
               {loading ? <ActivityIndicator color={colors.text} /> : <Text style={styles.btnTxt}>新規登録</Text>}
             </Pressable>
 
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerTxt}>または</Text>
-              <View style={styles.dividerLine} />
-            </View>
+            {/* Android: Google Sign-In は webClientId 未構成（lib/google-signin.ts が iOS 専用）のため非表示。iOS は従来通り */}
+            {Platform.OS === 'android' ? null : (
+              <>
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerTxt}>または</Text>
+                  <View style={styles.dividerLine} />
+                </View>
 
-            <Pressable
-              style={[styles.btnGoogle, oauthLoading !== null && styles.oauthDis]}
-              disabled={oauthLoading !== null || loading}
-              onPress={() => void handleGoogleSignIn()}
-            >
-              {oauthLoading === 'google' ? (
-                <ActivityIndicator color="#2b2a28" />
-              ) : (
-                <GoogleOAuthLabel text="Googleで登録" textStyle={styles.btnGoogleTxt} />
-              )}
-            </Pressable>
+                <Pressable
+                  style={[styles.btnGoogle, oauthLoading !== null && styles.oauthDis]}
+                  disabled={oauthLoading !== null || loading}
+                  onPress={() => void handleGoogleSignIn()}
+                >
+                  {oauthLoading === 'google' ? (
+                    <ActivityIndicator color="#2b2a28" />
+                  ) : (
+                    <GoogleOAuthLabel text="Googleで登録" textStyle={styles.btnGoogleTxt} />
+                  )}
+                </Pressable>
+              </>
+            )}
 
             {appleNativeAvailable ? (
               <Pressable

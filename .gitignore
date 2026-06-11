@@ -48,3 +48,6 @@ yarn-error.*
 
 # Local env (never commit)
 .env
+
+# Android動作確認用スクショ（ローカル）
+.screenshots-android/

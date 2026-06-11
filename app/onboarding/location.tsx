@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Linking from 'expo-linking'
 import * as Location from 'expo-location'
 import { useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
@@ -34,7 +34,16 @@ export default function OnboardingLocationPage() {
         )
         return
       }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+      let pos: Location.LocationObject
+      try {
+        pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+      } catch (e) {
+        // Android: fused provider の現在地取得が失敗することがある（エミュレータ・省電力時）。最後の既知位置で代替。iOS は従来挙動のまま
+        if (Platform.OS !== 'android') throw e
+        const last = await Location.getLastKnownPositionAsync()
+        if (!last) throw e
+        pos = last
+      }
       await AsyncStorage.setItem(
         OB_LOCATION_KEY,
         JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })

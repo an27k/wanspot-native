@@ -45,12 +45,18 @@
     "android": {
       "package": "app.wanspot.app",
       "versionCode": 1,
+      "jsEngine": "hermes",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/wanspot_image.png",
         "backgroundColor": "#FFD84D"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "config": {
+        "googleMaps": {
+          "apiKey": "ANDROID_MAPS_API_KEY"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/images/wanspot_image.png"
@@ -74,6 +80,7 @@
           }
         }
       ],
+      "./plugins/withAsyncStorageLocalRepo.js",
       "expo-tracking-transparency",
       [
         "react-native-google-mobile-ads",
