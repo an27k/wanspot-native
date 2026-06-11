@@ -1,14 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { TOKENS } from '@/constants/color-tokens'
 import type { AiPlanCore, AiPlanLeg, AiPlanMood, AiPlanTravelMode } from '@/components/ai-plan/types'
 
 function MoodBadge({ mood }: { mood: AiPlanMood | undefined }) {
   const active = mood === 'active'
   return (
-    <View style={[styles.badge, { backgroundColor: TOKENS.surface.alt }]}>
-      <Text style={[styles.badgeTxt, { color: TOKENS.text.secondary, fontWeight: '700' }]}>
-        {active ? 'アクティブ' : 'のんびり'}
-      </Text>
+    <View style={styles.badge}>
+      <Text style={styles.badgeTxt}>{active ? 'アクティブ' : 'のんびり'}</Text>
     </View>
   )
 }
@@ -16,10 +15,9 @@ function MoodBadge({ mood }: { mood: AiPlanMood | undefined }) {
 function TravelModeBadge({ mode }: { mode: AiPlanTravelMode | undefined }) {
   const walking = mode !== 'driving'
   return (
-    <View style={[styles.badge, { backgroundColor: TOKENS.surface.alt }]}>
-      <Text style={[styles.badgeTxt, { color: TOKENS.text.secondary, fontWeight: '700' }]}>
-        {walking ? '徒歩' : '車'}
-      </Text>
+    <View style={styles.badge}>
+      <Ionicons name={walking ? 'walk' : 'car'} size={11} color={TOKENS.brand.pillText} />
+      <Text style={styles.badgeTxt}>{walking ? '徒歩' : '車'}</Text>
     </View>
   )
 }
@@ -57,9 +55,10 @@ export function AiPlanSummaryCard({
           <MoodBadge mood={mood} />
           <TravelModeBadge mode={travelMode} />
         </View>
-        <Text style={styles.hours}>
-          約{totalHours}時間
-        </Text>
+        <View style={styles.hoursPill}>
+          <Ionicons name="time-outline" size={12} color={TOKENS.text.secondary} />
+          <Text style={styles.hours}>約{totalHours}時間</Text>
+        </View>
       </View>
       <Text style={styles.title}>{plan.title}</Text>
       <Text style={styles.summary}>{plan.summary}</Text>
@@ -72,18 +71,20 @@ const styles = StyleSheet.create({
     backgroundColor: TOKENS.surface.primary,
     marginTop: -16,
     marginHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: TOKENS.border.default,
-    padding: 14,
-    paddingHorizontal: 15,
+    borderRadius: 18,
+    padding: 16,
     zIndex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 4,
   },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   badgeLeft: {
     flexDirection: 'row',
@@ -93,27 +94,39 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   badge: {
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    borderRadius: 999,
     paddingVertical: 3,
     paddingHorizontal: 9,
+    backgroundColor: TOKENS.brand.tintWeak,
   },
   badgeTxt: {
     fontSize: 11,
+    fontWeight: '700',
+    color: TOKENS.brand.pillText,
+  },
+  hoursPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   hours: {
     fontSize: 12,
-    color: TOKENS.text.meta,
+    fontWeight: '600',
+    color: TOKENS.text.secondary,
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
     color: TOKENS.text.primary,
     marginBottom: 6,
-    lineHeight: 22,
+    lineHeight: 25,
   },
   summary: {
-    fontSize: 12,
+    fontSize: 13,
     color: TOKENS.text.secondary,
-    lineHeight: 18,
+    lineHeight: 19,
   },
 })

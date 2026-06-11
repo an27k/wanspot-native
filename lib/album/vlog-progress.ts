@@ -63,7 +63,6 @@ export function computeVlogProgressFromPlates(
   const safeTarget = Math.max(1, target)
   const totalContribution = units.reduce((sum, u) => sum + u.contribution, 0)
   const completeUnits = units.filter((u) => u.isComplete).length
-  const current = Math.min(safeTarget, totalContribution)
   const nudgeCandidates = units.filter((u) => u.needsOneMore)
   const nudgeSpot =
     nudgeCandidates.length > 0

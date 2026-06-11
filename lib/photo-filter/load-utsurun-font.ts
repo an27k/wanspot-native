@@ -1,5 +1,5 @@
 import { Asset } from 'expo-asset'
-import { Skia, FontStyle, FontWeight, type SkFont } from '@shopify/react-native-skia'
+import { Skia, FontStyle, type SkFont } from '@shopify/react-native-skia'
 
 const DSEG7 = require('../../assets/fonts/DSEG7Classic-Bold.ttf')
 

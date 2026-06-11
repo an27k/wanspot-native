@@ -29,8 +29,8 @@ npx expo run:android                   # エミュレータ or USB 接続実機�
 ### Google Maps API キー（Android）
 
 - 差し込み箇所: `app.json` → `expo.android.config.googleMaps.apiKey`
-- 現在はプレースホルダ **`ANDROID_MAPS_API_KEY`**。Google Cloud Console で「Maps SDK for Android」を有効化した **Android 用キー**（iOS とは別キー）を発行して差し替える
-- 注意: 現状 main 系のコードはネイティブ地図 SDK（react-native-maps 等）を使っておらず、AI プランのルート地図は **Static Maps API**（`EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`、HTTP キー）で画像表示している。そのためこのネイティブキーが未設定でも地図表示は灰色にならない。ネイティブ地図（v96-map 系）を入れるときに必須になる
+- 現在は iOS と同じキーを暫定設定。**地図が灰色/空白になる場合**は、Google Cloud Console でこのキーに「Maps SDK for Android」を有効化するか、Android 用に制限した別キーを発行して差し替えること（v96 で `react-native-maps` を使うため Android ネイティブキーが必須）
+- AI プランのルート地図（静的画像）は別途 `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`（Static Maps API、HTTP キー）を使用
 
 ### AdMob
 

@@ -1,6 +1,6 @@
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { TOKENS } from '@/constants/color-tokens'
 import type { AiPlanStop } from '@/components/ai-plan/types'
@@ -31,13 +31,7 @@ export function buildStaticMapUrl(stops: AiPlanStop[]): string {
   return `${base}&${markerParts.join('&')}&${pathParam}&key=${encodeURIComponent(apiKey)}`
 }
 
-export function AiPlanRouteMap({
-  stops,
-  onExpandMap,
-}: {
-  stops: AiPlanStop[]
-  onExpandMap?: () => void
-}) {
+export function AiPlanRouteMap({ stops }: { stops: AiPlanStop[] }) {
   const mapUrl = buildStaticMapUrl(stops)
 
   return (
@@ -47,18 +41,6 @@ export function AiPlanRouteMap({
       ) : (
         <View style={styles.ph} />
       )}
-      <TouchableOpacity
-        onPress={() => {
-          if (onExpandMap) onExpandMap()
-          // eslint-disable-next-line no-console -- プレースホルダ（後続でインタラクティブマップへ）
-          console.log('[AiPlanRouteMap] expand map (placeholder)')
-        }}
-        style={styles.expandBtn}
-        accessibilityRole="button"
-        accessibilityLabel="マップを拡大"
-      >
-        <Text style={styles.expandIcon}>⛶</Text>
-      </TouchableOpacity>
     </View>
   )
 }
@@ -72,21 +54,4 @@ const styles = StyleSheet.create({
   },
   img: { width: '100%', height: 180 },
   ph: { width: '100%', height: 180, backgroundColor: TOKENS.surface.mapMuted },
-  expandBtn: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: TOKENS.surface.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: TOKENS.text.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  expandIcon: { fontSize: 14, color: TOKENS.text.primary },
 })

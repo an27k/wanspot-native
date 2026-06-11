@@ -12,12 +12,12 @@ type QualityApiResponse = {
 
 /** クラウド品質解析 — 失敗時は空（呼び出し側でヒューリスティックへ） */
 export async function fetchCloudQualityScores(
-  items: Array<{
+  items: {
     mediaId: string
     storagePath: string
     mediaType: 'image' | 'video'
     rating?: number | null
-  }>
+  }[]
 ): Promise<Map<string, number>> {
   const out = new Map<string, number>()
   if (items.length === 0) return out

@@ -110,9 +110,9 @@ export async function takePhoto(): Promise<PickedImage | null> {
 }
 
 /**
- * アルバム用：画像または動画をライブラリから選択（クロップなし）
+ * アルバム用：画像・動画をまとめて選択（最大 limit 件）
  */
-export async function pickMemoryMedia(): Promise<{ uri: string; mimeType: string } | null> {
+export async function pickMemoryMediaMulti(limit = 10): Promise<{ uri: string; mimeType: string }[] | null> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
   if (status !== 'granted') {
     Alert.alert(
@@ -129,16 +129,17 @@ export async function pickMemoryMedia(): Promise<{ uri: string; mimeType: string
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.All,
     allowsEditing: false,
+    allowsMultipleSelection: limit > 1,
+    selectionLimit: limit,
     quality: 1,
     videoMaxDuration: 120,
   })
 
-  if (result.canceled) return null
-  const asset = result.assets[0]
-  const mimeType =
-    asset.mimeType ??
-    (asset.type === 'video' ? 'video/mp4' : 'image/jpeg')
-  return { uri: asset.uri, mimeType }
+  if (result.canceled || result.assets.length === 0) return null
+  return result.assets.map((asset) => ({
+    uri: asset.uri,
+    mimeType: asset.mimeType ?? (asset.type === 'video' ? 'video/mp4' : 'image/jpeg'),
+  }))
 }
 
 /**

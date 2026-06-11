@@ -2,7 +2,9 @@ import { useCallback, useMemo, useState } from 'react'
 import {
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,10 +12,12 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SafeRemoteImage } from '@/components/common/SafeRemoteImage'
-import { BrandLoader } from '@/components/common/BrandLoader'
 import { VlogProgressCard } from '@/components/album/VlogProgressCard'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
@@ -26,7 +30,7 @@ import {
 } from '@/lib/vlog/render-client'
 import { track } from '@/lib/analytics'
 import { logUserEvent } from '@/lib/user-events'
-import { pickMemoryMedia } from '@/lib/image-picker'
+import { pickMemoryMediaMulti } from '@/lib/image-picker'
 import {
   formatVisitDate,
   formatVisitRecordError,
@@ -52,11 +56,7 @@ type Props = {
   onOpenTutorial?: () => void
 }
 
-type UploadState = {
-  visitId: string
-  progress: number
-  label: string
-}
+type PickedMedia = { uri: string; mimeType: string }
 
 function StarRow({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
@@ -83,6 +83,7 @@ function PlateDetailModal({
   onReload: () => void
   onAddMedia: () => void
 }) {
+  const insets = useSafeAreaInsets()
   const [editing, setEditing] = useState(false)
   const [comment, setComment] = useState(plate.comment ?? '')
   const [rating, setRating] = useState(plate.rating ?? 0)
@@ -130,7 +131,7 @@ function PlateDetailModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.detailRoot}>
+      <View style={[styles.detailRoot, { paddingTop: insets.top }]}>
         <View style={styles.detailHead}>
           <Pressable onPress={onClose} hitSlop={8}>
             <Ionicons name="close" size={26} color={colors.text} />
@@ -224,6 +225,189 @@ function PlateDetailModal({
   )
 }
 
+/**
+ * 思い出コンポーザー — 写真選択・評価・ひとことを1つの「レビュー」として保存。
+ * 保存完了で VLOG ゲージが進む体験につなげる。
+ */
+function MemoryComposerModal({
+  plate,
+  dogName,
+  userId,
+  visible,
+  onClose,
+  onSaved,
+}: {
+  plate: VisitPlate
+  dogName: string
+  userId: string
+  visible: boolean
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const insets = useSafeAreaInsets()
+  const [picked, setPicked] = useState<PickedMedia[]>([])
+  const [rating, setRating] = useState(plate.rating ?? 0)
+  const [comment, setComment] = useState(plate.comment ?? '')
+  const [saving, setSaving] = useState(false)
+  const [saveLabel, setSaveLabel] = useState('')
+
+  const existingCount = plate.memories.length
+  const towardVlog = Math.max(0, 2 - existingCount - picked.length)
+
+  const addMedia = async () => {
+    const items = await pickMemoryMediaMulti(10)
+    if (!items) return
+    setPicked((prev) => [...prev, ...items].slice(0, 10))
+  }
+
+  const removePicked = (index: number) => {
+    setPicked((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const canSave = picked.length > 0 || rating !== (plate.rating ?? 0) || comment.trim() !== (plate.comment ?? '')
+
+  const save = async () => {
+    if (saving || !canSave) return
+    setSaving(true)
+    try {
+      let failed = 0
+      for (let i = 0; i < picked.length; i++) {
+        setSaveLabel(`思い出を保存中 ${i + 1}/${picked.length}`)
+        const item = picked[i]
+        const uploaded = await uploadMemoryFile(userId, item.uri, item.mimeType)
+        if (!uploaded.ok) {
+          console.warn('[MemoryComposer] upload failed:', uploaded.message)
+          failed++
+          continue
+        }
+        const { row, error } = await insertMemory({
+          userId,
+          visitId: plate.id,
+          spotId: plate.spot_id,
+          storagePath: uploaded.path,
+          mediaType: uploaded.mediaType,
+        })
+        if (!row) {
+          console.warn('[MemoryComposer] insert failed:', error ? formatVisitRecordError(error) : 'unknown')
+          failed++
+        }
+      }
+
+      const trimmed = comment.trim()
+      if (rating !== (plate.rating ?? 0) || trimmed !== (plate.comment ?? '')) {
+        setSaveLabel('メモを保存中...')
+        await updateVisit(plate.id, {
+          comment: trimmed || null,
+          rating: rating > 0 ? rating : null,
+        })
+      }
+
+      if (failed > 0) {
+        Alert.alert(
+          '一部の保存に失敗しました',
+          `${failed}件の写真・動画を保存できませんでした。時間をおいて再度お試しください。`
+        )
+      }
+      track('memory_review_saved', {
+        media_count: picked.length - failed,
+        has_rating: rating > 0,
+        has_comment: trimmed.length > 0,
+      })
+      setPicked([])
+      onSaved()
+    } finally {
+      setSaving(false)
+      setSaveLabel('')
+    }
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={[styles.composerRoot, { paddingTop: insets.top }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.composerHead}>
+          <Pressable onPress={onClose} hitSlop={8} disabled={saving}>
+            <Ionicons name="close" size={26} color={colors.text} />
+          </Pressable>
+          <View style={styles.composerHeadCenter}>
+            <Text style={styles.composerTitle} numberOfLines={1}>
+              {plate.spot.name}
+            </Text>
+            <Text style={styles.composerMeta}>
+              {formatVisitDate(plate.visited_at)} · {plate.visitOrdinal}回目
+            </Text>
+          </View>
+          <View style={{ width: 26 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={styles.composerBody} keyboardShouldPersistTaps="handled">
+          <Text style={styles.composerLead}>{dogName}との思い出をのこそう🐾</Text>
+          {towardVlog > 0 ? (
+            <Text style={styles.composerHint}>写真・動画あと{towardVlog}枚でVLOGの1スポット分</Text>
+          ) : (
+            <Text style={styles.composerHintDone}>このスポットはVLOG素材ばっちり！</Text>
+          )}
+
+          <View style={styles.mediaGrid}>
+            {picked.map((item, i) => (
+              <View key={`${item.uri}-${i}`} style={styles.mediaCell}>
+                {item.mimeType.startsWith('video/') ? (
+                  <View style={[styles.mediaThumb, styles.mediaVideo]}>
+                    <Ionicons name="play-circle" size={28} color="#fff" />
+                    <Text style={styles.mediaVideoTxt}>動画</Text>
+                  </View>
+                ) : (
+                  <Image source={{ uri: item.uri }} style={styles.mediaThumb} contentFit="cover" />
+                )}
+                <Pressable style={styles.mediaRemove} onPress={() => removePicked(i)} hitSlop={6} disabled={saving}>
+                  <Ionicons name="close" size={12} color="#fff" />
+                </Pressable>
+              </View>
+            ))}
+            <Pressable style={styles.mediaAdd} onPress={() => void addMedia()} disabled={saving}>
+              <Ionicons name="images" size={24} color={colors.primary} />
+              <Text style={styles.mediaAddTxt}>{picked.length === 0 ? '写真・動画をえらぶ' : '追加'}</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.composerSection}>
+            <Text style={styles.composerLbl}>このスポット、どうだった？</Text>
+            <StarRow value={rating} onChange={setRating} />
+          </View>
+
+          <View style={styles.composerSection}>
+            <Text style={styles.composerLbl}>ひとことメモ</Text>
+            <TextInput
+              style={styles.input}
+              value={comment}
+              onChangeText={setComment}
+              placeholder={`${dogName}、たのしそうだった？`}
+              placeholderTextColor={colors.textMuted}
+              multiline
+              maxLength={500}
+              editable={!saving}
+            />
+          </View>
+        </ScrollView>
+
+        <View style={styles.composerFooter}>
+          <Pressable
+            style={[styles.composerSave, (!canSave || saving) && styles.composerSaveDisabled]}
+            disabled={!canSave || saving}
+            onPress={() => void save()}
+          >
+            <Text style={[styles.composerSaveTxt, (!canSave || saving) && styles.composerSaveTxtDisabled]}>
+              {saving ? saveLabel || '保存中...' : picked.length > 0 ? `思い出をのこす（${picked.length}枚）` : '思い出をのこす'}
+            </Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  )
+}
+
 function FeedTile({
   plate,
   onOpen,
@@ -239,11 +423,16 @@ function FeedTile({
   if (isEmpty) {
     return (
       <Pressable style={[styles.tile, styles.tileEmpty]} onPress={onAddMedia}>
-        <Ionicons name="images-outline" size={28} color={colors.brandDark} />
-        <Text style={styles.tileEmptyTxt}>思い出を追加</Text>
-        <Text style={styles.tileEmptySub} numberOfLines={1}>
+        <View style={styles.tileEmptyIcon}>
+          <Ionicons name="camera" size={22} color="#fff" />
+        </View>
+        <Text style={styles.tileEmptyTxt}>思い出をのこす</Text>
+        <Text style={styles.tileEmptySub} numberOfLines={2}>
           {plate.spot.name}
         </Text>
+        <View style={styles.tileEmptyBadge}>
+          <Text style={styles.tileEmptyBadgeTxt}>写真2枚でVLOG素材に</Text>
+        </View>
       </Pressable>
     )
   }
@@ -285,50 +474,28 @@ function FeedTile({
 
 export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload, onOpenTutorial }: Props) {
   const router = useRouter()
-  const [upload, setUpload] = useState<UploadState | null>(null)
-  const [visitPickerOpen, setVisitPickerOpen] = useState(false)
   const [detailPlate, setDetailPlate] = useState<VisitPlate | null>(null)
+  const [composerPlate, setComposerPlate] = useState<VisitPlate | null>(null)
+  const [celebrating, setCelebrating] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [generationStage, setGenerationStage] = useState<VlogRenderStage>('selecting')
   const [generateBusy, setGenerateBusy] = useState(false)
 
-  const runUpload = useCallback(
-    async (visitId: string, spotId: string) => {
-      if (!userId) return
-      const picked = await pickMemoryMedia()
-      if (!picked) return
-
-      setUpload({ visitId, progress: 0, label: 'アップロード中...' })
-      const uploaded = await uploadMemoryFile(userId, picked.uri, picked.mimeType, (p) =>
-        setUpload({ visitId, progress: p, label: 'アップロード中...' })
-      )
-      if (!uploaded) {
-        setUpload(null)
-        Alert.alert('アップロードに失敗しました', '時間をおいて再度お試しください。')
-        return
-      }
-      const { row, error } = await insertMemory({
-        userId,
-        visitId,
-        spotId,
-        storagePath: uploaded.path,
-        mediaType: uploaded.mediaType,
-      })
-      setUpload(null)
-      if (!row) {
-        const detail = error ? formatVisitRecordError(error) : 'unknown error'
-        console.warn('[runUpload]', detail)
-        Alert.alert('保存に失敗しました', detail)
-        return
-      }
-      onReload()
-    },
-    [userId, onReload]
-  )
-
   const vlogStats = useMemo(() => computeVlogProgressFromPlates(plates), [plates])
 
   const displayDogName = dogName?.trim() || '愛犬'
+
+  const openComposer = useCallback((plate: VisitPlate) => {
+    setDetailPlate(null)
+    setComposerPlate(plate)
+  }, [])
+
+  const onComposerSaved = useCallback(() => {
+    setComposerPlate(null)
+    onReload()
+    setCelebrating(true)
+    setTimeout(() => setCelebrating(false), 4000)
+  }, [onReload])
 
   const handleGenerateVlog = useCallback(async () => {
     if (generateBusy || generating || !vlogStats.isUnlocked || !userId) return
@@ -360,26 +527,6 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
     }
   }, [generateBusy, generating, vlogStats.isUnlocked, userId, plates, displayDogName, router])
 
-  const openAddFlow = () => {
-    if (!userId) {
-      Alert.alert('ログインが必要です', '思い出を追加するにはログインしてください。')
-      return
-    }
-    if (plates.length === 0) {
-      Alert.alert('', '先にスポット詳細で「行った」を記録してください。')
-      return
-    }
-    setVisitPickerOpen(true)
-  }
-
-  const onMainCta = () => {
-    if (plates.length === 0) {
-      router.push('/(tabs)/search')
-      return
-    }
-    openAddFlow()
-  }
-
   if (!userId) {
     return (
       <View style={styles.guest}>
@@ -409,13 +556,11 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
         </View>
       ) : null}
 
-      {upload ? (
-        <View style={styles.uploadBar}>
-          <BrandLoader size={32} />
-          <Text style={styles.uploadTxt}>
-            {upload.label} {Math.round(upload.progress * 100)}%
-          </Text>
-        </View>
+      {celebrating ? (
+        <Animated.View entering={FadeInDown.springify()} exiting={FadeOut.duration(200)} style={styles.celebration}>
+          <Text style={styles.celebrationTitle}>思い出をのこしました🐾</Text>
+          <Text style={styles.celebrationSub}>{displayDogName}のVLOGがまた一歩、完成にちかづいたよ</Text>
+        </Animated.View>
       ) : null}
 
       {loading && plates.length === 0 ? (
@@ -429,46 +574,21 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
               key={plate.id}
               plate={plate}
               onOpen={() => setDetailPlate(plate)}
-              onAddMedia={() => void runUpload(plate.id, plate.spot_id)}
+              onAddMedia={() => openComposer(plate)}
             />
           ))}
         </View>
-      ) : null}
-
-      <Pressable style={styles.addBtn} onPress={onMainCta}>
-        <Text style={styles.addBtnTxt}>{plates.length === 0 ? 'スポットを探す' : '思い出を追加'}</Text>
-      </Pressable>
-
-      <Modal visible={visitPickerOpen} animationType="slide" onRequestClose={() => setVisitPickerOpen(false)}>
-        <View style={styles.pickerRoot}>
-          <View style={styles.pickerHead}>
-            <Text style={styles.pickerTitle}>既存の訪問に追加</Text>
-            <Pressable onPress={() => setVisitPickerOpen(false)}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
-            {plates.map((p) => (
-              <Pressable
-                key={p.id}
-                style={styles.spotRow}
-                onPress={() => {
-                  setVisitPickerOpen(false)
-                  void runUpload(p.id, p.spot_id)
-                }}
-              >
-                <Text style={styles.spotRowName}>{p.spot.name}</Text>
-                <Text style={styles.spotRowCat}>
-                  {formatVisitDate(p.visited_at)} · {p.spot.category}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <Pressable style={styles.pickerCancel} onPress={() => setVisitPickerOpen(false)}>
-            <Text style={styles.pickerCancelTxt}>キャンセル</Text>
+      ) : !loading ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>まずはおでかけから🐾</Text>
+          <Text style={styles.emptySub}>
+            スポット詳細で「行った」を押すと、{'\n'}ここに思い出のカードがならぶよ
+          </Text>
+          <Pressable style={styles.addBtn} onPress={() => router.push('/(tabs)/search')}>
+            <Text style={styles.addBtnTxt}>スポットを探す</Text>
           </Pressable>
         </View>
-      </Modal>
+      ) : null}
 
       {detailPlate ? (
         <PlateDetailModal
@@ -476,7 +596,18 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
           visible={detailPlate != null}
           onClose={() => setDetailPlate(null)}
           onReload={onReload}
-          onAddMedia={() => void runUpload(detailPlate.id, detailPlate.spot_id)}
+          onAddMedia={() => openComposer(detailPlate)}
+        />
+      ) : null}
+
+      {composerPlate && userId ? (
+        <MemoryComposerModal
+          plate={composerPlate}
+          dogName={displayDogName}
+          userId={userId}
+          visible={composerPlate != null}
+          onClose={() => setComposerPlate(null)}
+          onSaved={onComposerSaved}
         />
       ) : null}
     </View>
@@ -498,31 +629,53 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 18,
   },
-  addBtn: {
-    marginTop: 8,
+  emptyCard: {
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 999,
-    paddingVertical: 16,
-    backgroundColor: colors.primary,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-  },
-  addBtnTxt: { fontSize: 16, fontWeight: '800', color: '#fff' },
-  uploadBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 12,
+    gap: 8,
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 18,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  uploadTxt: { fontSize: 13, fontWeight: '600', color: colors.text },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  emptySub: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  addBtn: {
+    marginTop: 8,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    paddingVertical: 15,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  addBtnTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  celebration: {
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 2,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  celebrationTitle: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  celebrationSub: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
   loaderWrap: { paddingVertical: 40, alignItems: 'center' },
   guest: { padding: 24, alignItems: 'center' },
   guestTxt: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
@@ -542,9 +695,32 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: colors.primary,
     backgroundColor: colors.tintWeak,
+    paddingHorizontal: 10,
+  },
+  tileEmptyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   tileEmptyTxt: { fontSize: 13, fontWeight: '800', color: colors.brandDark },
-  tileEmptySub: { fontSize: 11, fontWeight: '600', color: colors.textMuted, paddingHorizontal: 8 },
+  tileEmptySub: { fontSize: 11, fontWeight: '600', color: colors.textMuted, textAlign: 'center' },
+  tileEmptyBadge: {
+    marginTop: 4,
+    backgroundColor: '#fff',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  tileEmptyBadgeTxt: { fontSize: 10, fontWeight: '700', color: colors.pillText },
   tileImg: { ...StyleSheet.absoluteFillObject },
   tileGrad: {
     position: 'absolute',
@@ -615,35 +791,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  pickerRoot: { flex: 1, backgroundColor: colors.paper },
-  pickerHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  pickerTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
-  pickerCancel: {
-    margin: 16,
-    paddingVertical: 14,
-    borderRadius: 999,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-  },
-  pickerCancelTxt: { fontSize: 14, fontWeight: '700', color: colors.textMuted },
-  spotRow: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  spotRowName: { fontSize: 15, fontWeight: '700', color: colors.text },
-  spotRowCat: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
   detailRoot: { flex: 1, backgroundColor: colors.paper },
   detailHead: {
     flexDirection: 'row',
@@ -689,4 +836,83 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   deletePlateTxt: { fontSize: 13, fontWeight: '700', color: '#E84335' },
+  composerRoot: { flex: 1, backgroundColor: colors.paper },
+  composerHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  composerHeadCenter: { flex: 1, alignItems: 'center', gap: 1 },
+  composerTitle: { fontSize: 16, fontWeight: '800', color: colors.text },
+  composerMeta: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
+  composerBody: { padding: 16, gap: 14 },
+  composerLead: { fontSize: 17, fontWeight: '800', color: colors.textPrimary, lineHeight: 25 },
+  composerHint: { fontSize: 12, fontWeight: '700', color: colors.pillText, marginTop: -8 },
+  composerHintDone: { fontSize: 12, fontWeight: '700', color: colors.success, marginTop: -8 },
+  mediaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  mediaCell: { position: 'relative' },
+  mediaThumb: {
+    width: (Dimensions.get('window').width - 32 - 16) / 3,
+    height: (Dimensions.get('window').width - 32 - 16) / 3,
+    borderRadius: 12,
+    backgroundColor: colors.border,
+  },
+  mediaVideo: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    backgroundColor: '#2A2522',
+  },
+  mediaVideoTxt: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
+  mediaRemove: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mediaAdd: {
+    width: (Dimensions.get('window').width - 32 - 16) / 3,
+    height: (Dimensions.get('window').width - 32 - 16) / 3,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.primary,
+    backgroundColor: colors.tintWeak,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  mediaAddTxt: { fontSize: 10, fontWeight: '800', color: colors.brandDark, textAlign: 'center', paddingHorizontal: 4 },
+  composerSection: { gap: 8 },
+  composerLbl: { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
+  composerFooter: {
+    padding: 16,
+    paddingBottom: 28,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.paper,
+  },
+  composerSave: {
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    paddingVertical: 16,
+    alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  composerSaveDisabled: { backgroundColor: '#E5E5E5', shadowOpacity: 0, elevation: 0 },
+  composerSaveTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  composerSaveTxtDisabled: { color: '#999' },
 })

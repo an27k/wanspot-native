@@ -20,8 +20,13 @@ import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { AppHeader } from '@/components/AppHeader'
 import { IconAiPlan } from '@/components/common/IconAiPlan'
+import { ListEnterItem } from '@/components/common/ListEnterItem'
+import { ArticleListSkeleton, SearchResultSkeleton } from '@/components/common/ShimmerSkeleton'
+import { PressableScale } from '@/components/common/PressableScale'
 import { AdNativeCard } from '@/components/AdNativeCard'
 import { AiPlanTab } from '@/components/ai-plan/AiPlanTab'
+import { DiscoverModeTabs, type DiscoverTabDef } from '@/components/search/DiscoverModeTabs'
+import { GlassSearchShell } from '@/components/search/GlassSearchShell'
 import { SearchDiscoverResultCard } from '@/components/search/SearchDiscoverResultCard'
 import { PowState, RunningDog } from '@/components/DogStates'
 import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
@@ -32,7 +37,7 @@ import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { sortArticlesByScore } from '@/lib/articles/scoring'
-import { CACHE_TTL, fetchWithCache, geoBucket, invalidateCache, isCacheFresh } from '@/lib/client-cache'
+import { CACHE_TTL, fetchWithCache, geoBucket, invalidateCache, isCacheFresh, readCache } from '@/lib/client-cache'
 import { getCachedPrefecture, getCachedPrefectureAndMunicipality } from '@/lib/geo-cache'
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
 import { resolveSessionLocation } from '@/lib/location-session'
@@ -40,8 +45,10 @@ import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
+import { shouldInjectListAd } from '@/lib/ads/list-injection'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
+import { perfAsync, perfMark } from '@/lib/perf/marks'
 import { wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -129,6 +136,12 @@ const IconThumbUp = ({ fill }: { fill: string }) => (
 /** 炎は絵文字と同じくらいの視認性のシルエット。絵文字は端末により多色のままになり `color` が効かないため、他タブと同じ #fff / #888 を SVG で統一 */
 // (trend feature removed)
 
+const DISCOVER_TABS: DiscoverTabDef<DiscoverMode>[] = [
+  { key: 'articles', label: 'ワンスポまとめ', renderIcon: (c) => <IconBulb fill={c} /> },
+  { key: 'ai_plan', label: 'AIプラン', renderIcon: (c) => <IconAiPlan fill={c} /> },
+  { key: 'ai', label: 'AIレコメンド', renderIcon: (c) => <IconThumbUp fill={c} /> },
+]
+
 type ArticleRow = {
   id: string
   title: string
@@ -181,6 +194,11 @@ function SearchTab() {
   const [headerH, setHeaderH] = useState(0)
   const [showObTutorial, setShowObTutorial] = useState(false)
   const [obTutorialDogName, setObTutorialDogName] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [articlesListEnter, setArticlesListEnter] = useState(true)
+  const [searchListEnter, setSearchListEnter] = useState(true)
+  const [discoverListEnter, setDiscoverListEnter] = useState(true)
+  const [articlesFetchError, setArticlesFetchError] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -218,6 +236,13 @@ function SearchTab() {
     }
     setShowObTutorial(false)
   }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      perfMark('tab:search:focus')
+      return () => perfMark('tab:search:blur')
+    }, [])
+  )
 
   useFocusEffect(
     useCallback(() => {
@@ -450,27 +475,29 @@ function SearchTab() {
       const geoKey = loc ? geoBucket(loc.lat, loc.lng) : 'none'
       const cacheKey = `search:recommend:${user.id}:${geoKey}`
       if (force) invalidateCache(cacheKey)
-      const { data: result } = await fetchWithCache(
-        cacheKey,
-        CACHE_TTL.RECOMMEND_MS,
-        async () => {
-          const prefecture = loc ? await getCachedPrefecture(loc.lat, loc.lng) : undefined
-          return wanspotFetchJson<{
-            spots?: PlaceResult[]
-            label?: string
-            reason?: string
-          }>('/api/spots/recommend', {
-            method: 'POST',
-            json: {
-              userId: user.id,
-              lat: loc?.lat,
-              lng: loc?.lng,
-              walkAreaTags: userWalkTags,
-              prefecture,
-            },
-          })
-        },
-        { force }
+      const { data: result } = await perfAsync('api:recommend', () =>
+        fetchWithCache(
+          cacheKey,
+          CACHE_TTL.RECOMMEND_MS,
+          async () => {
+            const prefecture = loc ? await getCachedPrefecture(loc.lat, loc.lng) : undefined
+            return wanspotFetchJson<{
+              spots?: PlaceResult[]
+              label?: string
+              reason?: string
+            }>('/api/spots/recommend', {
+              method: 'POST',
+              json: {
+                userId: user.id,
+                lat: loc?.lat,
+                lng: loc?.lng,
+                walkAreaTags: userWalkTags,
+                prefecture,
+              },
+            })
+          },
+          { force }
+        )
       )
       setAiLabel(result.label ?? null)
       setAiReason(result.reason ?? null)
@@ -489,28 +516,39 @@ function SearchTab() {
       const force = opts?.force === true
       if (articlesLoading) return
       if (!force && articlesList.length > 0) return
+
+      const cachedRows = readCache<ArticleRow[]>(ARTICLES_CACHE_KEY)
+      if (!force && cachedRows && cachedRows.length > 0 && articlesList.length === 0) {
+        setArticlesList(cachedRows)
+      }
+
       const cacheWarm = !force && isCacheFresh(ARTICLES_CACHE_KEY, CACHE_TTL.ARTICLES_MS)
       if (!cacheWarm) setArticlesLoading(true)
+      setArticlesFetchError(false)
       try {
         if (force) invalidateCache(ARTICLES_CACHE_KEY)
-        const { data: rows, fromCache } = await fetchWithCache(
-          ARTICLES_CACHE_KEY,
-          CACHE_TTL.ARTICLES_MS,
-          async () => {
-            const { data } = await supabase
-              .from('articles')
-              .select('id, title, summary, slug, category, keywords, image_url, created_at, published_at')
-              .eq('status', 'published')
-              .order('published_at', { ascending: false, nullsFirst: false })
-            return (data ?? []) as ArticleRow[]
-          },
-          { force }
+        const geoPromise =
+          location != null
+            ? getCachedPrefectureAndMunicipality(location.lat, location.lng)
+            : Promise.resolve({ prefecture: null as string | null, municipality: null as string | null })
+
+        const { data: rows, fromCache } = await perfAsync('api:articles', () =>
+          fetchWithCache(
+            ARTICLES_CACHE_KEY,
+            CACHE_TTL.ARTICLES_MS,
+            async () => {
+              const { data } = await supabase
+                .from('articles')
+                .select('id, title, summary, slug, category, keywords, image_url, created_at, published_at')
+                .eq('status', 'published')
+                .order('published_at', { ascending: false, nullsFirst: false })
+              return (data ?? []) as ArticleRow[]
+            },
+            { force }
+          )
         )
 
-        const geo =
-          location != null
-            ? await getCachedPrefectureAndMunicipality(location.lat, location.lng)
-            : { prefecture: null as string | null, municipality: null as string | null }
+        const geo = await geoPromise
 
         const sorted = sortArticlesByScore(
           rows.map((r) => ({
@@ -536,11 +574,11 @@ function SearchTab() {
           const urls = sorted
             .map((a) => a.image_url)
             .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
-            .map((u) => resizePlacesImageUrl(u.trim(), 'card'))
-          if (urls.length > 0) void ExpoImage.prefetch(urls.slice(0, 12), 'memory-disk')
+            .map((u) => resizePlacesImageUrl(u.trim(), 'thumbnail'))
+          if (urls.length > 0) void ExpoImage.prefetch(urls.slice(0, 8), 'memory-disk')
         }
       } catch {
-        setArticlesList([])
+        setArticlesFetchError(true)
       } finally {
         setArticlesLoading(false)
       }
@@ -575,7 +613,9 @@ function SearchTab() {
     setSearched(true)
     try {
       const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
-      const res = await wanspotFetch(`/api/spots/search?q=${encodeURIComponent(trimmed)}${locationParam}`)
+      const res = await perfAsync('api:search', () =>
+        wanspotFetch(`/api/spots/search?q=${encodeURIComponent(trimmed)}${locationParam}`)
+      )
       void supabase.auth.getUser().then(({ data: { user } }) => {
         if (!user) return
         void wanspotFetch('/api/search/history', {
@@ -659,9 +699,26 @@ function SearchTab() {
   }, [aiResults, location, userWalkTags])
   const discoverLoading = discoverMode === 'ai' ? aiLoading : articlesLoading
 
-  const AD_ROW_EVERY = 5
-  const shouldShowAdAfter = (index: number, total: number) =>
-    (index + 1) % AD_ROW_EVERY === 0 || (index + 1 === total && total < AD_ROW_EVERY)
+  useEffect(() => {
+    if (!articlesLoading && articlesList.length > 0 && articlesListEnter) {
+      const t = setTimeout(() => setArticlesListEnter(false), 700)
+      return () => clearTimeout(t)
+    }
+  }, [articlesLoading, articlesList.length, articlesListEnter])
+
+  useEffect(() => {
+    if (!loading && sortedResults.length > 0 && searchListEnter) {
+      const t = setTimeout(() => setSearchListEnter(false), 700)
+      return () => clearTimeout(t)
+    }
+  }, [loading, searchListEnter, sortedResults.length])
+
+  useEffect(() => {
+    if (!discoverLoading && discoverResults.length > 0 && discoverListEnter) {
+      const t = setTimeout(() => setDiscoverListEnter(false), 700)
+      return () => clearTimeout(t)
+    }
+  }, [discoverLoading, discoverListEnter, discoverResults.length])
 
   const openSpot = (id: string) => {
     router.push(`/spots/${id}`)
@@ -706,7 +763,7 @@ function SearchTab() {
         <AppHeader />
         <View style={styles.searchHeader}>
           <View style={styles.searchRow}>
-            <View style={styles.searchInner}>
+            <GlassSearchShell focused={searchFocused}>
               <IconSearch />
               <TextInput
                 style={styles.input}
@@ -715,6 +772,8 @@ function SearchTab() {
                 placeholder="スポット・エリア・キーワード"
                 placeholderTextColor="#aaa"
                 onSubmitEditing={() => void handleSearch(query)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
                 returnKeyType="search"
                 blurOnSubmit
               />
@@ -730,10 +789,10 @@ function SearchTab() {
                   <IconClose />
                 </Pressable>
               ) : null}
-              <Pressable style={styles.searchGo} onPress={() => void handleSearch(query)}>
+              <PressableScale style={styles.searchGo} onPress={() => void handleSearch(query)}>
                 <Text style={styles.searchGoTxt}>検索</Text>
-              </Pressable>
-            </View>
+              </PressableScale>
+            </GlassSearchShell>
             {searched ? (
               <View style={styles.sortWrap}>
                 <Pressable
@@ -772,36 +831,14 @@ function SearchTab() {
                 </View>
               </ScrollView>
               <View style={styles.discoverTabs}>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'articles' && styles.discTabOn]}
-                  onPress={() => {
+                <DiscoverModeTabs
+                  tabs={DISCOVER_TABS}
+                  selectedKey={discoverMode}
+                  onSelect={(key) => {
                     Keyboard.dismiss()
-                    setDiscoverMode('articles')
+                    setDiscoverMode(key)
                   }}
-                >
-                  <IconBulb fill={discoverMode === 'articles' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'articles' && styles.discTabTxtOn]}>ワンスポまとめ</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'ai_plan' && styles.discTabOn]}
-                  onPress={() => {
-                    Keyboard.dismiss()
-                    setDiscoverMode('ai_plan')
-                  }}
-                >
-                  <IconAiPlan fill={discoverMode === 'ai_plan' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'ai_plan' && styles.discTabTxtOn]}>AIプラン</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.discTab, discoverMode === 'ai' && styles.discTabOn]}
-                  onPress={() => {
-                    Keyboard.dismiss()
-                    setDiscoverMode('ai')
-                  }}
-                >
-                  <IconThumbUp fill={discoverMode === 'ai' ? '#fff' : '#888'} />
-                  <Text style={[styles.discTabTxt, discoverMode === 'ai' && styles.discTabTxtOn]}>AIレコメンド</Text>
-                </Pressable>
+                />
               </View>
             </>
           ) : null}
@@ -810,76 +847,97 @@ function SearchTab() {
 
         {!showAiPlan ? (
         <View style={styles.results}>
-          {loading ? <RunningDog label="検索中..." /> : null}
+          {loading ? (
+            <>
+              <SearchResultSkeleton />
+              <SearchResultSkeleton />
+              <SearchResultSkeleton />
+            </>
+          ) : null}
           {!loading && searched && results.length === 0 ? <PowState label="見つかりませんでした" /> : null}
           {!loading &&
             searched &&
             sortedResults.map((spot, index) => (
-              <View key={spot.place_id}>
-                <SearchDiscoverResultCard
-                  spot={spot}
-                  userLocation={location}
-                  userWalkTags={userWalkTags}
-                  onOpen={openSpot}
-                  onLikesChange={refreshSpotLikesCount}
-                  onBeforeNavigate={beforeNavSearch}
-                />
-                {isFocused && shouldShowAdAfter(index, sortedResults.length) ? (
-                  <AdNativeCard adsReady={adsRuntimeReady} />
-                ) : null}
-              </View>
+              <ListEnterItem key={spot.place_id} index={index} animate={searchListEnter}>
+                <View>
+                  <SearchDiscoverResultCard
+                    spot={spot}
+                    userLocation={location}
+                    userWalkTags={userWalkTags}
+                    onOpen={openSpot}
+                    onLikesChange={refreshSpotLikesCount}
+                    onBeforeNavigate={beforeNavSearch}
+                  />
+                  {isFocused && shouldInjectListAd(index, sortedResults.length) ? (
+                    <AdNativeCard adsReady={adsRuntimeReady} />
+                  ) : null}
+                </View>
+              </ListEnterItem>
             ))}
 
           {!searched ? (
             <>
               {discoverMode === 'articles' ? (
                 <>
-                  {articlesLoading ? <RunningDog label="記事を読み込み中..." /> : null}
-                  {!articlesLoading && articlesList.length === 0 ? <PowState label="公開中の記事がありません" /> : null}
+                  {articlesLoading && articlesList.length === 0 ? (
+                    <>
+                      <ArticleListSkeleton />
+                      <ArticleListSkeleton />
+                      <ArticleListSkeleton />
+                    </>
+                  ) : null}
+                  {articlesFetchError && !articlesLoading && articlesList.length === 0 ? (
+                    <PowState label="記事の読み込みに失敗しました" />
+                  ) : null}
+                  {!articlesLoading && !articlesFetchError && articlesList.length === 0 ? (
+                    <PowState label="公開中の記事がありません" />
+                  ) : null}
                   {!articlesLoading &&
                     articlesList.map((article, index) => (
-                      <View key={article.id}>
-                        <Pressable
-                          style={styles.artCard}
-                          onPress={() => {
-                            track('article_clicked', { article_id: article.id })
-                            setRecentArticleIds((prev) => {
-                              if (prev.includes(article.id)) return prev
-                              return [article.id, ...prev].slice(0, 40)
-                            })
-                            router.push(`/articles/${article.slug}`)
-                          }}
-                        >
-                          {article.image_url ? (
-                            <ArticleRemoteImage
-                              uri={resizePlacesImageUrl(article.image_url, 'card')}
-                              style={styles.artImg}
-                              recyclingKey={`article-list-${article.id}`}
-                              priority="normal"
-                            />
-                          ) : (
-                            <View style={[styles.artImg, styles.artImgPh]} />
-                          )}
-                          <View style={styles.artBody}>
-                            {article.keywords?.length > 0 ? (
-                              <View style={styles.kwRow}>
-                                {article.keywords.slice(0, 3).map((k) => (
-                                  <View key={k} style={styles.kwPill}>
-                                    <Text style={styles.kwPillTxt}>{k}</Text>
-                                  </View>
-                                ))}
-                              </View>
-                            ) : null}
-                            <Text style={styles.artTitle}>{article.title}</Text>
-                            <Text style={styles.artSum} numberOfLines={3}>
-                              {article.summary}
-                            </Text>
-                          </View>
-                        </Pressable>
-                        {isFocused && shouldShowAdAfter(index, articlesList.length) ? (
-                          <AdNativeCard adsReady={adsRuntimeReady} />
-                        ) : null}
-                      </View>
+                      <ListEnterItem key={article.id} index={index} animate={articlesListEnter}>
+                        <View>
+                          <PressableScale
+                            style={styles.artCard}
+                            onPress={() => {
+                              track('article_clicked', { article_id: article.id })
+                              setRecentArticleIds((prev) => {
+                                if (prev.includes(article.id)) return prev
+                                return [article.id, ...prev].slice(0, 40)
+                              })
+                              router.push(`/articles/${article.slug}`)
+                            }}
+                          >
+                            {article.image_url ? (
+                              <ArticleRemoteImage
+                                uri={resizePlacesImageUrl(article.image_url, 'thumbnail')}
+                                style={styles.artImg}
+                                recyclingKey={`article-list-${article.id}`}
+                                priority="normal"
+                              />
+                            ) : (
+                              <View style={[styles.artImg, styles.artImgPh]} />
+                            )}
+                            <View style={styles.artBody}>
+                              {article.keywords?.length > 0 ? (
+                                <View style={styles.kwRow}>
+                                  {article.keywords.slice(0, 3).map((k) => (
+                                    <View key={k} style={styles.kwPill}>
+                                      <Text style={styles.kwPillTxt}>{k}</Text>
+                                    </View>
+                                  ))}
+                                </View>
+                              ) : null}
+                              <Text style={styles.artTitle}>{article.title}</Text>
+                              <Text style={styles.artSum} numberOfLines={3}>
+                                {article.summary}
+                              </Text>
+                            </View>
+                          </PressableScale>
+                          {isFocused && shouldInjectListAd(index, articlesList.length) ? (
+                            <AdNativeCard adsReady={adsRuntimeReady} />
+                          ) : null}
+                        </View>
+                      </ListEnterItem>
                     ))}
                 </>
               ) : null}
@@ -901,8 +959,11 @@ function SearchTab() {
                       ) : null}
                     </View>
                   ) : null}
-                  {discoverLoading ? (
-                    <RunningDog label={discoverMode === 'ai' ? 'おすすめを読み込み中...' : '読み込み中...'} />
+                  {discoverLoading && discoverResults.length === 0 && discoverMode === 'ai' ? (
+                    <>
+                      <SearchResultSkeleton />
+                      <SearchResultSkeleton />
+                    </>
                   ) : null}
                   {!discoverLoading &&
                   discoverMode === 'ai' &&
@@ -916,21 +977,23 @@ function SearchTab() {
                   {!discoverLoading &&
                     !(discoverMode === 'ai' && spotLikesCount !== null && spotLikesCount < AI_LIKES_MIN) &&
                     discoverResults.map((spot, index) => (
-                      <View key={spot.place_id}>
-                        <SearchDiscoverResultCard
-                          spot={spot}
-                          userLocation={location}
-                          userWalkTags={userWalkTags}
-                          onOpen={openSpot}
-                          onLikesChange={refreshSpotLikesCount}
-                          onBeforeNavigate={async () => {
-                            await AsyncStorage.setItem(SEARCH_RESTORE_FLAG, '1')
-                          }}
-                        />
-                        {isFocused && shouldShowAdAfter(index, discoverResults.length) ? (
-                          <AdNativeCard adsReady={adsRuntimeReady} />
-                        ) : null}
-                      </View>
+                      <ListEnterItem key={spot.place_id} index={index} animate={discoverListEnter}>
+                        <View>
+                          <SearchDiscoverResultCard
+                            spot={spot}
+                            userLocation={location}
+                            userWalkTags={userWalkTags}
+                            onOpen={openSpot}
+                            onLikesChange={refreshSpotLikesCount}
+                            onBeforeNavigate={async () => {
+                              await AsyncStorage.setItem(SEARCH_RESTORE_FLAG, '1')
+                            }}
+                          />
+                          {isFocused && shouldInjectListAd(index, discoverResults.length) ? (
+                            <AdNativeCard adsReady={adsRuntimeReady} />
+                          ) : null}
+                        </View>
+                      </ListEnterItem>
                     ))}
                   {!loading &&
                     !searched &&

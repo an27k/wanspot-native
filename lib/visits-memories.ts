@@ -278,35 +278,48 @@ export async function softDeleteMemory(memoryId: string): Promise<boolean> {
   return !error
 }
 
+export type UploadMemoryResult =
+  | { ok: true; path: string; mediaType: 'image' | 'video' }
+  | { ok: false; message: string }
+
 export async function uploadMemoryFile(
   userId: string,
   uri: string,
   mimeType: string,
   onProgress?: (ratio: number) => void
-): Promise<{ path: string; mediaType: 'image' | 'video' } | null> {
-  onProgress?.(0.1)
-  let uploadUri = uri
-  let uploadMime = mimeType
+): Promise<UploadMemoryResult> {
+  try {
+    onProgress?.(0.1)
+    let uploadUri = uri
+    let uploadMime = mimeType
 
-  if (!mimeType.startsWith('video/')) {
-    const compressed = await compressImageToJpeg(uri, 1200)
-    if (!compressed) return null
-    uploadUri = compressed.uri
-    uploadMime = 'image/jpeg'
+    if (!mimeType.startsWith('video/')) {
+      const compressed = await compressImageToJpeg(uri, 1200)
+      if (!compressed) return { ok: false, message: '画像の変換に失敗しました' }
+      uploadUri = compressed.uri
+      uploadMime = 'image/jpeg'
+    }
+
+    const ext = uploadMime.startsWith('video/') ? (uploadMime.includes('quicktime') ? 'mov' : 'mp4') : 'jpg'
+    const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+    const res = await fetch(uploadUri)
+    const buf = await res.arrayBuffer()
+    onProgress?.(0.4)
+    const { error } = await supabase.storage.from(MEMORIES_BUCKET).upload(path, buf, {
+      contentType: uploadMime,
+      upsert: false,
+    })
+    onProgress?.(1)
+    if (error) {
+      console.warn('[uploadMemoryFile] storage.upload', error.message)
+      return { ok: false, message: error.message }
+    }
+    return { ok: true, path, mediaType: uploadMime.startsWith('video/') ? 'video' : 'image' }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    console.warn('[uploadMemoryFile]', message)
+    return { ok: false, message }
   }
-
-  const ext = uploadMime.startsWith('video/') ? (uploadMime.includes('quicktime') ? 'mov' : 'mp4') : 'jpg'
-  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-  const res = await fetch(uploadUri)
-  const buf = await res.arrayBuffer()
-  onProgress?.(0.4)
-  const { error } = await supabase.storage.from(MEMORIES_BUCKET).upload(path, buf, {
-    contentType: uploadMime,
-    upsert: false,
-  })
-  onProgress?.(1)
-  if (error) return null
-  return { path, mediaType: uploadMime.startsWith('video/') ? 'video' : 'image' }
 }
 
 export async function insertMemory(params: {

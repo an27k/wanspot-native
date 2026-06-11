@@ -18,6 +18,9 @@
       "bundleIdentifier": "app.wanspot.native",
       "buildNumber": "96",
       "usesAppleSignIn": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyB-uH0kWeDvbOyGVyEkO5zttWg7TE6nBdg"
+      },
       "entitlements": {
         "com.apple.developer.applesignin": [
           "Default"
@@ -54,7 +57,7 @@
       "predictiveBackGestureEnabled": false,
       "config": {
         "googleMaps": {
-          "apiKey": "ANDROID_MAPS_API_KEY"
+          "apiKey": "AIzaSyB-uH0kWeDvbOyGVyEkO5zttWg7TE6nBdg"
         }
       }
     },

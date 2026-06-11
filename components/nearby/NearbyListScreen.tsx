@@ -24,12 +24,12 @@ import { RunningDog, PowState } from '@/components/DogStates'
 import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
+import { shouldInjectListAd } from '@/lib/ads/list-injection'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import { supabase } from '@/lib/supabase'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
-import { track } from '@/lib/analytics'
 import { wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -363,10 +363,6 @@ export function NearbyListScreen() {
 
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
 
-  const AD_ROW_EVERY = 5
-  const shouldShowAdAfter = (index: number, total: number) =>
-    (index + 1) % AD_ROW_EVERY === 0 || (index + 1 === total && total < AD_ROW_EVERY)
-
   return (
     <View style={styles.main}>
       <AppHeader />
@@ -484,7 +480,7 @@ export function NearbyListScreen() {
                 onOpenDetail={(id) => router.push(`/spots/${id}`)}
                 onLikeStateChange={handleSpotLikeChange}
               />
-              {isFocused && shouldShowAdAfter(index, displayedSpots.length) ? (
+              {isFocused && shouldInjectListAd(index, displayedSpots.length) ? (
                 <AdNativeCard adsReady={adsRuntimeReady} />
               ) : null}
             </View>

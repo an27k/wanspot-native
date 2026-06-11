@@ -4,6 +4,7 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Path, Polygon } from 'react-native-svg'
 import { RunningDog } from '@/components/DogStates'
+import { PressableScale } from '@/components/common/PressableScale'
 import { IconPaw } from '@/components/IconPaw'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 import { useDogProfile } from '@/components/dog/useDogProfile'
@@ -162,7 +163,7 @@ export function SearchDiscoverResultCard({
 
   return (
     <View style={styles.card}>
-      <Pressable onPress={() => void handleOpen()}>
+      <PressableScale onPress={() => void handleOpen()}>
         <View style={styles.thumbWrap}>
           {photoUrl ? (
             <Image
@@ -206,7 +207,7 @@ export function SearchDiscoverResultCard({
             {spot.address}
           </Text>
         </View>
-      </Pressable>
+      </PressableScale>
       <View style={styles.aiFooter}>
         {!aiSummary && !aiLoading ? (
           <Pressable style={styles.aiBtn} onPress={() => void handleAiSummary()}>

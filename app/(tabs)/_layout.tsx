@@ -16,8 +16,12 @@ export default function TabsLayout() {
       tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        /** shift は両画面が一瞬 opacity 0 付近を通り「真っ白」に見えやすいのでオフ */
-        animation: 'none',
+        /**
+         * shift は両画面が一瞬 opacity 0 付近を通り「真っ白」に見えやすかった。
+         * fade + sceneStyle の紙色背景で、切替中も白飛びせず柔らかくクロスフェードさせる。
+         */
+        animation: 'fade',
+        sceneStyle: { backgroundColor: colors.paper },
         /** 起動時に全タブをマウントしない（検索の広告・一覧と Hermes の競合を避ける） */
         lazy: true,
         /** true だと非アクティブタブの更新が止まり、再フォーカス時にネイティブ広告周りが「消えた」ように見えることがある */

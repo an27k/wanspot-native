@@ -34,6 +34,7 @@ import { inferSpotGenre } from '@/lib/nearby/map-filter'
 import type { MapGenreKey } from '@/lib/nearby/constants'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import { NearbySheetSpotCard } from '@/components/nearby/NearbySheetSpotCard'
+import { MapPinPopupKeyed } from '@/components/map/MapPinPopupEnter'
 import { PhotoMapPin } from '@/components/map/PhotoMapPin'
 
 const FALLBACK_REGION: Region = {
@@ -348,13 +349,15 @@ export function NearbyMapView({
           style={[styles.pinCard, popupStyle, popupAnimStyle]}
           pointerEvents={sheetOpen ? 'none' : 'auto'}
         >
-          <NearbySheetSpotCard
-            spot={selectedSpot!}
-            userLocation={userLocation}
-            variant="popup"
-            onPress={() => onOpenDetail(selectedSpot!)}
-            onClose={onClearSelection}
-          />
+          <MapPinPopupKeyed spotKey={selectedSpot!.key}>
+            <NearbySheetSpotCard
+              spot={selectedSpot!}
+              userLocation={userLocation}
+              variant="popup"
+              onPress={() => onOpenDetail(selectedSpot!)}
+              onClose={onClearSelection}
+            />
+          </MapPinPopupKeyed>
         </Animated.View>
       ) : null}
 

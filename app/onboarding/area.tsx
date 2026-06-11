@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
 } from 'react-native'
 import { colors } from '@/constants/colors'
 import { useRouter } from 'expo-router'

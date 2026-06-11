@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Image } from 'expo-image'
 import {
-  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -219,6 +218,8 @@ export default function SpotDetailScreen({
     message: string
     tone: 'success' | 'error'
     retry?: boolean
+    /** 記録成功後の「思い出をVLOGに」導線（タップでアルバムタブへ） */
+    vlogNudge?: boolean
   } | null>(null)
   useEffect(() => {
     const init = async () => {
@@ -418,7 +419,8 @@ export default function SpotDetailScreen({
 
   useEffect(() => {
     if (!visitToast) return
-    const ms = visitToast.tone === 'error' ? 5000 : 2000
+    // VLOG 導線付きはタップの猶予を持たせて長めに表示
+    const ms = visitToast.tone === 'error' ? 5000 : visitToast.vlogNudge ? 6500 : 2000
     const t = setTimeout(() => setVisitToast(null), ms)
     return () => clearTimeout(t)
   }, [visitToast])
@@ -462,8 +464,9 @@ export default function SpotDetailScreen({
       }
       setCheckedIn(true)
       setVisitToast({
-        message: result.created ? '行ったを記録しました' : '本日は記録済みです',
+        message: result.created ? '行ったを記録しました🐾' : '本日は記録済みです',
         tone: 'success',
+        vlogNudge: true,
       })
       if (result.created) track('spot_checked_in', { spot_id: spot.id })
     } finally {
@@ -523,13 +526,31 @@ export default function SpotDetailScreen({
       {visitToast ? (
         <Pressable
           style={[styles.toast, { bottom: bottomInset }, visitToast.tone === 'error' && styles.toastErr]}
-          onPress={visitToast.retry ? () => void recordVisitTap() : undefined}
-          disabled={!visitToast.retry}
+          onPress={
+            visitToast.retry
+              ? () => void recordVisitTap()
+              : visitToast.vlogNudge
+                ? () => {
+                    setVisitToast(null)
+                    track('visit_vlog_nudge_tapped', { spot_id: spot.id })
+                    router.push('/(tabs)/camera')
+                  }
+                : undefined
+          }
+          disabled={!visitToast.retry && !visitToast.vlogNudge}
         >
           <Text style={styles.toastTxt}>
             {visitToast.message}
             {visitToast.retry ? '（タップで再試行）' : ''}
           </Text>
+          {visitToast.vlogNudge ? (
+            <View style={styles.toastNudgeRow}>
+              <Text style={styles.toastNudgeTxt} numberOfLines={1}>
+                写真をのこして、{dog?.name?.trim() || '愛犬'}との思い出をVLOGにしよう
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.75)" />
+            </View>
+          ) : null}
         </Pressable>
       ) : null}
 
@@ -800,6 +821,22 @@ const styles = StyleSheet.create({
     borderColor: colors.error,
   },
   toastTxt: { color: '#fff', fontWeight: '700', textAlign: 'center', fontSize: 14 },
+  toastNudgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.25)',
+  },
+  toastNudgeTxt: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 12,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
   backFab: { position: 'absolute', left: 16, zIndex: 20 },
   fabBtn: {
     width: 40,

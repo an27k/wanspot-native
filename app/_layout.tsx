@@ -11,6 +11,9 @@ import { enableScreens } from 'react-native-screens'
 import { AuthProvider } from '@/context/AuthContext'
 import { initAnalytics } from '@/lib/analytics'
 import { iosUsesSafeConsoleGuards } from '@/lib/ads-policy'
+import { perfMark } from '@/lib/perf/marks'
+
+perfMark('app:root-layout')
 
 /** ルート Stack: ネイティブの UINavigationController / Android Fragment トランジションに寄せる */
 const stackScreenOptions = {

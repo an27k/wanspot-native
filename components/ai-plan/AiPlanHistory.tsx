@@ -1,5 +1,8 @@
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { TOKENS } from '@/constants/color-tokens'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ListEnterItem } from '@/components/common/ListEnterItem'
+import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
+import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import type { AiPlanHistoryRow, AiPlanMood, AiPlanTravelMode } from '@/components/ai-plan/types'
 import { colors } from '@/constants/colors'
 
@@ -47,8 +50,13 @@ export function AiPlanHistory({
   onSelect: (row: AiPlanHistoryRow) => void
   onCreate: () => void
 }) {
+  const insets = useSafeAreaInsets()
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[styles.content, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24 }]}
+      showsVerticalScrollIndicator={false}
+    >
       <Pressable style={({ pressed }) => [styles.ctaCard, pressed && styles.ctaCardPressed]} onPress={onCreate}>
         <View style={styles.ctaTextCol}>
           <Text style={styles.ctaTitle}>新しいプランを作る</Text>
@@ -63,13 +71,13 @@ export function AiPlanHistory({
 
       {rows.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🐾</Text>
+          <WanspotIconPaw size={28} color={colors.primary} />
           <Text style={styles.emptyTitle}>まだプランがありません</Text>
           <Text style={styles.emptyTxt}>上のボタンから新しいプランを作成しよう</Text>
         </View>
       ) : (
         <View style={styles.cardList}>
-          {rows.map((r) => {
+          {rows.map((r, rowIndex) => {
             const plan = r.generated_plan
             const title = safeStr(plan?.title) || 'AIプラン'
             const pref = safeStr(plan?.prefecture) || safeStr((r.input_params as { prefecture?: string })?.prefecture)
@@ -82,8 +90,8 @@ export function AiPlanHistory({
             const moodActive = mood === 'active'
 
             return (
+              <ListEnterItem key={r.id} index={rowIndex} animate>
               <Pressable
-                key={r.id}
                 onPress={() => onSelect(r)}
                 style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
               >
@@ -117,6 +125,7 @@ export function AiPlanHistory({
                   </Text>
                 </View>
               </Pressable>
+              </ListEnterItem>
             )
           })}
         </View>
@@ -131,7 +140,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 16,
     gap: 16,
-    paddingBottom: 32,
   },
   ctaCard: {
     flexDirection: 'row',
@@ -233,7 +241,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#000000',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
