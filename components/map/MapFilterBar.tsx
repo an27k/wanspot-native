@@ -8,7 +8,7 @@ import {
   MAP_LIKE_COLOR,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
-import { colors } from '@/constants/colors'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { isSameMapFilter, type MapFilter } from '@/lib/nearby/map-filter'
 
 const HeartIcon = ({ color, size = 14 }: { color: string; size?: number }) => (
@@ -94,19 +94,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    backgroundColor: GOOGLE_HOME.mapChipBg,
     borderWidth: 1.5,
-    borderColor: 'rgba(235,235,235,0.9)',
+    borderColor: GOOGLE_HOME.mapChipBorder,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
   chipOn: {
-    backgroundColor: '#fff',
-    shadowOpacity: 0.14,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    shadowOpacity: 0.18,
+    shadowRadius: 11,
   },
-  chipTxt: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  chipTxt: { fontSize: 13, fontWeight: '700', color: GOOGLE_HOME.mapChipText },
   chipTxtOn: { fontWeight: '800' },
 })

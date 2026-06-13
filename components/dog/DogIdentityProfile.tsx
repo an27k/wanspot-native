@@ -178,7 +178,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
       <View style={[styles.col, isAlbum && [styles.colAlbum, { marginTop: insets.top + 8 }]]}>
         <View style={[styles.avatarWrap, editing && styles.avatarWrapEditing, isAlbum && styles.avatarWrapAlbum]}>
           {isAlbum ? (
-            <AvatarSunsetRing size={avatarSize} energized={ringEnergized}>
+            <AvatarSunsetRing size={avatarSize} energized={ringEnergized} tone="gray">
               {avatarInner}
             </AvatarSunsetRing>
           ) : (

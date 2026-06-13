@@ -23,6 +23,18 @@ export const GOOGLE_HOME = {
   searchActionBg: 'rgba(255,255,255,0.18)',
   searchActionBorder: 'rgba(255,255,255,0.14)',
 
+  /** マップジャンルチップ・一覧ジャンル丸（クリアで濃いめの白・文字読みやすさ優先） */
+  mapChipBg: 'rgba(255,255,255,0.84)',
+  mapChipBorder: 'rgba(255,255,255,0.62)',
+  mapChipText: '#2A2522',
+  listGenreBg: 'rgba(255,255,255,0.92)',
+  listGenreBorder: 'rgba(42,37,34,0.10)',
+  listGenreText: '#2A2522',
+  /** 一覧カード下部アクション（ジャンル丸と差別化） */
+  listActionBg: 'rgba(42,37,34,0.07)',
+  listActionBorder: 'rgba(42,37,34,0.14)',
+  listActionText: '#4A4540',
+
   /** Tier3: お散歩アラート / いいね / まとめカード（Google Discover 相当・薄いガラス） */
   panelBg: 'rgba(30, 28, 26, 0.34)',
   panelBgPressed: 'rgba(30, 28, 26, 0.46)',

@@ -58,7 +58,7 @@ export function WalkAlertCard({
               <DogAlertFace size={42} level={level.key} ringColor={level.color} tempC={tempC} />
               <View style={styles.bodyCol}>
                 <Text style={styles.statusLine}>
-                  <Text style={[styles.levelTxt, { color: level.color }]}>{level.label}</Text>
+                  <Text style={styles.levelTxt}>{level.label}</Text>
                   {tempC != null ? <Text style={styles.tempTxt}> · 現在{tempC}℃</Text> : null}
                 </Text>
                 <Text style={styles.advice} numberOfLines={2}>
@@ -111,15 +111,15 @@ const styles = StyleSheet.create({
   kicker: {
     fontSize: 11,
     fontWeight: '600',
-    color: GOOGLE_HOME.textKicker,
+    color: GOOGLE_HOME.textPrimary,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
-  meta: { fontSize: 11, fontWeight: '500', color: GOOGLE_HOME.textMuted },
+  meta: { fontSize: 11, fontWeight: '500', color: GOOGLE_HOME.textPrimary },
   bodyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bodyCol: { flex: 1, gap: 4, minWidth: 0 },
   statusLine: { flexDirection: 'row', flexWrap: 'wrap' },
-  levelTxt: { fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
-  tempTxt: { fontSize: 14, fontWeight: '500', color: GOOGLE_HOME.textSecondary },
+  levelTxt: { fontSize: 17, fontWeight: '700', letterSpacing: -0.3, color: GOOGLE_HOME.textPrimary },
+  tempTxt: { fontSize: 14, fontWeight: '500', color: GOOGLE_HOME.textPrimary },
   advice: { fontSize: 13, lineHeight: 19, fontWeight: '400', color: GOOGLE_HOME.textSecondary },
 })

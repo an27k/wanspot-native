@@ -20,7 +20,7 @@ import {
 } from 'react-native-reanimated'
 import { VlogClipboardIcon } from '@/components/icons/VlogClipboardIcon'
 import { colors } from '@/constants/colors'
-import { GRADIENT_SUNSET } from '@/constants/gradients'
+import { GRADIENT_VLOG_LIQUID } from '@/constants/gradients'
 
 const CARD_H = 168
 const CARD_RADIUS = 20
@@ -261,9 +261,9 @@ export function VlogLiquidGauge({
       <Canvas style={StyleSheet.absoluteFill}>
         <Group clip={clipRRect}>
           <Rect x={0} y={0} width={width} height={height} color={colors.vessel} />
-          <Path path={backWavePath} color="rgba(255,110,120,0.30)" />
+          <Path path={backWavePath} color="rgba(110,205,180,0.28)" />
           <Path path={frontWavePath}>
-            <LinearGradient start={vec(0, 0)} end={vec(width, height)} colors={[...GRADIENT_SUNSET]} />
+            <LinearGradient start={vec(0, 0)} end={vec(width, height)} colors={[...GRADIENT_VLOG_LIQUID]} />
           </Path>
           <Path path={meniscusPath} style="stroke" strokeWidth={1.5} color="rgba(255,255,255,0.45)" />
           {Array.from({ length: BUBBLE_COUNT }, (_, i) => (
@@ -281,7 +281,7 @@ export function VlogLiquidGauge({
             y={1}
             width={width - 2}
             height={height - 2}
-            color="rgba(255,220,180,0.22)"
+            color="rgba(190,180,255,0.25)"
             style="stroke"
             strokeWidth={2}
           />

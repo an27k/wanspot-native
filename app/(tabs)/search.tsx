@@ -39,7 +39,7 @@ import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { supabase } from '@/lib/supabase'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
-import { sortArticlesByScore } from '@/lib/articles/scoring'
+import { personalizeArticlesFeed } from '@/lib/article-feed-ranking'
 import { CACHE_TTL, fetchWithCache, geoBucket, invalidateCache, isCacheFresh, readCache } from '@/lib/client-cache'
 import { getCachedPrefecture, getCachedPrefectureAndMunicipality } from '@/lib/geo-cache'
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
@@ -72,7 +72,7 @@ const DEFAULT_SUGGESTIONS = [
 ]
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'default', label: '関連順' },
+  { key: 'default', label: '近い順' },
   { key: 'rating', label: '評価順' },
   { key: 'distance', label: '距離順' },
 ]
@@ -89,7 +89,7 @@ function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-const ARTICLES_CACHE_KEY = 'search:articles:v1'
+const ARTICLES_CACHE_KEY = 'search:articles:v2'
 
 const IconSearch = ({ color = GOOGLE_HOME.textMuted }: { color?: string }) => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round">
@@ -152,10 +152,13 @@ type ArticleRow = {
   summary: string
   slug: string
   category: string
+  theme?: string | null
   keywords: string[]
   image_url: string | null
   created_at: string
   published_at?: string | null
+  blocks?: unknown
+  spot_links?: unknown
 }
 
 function SearchTab() {
@@ -179,6 +182,7 @@ function SearchTab() {
   const [aiLabel, setAiLabel] = useState<string | null>(null)
   const [aiReason, setAiReason] = useState<string | null>(null)
   const [aiResults, setAiResults] = useState<PlaceResult[]>([])
+  const [articlesRaw, setArticlesRaw] = useState<ArticleRow[]>([])
   const [articlesList, setArticlesList] = useState<ArticleRow[]>([])
   const [articlesLoading, setArticlesLoading] = useState(false)
   const [spotLikesCount, setSpotLikesCount] = useState<number | null>(null)
@@ -519,11 +523,11 @@ function SearchTab() {
     async (opts?: { force?: boolean }) => {
       const force = opts?.force === true
       if (articlesLoading) return
-      if (!force && articlesList.length > 0) return
+      if (!force && articlesRaw.length > 0) return
 
       const cachedRows = readCache<ArticleRow[]>(ARTICLES_CACHE_KEY)
-      if (!force && cachedRows && cachedRows.length > 0 && articlesList.length === 0) {
-        setArticlesList(cachedRows)
+      if (!force && cachedRows && cachedRows.length > 0 && articlesRaw.length === 0) {
+        setArticlesRaw(cachedRows)
       }
 
       const cacheWarm = !force && isCacheFresh(ARTICLES_CACHE_KEY, CACHE_TTL.ARTICLES_MS)
@@ -531,11 +535,6 @@ function SearchTab() {
       setArticlesFetchError(false)
       try {
         if (force) invalidateCache(ARTICLES_CACHE_KEY)
-        const geoPromise =
-          location != null
-            ? getCachedPrefectureAndMunicipality(location.lat, location.lng)
-            : Promise.resolve({ prefecture: null as string | null, municipality: null as string | null })
-
         const { data: rows, fromCache } = await perfAsync('api:articles', () =>
           fetchWithCache(
             ARTICLES_CACHE_KEY,
@@ -543,7 +542,9 @@ function SearchTab() {
             async () => {
               const { data } = await supabase
                 .from('articles')
-                .select('id, title, summary, slug, category, keywords, image_url, created_at, published_at')
+                .select(
+                  'id, title, summary, slug, category, theme, keywords, image_url, created_at, published_at, blocks, spot_links'
+                )
                 .eq('status', 'published')
                 .order('published_at', { ascending: false, nullsFirst: false })
               return (data ?? []) as ArticleRow[]
@@ -552,30 +553,9 @@ function SearchTab() {
           )
         )
 
-        const geo = await geoPromise
-
-        const sorted = sortArticlesByScore(
-          rows.map((r) => ({
-            ...r,
-            title: r.title ?? null,
-            keywords: r.keywords ?? null,
-            theme: null,
-            category: r.category ?? null,
-            summary: r.summary ?? null,
-            published_at: r.published_at ?? null,
-          })),
-          {
-            userPrefecture: geo.prefecture,
-            userMunicipality: geo.municipality,
-            userId: null,
-            likedArticleIds: [],
-            readArticleIds: recentArticleIds,
-          }
-        )
-
-        setArticlesList(sorted)
+        setArticlesRaw(rows)
         if (!fromCache) {
-          const urls = sorted
+          const urls = rows
             .map((a) => a.image_url)
             .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
             .map((u) => resizePlacesImageUrl(u.trim(), 'thumbnail'))
@@ -587,8 +567,38 @@ function SearchTab() {
         setArticlesLoading(false)
       }
     },
-    [articlesLoading, articlesList.length, location, recentArticleIds]
+    [articlesLoading, articlesRaw.length]
   )
+
+  /** 取得済み記事を現在地・登録エリア・行動履歴で並べ替え（AIレコメンドと同様、シグナル更新に追従） */
+  useEffect(() => {
+    if (articlesRaw.length === 0) {
+      setArticlesList([])
+      return
+    }
+
+    let cancelled = false
+    void (async () => {
+      const geo =
+        location != null
+          ? await getCachedPrefectureAndMunicipality(location.lat, location.lng)
+          : { prefecture: null as string | null, municipality: null as string | null }
+
+      const sorted = await personalizeArticlesFeed(supabase, articlesRaw, {
+        userLocation: location,
+        userPrefecture: geo.prefecture,
+        userMunicipality: geo.municipality,
+        walkAreaTags: userWalkTags,
+        recentArticleIds,
+      })
+
+      if (!cancelled) setArticlesList(sorted)
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [articlesRaw, location, userWalkTags, recentArticleIds])
 
   useEffect(() => {
     if (searched) return
@@ -616,7 +626,13 @@ function SearchTab() {
     if (!silent) setLoading(true)
     setSearched(true)
     try {
-      const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
+      let loc = location
+      const locResult = await resolveSessionLocation(location)
+      if (locResult.ok) {
+        loc = locResult.location
+        if (locResult.changed) setLocation(loc)
+      }
+      const locationParam = loc ? `&lat=${loc.lat}&lng=${loc.lng}` : ''
       const res = await perfAsync('api:search', () =>
         wanspotFetch(`/api/spots/search?q=${encodeURIComponent(trimmed)}${locationParam}`)
       )
@@ -681,19 +697,29 @@ function SearchTab() {
   ])
 
   const sortedResults = useMemo(() => {
-    const copy = [...results]
+    let copy = [...results]
+    if (location) {
+      const maxM = 50_000
+      copy = copy.filter((s) => {
+        if (s.lat == null || s.lng == null) return true
+        return calcDistance(location.lat, location.lng, s.lat, s.lng) <= maxM
+      })
+      copy = rankSpotsByWalkContext(copy, location, userWalkTags)
+    }
     copy.sort((a, b) => {
       if (sortKey === 'rating') return (b.rating ?? 0) - (a.rating ?? 0)
-      if (sortKey === 'distance' && location) {
-        return (
-          calcDistance(location.lat, location.lng, a.lat, a.lng) -
-          calcDistance(location.lat, location.lng, b.lat, b.lng)
-        )
+      if (location && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
+        if (sortKey === 'distance' || sortKey === 'default') {
+          return (
+            calcDistance(location.lat, location.lng, a.lat, a.lng) -
+            calcDistance(location.lat, location.lng, b.lat, b.lng)
+          )
+        }
       }
       return 0
     })
     return copy
-  }, [results, sortKey, location])
+  }, [results, sortKey, location, userWalkTags])
 
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
   /** 取得済み結果に対し、タグ・現在地で再ランク（fetch 内でも適用済みだが、タブ復帰後のタグ更新に追従） */

@@ -1,16 +1,34 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, type ReactNode } from 'react'
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import type { SharedValue } from 'react-native-reanimated'
-import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet'
+import BottomSheet, { BottomSheetFlatList, type BottomSheetBackgroundProps } from '@gorhom/bottom-sheet'
+import { BlurView } from 'expo-blur'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { NearbySheetSpotCard } from '@/components/nearby/NearbySheetSpotCard'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import { colors } from '@/constants/colors'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 
 /** ハンドル＋ジャンル行＋× が視認できる折りたたみ高さ（タブバー上） */
 const PEEK_HEADER_H = 82
+
+/** お散歩アラート等と同じクリアなグレーガラスの下地 */
+function SheetBackground({ style }: BottomSheetBackgroundProps) {
+  return (
+    <View style={[style, styles.sheetBg]}>
+      {Platform.OS === 'ios' ? (
+        <BlurView
+          intensity={GOOGLE_HOME.blurIntensity}
+          tint={GOOGLE_HOME.blurTint}
+          style={styles.sheetBgFill}
+        />
+      ) : null}
+      <View style={styles.sheetBgTint} />
+    </View>
+  )
+}
 
 export type NearbySheetTab = 'score' | 'like' | 'visited'
 
@@ -156,7 +174,7 @@ export const NearbyBottomSheet = forwardRef<NearbySheetHandle, NearbyBottomSheet
           accessibilityRole="button"
           accessibilityLabel="リストを閉じる"
         >
-          <Ionicons name="close" size={22} color={colors.textPrimary} />
+          <Ionicons name="close" size={22} color={GOOGLE_HOME.textPrimary} />
         </TouchableOpacity>
       </View>
     </View>
@@ -182,7 +200,7 @@ export const NearbyBottomSheet = forwardRef<NearbySheetHandle, NearbyBottomSheet
       enablePanDownToClose={false}
       animatedIndex={animatedIndex}
       style={styles.sheetFill}
-      backgroundStyle={styles.sheetBg}
+      backgroundComponent={SheetBackground}
       handleIndicatorStyle={styles.handle}
       onChange={handleSheetChange}
     >
@@ -220,44 +238,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheetBg: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.panelBorder,
   },
-  handle: { backgroundColor: '#ccc', width: 40 },
+  sheetBgFill: { ...StyleSheet.absoluteFillObject },
+  sheetBgTint: { ...StyleSheet.absoluteFillObject, backgroundColor: GOOGLE_HOME.panelBg },
+  handle: { backgroundColor: 'rgba(255,255,255,0.45)', width: 40 },
   sheetHead: { paddingHorizontal: 16, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: GOOGLE_HOME.listGenreBg,
+    borderWidth: 1,
+    borderColor: GOOGLE_HOME.listGenreBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerText: { flex: 1, gap: 2 },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
-  headerCount: { fontSize: 13, fontWeight: '600', color: '#888' },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: GOOGLE_HOME.textPrimary },
+  headerCount: { fontSize: 13, fontWeight: '600', color: GOOGLE_HOME.textSecondary },
   closeBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   listContent: { paddingHorizontal: 16, paddingBottom: 24 },
   empty: { alignItems: 'center', paddingVertical: 32, gap: 8, paddingHorizontal: 16 },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  emptyHint: { fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: 15, fontWeight: '700', color: GOOGLE_HOME.textPrimary },
+  emptyHint: { fontSize: 13, color: GOOGLE_HOME.textSecondary, textAlign: 'center', lineHeight: 20 },
   discoverBtn: {
     marginTop: 12,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: colors.textPrimary,
+    backgroundColor: colors.primary,
   },
   discoverBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
 })

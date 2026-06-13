@@ -9,15 +9,16 @@
     "userInterfaceStyle": "light",
     "scheme": "wanspot",
     "splash": {
-      "image": "./assets/images/wanspot_icon_orange.png",
-      "resizeMode": "contain",
       "backgroundColor": "#FF7E5F"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.wanspot.native",
-      "buildNumber": "96",
+      "buildNumber": "97",
       "usesAppleSignIn": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyB-uH0kWeDvbOyGVyEkO5zttWg7TE6nBdg"
+      },
       "entitlements": {
         "com.apple.developer.applesignin": [
           "Default"
