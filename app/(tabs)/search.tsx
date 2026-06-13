@@ -136,6 +136,13 @@ const IconThumbUp = ({ fill }: { fill: string }) => (
     <Path d="M512,216.906c-0.031-29.313-23.781-53.078-53.094-53.094h-75.891c-3.531,0-43.578,0-47.219,0c-6.953,0.063-13.328,1.094-17.969,1.031c-1.859,0-3.328-0.156-4.188-0.344L313,164.313l-0.156-0.469c-0.141-0.609-0.281-1.625-0.281-3.094c0-0.906,0.141-2.188,0.25-3.438l30.281-74.875c2.906-7.188,4.281-14.656,4.281-21.969c0.031-23.188-13.844-45.156-36.656-54.406c-7.156-2.891-14.641-4.281-21.984-4.281c-23.203-0.016-45.141,13.875-54.391,36.672l-0.047,0.078l-51.359,129.313h0.031c-3.438,8.063-6.203,15.625-8.906,22.156c-4.078,10.031-8.063,17.25-12.766,21.438c-2.359,2.125-4.922,3.719-8.484,4.969c-3.531,1.219-8.172,2.047-14.391,2.047c-3.781-0.016-7.375,0.422-10.891,1.078H44.5c-24.594,0-44.5,19.922-44.5,44.5v201.703c0,24.578,19.906,44.484,44.5,44.484h61.578c13.641,0,24.719-11.063,24.719-24.719v-20.484c4.328,2.531,8.891,4.828,13.797,6.672c17.156,6.5,37.531,9.219,62.063,9.219h191.25c29.313,0,53.094-23.719,53.094-53.047c0-6.891-1.406-13.453-3.828-19.453c21.156-7,36.453-26.875,36.453-50.375c0.016-9.594-2.688-18.547-7.141-26.25c6.422-5.25,10.781-12.156,13.266-19.375c2.719-7.75,3.656-15.906,3.656-24.203c0-5.141-1.094-10.141-2.969-15.016c-1.375-3.469-3.172-6.891-5.375-10.125C501.125,253.938,511.984,236.703,512,216.906z" />
   </Svg>
 )
+/** フック型の戻る矢印（AIモード解除） */
+const IconBackHook = ({ color = GOOGLE_HOME.textPrimary }: { color?: string }) => (
+  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M9 14 4 9l5-5" />
+    <Path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+  </Svg>
+)
 /** 炎は絵文字と同じくらいの視認性のシルエット。絵文字は端末により多色のままになり `color` が効かないため、他タブと同じ #fff / #888 を SVG で統一 */
 // (trend feature removed)
 
@@ -731,6 +738,11 @@ function SearchTab() {
   /** 「AIプラン」チップ選択時は AiPlanTab を全画面オーバーレイで表示（挙動は従来のまま） */
   const showAiPlan = !searched && discoverMode === 'ai_plan'
 
+  const exitDiscoverMode = useCallback(() => {
+    Keyboard.dismiss()
+    setDiscoverMode('articles')
+  }, [])
+
   const iconMuted = GOOGLE_HOME.textMuted
   const iconActive = GOOGLE_HOME.textPrimary
   const aiIconOff = 'rgba(255,255,255,0.62)'
@@ -763,9 +775,9 @@ function SearchTab() {
       >
         {/* ヘッダーはコンテンツと一緒に上へ流れる（固定しない） */}
         <View onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}>
-        {!searched ? <SearchHomeHeader /> : <View style={{ paddingTop: insets.top + 8 }} />}
-        <View style={[styles.searchHeader, searched && styles.searchHeaderCompact]}>
-          <View style={styles.searchRow}>
+          {!searched ? <SearchHomeHeader /> : <View style={{ paddingTop: insets.top + 8 }} />}
+          <View style={[styles.searchHeader, searched && styles.searchHeaderCompact]}>
+            <View style={styles.searchRow}>
             <GlassSearchShell focused={searchFocused} variant="google">
               <IconSearch color={iconMuted} />
               <TextInput
@@ -834,34 +846,74 @@ function SearchTab() {
                   ))}
                 </View>
               </ScrollView>
-              {/* Google アプリ風: 検索バー直下の2つのモードピル（再タップで解除） */}
+              {/* Google アプリ風: 2モードピル — 選択中のみピル右端に Back */}
               <View style={styles.aiPillRow}>
-                <PressableScale
-                  style={[styles.aiPill, discoverMode === 'ai_plan' && styles.aiPillOn]}
-                  onPress={() => {
-                    Keyboard.dismiss()
-                    setDiscoverMode((prev) => (prev === 'ai_plan' ? 'articles' : 'ai_plan'))
-                  }}
-                  accessibilityLabel="AIプラン"
-                >
-                  <IconAiPlan fill={discoverMode === 'ai_plan' ? aiIconOn : aiIconOff} />
-                  <Text style={[styles.aiPillTxt, discoverMode === 'ai_plan' && styles.aiPillTxtOn]}>AIプラン</Text>
-                </PressableScale>
-                <PressableScale
-                  style={[styles.aiPill, discoverMode === 'ai' && styles.aiPillOn]}
-                  onPress={() => {
-                    Keyboard.dismiss()
-                    setDiscoverMode((prev) => (prev === 'ai' ? 'articles' : 'ai'))
-                  }}
-                  accessibilityLabel="AIレコメンド"
-                >
-                  <IconThumbUp fill={discoverMode === 'ai' ? aiIconOn : aiIconOff} />
-                  <Text style={[styles.aiPillTxt, discoverMode === 'ai' && styles.aiPillTxtOn]}>AIレコメンド</Text>
-                </PressableScale>
+                <View style={styles.aiPillSlot}>
+                  {discoverMode === 'ai_plan' ? (
+                    <View style={[styles.aiPill, styles.aiPillOn]}>
+                      <View style={styles.aiPillMain}>
+                        <IconAiPlan fill={aiIconOn} />
+                        <Text style={[styles.aiPillTxt, styles.aiPillTxtOn]}>AIプラン</Text>
+                      </View>
+                      <PressableScale
+                        style={styles.aiPillBack}
+                        onPress={exitDiscoverMode}
+                        accessibilityLabel="まとめ記事に戻る"
+                      >
+                        <IconBackHook />
+                      </PressableScale>
+                    </View>
+                  ) : (
+                    <PressableScale
+                      style={styles.aiPill}
+                      onPress={() => {
+                        Keyboard.dismiss()
+                        setDiscoverMode('ai_plan')
+                      }}
+                      accessibilityLabel="AIプラン"
+                    >
+                      <IconAiPlan fill={aiIconOff} />
+                      <Text style={styles.aiPillTxt}>AIプラン</Text>
+                    </PressableScale>
+                  )}
+                </View>
+                <View style={styles.aiPillSlot}>
+                  {discoverMode === 'ai' ? (
+                    <View style={[styles.aiPill, styles.aiPillOn]}>
+                      <View style={styles.aiPillMain}>
+                        <IconThumbUp fill={aiIconOn} />
+                        <Text style={[styles.aiPillTxt, styles.aiPillTxtOn]} numberOfLines={1}>
+                          AIレコメンド
+                        </Text>
+                      </View>
+                      <PressableScale
+                        style={styles.aiPillBack}
+                        onPress={exitDiscoverMode}
+                        accessibilityLabel="まとめ記事に戻る"
+                      >
+                        <IconBackHook />
+                      </PressableScale>
+                    </View>
+                  ) : (
+                    <PressableScale
+                      style={styles.aiPill}
+                      onPress={() => {
+                        Keyboard.dismiss()
+                        setDiscoverMode('ai')
+                      }}
+                      accessibilityLabel="AIレコメンド"
+                    >
+                      <IconThumbUp fill={aiIconOff} />
+                      <Text style={styles.aiPillTxt} numberOfLines={1}>
+                        AIレコメンド
+                      </Text>
+                    </PressableScale>
+                  )}
+                </View>
               </View>
             </>
           ) : null}
-        </View>
+          </View>
         </View>
 
         {!showAiPlan ? (
@@ -1087,7 +1139,7 @@ const styles = StyleSheet.create({
   searchHeader: {
     paddingHorizontal: GOOGLE_HOME.padH,
     paddingTop: 4,
-    paddingBottom: 12,
+    paddingBottom: 0,
     backgroundColor: 'transparent',
   },
   searchHeaderCompact: {
@@ -1107,9 +1159,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: GOOGLE_HOME.searchActionBg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: GOOGLE_HOME.searchActionBorder,
   },
   searchGoTxt: { fontSize: 13, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
   kbDismissBar: {
@@ -1134,27 +1186,62 @@ const styles = StyleSheet.create({
   sortBtnTxt: { fontSize: 12, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
   aiPillRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 14,
-    marginBottom: 4,
+    alignItems: 'stretch',
+    alignSelf: 'center',
+    width: '100%',
+    gap: 8,
+    marginTop: 12,
+    marginBottom: 0,
+    paddingBottom: 10,
+  },
+  /** PressableScale は外側 Pressable に flex が効かないためスロットで等幅化 */
+  aiPillSlot: {
+    flex: 1,
+    minWidth: 0,
   },
   aiPill: {
-    flex: 1,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 13,
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     borderRadius: GOOGLE_HOME.radiusPill,
     backgroundColor: GOOGLE_HOME.pillBg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: GOOGLE_HOME.pillBorder,
   },
+  aiPillMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minWidth: 0,
+  },
+  aiPillBack: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 34,
+    height: 34,
+    marginLeft: 4,
+    borderRadius: 17,
+    backgroundColor: GOOGLE_HOME.searchActionBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.searchActionBorder,
+  },
   aiPillOn: {
     backgroundColor: GOOGLE_HOME.pillActiveBg,
     borderColor: GOOGLE_HOME.pillActiveBorder,
   },
-  aiPillTxt: { fontSize: 14, fontWeight: '500', letterSpacing: -0.2, color: GOOGLE_HOME.textSecondary },
+  aiPillTxt: {
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: -0.15,
+    color: GOOGLE_HOME.textSecondary,
+    flexShrink: 1,
+  },
   aiPillTxtOn: { color: GOOGLE_HOME.textPrimary, fontWeight: '600' },
   middleCards: { gap: GOOGLE_HOME.gapCard, marginBottom: GOOGLE_HOME.gapSection },
   feedHeader: {
@@ -1176,13 +1263,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: GOOGLE_HOME.radiusPill,
-    backgroundColor: GOOGLE_HOME.chipBg,
+    backgroundColor: GOOGLE_HOME.searchActionBg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: GOOGLE_HOME.chipBorder,
+    borderColor: GOOGLE_HOME.searchActionBorder,
     marginRight: 8,
   },
-  sugTxt: { fontSize: 13, fontWeight: '500', color: GOOGLE_HOME.textSecondary },
-  results: { paddingHorizontal: GOOGLE_HOME.padH, paddingTop: 4, gap: GOOGLE_HOME.gapCard },
+  sugTxt: { fontSize: 13, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
+  results: { paddingHorizontal: GOOGLE_HOME.padH, paddingTop: 8, gap: GOOGLE_HOME.gapCard },
   discLabel: { fontSize: 13, fontWeight: '600', color: GOOGLE_HOME.textSecondary, marginBottom: 6 },
   discSub: { fontSize: 12, fontWeight: '400', color: GOOGLE_HOME.textMuted, marginTop: 2, marginBottom: 4 },
   aiGate: { alignItems: 'center', paddingVertical: 36 },

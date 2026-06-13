@@ -21,6 +21,7 @@ import { SafeRemoteImage } from '@/components/common/SafeRemoteImage'
 import { VlogProgressCard } from '@/components/album/VlogProgressCard'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
 import { buildVlogRenderPayloadAsync } from '@/lib/vlog/build-payload'
 import {
@@ -620,30 +621,30 @@ const styles = StyleSheet.create({
   introTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: GOOGLE_HOME.textPrimary,
     lineHeight: 26,
   },
   introSub: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: GOOGLE_HOME.textSecondary,
     lineHeight: 18,
   },
   emptyCard: {
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.surface,
-    borderRadius: 18,
+    backgroundColor: GOOGLE_HOME.panelBg,
+    borderRadius: GOOGLE_HOME.radiusPanel,
     paddingVertical: 24,
     paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.panelBorder,
   },
-  emptyTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: GOOGLE_HOME.textPrimary },
   emptySub: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: GOOGLE_HOME.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },

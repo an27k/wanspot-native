@@ -6,10 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ReviewAlbumTimeline } from '@/components/album/ReviewAlbumTimeline'
 import { ReviewTutorialModal } from '@/components/album/ReviewTutorialModal'
 import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
+import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
 import { DogIdentityProfile } from '@/components/dog/DogIdentityProfile'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { RunningDog } from '@/components/DogStates'
-import { colors } from '@/constants/colors'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { track } from '@/lib/analytics'
@@ -79,8 +80,9 @@ export default function ReviewAlbumTab() {
         void loadAlbum()
       }}
     >
-      <View style={styles.root} key={boundaryKey}>
+      <GoogleHomeBackground key={boundaryKey}>
         <Animated.ScrollView
+          style={styles.root}
           onScroll={tabBarScrollHandler}
           scrollEventThrottle={16}
           contentContainerStyle={{ paddingBottom: padBottom }}
@@ -112,18 +114,18 @@ export default function ReviewAlbumTab() {
           />
         </Animated.ScrollView>
         <ReviewTutorialModal visible={tutorialOpen} onClose={() => setTutorialOpen(false)} dogName={dog?.name} />
-      </View>
+      </GoogleHomeBackground>
     </ScreenErrorBoundary>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.paper },
+  root: { flex: 1, backgroundColor: 'transparent' },
   dogLoad: { paddingVertical: 32, alignItems: 'center' },
   noDog: {
     marginTop: 16,
     fontSize: 13,
-    color: colors.textMuted,
+    color: GOOGLE_HOME.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 24,
   },

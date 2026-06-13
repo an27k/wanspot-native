@@ -49,7 +49,7 @@ export function GlassSearchShell({ children, focused, variant = 'light' }: Props
           [0, 1],
           [GOOGLE_HOME.searchBorder, GOOGLE_HOME.pillActiveBorder]
         ),
-        backgroundColor: `rgba(16,14,13,${0.52 + focusSv.value * 0.12})`,
+        backgroundColor: `rgba(8,7,6,${0.76 + focusSv.value * 0.06})`,
       }
     }
     return {

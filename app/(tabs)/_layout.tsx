@@ -62,6 +62,8 @@ export default function TabsLayout() {
         options={{
           title: 'レビュー',
           freezeOnBlur: true,
+          /** レビュータブも検索と同じグラデ背景を全面に見せる */
+          sceneStyle: { backgroundColor: 'transparent' },
           tabBarIcon: ({ color, focused }) => (
             <AlbumTabIcon color={color} size={focused ? 26 : 24} />
           ),

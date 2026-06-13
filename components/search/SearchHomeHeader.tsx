@@ -1,18 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Logo } from '@/components/Logo'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 
-/** Google Chrome 新規タブ風の中央ロゴヘッダー */
+/** Google Chrome 新規タブ風の中央ロゴヘッダー（テキストのみ） */
 export function SearchHomeHeader() {
   const insets = useSafeAreaInsets()
 
   return (
     <View style={[styles.wrap, { paddingTop: insets.top + 10 }]}>
-      <View style={styles.brand}>
-        <Logo size={34} />
-        <Text style={styles.brandText}>wanspot</Text>
-      </View>
+      <Text style={styles.brandText}>wanspot</Text>
     </View>
   )
 }
@@ -20,18 +16,15 @@ export function SearchHomeHeader() {
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
-    paddingBottom: 18,
+    justifyContent: 'center',
+    paddingBottom: 20,
     paddingHorizontal: GOOGLE_HOME.padH,
   },
-  brand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
   brandText: {
-    fontSize: 26,
+    fontSize: 44,
     fontWeight: '500',
-    letterSpacing: -0.6,
+    letterSpacing: -1.2,
     color: GOOGLE_HOME.textPrimary,
+    textAlign: 'center',
   },
 })

@@ -14,6 +14,7 @@ import {
   splitYmdToParts,
 } from '@/components/OwnerBirthdayPickers'
 import { colors } from '@/constants/colors'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import {
   calcDogAge,
   DOG_SIZE_LABEL,
@@ -170,7 +171,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
           hitSlop={12}
           accessibilityLabel="愛犬プロフィールを編集"
         >
-          <IconEditSmall color={isAlbum ? colors.textSecondary : colors.textMuted} />
+          <IconEditSmall color={isAlbum ? GOOGLE_HOME.textPrimary : colors.textMuted} />
         </Pressable>
       ) : null}
 
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 0,
     marginBottom: 4,
-    backgroundColor: colors.paper,
+    backgroundColor: 'transparent',
   },
   editBtn: { position: 'absolute', top: 8, right: 16, zIndex: 10, padding: 8 },
   editBtnAlbum: { right: 16 },
@@ -396,7 +397,7 @@ const styles = StyleSheet.create({
   photoRemoveBtn: { marginTop: 8, paddingVertical: 6 },
   photoRemoveTxt: { fontSize: 13, fontWeight: '700', color: '#E84335' },
   name: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  nameAlbum: { fontSize: 28, fontWeight: '800', color: colors.textPrimary },
+  nameAlbum: { fontSize: 28, fontWeight: '800', color: GOOGLE_HOME.textPrimary },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -425,10 +426,10 @@ const styles = StyleSheet.create({
   },
   metaPillTxt: { fontSize: 12, fontWeight: '700', color: colors.text },
   metaPillAlbum: {
-    backgroundColor: colors.tintWeak,
-    borderColor: colors.border,
+    backgroundColor: GOOGLE_HOME.panelBg,
+    borderColor: GOOGLE_HOME.panelBorder,
   },
-  metaPillTxtAlbum: { color: colors.pillText },
+  metaPillTxtAlbum: { color: GOOGLE_HOME.textSecondary, fontWeight: '600' },
   editFields: { alignSelf: 'stretch', width: '100%', marginTop: 12 },
   textInput: {
     backgroundColor: colors.background,
