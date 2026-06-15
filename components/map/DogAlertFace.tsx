@@ -5,7 +5,7 @@ import type { WalkAlertKey } from '@/lib/weather/walk-alert'
 export function DogAlertFace({
   size = 40,
   level = 'comfortable',
-  ringColor = '#34A853',
+  ringColor = '#3FCB97',
   tempC,
 }: {
   size?: number

@@ -237,8 +237,9 @@ export async function rankArticlesFeed<T extends ArticleForFeed>({
   const dayKey = new Date(nowMs).toISOString().slice(0, 10)
   const tagsKey = [...walkAreaTags].sort().join('|') || 'notags'
 
-  const { data: authData } = await supabase.auth.getUser()
-  const userId = authData?.user?.id as string | undefined
+  // getUser() はネットワーク検証が走るため、ローカル保存のセッションを使う（並べ替え用途には十分）
+  const { data: sessionData } = await supabase.auth.getSession()
+  const userId = sessionData?.session?.user?.id as string | undefined
 
   const allSpotRefs = uniqStrings(articles.flatMap((a) => extractSpotIdsFromArticle(a)))
   const uuidRefs = allSpotRefs.filter(isUuid)
@@ -249,22 +250,18 @@ export async function rankArticlesFeed<T extends ArticleForFeed>({
   const spotRows: SpotRow[] = []
 
   const SELECT = 'id, place_id, lat, lng, municipality, prefecture'
-  for (const chunk of chunkArray(uuidRefs, 200)) {
-    const { data } = await supabase.from('spots').select(SELECT).in('id', chunk)
+  // id / place_id 双方のチャンクを並列取得
+  const spotQueries = [
+    ...chunkArray(uuidRefs, 200).map((chunk) => supabase.from('spots').select(SELECT).in('id', chunk)),
+    ...chunkArray(placeRefs, 200).map((chunk) => supabase.from('spots').select(SELECT).in('place_id', chunk)),
+  ]
+  const spotResults = await Promise.all(spotQueries)
+  for (const { data } of spotResults) {
     for (const r of (data ?? []) as SpotRow[]) {
-      if (!r?.id) continue
+      if (!r?.id || spotsById.has(r.id)) continue
       spotRows.push(r)
       spotsById.set(r.id, r)
       if (r.place_id) spotsByPlaceId.set(r.place_id, r)
-    }
-  }
-  for (const chunk of chunkArray(placeRefs, 200)) {
-    const { data } = await supabase.from('spots').select(SELECT).in('place_id', chunk)
-    for (const r of (data ?? []) as SpotRow[]) {
-      if (!r?.place_id) continue
-      spotRows.push(r)
-      spotsById.set(r.id, r)
-      spotsByPlaceId.set(r.place_id, r)
     }
   }
 
@@ -274,12 +271,18 @@ export async function rankArticlesFeed<T extends ArticleForFeed>({
 
   if (userId && articleSpotIdSet.size > 0) {
     const articleSpotIds = [...articleSpotIdSet]
-    for (const chunk of chunkArray(articleSpotIds, 300)) {
-      const { data: likedRows } = await supabase
-        .from('spot_likes')
-        .select('spot_id, created_at')
-        .eq('user_id', userId)
-        .in('spot_id', chunk)
+    // いいね・チェックインのチャンクを全て並列取得
+    const likeQueries = chunkArray(articleSpotIds, 300).map((chunk) =>
+      supabase.from('spot_likes').select('spot_id, created_at').eq('user_id', userId).in('spot_id', chunk)
+    )
+    const checkQueries = chunkArray(articleSpotIds, 300).map((chunk) =>
+      supabase.from('check_ins').select('spot_id, created_at').eq('user_id', userId).in('spot_id', chunk)
+    )
+    const [likeResults, checkResults] = await Promise.all([
+      Promise.all(likeQueries),
+      Promise.all(checkQueries),
+    ])
+    for (const { data: likedRows } of likeResults) {
       for (const row of likedRows ?? []) {
         const sid = (row as { spot_id?: string }).spot_id
         const createdAt = (row as { created_at?: string }).created_at
@@ -288,12 +291,7 @@ export async function rankArticlesFeed<T extends ArticleForFeed>({
         if (!prev || prev < createdAt) likedCreatedAtBySpotId.set(sid, createdAt)
       }
     }
-    for (const chunk of chunkArray(articleSpotIds, 300)) {
-      const { data: checkedRows } = await supabase
-        .from('check_ins')
-        .select('spot_id, created_at')
-        .eq('user_id', userId)
-        .in('spot_id', chunk)
+    for (const { data: checkedRows } of checkResults) {
       for (const row of checkedRows ?? []) {
         const sid = (row as { spot_id?: string }).spot_id
         const createdAt = (row as { created_at?: string }).created_at

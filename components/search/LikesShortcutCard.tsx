@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { MAP_LIKE_COLOR } from '@/lib/nearby/constants'
 import { supabase } from '@/lib/supabase'
 import { resolveSpotPhotoUri } from '@/lib/wanspot-api'
 
@@ -69,7 +70,7 @@ export function LikesShortcutCard() {
     <GoogleGlassPanel onPress={() => router.push('/likes')} style={styles.shell}>
       <View style={styles.row}>
         <View style={styles.heartWrap}>
-          <Ionicons name="heart" size={20} color="#FF8A7A" />
+          <Ionicons name="heart" size={20} color={MAP_LIKE_COLOR} />
         </View>
         <View style={styles.bodyCol}>
           <Text style={styles.title}>いいねしたスポット</Text>
@@ -110,7 +111,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: 'rgba(255,138,122,0.18)',
+    backgroundColor: 'rgba(250,60,76,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
   },

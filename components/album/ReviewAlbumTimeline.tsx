@@ -344,7 +344,7 @@ function MemoryComposerModal({
         </View>
 
         <ScrollView contentContainerStyle={styles.composerBody} keyboardShouldPersistTaps="handled">
-          <Text style={styles.composerLead}>{dogName}との思い出をのこそう🐾</Text>
+          <Text style={styles.composerLead}>{dogName}との思い出をのこそう</Text>
           {towardVlog > 0 ? (
             <Text style={styles.composerHint}>写真・動画あと{towardVlog}枚でVLOGの1スポット分</Text>
           ) : (
@@ -552,7 +552,7 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
         <View style={styles.intro}>
           <Text style={styles.introTitle}>{displayDogName}のVLOGを作ろう！</Text>
           <Text style={styles.introSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-            5スポット・各2枚以上の思い出で今月のVLOGが完成🐾
+            5スポット・各2枚以上の思い出で今月のVLOGが完成
           </Text>
         </View>
       ) : null}
@@ -696,39 +696,39 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: '#4A4A50',
-    backgroundColor: 'rgba(22,20,26,0.35)',
+    borderColor: 'rgba(60,60,67,0.24)',
+    backgroundColor: 'rgba(255,255,255,0.94)',
     paddingHorizontal: 10,
   },
   tileEmptyIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.primary,
+    backgroundColor: '#8E8E93',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.12,
     shadowRadius: 4,
     elevation: 3,
   },
-  tileEmptyTxt: { fontSize: 13, fontWeight: '800', color: GOOGLE_HOME.textPrimary },
+  tileEmptyTxt: { fontSize: 13, fontWeight: '800', color: '#2A2522' },
   tileEmptySub: {
     fontSize: 11,
     fontWeight: '600',
-    color: GOOGLE_HOME.textSecondary,
+    color: '#6E6E73',
     textAlign: 'center',
   },
   tileEmptyBadge: {
     marginTop: 4,
-    backgroundColor: '#fff',
+    backgroundColor: '#F1F1F3',
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  tileEmptyBadgeTxt: { fontSize: 10, fontWeight: '700', color: colors.pillText },
+  tileEmptyBadgeTxt: { fontSize: 10, fontWeight: '700', color: '#5A5A5F' },
   tileImg: { ...StyleSheet.absoluteFillObject },
   tileGrad: {
     position: 'absolute',

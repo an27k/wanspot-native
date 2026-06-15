@@ -22,54 +22,58 @@ export type WalkAlertLevel = {
   advice: string
 }
 
-/** 寒い→暑い の順（スケール表示もこの順） */
+/**
+ * 寒い→暑い の順（スケール表示もこの順）。
+ * 配色はアプリのグラデ（vlog: ミント/ラベンダー/ピンク、sunset: ピンク/コーラル/ピーチ）に
+ * 調和する中間トーンに統一。原色を避けつつ、白背景上のテキストでも読める明度を確保。
+ */
 export const WALK_ALERT_LEVELS: WalkAlertLevel[] = [
   {
     key: 'numb',
     label: 'じんじん',
-    color: '#8e5bd0',
+    color: '#8A8FE0',
     rangeLabel: '0℃以下',
     advice: '足先が凍えるほどの寒さ。お散歩は短時間にして、肉球の保護や防寒を。',
   },
   {
     key: 'sting',
     label: 'ひりひり',
-    color: '#4a90d9',
+    color: '#6AA7E5',
     rangeLabel: '1〜7℃',
     advice: 'かなり冷え込みます。ワンちゃんの様子を見ながら短めのお散歩を。',
   },
   {
     key: 'chilly',
     label: 'ひんやり',
-    color: '#3fb6d6',
+    color: '#45C2C9',
     rangeLabel: '8〜15℃',
     advice: 'ひんやり快適。シニアや子犬には防寒があると安心です。',
   },
   {
     key: 'comfortable',
     label: '快適',
-    color: '#34A853',
+    color: '#3FCB97',
     rangeLabel: '16〜30℃',
     advice: 'お散歩日和。たっぷり楽しめます。水分はこまめに。',
   },
   {
     key: 'caution',
     label: '警戒',
-    color: '#F5A300',
+    color: '#F4A74A',
     rangeLabel: '31〜39℃',
     advice: '暑さに注意。アスファルトの熱に気をつけ、水分補給を忘れずに。',
   },
   {
     key: 'danger',
     label: '危険',
-    color: '#EF7D22',
+    color: '#FB7E5D',
     rangeLabel: '40〜45℃',
     advice: '熱中症の危険大。日中は避け、早朝・夜の涼しい時間にお散歩を。',
   },
   {
     key: 'stop',
     label: '中止',
-    color: '#E84335',
+    color: '#F65A78',
     rangeLabel: '46℃以上',
     advice: 'お散歩は中止を。室内で涼しく過ごしましょう。',
   },
