@@ -89,7 +89,7 @@ function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-const ARTICLES_CACHE_KEY = 'search:articles:v2'
+const ARTICLES_CACHE_KEY = 'search:articles:v3'
 
 const IconSearch = ({ color = GOOGLE_HOME.textMuted }: { color?: string }) => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round">
@@ -543,10 +543,11 @@ function SearchTab() {
               const { data } = await supabase
                 .from('articles')
                 .select(
-                  'id, title, summary, slug, category, theme, keywords, image_url, created_at, published_at, blocks, spot_links'
+                  'id, title, summary, slug, category, theme, keywords, image_url, created_at, published_at, spot_links'
                 )
                 .eq('status', 'published')
                 .order('published_at', { ascending: false, nullsFirst: false })
+                .limit(40)
               return (data ?? []) as ArticleRow[]
             },
             { force }
