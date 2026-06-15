@@ -220,13 +220,11 @@ function isTextBlockSectionTitle(content: string): boolean {
 }
 
 function ArticleSpotCard({
-  description,
   row,
   enrichment,
   onOpen,
   photoRecyclingKey,
 }: {
-  description: string
   row: SpotRow
   enrichment: PlaceCardEnrichment | undefined
   onOpen: () => void
@@ -266,7 +264,6 @@ function ArticleSpotCard({
         </View>
         <Text style={styles.spotName}>{row.name}</Text>
         <Text style={styles.spotAddr}>{address}</Text>
-        {description ? <Text style={styles.spotDesc}>{description}</Text> : null}
         <Pressable style={styles.spotCta} onPress={onOpen}>
           <Text style={styles.spotCtaTxt}>→ スポットを見る</Text>
         </Pressable>
@@ -309,7 +306,6 @@ function BlockRenderer({
     if (!spotRow) return null
     return (
       <ArticleSpotCard
-        description={block.description}
         row={spotRow}
         enrichment={enrichment}
         onOpen={() => onOpenSpot(spotRow.id)}
@@ -720,7 +716,6 @@ const styles = StyleSheet.create({
   rateMiniTxt: { fontSize: 12, color: '#888' },
   spotName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
   spotAddr: { fontSize: 12, color: '#aaa' },
-  spotDesc: { fontSize: 12, color: '#666', lineHeight: 18, marginTop: 8 },
   spotCta: {
     marginTop: 12,
     paddingVertical: 10,

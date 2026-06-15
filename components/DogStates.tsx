@@ -1,6 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { BrandLoader } from '@/components/common/BrandLoader'
-import { DogFaceMark } from '@/components/common/DogFaceMark'
 import { colors } from '@/constants/colors'
 
 export const RunningDog = ({ label = '読み込み中...', size = 96 }: { label?: string; size?: number }) => (
@@ -18,7 +17,6 @@ export const PowState = ({
   onRetry?: () => void
 }) => (
   <View style={styles.runWrap}>
-    <DogFaceMark size={40} muted />
     <Text style={styles.powLabel}>{label}</Text>
     {onRetry ? (
       <TouchableOpacity style={styles.retryBtn} onPress={onRetry} activeOpacity={0.85}>
