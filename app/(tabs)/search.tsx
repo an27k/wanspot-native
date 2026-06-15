@@ -577,6 +577,9 @@ function SearchTab() {
       return
     }
 
+    // 並べ替え（複数DBクエリ）を待たず、まず公開順で即表示して empty 表示を防ぐ
+    setArticlesList((prev) => (prev.length > 0 ? prev : articlesRaw))
+
     let cancelled = false
     void (async () => {
       const geo =
@@ -996,21 +999,20 @@ function SearchTab() {
                     <Text style={styles.feedHeaderTxt}>ワンスポまとめ</Text>
                   </View>
 
-                  {articlesLoading && articlesList.length === 0 ? (
+                  {articlesLoading && articlesRaw.length === 0 ? (
                     <>
                       <ArticleListSkeleton variant="dark" />
                       <ArticleListSkeleton variant="dark" />
                       <ArticleListSkeleton variant="dark" />
                     </>
                   ) : null}
-                  {articlesFetchError && !articlesLoading && articlesList.length === 0 ? (
+                  {articlesFetchError && !articlesLoading && articlesRaw.length === 0 ? (
                     <PowState label="記事の読み込みに失敗しました" />
                   ) : null}
-                  {!articlesLoading && !articlesFetchError && articlesList.length === 0 ? (
+                  {!articlesLoading && !articlesFetchError && articlesRaw.length === 0 ? (
                     <PowState label="公開中の記事がありません" />
                   ) : null}
-                  {!articlesLoading &&
-                    articlesList.map((article, index) => (
+                  {articlesList.map((article, index) => (
                       <ListEnterItem key={article.id} index={index} animate={articlesListEnter}>
                         <View>
                           <DiscoverFeedCard

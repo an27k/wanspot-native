@@ -290,19 +290,8 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
           <>
             <View style={[styles.nameRow, isAlbum && styles.nameRowAlbum]}>
               <Text style={[styles.name, isAlbum && styles.nameAlbum]}>{dog.name}</Text>
-              {genderSymbol ? (
-                <Text
-                  style={[
-                    styles.nameGender,
-                    isAlbum && styles.nameGenderAlbum,
-                    dog.gender === 'male' ? styles.symMale : styles.symFemale,
-                  ]}
-                >
-                  {genderSymbol}
-                </Text>
-              ) : null}
             </View>
-            {metaParts.length > 0 ? (
+            {metaParts.length > 0 || genderSymbol ? (
               isAlbum ? (
                 <View style={styles.metaPillRow}>
                   {metaParts.map((part) => (
@@ -310,10 +299,23 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
                       <Text style={[styles.metaPillTxt, styles.metaPillTxtAlbum]}>{part}</Text>
                     </View>
                   ))}
+                  {genderSymbol ? (
+                    <View style={[styles.metaPill, styles.metaPillAlbum]}>
+                      <Text
+                        style={[
+                          styles.metaPillTxt,
+                          styles.metaPillTxtAlbum,
+                          { color: dog.gender === 'male' ? colors.genderMale : colors.genderFemale },
+                        ]}
+                      >
+                        {genderSymbol}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
               ) : (
                 <Text style={styles.meta} numberOfLines={2}>
-                  {metaParts.join(' · ')}
+                  {[...metaParts, genderSymbol].filter(Boolean).join(' · ')}
                 </Text>
               )
             ) : null}
@@ -423,8 +425,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderWidth: 1,
     borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  metaPillTxt: { fontSize: 12, fontWeight: '700', color: colors.text },
+  metaPillTxt: { fontSize: 12, lineHeight: 16, fontWeight: '700', color: colors.text, textAlign: 'center', includeFontPadding: false },
   metaPillAlbum: {
     backgroundColor: GOOGLE_HOME.panelBg,
     borderColor: GOOGLE_HOME.panelBorder,
