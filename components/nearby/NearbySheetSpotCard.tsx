@@ -14,6 +14,7 @@ import { useDogProfile } from '@/components/dog/useDogProfile'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
 import { colors } from '@/constants/colors'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 
 const IconStar = () => (
   <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
@@ -222,11 +223,13 @@ export function NearbySheetSpotCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
-    overflow: 'hidden',
     backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
   },
   cardCompact: { marginBottom: 0 },
   cardPopup: { marginBottom: 0 },
@@ -249,15 +252,23 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
-  cardPhoto: { height: 120, backgroundColor: '#e8e4de' },
+  cardPhoto: {
+    height: 120,
+    backgroundColor: '#e8e4de',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
+  },
   cardImg: { width: '100%', height: '100%' },
   cardBody: { padding: 12, gap: 4 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   spotCat: {
     fontSize: 12,
     fontWeight: '700',
-    backgroundColor: colors.tintStrong,
-    color: colors.textPrimary,
+    backgroundColor: GOOGLE_HOME.listGenreBg,
+    borderWidth: 1,
+    borderColor: GOOGLE_HOME.listGenreBorder,
+    color: GOOGLE_HOME.listGenreText,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
@@ -275,14 +286,14 @@ const styles = StyleSheet.create({
     gap: 5,
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 12,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: GOOGLE_HOME.listActionBg,
     borderWidth: 1,
-    borderColor: '#e8e8e8',
+    borderColor: GOOGLE_HOME.listActionBorder,
   },
   aiBtnIcon: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
-  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888', lineHeight: 16 },
+  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: GOOGLE_HOME.listActionText, lineHeight: 16 },
   aiBox: { marginTop: 8, padding: 12, borderRadius: 12, backgroundColor: '#FFFBEC' },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kw: {

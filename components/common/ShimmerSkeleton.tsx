@@ -8,16 +8,20 @@ import Animated, {
   withTiming,
   cancelAnimation,
 } from 'react-native-reanimated'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { colors } from '@/constants/colors'
+
+type Variant = 'light' | 'dark'
 
 type Props = {
   style?: StyleProp<ViewStyle>
   /** false で shimmer 停止（必ず終端を持つ） */
   active?: boolean
+  variant?: Variant
 }
 
 /** スケルトン用 shimmer。active=false でアニメ停止。 */
-export function ShimmerBlock({ style, active = true }: Props) {
+export function ShimmerBlock({ style, active = true, variant = 'light' }: Props) {
   const progress = useSharedValue(0)
 
   useEffect(() => {
@@ -38,34 +42,38 @@ export function ShimmerBlock({ style, active = true }: Props) {
     opacity: active ? 0.35 + progress.value * 0.45 : 0.25,
   }))
 
+  const isDark = variant === 'dark'
+
   return (
-    <View style={[styles.block, style]}>
-      <Animated.View style={[styles.shimmer, shimmerStyle]} />
+    <View style={[styles.block, isDark && styles.blockDark, style]}>
+      <Animated.View style={[styles.shimmer, isDark && styles.shimmerDark, shimmerStyle]} />
     </View>
   )
 }
 
-export function SearchResultSkeleton() {
+export function SearchResultSkeleton({ variant = 'light' }: { variant?: Variant } = {}) {
+  const isDark = variant === 'dark'
   return (
-    <View style={styles.card}>
-      <ShimmerBlock style={styles.thumb} />
+    <View style={[styles.card, isDark && styles.cardDark]}>
+      <ShimmerBlock variant={variant} style={styles.thumb} />
       <View style={styles.body}>
-        <ShimmerBlock style={styles.lineWide} />
-        <ShimmerBlock style={styles.lineMid} />
-        <ShimmerBlock style={styles.lineShort} />
+        <ShimmerBlock variant={variant} style={styles.lineWide} />
+        <ShimmerBlock variant={variant} style={styles.lineMid} />
+        <ShimmerBlock variant={variant} style={styles.lineShort} />
       </View>
     </View>
   )
 }
 
-export function ArticleListSkeleton() {
+export function ArticleListSkeleton({ variant = 'light' }: { variant?: Variant } = {}) {
+  const isDark = variant === 'dark'
   return (
-    <View style={styles.article}>
-      <ShimmerBlock style={styles.artImg} />
+    <View style={[styles.article, isDark && styles.articleDark]}>
+      <ShimmerBlock variant={variant} style={styles.artImg} />
       <View style={styles.artBody}>
-        <ShimmerBlock style={styles.lineShort} />
-        <ShimmerBlock style={styles.lineWide} />
-        <ShimmerBlock style={styles.lineMid} />
+        <ShimmerBlock variant={variant} style={styles.lineShort} />
+        <ShimmerBlock variant={variant} style={styles.lineWide} />
+        <ShimmerBlock variant={variant} style={styles.lineMid} />
       </View>
     </View>
   )
@@ -77,9 +85,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
+  blockDark: {
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
   shimmer: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#ece8e2',
+  },
+  shimmerDark: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
   card: {
     flexDirection: 'row',
@@ -92,6 +106,15 @@ const styles = StyleSheet.create({
   lineWide: { height: 14, borderRadius: 6, width: '92%' },
   lineMid: { height: 12, borderRadius: 6, width: '72%' },
   lineShort: { height: 12, borderRadius: 6, width: '40%' },
+  cardDark: {
+    backgroundColor: GOOGLE_HOME.panelBg,
+    borderRadius: GOOGLE_HOME.radiusPanel,
+    marginBottom: GOOGLE_HOME.gapCard,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.panelBorder,
+  },
   article: {
     marginHorizontal: 16,
     marginBottom: 12,
@@ -100,6 +123,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  articleDark: {
+    marginHorizontal: 0,
+    marginBottom: GOOGLE_HOME.gapCard,
+    borderRadius: GOOGLE_HOME.radiusPanel,
+    backgroundColor: GOOGLE_HOME.panelBg,
+    borderColor: GOOGLE_HOME.panelBorder,
   },
   artImg: { width: '100%', height: 160 },
   artBody: { padding: 12, gap: 8 },

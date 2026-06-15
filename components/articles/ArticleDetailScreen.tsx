@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Image } from 'expo-image'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import Svg, { Circle, Path, Polygon, Text as SvgTextNode } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -10,7 +10,7 @@ import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
-import { spotPhotoUrl, wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
+import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 import type { PlaceCardEnrichment } from '@/lib/user-spot-list-utils'
 
 type Block =
@@ -154,6 +154,27 @@ type Article = {
 const IconChevron = () => (
   <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
+  </Svg>
+)
+
+const IconShare = () => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
+    <Circle cx={18} cy={5} r={3} />
+    <Circle cx={6} cy={12} r={3} />
+    <Circle cx={18} cy={19} r={3} />
+    <Path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" />
+  </Svg>
+)
+
+const IconX = () => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="#fff">
+    <Path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </Svg>
+)
+
+const IconCopy = () => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
+    <Path d="M9 9h10v10H9zM5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
   </Svg>
 )
 
@@ -313,6 +334,7 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
   const insets = useSafeAreaInsets()
   const [article, setArticle] = useState<Article | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showShareSheet, setShowShareSheet] = useState(false)
   const [spotRowsById, setSpotRowsById] = useState<Record<string, SpotRow>>({})
   const [enrichmentByPlaceId, setEnrichmentByPlaceId] = useState<Record<string, PlaceCardEnrichment>>({})
 
@@ -476,6 +498,24 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
     [router]
   )
 
+  const shareArticle = useCallback(
+    async (platform: string) => {
+      if (!article) return
+      const url = wanspotPublicUrl(`/articles/${article.slug}`)
+      const text = `${article.title}｜ワンちゃんと行けるスポットまとめ🐾 #wanspot`
+      if (platform === 'x') {
+        const u = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
+        await Linking.openURL(u)
+      } else if (platform === 'line') {
+        await Linking.openURL(`https://line.me/R/msg/text/?${encodeURIComponent(`${text}\n${url}`)}`)
+      } else if (platform === 'copy') {
+        await Share.share({ message: `${text}\n${url}` })
+      }
+      setShowShareSheet(false)
+    },
+    [article]
+  )
+
   const bottomPad = TAB_BAR_HEIGHT + insets.bottom + 32
 
   if (loading) {
@@ -513,6 +553,14 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <IconChevron />
             <Text style={styles.backTxt}>戻る</Text>
+          </Pressable>
+          <Pressable
+            style={styles.shareBtn}
+            onPress={() => setShowShareSheet(true)}
+            accessibilityRole="button"
+            accessibilityLabel="記事をシェア"
+          >
+            <IconShare />
           </Pressable>
         </View>
         {article.image_url ? (
@@ -586,6 +634,27 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
           ) : null}
         </View>
       </ScrollView>
+
+      <Modal visible={showShareSheet} transparent animationType="fade" onRequestClose={() => setShowShareSheet(false)}>
+        <Pressable style={styles.shareOverlay} onPress={() => setShowShareSheet(false)}>
+          <Pressable style={styles.shareBox} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.shareTitle}>シェアする</Text>
+            <View style={styles.shareGrid}>
+              <Pressable style={styles.shareX} onPress={() => void shareArticle('x')}>
+                <IconX />
+                <Text style={styles.shareLblW}>X</Text>
+              </Pressable>
+              <Pressable style={styles.shareLine} onPress={() => void shareArticle('line')}>
+                <Text style={styles.shareLblW}>LINE</Text>
+              </Pressable>
+              <Pressable style={styles.shareCopy} onPress={() => void shareArticle('copy')}>
+                <IconCopy />
+                <Text style={styles.shareLbl}>コピー</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   )
 }
@@ -594,9 +663,23 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.paper },
   rootWhite: { flex: 1, backgroundColor: '#fff' },
   empty: { textAlign: 'center', marginTop: 40, color: colors.textMuted },
-  backRow: { paddingHorizontal: 16, paddingBottom: 12 },
+  backRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   backTxt: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  shareBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   hero: { width: '100%', aspectRatio: 16 / 9 },
   pad: { paddingHorizontal: 16 },
   title: { fontSize: 22, fontWeight: '800', color: '#111', marginTop: 8, lineHeight: 30 },
@@ -661,4 +744,20 @@ const styles = StyleSheet.create({
   relatedBtnTxt: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
   relatedNone: { fontSize: 12, color: '#bbb' },
   plQ: { fontSize: 12, color: '#ccc' },
+  shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
+  shareBox: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
+    maxWidth: 340,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  shareTitle: { fontSize: 14, fontWeight: '700', color: '#aaa', textAlign: 'center', marginBottom: 20, letterSpacing: 0.6 },
+  shareGrid: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
+  shareX: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#000' },
+  shareLine: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#06C755' },
+  shareCopy: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#f5f5f5' },
+  shareLbl: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
+  shareLblW: { fontSize: 12, fontWeight: '700', color: '#fff' },
 })

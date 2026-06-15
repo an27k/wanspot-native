@@ -6,19 +6,24 @@ import { GRADIENT_SUNSET, GRADIENT_SUNSET_POINTS } from '@/constants/gradients'
 const RING = 3
 const GAP = 3
 
+/** グレー系（クリアな質感）のリング配色 */
+const GRADIENT_GRAY = ['#D6D9DE', '#A9AEB6', '#7C828B'] as const
+
 type Props = {
   size: number
   children: ReactNode
   /** 5/5 アンロック時 — リングをやや明るく */
   energized?: boolean
+  /** リング配色 */
+  tone?: 'sunset' | 'gray'
 }
 
-/** サンセットの細いリング（グラデ使用箇所の1つ） */
-export function AvatarSunsetRing({ size, children, energized }: Props) {
+/** アバターの細いリング（サンセット or グレー） */
+export function AvatarSunsetRing({ size, children, energized, tone = 'sunset' }: Props) {
   const outer = size + (RING + GAP) * 2
   return (
     <LinearGradient
-      colors={[...GRADIENT_SUNSET]}
+      colors={tone === 'gray' ? [...GRADIENT_GRAY] : [...GRADIENT_SUNSET]}
       start={GRADIENT_SUNSET_POINTS.start}
       end={GRADIENT_SUNSET_POINTS.end}
       style={[

@@ -21,6 +21,7 @@ import { SafeRemoteImage } from '@/components/common/SafeRemoteImage'
 import { VlogProgressCard } from '@/components/album/VlogProgressCard'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
 import { buildVlogRenderPayloadAsync } from '@/lib/vlog/build-payload'
 import {
@@ -620,30 +621,30 @@ const styles = StyleSheet.create({
   introTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: GOOGLE_HOME.textPrimary,
     lineHeight: 26,
   },
   introSub: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: GOOGLE_HOME.textSecondary,
     lineHeight: 18,
   },
   emptyCard: {
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.surface,
-    borderRadius: 18,
+    backgroundColor: GOOGLE_HOME.panelBg,
+    borderRadius: GOOGLE_HOME.radiusPanel,
     paddingVertical: 24,
     paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.panelBorder,
   },
-  emptyTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: GOOGLE_HOME.textPrimary },
   emptySub: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: GOOGLE_HOME.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -685,7 +686,9 @@ const styles = StyleSheet.create({
     height: TILE_H,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: colors.border,
+    backgroundColor: '#26252B',
+    borderWidth: 1,
+    borderColor: '#3A3A3F',
   },
   tileEmpty: {
     alignItems: 'center',
@@ -693,8 +696,8 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: colors.primary,
-    backgroundColor: colors.tintWeak,
+    borderColor: '#4A4A50',
+    backgroundColor: 'rgba(22,20,26,0.35)',
     paddingHorizontal: 10,
   },
   tileEmptyIcon: {
@@ -705,14 +708,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
     elevation: 3,
   },
-  tileEmptyTxt: { fontSize: 13, fontWeight: '800', color: colors.brandDark },
-  tileEmptySub: { fontSize: 11, fontWeight: '600', color: colors.textMuted, textAlign: 'center' },
+  tileEmptyTxt: { fontSize: 13, fontWeight: '800', color: GOOGLE_HOME.textPrimary },
+  tileEmptySub: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: GOOGLE_HOME.textSecondary,
+    textAlign: 'center',
+  },
   tileEmptyBadge: {
     marginTop: 4,
     backgroundColor: '#fff',

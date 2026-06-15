@@ -1,0 +1,27 @@
+---
+description: wanspot Androidローカルビルドの環境・手順・既知の落とし穴
+alwaysApply: true
+---
+
+# Android ローカルビルド環境
+
+## 環境変数
+- node: `~/.nvm/versions/node/v20.20.1/bin` を PATH 先頭に追加
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17`
+- `ANDROID_HOME=$HOME/Library/Android/sdk`
+- expoは非対話モードで実行: `CI=1 npx expo prebuild --platform android --no-install`
+
+## ビルド手順
+1. `npm install`（v96は maps/skia/reanimated/gesture-handler 等が追加されている）
+2. `babel.config.js` に `react-native-reanimated/plugin` が残っているか確認（消えると起動失敗）
+3. `CI=1 npx expo prebuild --platform android --no-install`
+4. `android/local.properties` に `sdk.dir` を書き、`./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a`
+
+## 既知の落とし穴
+- メモリ逼迫でGradle/prebuildがハングしやすい → エミュレータ・GradleDaemon・qemu・Metroを停止してメモリ確保。ビルドはarm64単独で軽量化
+- async-storage v3.0.x は `org.asyncstorage.shared_storage:storage-android` をMaven Centralに公開していない → `plugins/withAsyncStorageLocalRepo.js`（config plugin）でlocal_repoを注入（v3.1+で削除可）
+- AdMobは開発時(`__DEV__`)は常にGoogleテストID。本番Android ID差し替え箇所は `lib/ads/adUnitIds.ts` と `app.json` の `androidAppId`
+- Maps: `app.json` → `android.config.googleMaps.apiKey`。地図が灰色なら「Maps SDK for Android」の有効化が必要
+
+## 検証
+- ADB操作＋スクショ＋`uiautomator dump` で要素座標を特定して操作する

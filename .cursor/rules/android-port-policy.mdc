@@ -1,0 +1,24 @@
+---
+description: wanspot Android対応の作業方針（ブランチ・iOS非干渉・スコープ）
+alwaysApply: true
+---
+
+# wanspot Android対応 方針
+
+## ブランチ・iOS非干渉（最優先）
+- `main` には触れない。Android作業は `android-port` ブランチ（worktree）で行う
+- iOSは審査中（Build 96系）。共有コードの変更は必ず `Platform.OS === 'android'` でゲートし、iOS挙動を1pxも変えない
+- 古いmain UIではなく、常に最新 `feature/v96-map`（Build 96）＋ `wanspot-native` 側WIPに同期してから着手する
+
+## スコープ
+- ゴールは「ローカルで `npx expo run:android` が通り、主要画面が動く」まで
+- 署名(keystore)・Play提出物・本番AdMob ID・本番Mapsキーは後回しでTODO化する
+
+## 進め方の原則
+- 推測せず必ずコードを読む。同一ビルドエラー2回で停止して報告（場当たり的リトライ禁止）
+- 変更後は `npx tsc --noEmit` で型チェックし、iOS非影響根拠（Platformゲート箇所）を報告に含める
+
+## iOS非干渉の実装パターン
+- `app.json`: `android.jsEngine: "hermes"` のみ。iOSはトップレベル `jsc` のまま
+- Apple Sign In は Android で非表示、Google は Web OAuth フォールバック
+- 位置情報は `adb emu geo fix` ＋ Android のみ `getLastKnownPositionAsync` フォールバック
