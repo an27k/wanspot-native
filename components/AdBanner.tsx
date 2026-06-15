@@ -18,6 +18,8 @@ type Props = {
 
 /** 320×50 の標準バナー（一覧に複数挟まないこと） */
 export function AdBannerCard({ adsReady, footer }: Props) {
+  // Android は当面広告を全停止（iOS は従来どおり）。
+  if (Platform.OS === 'android') return null
   return (
     <View style={[styles.card, footer && styles.cardFooter]}>
       <Text style={styles.label}>広告</Text>

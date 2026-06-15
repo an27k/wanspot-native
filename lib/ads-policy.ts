@@ -21,6 +21,9 @@ function parseIOSMajor(version: unknown): number | null {
  */
 export function adsEnabledForDevice(): boolean {
   if (!ADS_ENABLED) return false
+  // Android は当面すべての広告を停止（SDK初期化・ATT・リスト注入・各広告カードを一括オフ）。
+  // iOS は従来どおり。Android で配信を開始する際はこの分岐を外す。
+  if (Platform.OS === 'android') return false
   return true
 }
 
