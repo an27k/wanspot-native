@@ -7,6 +7,7 @@ type BatchDetailEntry = {
   photo_ref?: string | null
   rating?: number | null
   price_level?: number | null
+  price_label?: string | null
   formatted_address?: string | null
   vicinity?: string | null
 }
@@ -72,6 +73,10 @@ function normalizePhotoRef(raw: unknown): string | null {
   return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null
 }
 
+function normalizePriceLabel(raw: unknown): string | null {
+  return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null
+}
+
 async function mergePlacesDetailsFromBatch(spots: UserSpotRow[]): Promise<UserSpotRow[]> {
   if (spots.length === 0) return spots
   const details = await fetchBatchDetailsMerged(spots.map((s) => s.place_id))
@@ -85,7 +90,8 @@ async function mergePlacesDetailsFromBatch(spots: UserSpotRow[]): Promise<UserSp
     const rating =
       typeof detail?.rating === 'number' && Number.isFinite(detail.rating) ? detail.rating : s.rating
     const priceLevel = normalizePriceLevel(detail?.price_level) ?? s.priceLevel
-    return { ...s, address, photoRef, rating, priceLevel }
+    const priceLabel = normalizePriceLabel(detail?.price_label) ?? s.priceLabel
+    return { ...s, address, photoRef, rating, priceLevel, priceLabel }
   })
 }
 
@@ -102,6 +108,7 @@ export type UserSpotRow = {
   photoRef: string | null
   rating: number | null
   priceLevel: number | null
+  priceLabel: string | null
 }
 
 type FetchResult =
@@ -171,6 +178,7 @@ export async function fetchLikedSpotsForUser(
           photoRef: normalizePhotoRef(raw.photo_ref),
           rating: normalizeRating(raw.rating),
           priceLevel: normalizePriceLevel(raw.price_level),
+          priceLabel: normalizePriceLabel(raw.price_label),
         } satisfies UserSpotRow,
       ]
     })
@@ -248,6 +256,7 @@ export async function fetchCheckedInSpotsForUser(
           photoRef: normalizePhotoRef(raw.photo_ref),
           rating: normalizeRating(raw.rating),
           priceLevel: normalizePriceLevel(raw.price_level),
+          priceLabel: normalizePriceLabel(raw.price_label),
         } satisfies UserSpotRow,
       ]
     })

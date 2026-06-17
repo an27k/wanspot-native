@@ -55,6 +55,7 @@ type Spot = {
   lat: number | null
   lng: number | null
   price_level?: number | null
+  price_label?: string | null
   instagram_id?: string | null
   ig_status?: IgStatus | string | null
   ig_last_checked?: string | null
@@ -74,6 +75,7 @@ type DetailJson = {
   user_ratings_total?: number | null
   formatted_address?: string
   price_level?: number | null
+  price_label?: string | null
   vicinity?: string
   reviews?: { text?: string }[]
 }
@@ -102,6 +104,13 @@ function priceLevelFromDetail(d: DetailJson | null): number | null {
   return normalizePriceLevel(o.price_level ?? o.priceLevel)
 }
 
+function priceLabelFromDetail(d: DetailJson | null): string | null {
+  if (!d) return null
+  const o = d as Record<string, unknown>
+  const label = o.price_label ?? o.priceLabel
+  return typeof label === 'string' && label.trim().length > 0 ? label.trim() : null
+}
+
 const IconChevronLeft = () => (
   <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
@@ -125,7 +134,8 @@ const META_STAR_PX = 14
 
 const IconStarSm = ({ filled }: { filled: boolean }) => <IconStar filled={filled} size={META_STAR_PX} />
 
-function PriceLevel({ level }: { level: number | null }) {
+function PriceLevel({ level, label }: { level: number | null; label?: string | null }) {
+  if (label) return <Text style={styles.priceLabel}>{label}</Text>
   if (level === null || level === undefined) {
     return <Text style={styles.priceQ}>?</Text>
   }
@@ -212,6 +222,7 @@ export default function SpotDetailScreen({
   const [googleRating, setGoogleRating] = useState<number | null>(null)
   const [googleReviewCount, setGoogleReviewCount] = useState<number | null>(null)
   const [googlePriceLevel, setGooglePriceLevel] = useState<number | null>(null)
+  const [googlePriceLabel, setGooglePriceLabel] = useState<string | null>(null)
   const [googleAddress, setGoogleAddress] = useState<string | null>(null)
   const [checkedIn, setCheckedIn] = useState(false)
   const [visitRecording, setVisitRecording] = useState(false)
@@ -302,6 +313,7 @@ export default function SpotDetailScreen({
           : null
       if (reviewCount != null) setGoogleReviewCount(reviewCount)
       let priceLvl = priceLevelFromDetail(detailRes) ?? normalizePriceLevel((spotData as Spot).price_level)
+      let priceLbl = priceLabelFromDetail(detailRes) ?? ((spotData as Spot).price_label ?? null)
       if (priceLvl === null && spotData.place_id && (!detailHttp || !detailHttp.ok)) {
         try {
           const br = await wanspotFetch('/api/spots/batch-details', {
@@ -309,9 +321,13 @@ export default function SpotDetailScreen({
             json: { place_ids: [spotData.place_id] },
           })
           if (br.ok) {
-            const bj = (await br.json()) as { details?: Record<string, { price_level?: unknown; user_ratings_total?: unknown }> }
+            const bj = (await br.json()) as { details?: Record<string, { price_level?: unknown; price_label?: unknown; user_ratings_total?: unknown }> }
             const batchDetail = bj.details?.[spotData.place_id]
             priceLvl = normalizePriceLevel(batchDetail?.price_level) ?? priceLvl
+            priceLbl =
+              typeof batchDetail?.price_label === 'string' && batchDetail.price_label.trim().length > 0
+                ? batchDetail.price_label.trim()
+                : priceLbl
             const batchReviewCount = typeof batchDetail?.user_ratings_total === 'number' ? batchDetail.user_ratings_total : null
             if (batchReviewCount != null) setGoogleReviewCount(batchReviewCount)
           }
@@ -320,6 +336,7 @@ export default function SpotDetailScreen({
         }
       }
       setGooglePriceLevel(priceLvl)
+      setGooglePriceLabel(priceLbl)
       setGoogleAddress(detailRes?.formatted_address ?? detailRes?.vicinity ?? null)
       setLoading(false)
 
@@ -725,8 +742,8 @@ export default function SpotDetailScreen({
               <View style={styles.metaStackPrice}>
                 <Text style={[styles.metaLbl, styles.metaLblOverRate]}>価格帯</Text>
                 <View style={styles.rateRow}>
-                  {googlePriceLevel != null ? (
-                    <PriceLevel level={googlePriceLevel} />
+                  {googlePriceLevel != null || googlePriceLabel ? (
+                    <PriceLevel level={googlePriceLevel} label={googlePriceLabel} />
                   ) : (
                     <Text style={styles.rateDash}>—</Text>
                   )}
@@ -999,6 +1016,7 @@ const styles = StyleSheet.create({
   reviewCountTxt: { fontSize: 11, fontWeight: '700', color: colors.textMuted, marginLeft: 2 },
   rateDash: { fontSize: 18, fontWeight: '800', color: '#ccc' },
   priceLevelRow: { flexDirection: 'row', gap: 2, alignItems: 'center', flexShrink: 0 },
+  priceLabel: { fontSize: 12, fontWeight: '800', color: colors.text, lineHeight: 16, textAlign: 'center' },
   priceQ: { fontSize: 14, fontWeight: '800', color: '#ccc', lineHeight: META_STAR_PX },
   iconSq: {
     width: 40,

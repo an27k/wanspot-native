@@ -345,6 +345,7 @@ function NearbyPage() {
           photo_ref: spot.photoRef,
           rating: spot.rating,
           price_level: spot.priceLevel,
+          price_label: spot.priceLabel,
           user_ratings_total: spot.userRatingsTotal,
         }
         spotId = await ensureSpotId(place)

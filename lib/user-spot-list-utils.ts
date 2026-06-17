@@ -6,6 +6,7 @@ export type PlaceCardEnrichment = {
   photo_ref: string | null
   rating: number | null
   price_level: number | null
+  price_label?: string | null
   formatted_address?: string | null
   vicinity?: string | null
 }

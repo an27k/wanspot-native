@@ -184,7 +184,8 @@ const IconStarSm = () => (
   </Svg>
 )
 
-function PriceLevel({ level }: { level: number | null }) {
+function PriceLevel({ level, label }: { level: number | null; label?: string | null }) {
+  if (label) return <Text style={styles.plLabel}>{label}</Text>
   if (level === null || level === undefined) {
     return <Text style={styles.plQ}>?</Text>
   }
@@ -234,6 +235,7 @@ function ArticleSpotCard({
   const photoUrl = spotPhotoUrl(photoRef)
   const displayRating = enrichment?.rating ?? null
   const priceLevel = enrichment?.price_level ?? null
+  const priceLabel = enrichment?.price_label ?? null
   const address =
     (enrichment?.formatted_address && enrichment.formatted_address.trim()) ||
     (enrichment?.vicinity && enrichment.vicinity.trim()) ||
@@ -258,7 +260,7 @@ function ArticleSpotCard({
               <IconGoogle />
               <IconStarSm />
               <Text style={styles.rateMiniTxt}>{displayRating}</Text>
-              <PriceLevel level={priceLevel} />
+              <PriceLevel level={priceLevel} label={priceLabel} />
             </View>
           ) : null}
         </View>
@@ -738,6 +740,7 @@ const styles = StyleSheet.create({
   },
   relatedBtnTxt: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
   relatedNone: { fontSize: 12, color: '#bbb' },
+  plLabel: { fontSize: 11, fontWeight: '700', color: '#888' },
   plQ: { fontSize: 12, color: '#ccc' },
   shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
   shareBox: {

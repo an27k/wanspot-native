@@ -14,6 +14,7 @@ export type SheetSpot = {
   photoRef: string | null
   rating: number | null
   priceLevel: number | null
+  priceLabel: string | null
   userRatingsTotal: number | null
 }
 
@@ -30,6 +31,7 @@ export function sheetSpotFromPlace(p: PlaceResult): SheetSpot {
     photoRef: p.photo_ref,
     rating: p.rating,
     priceLevel: p.price_level,
+    priceLabel: p.price_label ?? null,
     userRatingsTotal: p.user_ratings_total ?? null,
   }
 }
@@ -48,6 +50,7 @@ export function sheetSpotFromUserRow(row: UserSpotRow): SheetSpot | null {
     photoRef: row.photoRef,
     rating: row.rating,
     priceLevel: row.priceLevel,
+    priceLabel: row.priceLabel,
     userRatingsTotal: null,
   }
 }

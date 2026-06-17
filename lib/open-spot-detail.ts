@@ -35,6 +35,7 @@ export function openSpotDetail(router: Router, spot: SheetSpot): void {
       photo_ref: spot.photoRef ?? '',
       rating: spot.rating != null ? String(spot.rating) : '',
       price_level: spot.priceLevel != null ? String(spot.priceLevel) : '',
+      price_label: spot.priceLabel ?? '',
       user_ratings_total: spot.userRatingsTotal != null ? String(spot.userRatingsTotal) : '',
     },
   })

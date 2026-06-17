@@ -90,6 +90,7 @@ export function SearchDiscoverResultCard({
   const [aiLoading, setAiLoading] = useState(false)
   const likeScale = useRef(new Animated.Value(1)).current
   const photoUrl = spotPhotoUrl(spot.photo_ref, 'thumbnail')
+  const priceLabel = typeof spot.price_label === 'string' && spot.price_label.trim().length > 0 ? spot.price_label.trim() : null
 
   const dist =
     userLocation && spot.lat && spot.lng
@@ -210,6 +211,7 @@ export function SearchDiscoverResultCard({
                   <IconGoogle />
                   <IconStar />
                   <Text style={[styles.rateTxt, isGoogle && styles.rateTxtGoogle]}>{spot.rating}</Text>
+                  {priceLabel ? <Text style={[styles.priceLabel, isGoogle && styles.priceLabelGoogle]}>{priceLabel}</Text> : null}
                 </View>
               ) : null}
             </View>
@@ -294,6 +296,8 @@ const styles = StyleSheet.create({
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateTxt: { fontSize: 12, color: '#888' },
   rateTxtGoogle: { color: GOOGLE_HOME.textSecondary },
+  priceLabel: { fontSize: 11, fontWeight: '700', color: '#888' },
+  priceLabelGoogle: { color: GOOGLE_HOME.textMuted },
   name: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
   nameGoogle: { fontSize: 15, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
   addr: { fontSize: 12, color: '#aaa' },

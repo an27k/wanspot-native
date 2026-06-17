@@ -35,6 +35,7 @@ export function pendingPlaceFromParams(
     photo_ref: first(params.photo_ref) || null,
     rating: num(first(params.rating)),
     price_level: num(first(params.price_level)),
+    price_label: first(params.price_label) || null,
     user_ratings_total: num(first(params.user_ratings_total)),
   }
 }

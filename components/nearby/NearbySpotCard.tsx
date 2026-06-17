@@ -54,7 +54,8 @@ const IconMoney = ({ filled }: { filled: boolean }) => (
   </Svg>
 )
 
-const PriceLevel = ({ level }: { level: number | null }) => {
+const PriceLevel = ({ level, label }: { level: number | null; label?: string | null }) => {
+  if (label) return <Text style={styles.priceLabel}>{label}</Text>
   if (level === null || level === undefined) return <Text style={styles.qMark}>?</Text>
   return (
     <View style={styles.priceRow}>
@@ -245,7 +246,7 @@ export function NearbySpotCard({
                 <IconGoogle />
                 <IconStar />
                 <Text style={styles.rateSmall}>{spot.rating}</Text>
-                <PriceLevel level={spot.price_level} />
+                <PriceLevel level={spot.price_level} label={spot.price_label} />
               </View>
             ) : null}
             {distLabel ? <Text style={styles.distSmall}>{distLabel}</Text> : null}
@@ -353,5 +354,6 @@ const styles = StyleSheet.create({
   },
   aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  priceLabel: { fontSize: 11, fontWeight: '700', color: colors.textLight },
   qMark: { fontSize: 12, color: '#ccc' },
 })
