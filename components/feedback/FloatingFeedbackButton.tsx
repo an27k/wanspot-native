@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import Constants from 'expo-constants'
+import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
 import { usePathname } from 'expo-router'
 import {
+  Alert,
+  Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -14,15 +18,67 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '@/constants/colors'
+import { compressImageToJpeg } from '@/lib/images/compress-image'
 import { supabase } from '@/lib/supabase'
+
+const SCREENSHOT_BUCKET = 'app-feedback-screenshots'
+
+type ScreenshotAttachment = {
+  uri: string
+  width: number
+  height: number
+  size: number
+  mimeType: 'image/jpeg'
+}
+
+function createFeedbackId(): string {
+  const runtimeCrypto = globalThis.crypto as { randomUUID?: () => string } | undefined
+  if (runtimeCrypto?.randomUUID) {
+    return runtimeCrypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.floor(Math.random() * 16)
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
 
 export function FloatingFeedbackButton() {
   const insets = useSafeAreaInsets()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
+  const [screenshot, setScreenshot] = useState<ScreenshotAttachment | null>(null)
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+
+  const pickScreenshot = async () => {
+    if (sending) return
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('権限が必要です', 'スクショ画像を選択するため、写真ライブラリへのアクセスを許可してください。', [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '設定を開く', onPress: () => Linking.openSettings() },
+      ])
+      return
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 1,
+      exif: false,
+    })
+    if (result.canceled || result.assets.length === 0) return
+
+    const compressed = await compressImageToJpeg(result.assets[0].uri, 1200)
+    if (!compressed) {
+      setMessage('スクショ画像を読み込めませんでした。別の画像でお試しください。')
+      return
+    }
+    setScreenshot({ ...compressed, mimeType: 'image/jpeg' })
+    setMessage(null)
+  }
 
   const submit = async () => {
     const text = comment.trim()
@@ -37,7 +93,9 @@ export function FloatingFeedbackButton() {
         setMessage('ログイン後に送信できます。')
         return
       }
+      const feedbackId = createFeedbackId()
       const { error } = await supabase.from('app_feedback').insert({
+        id: feedbackId,
         user_id: user.id,
         comment: text,
         route: pathname,
@@ -52,12 +110,53 @@ export function FloatingFeedbackButton() {
         setMessage('送信できませんでした。少し時間をおいてもう一度お願いします。')
         return
       }
+
+      if (screenshot) {
+        const storagePath = `${user.id}/${feedbackId}.jpg`
+        const res = await fetch(screenshot.uri)
+        const buf = await res.arrayBuffer()
+        const { error: uploadError } = await supabase.storage
+          .from(SCREENSHOT_BUCKET)
+          .upload(storagePath, buf, { contentType: screenshot.mimeType, upsert: false })
+
+        if (uploadError) {
+          setComment('')
+          setScreenshot(null)
+          setMessage('コメントは送信されましたが、スクショを添付できませんでした。')
+          return
+        }
+
+        const { error: updateError } = await supabase
+          .from('app_feedback')
+          .update({
+            screenshot_path: storagePath,
+            screenshot_mime_type: screenshot.mimeType,
+            screenshot_size_bytes: screenshot.size,
+            screenshot_width: screenshot.width,
+            screenshot_height: screenshot.height,
+            screenshot_uploaded_at: new Date().toISOString(),
+          })
+          .eq('id', feedbackId)
+          .eq('user_id', user.id)
+
+        if (updateError) {
+          await supabase.storage.from(SCREENSHOT_BUCKET).remove([storagePath])
+          setComment('')
+          setScreenshot(null)
+          setMessage('コメントは送信されましたが、スクショ情報を保存できませんでした。')
+          return
+        }
+      }
+
       setComment('')
+      setScreenshot(null)
       setMessage('送信しました。ありがとうございます。')
       setTimeout(() => {
         setOpen(false)
         setMessage(null)
       }, 900)
+    } catch {
+      setMessage('送信できませんでした。通信環境を確認してもう一度お願いします。')
     } finally {
       setSending(false)
     }
@@ -103,6 +202,33 @@ export function FloatingFeedbackButton() {
               editable={!sending}
               autoFocus
             />
+            <View style={styles.attachmentBox}>
+              <View style={styles.attachmentTextWrap}>
+                <Text style={styles.attachmentTitle}>スクショを添付</Text>
+                <Text style={styles.attachmentSub}>写真ライブラリからスクショ画像を1枚選べます。</Text>
+              </View>
+              <Pressable
+                style={[styles.attachButton, sending && styles.attachButtonDisabled]}
+                onPress={() => void pickScreenshot()}
+                disabled={sending}
+              >
+                <Ionicons name="image-outline" size={16} color={colors.text} />
+                <Text style={styles.attachButtonText}>{screenshot ? '変更' : '選択'}</Text>
+              </Pressable>
+            </View>
+            {screenshot ? (
+              <View style={styles.previewRow}>
+                <Image source={{ uri: screenshot.uri }} style={styles.preview} />
+                <View style={styles.previewMeta}>
+                  <Text style={styles.previewText}>
+                    {screenshot.width}×{screenshot.height} / {Math.ceil(screenshot.size / 1024)}KB
+                  </Text>
+                  <Pressable onPress={() => setScreenshot(null)} disabled={sending} hitSlop={8}>
+                    <Text style={styles.removeText}>添付を外す</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
             {message ? <Text style={styles.message}>{message}</Text> : null}
             <Pressable
               style={[styles.submit, (!comment.trim() || sending) && styles.submitDisabled]}
@@ -164,6 +290,38 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.text,
   },
+  attachmentBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    padding: 12,
+  },
+  attachmentTextWrap: { flex: 1 },
+  attachmentTitle: { fontSize: 13, fontWeight: '800', color: colors.text },
+  attachmentSub: { marginTop: 2, fontSize: 11, lineHeight: 16, color: colors.textMuted },
+  attachButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  attachButtonDisabled: { opacity: 0.5 },
+  attachButtonText: { fontSize: 12, fontWeight: '800', color: colors.text },
+  previewRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  preview: { width: 64, height: 64, borderRadius: 12, backgroundColor: colors.background },
+  previewMeta: { flex: 1, gap: 6 },
+  previewText: { fontSize: 11, color: colors.textMuted },
+  removeText: { fontSize: 12, fontWeight: '800', color: colors.primary },
   message: { fontSize: 12, fontWeight: '700', color: colors.textMuted },
   submit: {
     alignItems: 'center',
