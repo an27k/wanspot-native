@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react'
-import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
+import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
@@ -20,6 +20,7 @@ import {
   DOG_SIZE_LABEL,
   type DogProfile,
 } from '@/lib/dog-display'
+import { filterDogBreeds, isKnownDogBreed } from '@/lib/dog-breeds'
 import { pickFromLibrary } from '@/lib/image-picker'
 import { supabase } from '@/lib/supabase'
 
@@ -56,6 +57,14 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
 
   const editBirthdayYmd = ownerBirthdayToYmd(editYear, editMonth, editDay)
   const dogYBounds = dogBirthdayYearBounds()
+  const breedHits = useMemo(() => filterDogBreeds(editBreed), [editBreed])
+  const editBreedTrim = editBreed.trim()
+  const savedBreedTrim = dog.breed?.trim() ?? ''
+  const isExistingCustomBreed =
+    !!editBreedTrim && editBreedTrim === savedBreedTrim && !isKnownDogBreed(editBreedTrim)
+  const showBreedSuggestions = editing && breedHits.length > 0 && !isKnownDogBreed(editBreedTrim)
+  const showBreedValidation =
+    editing && !!editBreedTrim && !isKnownDogBreed(editBreedTrim) && !isExistingCustomBreed
 
   const startEdit = useCallback(() => {
     setEditName(dog.name ?? '')
@@ -81,6 +90,15 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
   }
 
   const saveIdentity = async () => {
+    const breedToSave = editBreed.trim()
+    const canKeepExistingCustomBreed =
+      !!breedToSave && breedToSave === (dog.breed?.trim() ?? '') && !isKnownDogBreed(breedToSave)
+
+    if (breedToSave && !isKnownDogBreed(breedToSave) && !canKeepExistingCustomBreed) {
+      Alert.alert('犬種を選択してください', '候補に表示された犬種から選んでください。')
+      return
+    }
+
     setSaving(true)
     try {
       let photoUrl: string | null = dog.photo_url
@@ -99,7 +117,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
         .from('dogs')
         .update({
           name: editName.trim(),
-          breed: editBreed.trim() || null,
+          breed: breedToSave || null,
           birthday: editBirthdayYmd,
           gender: editGender,
           size: editSize,
@@ -115,7 +133,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
       const next: DogProfile = {
         ...dog,
         name: editName.trim(),
-        breed: editBreed.trim() || null,
+        breed: breedToSave || null,
         birthday: editBirthdayYmd,
         gender: editGender,
         size: editSize,
@@ -227,10 +245,34 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
                 style={styles.textInput}
                 value={editBreed}
                 onChangeText={setEditBreed}
-                placeholder="例: トイプードル"
+                placeholder="犬種名で検索"
                 placeholderTextColor={colors.textMuted}
                 returnKeyType="done"
+                autoCorrect={false}
               />
+              {showBreedSuggestions ? (
+                <FlatList
+                  data={breedHits}
+                  keyExtractor={(item) => item}
+                  style={styles.breedSuggestionList}
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled
+                  renderItem={({ item }) => (
+                    <Pressable
+                      style={[styles.breedSuggestionRow, editBreed === item && styles.breedSuggestionRowOn]}
+                      onPress={() => setEditBreed(item)}
+                    >
+                      <Text style={styles.breedSuggestionText}>{item}</Text>
+                    </Pressable>
+                  )}
+                />
+              ) : null}
+              {showBreedValidation ? (
+                <Text style={styles.breedValidationText}>候補から犬種を選択してください。</Text>
+              ) : null}
+              {isExistingCustomBreed ? (
+                <Text style={styles.breedValidationText}>保存済みの犬種です。変更する場合は候補から選んでください。</Text>
+              ) : null}
             </FormField>
             <View style={styles.birthdayCard}>
               <OwnerBirthdayPickers
@@ -445,6 +487,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
+  breedSuggestionList: {
+    maxHeight: 220,
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.cardBg,
+  },
+  breedSuggestionRow: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  breedSuggestionRowOn: { backgroundColor: colors.tintStrong },
+  breedSuggestionText: { fontSize: 14, color: colors.text },
+  breedValidationText: { marginTop: 6, fontSize: 12, color: colors.textMuted },
   birthdayCard: {
     marginTop: 4,
     padding: 16,

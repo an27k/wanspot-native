@@ -350,6 +350,9 @@ export default function DogPage() {
               keyExtractor={(item) => item}
               style={styles.breedList}
               keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={
+                <Text style={styles.breedEmpty}>候補が見つかりません。別の表記で検索してください。</Text>
+              }
               renderItem={({ item }) => (
                 <Pressable
                   style={[styles.breedRow, breed === item && styles.breedRowOn]}
@@ -552,6 +555,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   breedList: { maxHeight: 320 },
+  breedEmpty: { paddingVertical: 18, fontSize: 13, color: '#888', textAlign: 'center' },
   breedRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   breedRowOn: { backgroundColor: colors.tintStrong },
   breedRowTxt: { fontSize: 15, color: '#1A1A1A' },
