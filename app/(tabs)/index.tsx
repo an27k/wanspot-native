@@ -221,7 +221,7 @@ function NearbyPage() {
       }
 
       const locKey = location ? geoBucket(location.lat, location.lng) : 'none'
-      const cacheKey = `nearby:user-lists:v3:${user.id}:${locKey}`
+      const cacheKey = `nearby:user-lists:v4:${user.id}:${locKey}`
 
       const needsPhotoRefresh = (rows: SheetSpot[]) =>
         rows.some((s) => s.placeId.length > 0 && !s.photoRef)
@@ -243,6 +243,12 @@ function NearbyPage() {
       }
 
       const likedRes = await fetchLikedSpotsForUser(supabase, user.id)
+      if (!likedRes.ok) {
+        console.warn('[nearby] fetchLikedSpotsForUser', likedRes.code ?? '', likedRes.error)
+        if (!stale) setLikedRows([])
+        setUserListsLoading(false)
+        return
+      }
 
       const origin = location
       const filterRow = (rows: UserSpotRow[]) => {
@@ -258,7 +264,7 @@ function NearbyPage() {
           )
       }
 
-      const liked = likedRes.ok ? filterRow(likedRes.spots) : []
+      const liked = filterRow(likedRes.spots)
       writeCache(cacheKey, { liked })
       setLikedRows(liked)
       setUserListsLoading(false)
