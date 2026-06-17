@@ -71,6 +71,7 @@ const WANSPOT_RATING_THRESHOLD = 3
 type DetailJson = {
   photos?: { photo_reference?: string }[]
   rating?: number
+  user_ratings_total?: number | null
   formatted_address?: string
   price_level?: number | null
   vicinity?: string
@@ -209,6 +210,7 @@ export default function SpotDetailScreen({
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [googleRating, setGoogleRating] = useState<number | null>(null)
+  const [googleReviewCount, setGoogleReviewCount] = useState<number | null>(null)
   const [googlePriceLevel, setGooglePriceLevel] = useState<number | null>(null)
   const [googleAddress, setGoogleAddress] = useState<string | null>(null)
   const [checkedIn, setCheckedIn] = useState(false)
@@ -294,6 +296,11 @@ export default function SpotDetailScreen({
       }
       const dr = detailRes?.rating
       if (typeof dr === 'number' && Number.isFinite(dr)) setGoogleRating(dr)
+      const reviewCount =
+        typeof detailRes?.user_ratings_total === 'number' && Number.isFinite(detailRes.user_ratings_total)
+          ? detailRes.user_ratings_total
+          : null
+      if (reviewCount != null) setGoogleReviewCount(reviewCount)
       let priceLvl = priceLevelFromDetail(detailRes) ?? normalizePriceLevel((spotData as Spot).price_level)
       if (priceLvl === null && spotData.place_id && (!detailHttp || !detailHttp.ok)) {
         try {
@@ -302,8 +309,11 @@ export default function SpotDetailScreen({
             json: { place_ids: [spotData.place_id] },
           })
           if (br.ok) {
-            const bj = (await br.json()) as { details?: Record<string, { price_level?: unknown }> }
-            priceLvl = normalizePriceLevel(bj.details?.[spotData.place_id]?.price_level) ?? priceLvl
+            const bj = (await br.json()) as { details?: Record<string, { price_level?: unknown; user_ratings_total?: unknown }> }
+            const batchDetail = bj.details?.[spotData.place_id]
+            priceLvl = normalizePriceLevel(batchDetail?.price_level) ?? priceLvl
+            const batchReviewCount = typeof batchDetail?.user_ratings_total === 'number' ? batchDetail.user_ratings_total : null
+            if (batchReviewCount != null) setGoogleReviewCount(batchReviewCount)
           }
         } catch {
           /* ignore */
@@ -701,6 +711,9 @@ export default function SpotDetailScreen({
                           <IconStarSm key={s} filled={s <= Math.round(displayRating)} />
                         ))}
                       </View>
+                      {googleReviewCount != null ? (
+                        <Text style={styles.reviewCountTxt}>({googleReviewCount})</Text>
+                      ) : null}
                     </>
                   ) : (
                     <Text style={styles.rateDash}>—</Text>
@@ -983,6 +996,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   rateNum: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
+  reviewCountTxt: { fontSize: 11, fontWeight: '700', color: colors.textMuted, marginLeft: 2 },
   rateDash: { fontSize: 18, fontWeight: '800', color: '#ccc' },
   priceLevelRow: { flexDirection: 'row', gap: 2, alignItems: 'center', flexShrink: 0 },
   priceQ: { fontSize: 14, fontWeight: '800', color: '#ccc', lineHeight: META_STAR_PX },

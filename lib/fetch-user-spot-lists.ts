@@ -62,6 +62,16 @@ function normalizePriceLevel(raw: unknown): number | null {
   return Math.max(0, Math.min(4, Math.round(n)))
 }
 
+function normalizeRating(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === '') return null
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  return Number.isFinite(n) ? n : null
+}
+
+function normalizePhotoRef(raw: unknown): string | null {
+  return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null
+}
+
 async function mergePlacesDetailsFromBatch(spots: UserSpotRow[]): Promise<UserSpotRow[]> {
   if (spots.length === 0) return spots
   const details = await fetchBatchDetailsMerged(spots.map((s) => s.place_id))
@@ -158,9 +168,9 @@ export async function fetchLikedSpotsForUser(
           lng: (raw.lng as number | null) ?? null,
           likeCount: likeCountBySpotId[id] ?? 0,
           savedAt: null as string | null,
-          photoRef: null,
-          rating: null,
-          priceLevel: null,
+          photoRef: normalizePhotoRef(raw.photo_ref),
+          rating: normalizeRating(raw.rating),
+          priceLevel: normalizePriceLevel(raw.price_level),
         } satisfies UserSpotRow,
       ]
     })
@@ -235,9 +245,9 @@ export async function fetchCheckedInSpotsForUser(
           lng: (raw.lng as number | null) ?? null,
           likeCount: likeCountBySpotId[id] ?? 0,
           savedAt: null as string | null,
-          photoRef: null,
-          rating: null,
-          priceLevel: null,
+          photoRef: normalizePhotoRef(raw.photo_ref),
+          rating: normalizeRating(raw.rating),
+          priceLevel: normalizePriceLevel(raw.price_level),
         } satisfies UserSpotRow,
       ]
     })

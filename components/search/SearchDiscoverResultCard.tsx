@@ -137,34 +137,40 @@ export function SearchDiscoverResultCard({
   const handleAiSummary = async () => {
     if (aiSummary || aiLoading) return
     setAiLoading(true)
-    const res = await wanspotFetch('/api/ai-summary', {
-      method: 'POST',
-      json: {
-        place_id: spot.place_id,
-        name: spot.name,
-        category: spot.category,
-        rating: spot.rating,
-        address: spot.address,
-        reviews: [],
-        dogSize: dog?.size ?? undefined,
-        dogBreed: dog?.breed ?? undefined,
-        userContext: {
-          walkAreaTags: userWalkTags,
-          lat: userLocation?.lat ?? null,
-          lng: userLocation?.lng ?? null,
+    try {
+      const res = await wanspotFetch('/api/ai-summary', {
+        method: 'POST',
+        json: {
+          place_id: spot.place_id,
+          name: spot.name,
+          category: spot.category,
+          rating: spot.rating,
+          address: spot.address,
+          reviews: [],
+          dogSize: dog?.size ?? undefined,
+          dogBreed: dog?.breed ?? undefined,
+          userContext: {
+            walkAreaTags: userWalkTags,
+            lat: userLocation?.lat ?? null,
+            lng: userLocation?.lng ?? null,
+          },
         },
-      },
-    })
-    const data = (await res.json()) as { keywords?: string[]; summary?: string }
-    setAiSummary(
-      data.keywords && data.summary
-        ? { keywords: data.keywords, summary: data.summary }
-        : {
-            keywords: [],
-            summary: typeof data.summary === 'string' ? data.summary : '',
-          }
-    )
-    setAiLoading(false)
+      })
+      if (!res.ok) throw new Error(`ai-summary ${res.status}`)
+      const data = (await res.json()) as { keywords?: string[]; summary?: string }
+      setAiSummary(
+        data.keywords && data.summary
+          ? { keywords: data.keywords, summary: data.summary }
+          : {
+              keywords: [],
+              summary: typeof data.summary === 'string' ? data.summary : '',
+            }
+      )
+    } catch {
+      setAiSummary({ keywords: [], summary: 'ワンスポAIレビューを生成できませんでした。時間をおいてもう一度お試しください。' })
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   const inner = (

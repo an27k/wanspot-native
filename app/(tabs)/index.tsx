@@ -221,7 +221,7 @@ function NearbyPage() {
       }
 
       const locKey = location ? geoBucket(location.lat, location.lng) : 'none'
-      const cacheKey = `nearby:user-lists:v2:${user.id}:${locKey}`
+      const cacheKey = `nearby:user-lists:v3:${user.id}:${locKey}`
 
       const needsPhotoRefresh = (rows: SheetSpot[]) =>
         rows.some((s) => s.placeId.length > 0 && !s.photoRef)
