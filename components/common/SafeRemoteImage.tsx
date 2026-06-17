@@ -37,15 +37,14 @@ export function SafeRemoteImage({
       return
     }
 
+    setDisplayUri(uri)
     let cancelled = false
     void (async () => {
       const safe = await sanitizeImageForDisplay(uri)
       if (cancelled) return
       if (safe) {
+        setFailed(false)
         setDisplayUri(safe)
-      } else {
-        setFailed(true)
-        setDisplayUri(null)
       }
     })()
 

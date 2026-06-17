@@ -27,12 +27,15 @@ export function SafeDogAvatar({ uri, size = 40 }: Props) {
       return
     }
 
+    setDisplayUri(uri)
     let cancelled = false
     void (async () => {
       const safe = await sanitizeImageForDisplay(uri)
       if (cancelled) return
-      if (safe) setDisplayUri(safe)
-      else setFailed(true)
+      if (safe) {
+        setFailed(false)
+        setDisplayUri(safe)
+      }
     })()
 
     return () => {
