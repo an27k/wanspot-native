@@ -3,6 +3,7 @@ import type { Router } from 'expo-router'
 import { ownerBirthdayToYmd } from '@/components/OwnerBirthdayPickers'
 import { defaultBioFromDog } from '@/lib/default-bio'
 import {
+  ONBOARDING_COMPLETE_KEY,
   OB_DOG_KEY,
   OB_LOCATION_GRANTED,
   OB_LOCATION_KEY,
@@ -109,6 +110,7 @@ export async function completeOnboarding(params: {
     AsyncStorage.removeItem(OB_LOCATION_GRANTED),
   ])
   await AsyncStorage.setItem(POST_ONBOARDING_TUTORIAL_KEY, '1')
+  await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, '1')
 
   params.router.replace('/(tabs)/search')
   return { ok: true }

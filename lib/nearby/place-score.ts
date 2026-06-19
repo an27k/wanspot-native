@@ -3,6 +3,7 @@ import type { PlaceResult } from '@/types/places'
 
 const PRIOR_MEAN = 4.0
 const PRIOR_WEIGHT = 10
+const DISTANCE_BUCKET_M = 1000
 
 /**
  * ベイズ風の加重スコア。レビュー件数が API に無い場合は 0 件扱いで保守的に下げる。
@@ -27,13 +28,21 @@ export function sortPlacesByScore(
   origin: { lat: number; lng: number } | null
 ): PlaceResult[] {
   return [...spots].sort((a, b) => {
+    if (origin) {
+      const da = calcDistanceMeters(origin.lat, origin.lng, a.lat, a.lng)
+      const db = calcDistanceMeters(origin.lat, origin.lng, b.lat, b.lng)
+      const ba = Math.floor(da / DISTANCE_BUCKET_M)
+      const bb = Math.floor(db / DISTANCE_BUCKET_M)
+      if (ba !== bb) return ba - bb
+      const sa = placeQualityScore(a)
+      const sb = placeQualityScore(b)
+      if (sb !== sa) return sb - sa
+      return da - db
+    }
+
     const sa = placeQualityScore(a)
     const sb = placeQualityScore(b)
     if (sb !== sa) return sb - sa
-    if (!origin) return 0
-    return (
-      calcDistanceMeters(origin.lat, origin.lng, a.lat, a.lng) -
-      calcDistanceMeters(origin.lat, origin.lng, b.lat, b.lng)
-    )
+    return 0
   })
 }

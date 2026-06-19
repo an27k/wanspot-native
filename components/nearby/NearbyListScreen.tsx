@@ -30,6 +30,7 @@ import { supabase } from '@/lib/supabase'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
+import { resolveSessionLocation } from '@/lib/location-session'
 import { wanspotFetch } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 
@@ -108,6 +109,7 @@ export function NearbyListScreen() {
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
   const [pullRefreshing, setPullRefreshing] = useState(false)
   const [adsRuntimeReady, setAdsRuntimeReady] = useState(false)
+  const [spotIdsByPlaceId, setSpotIdsByPlaceId] = useState<Record<string, string>>({})
   const adsPrimedRef = useRef(false)
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false)
 
@@ -173,9 +175,19 @@ export function NearbyListScreen() {
         }
         setLocationPermissionDenied(false)
         try {
-          const pos = await Location.getCurrentPositionAsync({})
+          const result = await resolveSessionLocation(null)
           if (cancelled) return
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+          if (!result.ok) {
+            if (result.permissionDenied) {
+              setLocation(null)
+              setLocationPermissionDenied(true)
+              setError('')
+            } else {
+              setError(result.error)
+            }
+            return
+          }
+          setLocation(result.location)
           setError('')
         } catch {
           if (!cancelled) setError('位置情報を取得できませんでした')
@@ -242,21 +254,37 @@ export function NearbyListScreen() {
   }, [fetchNearbySpots])
 
   useEffect(() => {
-    if (spots.length === 0) return
+    if (spots.length === 0) {
+      setLikeCounts({})
+      setSpotIdsByPlaceId({})
+      return
+    }
     const fetchLikes = async () => {
       const placeIds = spots.map((s) => s.place_id)
       const { data } = await supabase.from('spots').select('id, place_id').in('place_id', placeIds)
       if (!data) return
+      const spotIdsByPlace: Record<string, string> = {}
+      const spotIds: string[] = []
+      data.forEach((row) => {
+        if (row.id && row.place_id) {
+          spotIdsByPlace[row.place_id] = row.id
+          spotIds.push(row.id)
+        }
+      })
+      setSpotIdsByPlaceId(spotIdsByPlace)
       const counts: Record<string, number> = {}
-      await Promise.all(
-        data.map(async (row) => {
-          const { count } = await supabase
-            .from('spot_likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('spot_id', row.id)
-          counts[row.place_id] = count ?? 0
-        })
-      )
+      if (spotIds.length === 0) {
+        setLikeCounts(counts)
+        return
+      }
+      const { data: likes } = await supabase.from('spot_likes').select('spot_id').in('spot_id', spotIds)
+      const countBySpotId: Record<string, number> = {}
+      ;(likes ?? []).forEach((like) => {
+        if (like.spot_id) countBySpotId[like.spot_id] = (countBySpotId[like.spot_id] ?? 0) + 1
+      })
+      data.forEach((row) => {
+        counts[row.place_id] = countBySpotId[row.id] ?? 0
+      })
       setLikeCounts(counts)
     }
     void fetchLikes()
@@ -477,6 +505,8 @@ export function NearbyListScreen() {
                 likeCount={likeCounts[spot.place_id] ?? 0}
                 userLocation={location}
                 userWalkTags={userWalkTags}
+                initialSpotId={spotIdsByPlaceId[spot.place_id] ?? null}
+                initiallyLiked={likedPlaceIds.has(spot.place_id)}
                 onOpenDetail={(id) => router.push(`/spots/${id}`)}
                 onLikeStateChange={handleSpotLikeChange}
               />

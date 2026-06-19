@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Image as ExpoImage } from 'expo-image'
 import {
+  InteractionManager,
   Keyboard,
   Modal,
   Pressable,
@@ -207,6 +208,7 @@ function SearchTab() {
   const [searchListEnter, setSearchListEnter] = useState(true)
   const [discoverListEnter, setDiscoverListEnter] = useState(true)
   const [articlesFetchError, setArticlesFetchError] = useState(false)
+  const [nonCriticalReady, setNonCriticalReady] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -251,6 +253,17 @@ function SearchTab() {
       return () => perfMark('tab:search:blur')
     }, [])
   )
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const task = InteractionManager.runAfterInteractions(() => {
+      timer = setTimeout(() => setNonCriticalReady(true), 500)
+    })
+    return () => {
+      task.cancel()
+      if (timer) clearTimeout(timer)
+    }
+  }, [])
 
   useFocusEffect(
     useCallback(() => {
@@ -302,6 +315,7 @@ function SearchTab() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!nonCriticalReady) return
       void (async () => {
         const {
           data: { user },
@@ -317,7 +331,7 @@ function SearchTab() {
         )
         setUserWalkTags(tags)
       })()
-    }, [])
+    }, [nonCriticalReady])
   )
 
   useEffect(() => {
@@ -368,6 +382,7 @@ function SearchTab() {
   )
 
   useEffect(() => {
+    if (!nonCriticalReady) return
     let cancelled = false
     void (async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -391,7 +406,7 @@ function SearchTab() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [nonCriticalReady])
 
   useEffect(() => {
     if (!searched) return
@@ -402,6 +417,7 @@ function SearchTab() {
   }, [query, results, sortKey, searched])
 
   useEffect(() => {
+    if (!nonCriticalReady) return
     let cancelled = false
     void (async () => {
       try {
@@ -434,7 +450,7 @@ function SearchTab() {
     return () => {
       cancelled = true
     }
-  }, [location])
+  }, [location, nonCriticalReady])
 
   const refreshSpotLikesCount = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -580,6 +596,7 @@ function SearchTab() {
 
     // 並べ替え（複数DBクエリ）を待たず、まず公開順で即表示して empty 表示を防ぐ
     setArticlesList((prev) => (prev.length > 0 ? prev : articlesRaw))
+    if (!nonCriticalReady) return
 
     let cancelled = false
     void (async () => {
@@ -602,7 +619,7 @@ function SearchTab() {
     return () => {
       cancelled = true
     }
-  }, [articlesRaw, location, userWalkTags, recentArticleIds])
+  }, [articlesRaw, location, userWalkTags, recentArticleIds, nonCriticalReady])
 
   useEffect(() => {
     if (searched) return
@@ -610,16 +627,18 @@ function SearchTab() {
   }, [discoverMode, searched, handleArticles])
 
   useEffect(() => {
+    if (!nonCriticalReady) return
     if (searched || spotLikesCount === null || spotLikesCount < AI_LIKES_MIN) return
     if (discoverMode !== 'ai') return
     void handleAiRecommend()
-  }, [discoverMode, spotLikesCount, searched, handleAiRecommend])
+  }, [discoverMode, spotLikesCount, searched, handleAiRecommend, nonCriticalReady])
 
   useEffect(() => {
+    if (!nonCriticalReady) return
     if (searched || !location || spotLikesCount === null || spotLikesCount < AI_LIKES_MIN) return
     if (discoverMode !== 'ai') return
     void handleAiRecommend()
-  }, [location, searched, spotLikesCount, discoverMode, handleAiRecommend])
+  }, [location, searched, spotLikesCount, discoverMode, handleAiRecommend, nonCriticalReady])
 
   const handleSearch = useCallback(async (q: string, opts?: { silent?: boolean }) => {
     Keyboard.dismiss()
@@ -982,18 +1001,20 @@ function SearchTab() {
               {discoverMode === 'articles' ? (
                 <>
                   {/* Google アプリ風の中段カード: お散歩アラート（デフォ表示）+ いいねショートカット */}
-                  <View style={styles.middleCards}>
-                    <WalkAlertCard
-                      location={location}
-                      onRequestLocation={() => {
-                        void (async () => {
-                          const result = await resolveSessionLocation(null)
-                          if (result.ok) setLocation(result.location)
-                        })()
-                      }}
-                    />
-                    <LikesShortcutCard />
-                  </View>
+                  {nonCriticalReady ? (
+                    <View style={styles.middleCards}>
+                      <WalkAlertCard
+                        location={location}
+                        onRequestLocation={() => {
+                          void (async () => {
+                            const result = await resolveSessionLocation(null)
+                            if (result.ok) setLocation(result.location)
+                          })()
+                        }}
+                      />
+                      <LikesShortcutCard />
+                    </View>
+                  ) : null}
 
                   <View style={styles.feedHeader}>
                     <IconBulb fill={iconActive} />

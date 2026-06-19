@@ -80,6 +80,8 @@ export function NearbySpotCard({
   likeCount,
   userLocation,
   userWalkTags,
+  initialSpotId = null,
+  initiallyLiked = false,
   onOpenDetail,
   onLikeStateChange,
 }: {
@@ -87,14 +89,16 @@ export function NearbySpotCard({
   likeCount: number
   userLocation: { lat: number; lng: number } | null
   userWalkTags: string[]
+  initialSpotId?: string | null
+  initiallyLiked?: boolean
   onOpenDetail: (id: string) => void
   onLikeStateChange?: (placeId: string, liked: boolean) => void
 }) {
   const requireAuth = useRequireAuth()
   const { dog } = useDogProfile()
   const scaleAnim = useRef(new Animated.Value(1)).current
-  const [spotId, setSpotId] = useState<string | null>(null)
-  const [liked, setLiked] = useState(false)
+  const [spotId, setSpotId] = useState<string | null>(initialSpotId)
+  const [liked, setLiked] = useState(initiallyLiked)
   const [localLikeCount, setLocalLikeCount] = useState(likeCount)
   const [likeLoading, setLikeLoading] = useState(false)
   const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
@@ -106,23 +110,12 @@ export function NearbySpotCard({
   }, [likeCount])
 
   useEffect(() => {
-    const fetchLikeData = async () => {
-      const ensuredId = await ensureSpotId(spot)
-      if (!ensuredId) return
-      setSpotId(ensuredId)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: myLike } = await supabase
-          .from('spot_likes')
-          .select('id')
-          .eq('spot_id', ensuredId)
-          .eq('user_id', user.id)
-          .maybeSingle()
-        setLiked(!!myLike)
-      }
-    }
-    void fetchLikeData()
-  }, [spot.place_id])
+    setSpotId(initialSpotId)
+  }, [initialSpotId])
+
+  useEffect(() => {
+    setLiked(initiallyLiked)
+  }, [initiallyLiked])
 
   const handleOpenDetail = async () => {
     if (spotId) {

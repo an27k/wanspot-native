@@ -1,6 +1,9 @@
 import type { Session } from '@supabase/supabase-js'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { ONBOARDING_COMPLETE_KEY } from '@/lib/onboarding-constants'
 import { supabase } from '@/lib/supabase'
+import { setWanspotSessionCache } from '@/lib/wanspot-api'
 
 type AuthContextValue = {
   session: Session | null
@@ -19,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSession = useCallback(async () => {
     const { data: { session: s } } = await supabase.auth.getSession()
+    setWanspotSessionCache(s)
     setSession(s)
   }, [])
 
@@ -26,11 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       if (mounted) {
+        setWanspotSessionCache(s)
         setSession(s)
         setLoading(false)
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setWanspotSessionCache(s)
       setSession(s)
     })
     return () => {
@@ -51,6 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
+    await AsyncStorage.removeItem(ONBOARDING_COMPLETE_KEY)
+    setWanspotSessionCache(null)
     setSession(null)
   }, [])
 

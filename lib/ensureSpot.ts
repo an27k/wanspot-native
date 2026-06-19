@@ -1,6 +1,5 @@
 import type { PlaceResult } from '@/types/places'
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://wanspot.app'
+import { wanspotFetch } from '@/lib/wanspot-api'
 
 export async function ensureSpotId(spot: PlaceResult): Promise<string | null> {
   const types =
@@ -9,10 +8,9 @@ export async function ensureSpotId(spot: PlaceResult): Promise<string | null> {
       : null
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/spots/ensure`, {
+    const response = await wanspotFetch('/api/spots/ensure', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      json: {
         place_id: spot.place_id,
         name: spot.name,
         category: spot.category ?? null,
@@ -22,7 +20,7 @@ export async function ensureSpotId(spot: PlaceResult): Promise<string | null> {
         rating: spot.rating ?? null,
         price_level: spot.price_level ?? null,
         google_types: types,
-      }),
+      },
     })
 
     if (!response.ok) {

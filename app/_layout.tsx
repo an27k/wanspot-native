@@ -5,7 +5,7 @@ import * as WebBrowser from 'expo-web-browser'
 import { Stack } from 'expo-router'
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
-import { Platform, View } from 'react-native'
+import { Platform } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { enableScreens } from 'react-native-screens'
 import { AuthProvider } from '@/context/AuthContext'
@@ -36,8 +36,8 @@ const stackScreenOptions = {
 enableScreens(false)
 
 export default function RootLayout() {
-  /** ヘッダー・タブの Ionicons が componentDidMount まで空表示になるのを防ぐ */
-  const [ioniconsLoaded, ioniconsError] = useFonts(Ionicons.font)
+  /** Ionicons は裏で読み込み、認証/ルーティングの開始はブロックしない */
+  useFonts(Ionicons.font)
 
   useEffect(() => {
     initAnalytics()
@@ -90,15 +90,6 @@ export default function RootLayout() {
       /* Hermes / ネイティブ側の想定外 URL で落ちないよう握りつぶす */
     }
   }, [])
-
-  if (!ioniconsLoaded && !ioniconsError) {
-    return (
-      <SafeAreaProvider>
-        <StatusBar style="dark" />
-        <View style={{ flex: 1, backgroundColor: '#ffffff' }} />
-      </SafeAreaProvider>
-    )
-  }
 
   return (
     <SafeAreaProvider>

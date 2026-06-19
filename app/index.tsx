@@ -1,8 +1,10 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Redirect } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { useAuth } from '@/context/AuthContext'
+import { ONBOARDING_COMPLETE_KEY } from '@/lib/onboarding-constants'
 import { supabase } from '@/lib/supabase'
 
 type Gate = 'loading' | 'login' | 'onboard' | 'tabs'
@@ -16,22 +18,27 @@ export default function Index() {
 
     let cancelled = false
     void (async () => {
-      // ログアウト直後は Context の session がまだ残っている一方で API は未認証のため、
-      // users が取れずオンボーディングへ誤遷移する。getSession() を真実とする。
-      const {
-        data: { session: live },
-      } = await supabase.auth.getSession()
-      if (cancelled) return
-
-      if (!live) {
+      if (!session) {
         setGate('login')
         return
       }
 
-      const { data } = await supabase.from('users').select('id').eq('id', live.user.id).maybeSingle()
+      const completed = await AsyncStorage.getItem(ONBOARDING_COMPLETE_KEY)
       if (cancelled) return
-      if (!data) setGate('onboard')
-      else setGate('tabs')
+      if (completed === '1') {
+        setGate('tabs')
+        return
+      }
+
+      const { data } = await supabase.from('dogs').select('id').eq('user_id', session.user.id).maybeSingle()
+      if (cancelled) return
+      if (!data) {
+        await AsyncStorage.removeItem(ONBOARDING_COMPLETE_KEY)
+        if (!cancelled) setGate('onboard')
+      } else {
+        await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, '1')
+        if (!cancelled) setGate('tabs')
+      }
     })()
 
     return () => {

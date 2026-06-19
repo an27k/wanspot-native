@@ -1,4 +1,5 @@
 import Constants from 'expo-constants'
+import type { Session } from '@supabase/supabase-js'
 import { resizePlacesImageUrl, widthForImageSize, type ImageSize } from '@/lib/images/placesImage'
 import { supabase } from '@/lib/supabase'
 
@@ -52,7 +53,26 @@ export function wanspotPublicUrl(path: string): string {
   return `${base}${p}`
 }
 
-export type WanspotFetchInit = RequestInit & { json?: unknown }
+export type WanspotFetchInit = RequestInit & { json?: unknown; auth?: boolean }
+
+let cachedAccessToken: string | null = null
+let cachedExpiresAtMs = 0
+
+export function setWanspotSessionCache(session: Session | null): void {
+  cachedAccessToken = session?.access_token ?? null
+  cachedExpiresAtMs = session?.expires_at ? session.expires_at * 1000 : 0
+}
+
+async function getCachedAccessToken(): Promise<string | null> {
+  if (cachedAccessToken && (!cachedExpiresAtMs || cachedExpiresAtMs - Date.now() > 30_000)) {
+    return cachedAccessToken
+  }
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  setWanspotSessionCache(session)
+  return session?.access_token ?? null
+}
 
 /**
  * Next.js wanspot の API を呼ぶ。セッションがあれば Authorization: Bearer を付与。
@@ -72,13 +92,13 @@ export async function wanspotFetch(path: string, init: WanspotFetchInit = {}): P
     )
   }
   const url = `${base}${path.startsWith('/') ? path : `/${path}`}`
-  const { data: { session } } = await supabase.auth.getSession()
   const headers: Record<string, string> = {
     Accept: 'application/json',
     ...(init.headers as Record<string, string>),
   }
-  if (session?.access_token) {
-    headers.Authorization = `Bearer ${session.access_token}`
+  if (init.auth !== false) {
+    const accessToken = await getCachedAccessToken()
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`
   }
   let body = init.body
   if (init.json !== undefined) {
