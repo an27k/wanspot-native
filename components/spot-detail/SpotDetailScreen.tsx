@@ -134,8 +134,7 @@ const META_STAR_PX = 14
 
 const IconStarSm = ({ filled }: { filled: boolean }) => <IconStar filled={filled} size={META_STAR_PX} />
 
-function PriceLevel({ level, label }: { level: number | null; label?: string | null }) {
-  if (label) return <Text style={styles.priceLabel}>{label}</Text>
+function PriceLevel({ level }: { level: number | null }) {
   if (level === null || level === undefined) {
     return <Text style={styles.priceQ}>?</Text>
   }
@@ -718,6 +717,9 @@ export default function SpotDetailScreen({
                 <View style={styles.metaReviewTopRow}>
                   <IconGoogle />
                   <Text style={styles.metaLbl}>レビュー</Text>
+                  {googleReviewCount != null ? (
+                    <Text style={styles.reviewCountTxt}>({googleReviewCount})</Text>
+                  ) : null}
                 </View>
                 <View style={styles.rateRow}>
                   {displayRating != null && Number.isFinite(displayRating) ? (
@@ -728,9 +730,6 @@ export default function SpotDetailScreen({
                           <IconStarSm key={s} filled={s <= Math.round(displayRating)} />
                         ))}
                       </View>
-                      {googleReviewCount != null ? (
-                        <Text style={styles.reviewCountTxt}>({googleReviewCount})</Text>
-                      ) : null}
                     </>
                   ) : (
                     <Text style={styles.rateDash}>—</Text>
@@ -743,7 +742,7 @@ export default function SpotDetailScreen({
                 <Text style={[styles.metaLbl, styles.metaLblOverRate]}>価格帯</Text>
                 <View style={styles.rateRow}>
                   {googlePriceLevel != null || googlePriceLabel ? (
-                    <PriceLevel level={googlePriceLevel} label={googlePriceLabel} />
+                    <PriceLevel level={googlePriceLevel} />
                   ) : (
                     <Text style={styles.rateDash}>—</Text>
                   )}
@@ -1013,10 +1012,9 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   rateNum: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
-  reviewCountTxt: { fontSize: 11, fontWeight: '700', color: colors.textMuted, marginLeft: 2 },
+  reviewCountTxt: { fontSize: 10, lineHeight: 14, fontWeight: '700', color: colors.textMuted },
   rateDash: { fontSize: 18, fontWeight: '800', color: '#ccc' },
   priceLevelRow: { flexDirection: 'row', gap: 2, alignItems: 'center', flexShrink: 0 },
-  priceLabel: { fontSize: 12, fontWeight: '800', color: colors.text, lineHeight: 16, textAlign: 'center' },
   priceQ: { fontSize: 14, fontWeight: '800', color: '#ccc', lineHeight: META_STAR_PX },
   iconSq: {
     width: 40,
