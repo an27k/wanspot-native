@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Image } from 'expo-image'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
-import Svg, { Path, Polygon } from 'react-native-svg'
+import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
 import { RunningDog } from '@/components/DogStates'
 import { PressableScale } from '@/components/common/PressableScale'
 import { IconPaw } from '@/components/IconPaw'
@@ -60,6 +60,26 @@ const IconStar = () => (
   </Svg>
 )
 
+const IconMoney = ({ filled }: { filled: boolean }) => (
+  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? colors.primary : '#e8e8e8'}>
+    <Circle cx="12" cy="12" r="10" />
+    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? colors.textPrimary : '#bbb'} fontWeight="bold">
+      ¥
+    </SvgText>
+  </Svg>
+)
+
+const PriceLevel = ({ level }: { level: number | null | undefined }) => {
+  if (level === null || level === undefined) return null
+  return (
+    <View style={styles.priceRow}>
+      {[1, 2, 3, 4].map((i) => (
+        <IconMoney key={i} filled={i <= level} />
+      ))}
+    </View>
+  )
+}
+
 type Props = {
   spot: PlaceResult
   userLocation: { lat: number; lng: number } | null
@@ -90,7 +110,6 @@ export function SearchDiscoverResultCard({
   const [aiLoading, setAiLoading] = useState(false)
   const likeScale = useRef(new Animated.Value(1)).current
   const photoUrl = spotPhotoUrl(spot.photo_ref, 'thumbnail')
-  const priceLabel = typeof spot.price_label === 'string' && spot.price_label.trim().length > 0 ? spot.price_label.trim() : null
 
   const dist =
     userLocation && spot.lat && spot.lng
@@ -211,7 +230,7 @@ export function SearchDiscoverResultCard({
                   <IconGoogle />
                   <IconStar />
                   <Text style={[styles.rateTxt, isGoogle && styles.rateTxtGoogle]}>{spot.rating}</Text>
-                  {priceLabel ? <Text style={[styles.priceLabel, isGoogle && styles.priceLabelGoogle]}>{priceLabel}</Text> : null}
+                  <PriceLevel level={spot.price_level} />
                 </View>
               ) : null}
             </View>
@@ -296,8 +315,7 @@ const styles = StyleSheet.create({
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateTxt: { fontSize: 12, color: '#888' },
   rateTxtGoogle: { color: GOOGLE_HOME.textSecondary },
-  priceLabel: { fontSize: 11, fontWeight: '700', color: '#888' },
-  priceLabelGoogle: { color: GOOGLE_HOME.textMuted },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   name: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
   nameGoogle: { fontSize: 15, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
   addr: { fontSize: 12, color: '#aaa' },

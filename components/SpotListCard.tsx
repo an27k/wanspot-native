@@ -47,8 +47,7 @@ const IconMoney = ({ filled }: { filled: boolean }) => (
   </Svg>
 )
 
-const PriceLevel = ({ level, label }: { level: number | null; label?: string | null }) => {
-  if (label) return <Text style={styles.priceLabel}>{label}</Text>
+const PriceLevel = ({ level }: { level: number | null }) => {
   if (level === null || level === undefined) {
     return <Text style={styles.q}>?</Text>
   }
@@ -106,7 +105,6 @@ export function SpotListCard({
   const uri = spotPhotoUrl(photoRef, 'thumbnail')
   const displayRating = enrichment?.rating ?? null
   const priceLevel = enrichment?.price_level ?? null
-  const priceLabel = enrichment?.price_label ?? row.priceLabel
 
   const [liked, setLiked] = useState(heartMode === 'likedOnly')
   const [localLikeCount, setLocalLikeCount] = useState(row.likeCount)
@@ -215,7 +213,7 @@ export function SpotListCard({
                 <IconGoogle />
                 <IconStar />
                 <Text style={styles.rateTxt}>{displayRating}</Text>
-                <PriceLevel level={priceLevel} label={priceLabel} />
+                <PriceLevel level={priceLevel} />
               </View>
             ) : null}
             {distLabel ? <Text style={styles.dist}>{distLabel}</Text> : null}
@@ -276,6 +274,5 @@ const styles = StyleSheet.create({
   name: { fontWeight: '700', fontSize: 14, color: colors.textPrimary },
   addr: { fontSize: 12, color: '#aaa' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  priceLabel: { fontSize: 11, fontWeight: '700', color: '#888' },
   q: { fontSize: 12, color: '#ccc' },
 })

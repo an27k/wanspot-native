@@ -333,7 +333,10 @@ export default function DogPage() {
       </View>
 
       <Modal visible={breedModal} transparent animationType="slide" onRequestClose={() => setBreedModal(false)}>
-        <View style={styles.modalRoot}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalRoot}
+        >
           <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setBreedModal(false)} />
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>犬種を選ぶ</Text>
@@ -366,7 +369,7 @@ export default function DogPage() {
               )}
             />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal

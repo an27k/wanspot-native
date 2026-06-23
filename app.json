@@ -55,6 +55,14 @@
     "web": {
       "favicon": "./assets/images/wanspot_icon_orange.png"
     },
+    "updates": {
+      "url": "https://u.expo.dev/8b297e38-b0be-4eb7-86d1-e3f36c90b6f2",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "plugins": [
       "expo-router",
       "expo-font",

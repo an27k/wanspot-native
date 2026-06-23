@@ -21,9 +21,14 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - EASClient (55.0.5):
+    - ExpoModulesCore
   - EXApplication (55.0.10):
     - ExpoModulesCore
   - EXConstants (55.0.9):
+    - ExpoModulesCore
+  - EXJSONUtils (55.0.2)
+  - EXManifests (55.0.17):
     - ExpoModulesCore
   - Expo (55.0.9):
     - ExpoModulesCore
@@ -133,6 +138,37 @@ PODS:
     - ExpoModulesCore
   - ExpoWebBrowser (55.0.10):
     - ExpoModulesCore
+  - EXStructuredHeaders (55.0.2)
+  - EXUpdates (55.0.24):
+    - EASClient
+    - EXManifests
+    - ExpoModulesCore
+    - EXStructuredHeaders
+    - EXUpdatesInterface
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - ReachabilitySwift
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - EXUpdatesInterface (55.1.6):
+    - ExpoModulesCore
   - FBLazyVector (0.83.6)
   - Google-Maps-iOS-Utils (6.1.0):
     - GoogleMaps (~> 9.0)
@@ -171,6 +207,7 @@ PODS:
     - FBLazyVector (= 0.83.6)
     - RCTRequired (= 0.83.6)
     - React-Core (= 0.83.6)
+  - ReachabilitySwift (5.2.4)
   - React (0.83.6):
     - React-Core (= 0.83.6)
     - React-Core/DevSupport (= 0.83.6)
@@ -2403,8 +2440,11 @@ PODS:
 
 DEPENDENCIES:
   - "AsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
+  - EASClient (from `../node_modules/expo-eas-client/ios`)
   - EXApplication (from `../node_modules/expo-application/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
+  - EXJSONUtils (from `../node_modules/expo-json-utils/ios`)
+  - EXManifests (from `../node_modules/expo-manifests/ios`)
   - Expo (from `../node_modules/expo`)
   - ExpoAppleAuthentication (from `../node_modules/expo-apple-authentication/ios`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
@@ -2431,6 +2471,9 @@ DEPENDENCIES:
   - ExpoTrackingTransparency (from `../node_modules/expo-tracking-transparency/ios`)
   - ExpoVideo (from `../node_modules/expo-video/ios`)
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
+  - EXStructuredHeaders (from `../node_modules/expo-structured-headers/ios`)
+  - EXUpdates (from `../node_modules/expo-updates/ios`)
+  - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - RCTDeprecation (from `../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
@@ -2524,6 +2567,7 @@ SPEC REPOS:
     - libavif
     - libdav1d
     - libwebp
+    - ReachabilitySwift
     - SDWebImage
     - SDWebImageAVIFCoder
     - SDWebImageSVGCoder
@@ -2532,10 +2576,16 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   AsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
+  EASClient:
+    :path: "../node_modules/expo-eas-client/ios"
   EXApplication:
     :path: "../node_modules/expo-application/ios"
   EXConstants:
     :path: "../node_modules/expo-constants/ios"
+  EXJSONUtils:
+    :path: "../node_modules/expo-json-utils/ios"
+  EXManifests:
+    :path: "../node_modules/expo-manifests/ios"
   Expo:
     :path: "../node_modules/expo"
   ExpoAppleAuthentication:
@@ -2588,6 +2638,12 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-video/ios"
   ExpoWebBrowser:
     :path: "../node_modules/expo-web-browser/ios"
+  EXStructuredHeaders:
+    :path: "../node_modules/expo-structured-headers/ios"
+  EXUpdates:
+    :path: "../node_modules/expo-updates/ios"
+  EXUpdatesInterface:
+    :path: "../node_modules/expo-updates-interface/ios"
   FBLazyVector:
     :path: "../node_modules/react-native/Libraries/FBLazyVector"
   hermes-engine:
@@ -2756,8 +2812,11 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   AsyncStorage: 59dba2e3aa2d4dea95e06c23cd176226fe243128
+  EASClient: 8077eb9af46cc7ad3ad216cec12d2bf5763cca13
   EXApplication: 83fdeb8d9e911c28c9dda8c71ae7a697278ce810
   EXConstants: 898c24a310046c0e68335619d0f379099a52e199
+  EXJSONUtils: 04bc3807d351331a5fe154ce1da596ec15d99169
+  EXManifests: 35b26ca30c8a6bd427d1cba20348cd3c43684bb2
   Expo: 2b15801036e64571ac2ca24857cd5384e50cece8
   ExpoAppleAuthentication: 08b3d0e502f46731abdf4c59203769fb685f66c8
   ExpoAsset: 4efd0227e808dfa84d286aa3663ded641ef73479
@@ -2784,6 +2843,9 @@ SPEC CHECKSUMS:
   ExpoTrackingTransparency: 01f505d9fb0342c6046e5e4f11d703145594dab5
   ExpoVideo: 5e7aee124df2f7d9ffe1bd4dbf63119417b340a3
   ExpoWebBrowser: 04fdc3b0619d6708f931a9d0f8850903cc38d896
+  EXStructuredHeaders: 93ad4f31a2eec124428675e28aca11de243ee1e4
+  EXUpdates: 8cb4f8573b459c3ad7bfa1bc80788d51a35ef15a
+  EXUpdatesInterface: 4c11f4d1594526258f14d09817dc407acbf24e3b
   FBLazyVector: 427fa1856a481856091061293ce865a75aa4f20f
   Google-Maps-iOS-Utils: 0a484b05ed21d88c9f9ebbacb007956edd508a96
   Google-Mobile-Ads-SDK: 8429bef6ee1a4e322b0a5571b64217ed8317a3d5
@@ -2798,6 +2860,7 @@ SPEC CHECKSUMS:
   RCTSwiftUI: cff211c5e4d94e491dda240d663b8effd25296d7
   RCTSwiftUIWrapper: b731e4d3257895dfcc4bbe2dc3ae24249cd55f6e
   RCTTypeSafety: c6ed564d0d54c9a01be7db724fbc753eb77b3dc1
+  ReachabilitySwift: 32793e867593cfc1177f5d16491e3a197d2fccda
   React: 9b033c7a99e1c8eec40960b6b2e6844e011e8bd1
   React-callinvoker: f64c8d57f45173835b6b9891cda27f1625551972
   React-Core: 341863a2597c4a2320f916b4232d280cb8a28e4b
