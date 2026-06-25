@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Image } from 'expo-image'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import Svg, { Circle, Path, Polygon, Text as SvgTextNode } from 'react-native-svg'
@@ -243,6 +244,14 @@ function ArticleSpotCard({
 
   return (
     <View style={styles.spotCard}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(85,224,180,0.14)', 'rgba(182,108,255,0.12)', 'rgba(255,255,255,0.94)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View pointerEvents="none" style={[styles.articleGlassTube, styles.articleGlassTubeTop]} />
       <View style={styles.spotImgWrap}>
         {photoUrl ? (
           <ArticleRemoteImage uri={photoUrl} style={styles.spotImg} recyclingKey={photoRecyclingKey} priority="normal" />
@@ -265,6 +274,13 @@ function ArticleSpotCard({
         <Text style={styles.spotName}>{row.name}</Text>
         <Text style={styles.spotAddr}>{address}</Text>
         <Pressable style={styles.spotCta} onPress={onOpen}>
+          <LinearGradient
+            pointerEvents="none"
+            colors={['#55E0B4', '#7F5CFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
           <Text style={styles.spotCtaTxt}>→ スポットを見る</Text>
         </Pressable>
       </View>
@@ -568,16 +584,27 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
           />
         ) : null}
         <View style={styles.pad}>
-          <Text style={styles.title}>{article.title}</Text>
-          {article.keywords?.length > 0 ? (
-            <View style={styles.kwBox}>
-              {article.keywords.map((k) => (
-                <Text key={k} style={styles.kwTag}>
-                  #{k}
-                </Text>
-              ))}
-            </View>
-          ) : null}
+          <View style={styles.articleIntro}>
+            <LinearGradient
+              pointerEvents="none"
+              colors={['rgba(85,224,180,0.2)', 'rgba(182,108,255,0.16)', 'rgba(255,255,255,0.92)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View pointerEvents="none" style={[styles.articleGlassTube, styles.articleGlassTubeIntro]} />
+            <Text style={styles.articleKicker}>WANSPOT ARTICLE</Text>
+            <Text style={styles.title}>{article.title}</Text>
+            {article.keywords?.length > 0 ? (
+              <View style={styles.kwBox}>
+                {article.keywords.map((k) => (
+                  <Text key={k} style={styles.kwTag}>
+                    #{k}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+          </View>
           <View>
             {blocks.map((block, i) => {
               if (block.type === 'spot') {
@@ -657,7 +684,7 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.paper },
-  rootWhite: { flex: 1, backgroundColor: '#fff' },
+  rootWhite: { flex: 1, backgroundColor: '#F7F4F0' },
   empty: { textAlign: 'center', marginTop: 40, color: colors.textMuted },
   backRow: {
     paddingHorizontal: 16,
@@ -672,46 +699,99 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'rgba(255,255,255,0.86)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   hero: { width: '100%', aspectRatio: 16 / 9 },
   pad: { paddingHorizontal: 16 },
-  title: { fontSize: 22, fontWeight: '800', color: '#111', marginTop: 8, lineHeight: 30 },
+  articleIntro: {
+    position: 'relative',
+    overflow: 'hidden',
+    marginTop: -18,
+    marginBottom: 22,
+    borderRadius: 26,
+    padding: 18,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.78)',
+    shadowColor: '#7F5CFF',
+    shadowOpacity: 0.12,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 4,
+  },
+  articleKicker: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.4,
+    color: '#7F5CFF',
+    marginBottom: 8,
+  },
+  articleGlassTube: {
+    position: 'absolute',
+    height: 18,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.58)',
+  },
+  articleGlassTubeIntro: {
+    top: 18,
+    right: -20,
+    width: '62%',
+    transform: [{ rotate: '-6deg' }],
+  },
+  articleGlassTubeTop: {
+    top: 16,
+    left: 18,
+    width: '58%',
+    opacity: 0.72,
+    transform: [{ rotate: '-5deg' }],
+  },
+  title: { fontSize: 24, fontWeight: '900', color: '#201B24', lineHeight: 33 },
   kwBox: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 16,
-    marginBottom: 8,
-    padding: 12,
-    borderRadius: 16,
-    backgroundColor: colors.tintStrong,
-    borderWidth: 1,
-    borderColor: '#e8c84a',
+    marginTop: 14,
   },
-  kwTag: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#111', marginBottom: 8 },
+  kwTag: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#7F5CFF',
+    backgroundColor: 'rgba(255,255,255,0.66)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(127,92,255,0.18)',
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  sectionTitle: { fontSize: 19, fontWeight: '900', color: '#201B24', marginBottom: 10, lineHeight: 27 },
   sectionTitleMt: { marginTop: 24 },
-  textBlock: { fontSize: 14, color: '#374151', lineHeight: 22, marginBottom: 20 },
+  textBlock: { fontSize: 15, color: 'rgba(32,27,36,0.78)', lineHeight: 25, marginBottom: 20, fontWeight: '500' },
   imgBlock: { marginVertical: 24 },
   imgBlockImg: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12 },
   imgCap: { fontSize: 12, textAlign: 'center', color: '#aaa', marginTop: 8 },
   spotCard: {
     marginVertical: 24,
-    borderRadius: 16,
+    borderRadius: 22,
     overflow: 'hidden',
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.78)',
+    shadowColor: '#7F5CFF',
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
   spotImgWrap: { width: '100%', height: 144, backgroundColor: '#e8e4de' },
   spotImg: { width: '100%', height: '100%' },
   spotBody: { padding: 12, gap: 4 },
   spotTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  catPill: { backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  catPillTxt: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
+  catPill: { backgroundColor: 'rgba(255,255,255,0.72)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  catPillTxt: { fontSize: 12, fontWeight: '900', color: '#7F5CFF' },
   rateMini: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rateMiniTxt: { fontSize: 12, color: '#888' },
   spotName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
@@ -720,10 +800,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: colors.primary,
+    overflow: 'hidden',
+    backgroundColor: '#7F5CFF',
     alignItems: 'center',
   },
-  spotCtaTxt: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  spotCtaTxt: { fontSize: 14, fontWeight: '900', color: '#fff' },
   related: { marginTop: 40, paddingTop: 24, borderTopWidth: 1, borderTopColor: '#eee' },
   relatedTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 16 },
   relatedCard: { borderRadius: 12, padding: 16, backgroundColor: '#f9f9f9', marginBottom: 12 },

@@ -9,7 +9,6 @@ import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
 import { DogIdentityProfile } from '@/components/dog/DogIdentityProfile'
 import { useDogProfile } from '@/components/dog/useDogProfile'
-import { RunningDog } from '@/components/DogStates'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useTabBarScroll } from '@/hooks/useTabBarScroll'
@@ -88,30 +87,41 @@ export default function ReviewAlbumTab() {
           contentContainerStyle={{ paddingBottom: padBottom }}
           showsVerticalScrollIndicator={false}
         >
-          {dogLoading && !dog ? (
-            <View style={styles.dogLoad}>
-              <RunningDog label="プロフィールを読み込み中..." />
+          {dogLoading ? (
+            <View style={styles.bootCard}>
+              <Text style={styles.bootKicker}>Review Album</Text>
+              <Text style={styles.bootTitle}>思い出を読み込み中</Text>
+              <Text style={styles.bootSub}>レビューカードを準備しています</Text>
+              <View style={styles.bootSkeleton}>
+                <View style={styles.bootPhoto} />
+                <View style={styles.bootLineWide} />
+                <View style={styles.bootLine} />
+              </View>
             </View>
-          ) : dog && userId ? (
-            <DogIdentityProfile
-              dog={dog}
-              userId={userId}
-              onUpdated={setDog}
-              variant="album"
-              ringEnergized={vlogUnlocked}
-            />
-          ) : !dogLoading ? (
-            <Text style={styles.noDog}>愛犬プロフィールがまだありません</Text>
-          ) : null}
+          ) : (
+            <>
+              {dog && userId ? (
+                <DogIdentityProfile
+                  dog={dog}
+                  userId={userId}
+                  onUpdated={setDog}
+                  variant="album"
+                  ringEnergized={vlogUnlocked}
+                />
+              ) : (
+                <Text style={styles.noDog}>愛犬プロフィールがまだありません</Text>
+              )}
 
-          <ReviewAlbumTimeline
-            userId={userId}
-            dogName={dog?.name ?? null}
-            plates={plates}
-            loading={albumLoading}
-            onReload={() => void loadAlbum()}
-            onOpenTutorial={() => setTutorialOpen(true)}
-          />
+              <ReviewAlbumTimeline
+                userId={userId}
+                dogName={dog?.name ?? null}
+                plates={plates}
+                loading={albumLoading}
+                onReload={() => void loadAlbum()}
+                onOpenTutorial={() => setTutorialOpen(true)}
+              />
+            </>
+          )}
         </Animated.ScrollView>
         <ReviewTutorialModal visible={tutorialOpen} onClose={() => setTutorialOpen(false)} dogName={dog?.name} />
       </GoogleHomeBackground>
@@ -121,7 +131,51 @@ export default function ReviewAlbumTab() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
-  dogLoad: { paddingVertical: 32, alignItems: 'center' },
+  bootCard: {
+    marginTop: 88,
+    marginHorizontal: 16,
+    borderRadius: 30,
+    padding: 20,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.38)',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 3,
+  },
+  bootKicker: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.9,
+    color: 'rgba(255,255,255,0.74)',
+    textTransform: 'uppercase',
+  },
+  bootTitle: {
+    marginTop: 6,
+    fontSize: 24,
+    fontWeight: '900',
+    color: GOOGLE_HOME.textPrimary,
+  },
+  bootSub: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: '700',
+    color: GOOGLE_HOME.textSecondary,
+  },
+  bootSkeleton: {
+    marginTop: 18,
+    borderRadius: 24,
+    padding: 10,
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.72)',
+  },
+  bootPhoto: { height: 176, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.48)' },
+  bootLineWide: { width: '70%', height: 15, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.68)' },
+  bootLine: { width: '44%', height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.52)' },
   noDog: {
     marginTop: 16,
     fontSize: 13,

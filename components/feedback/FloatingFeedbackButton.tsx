@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Constants from 'expo-constants'
+import { LinearGradient } from 'expo-linear-gradient'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
 import { usePathname } from 'expo-router'
@@ -171,6 +172,13 @@ export function FloatingFeedbackButton() {
         accessibilityRole="button"
         accessibilityLabel="フィードバックを送る"
       >
+        <LinearGradient
+          pointerEvents="none"
+          colors={['#55E0B4', '#7F5CFF', '#F27AD7']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
         <Ionicons name="chatbubble-ellipses" size={20} color="#fff" />
       </Pressable>
 
@@ -252,12 +260,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.primary,
+    overflow: 'hidden',
+    backgroundColor: '#7F5CFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: '#7F5CFF',
     shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.28,
     shadowRadius: 12,
     elevation: 12,
   },

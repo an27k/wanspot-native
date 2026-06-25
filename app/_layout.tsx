@@ -6,9 +6,11 @@ import { Stack } from 'expo-router'
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
 import { Platform } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { enableScreens } from 'react-native-screens'
 import { AuthProvider } from '@/context/AuthContext'
+import { UpdateRestartNotice } from '@/components/updates/UpdateRestartNotice'
 import { initAnalytics } from '@/lib/analytics'
 import { iosUsesSafeConsoleGuards } from '@/lib/ads-policy'
 import { perfMark } from '@/lib/perf/marks'
@@ -92,27 +94,30 @@ export default function RootLayout() {
   }, [])
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <StatusBar style="dark" />
-        <Stack screenOptions={stackScreenOptions}>
-          {/* タブシェル・ゲート画面のみスワイプ pop を無効化。詳細ルートは stackScreenOptions のまま */}
-          <Stack.Screen
-            name="(tabs)"
-            options={{
-              gestureEnabled: false,
-              fullScreenGestureEnabled: false,
-            }}
-          />
-          <Stack.Screen
-            name="index"
-            options={{
-              gestureEnabled: false,
-              fullScreenGestureEnabled: false,
-            }}
-          />
-        </Stack>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <StatusBar style="dark" />
+          <Stack screenOptions={stackScreenOptions}>
+            {/* タブシェル・ゲート画面のみスワイプ pop を無効化。詳細ルートは stackScreenOptions のまま */}
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                gestureEnabled: false,
+                fullScreenGestureEnabled: false,
+              }}
+            />
+            <Stack.Screen
+              name="index"
+              options={{
+                gestureEnabled: false,
+                fullScreenGestureEnabled: false,
+              }}
+            />
+          </Stack>
+          <UpdateRestartNotice />
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   )
 }

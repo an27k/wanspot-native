@@ -35,7 +35,6 @@ import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { isPendingPlaceRouteId } from '@/lib/spot-detail-pending'
-import { MAP_VISITED_CHECK_COLOR } from '@/lib/nearby/constants'
 import { formatVisitRecordError, recordSpotVisit } from '@/lib/visits-memories'
 import { logUserEvent } from '@/lib/user-events'
 import { useDogProfile } from '@/components/dog/useDogProfile'
@@ -206,6 +205,7 @@ export default function SpotDetailScreen({
   const insets = useSafeAreaInsets()
   const likeScale = useRef(new Animated.Value(1)).current
   const instagramAutoFetchSent = useRef<string | null>(null)
+  const visitRecordInFlight = useRef(false)
   const photoListRef = useRef<FlatList<string>>(null)
 
   const [spot, setSpot] = useState<Spot | null>(null)
@@ -225,13 +225,12 @@ export default function SpotDetailScreen({
   const [googleAddress, setGoogleAddress] = useState<string | null>(null)
   const [checkedIn, setCheckedIn] = useState(false)
   const [visitRecording, setVisitRecording] = useState(false)
+  const [showVisitActions, setShowVisitActions] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [visitToast, setVisitToast] = useState<{
     message: string
     tone: 'success' | 'error'
     retry?: boolean
-    /** 記録成功後の「思い出をVLOGに」導線（タップでアルバムタブへ） */
-    vlogNudge?: boolean
   } | null>(null)
   useEffect(() => {
     const init = async () => {
@@ -446,7 +445,7 @@ export default function SpotDetailScreen({
   useEffect(() => {
     if (!visitToast) return
     // VLOG 導線付きはタップの猶予を持たせて長めに表示
-    const ms = visitToast.tone === 'error' ? 5000 : visitToast.vlogNudge ? 6500 : 2000
+    const ms = visitToast.tone === 'error' ? 5000 : 2000
     const t = setTimeout(() => setVisitToast(null), ms)
     return () => clearTimeout(t)
   }, [visitToast])
@@ -476,9 +475,10 @@ export default function SpotDetailScreen({
   }
 
   const recordVisitTap = async () => {
-    if (!spot || visitRecording) return
+    if (!spot || visitRecording || visitRecordInFlight.current) return
     if (!requireAuth('チェックインするにはログインしてください。')) return
     if (!userId) return
+    visitRecordInFlight.current = true
     setVisitRecording(true)
     try {
       const result = await recordSpotVisit(userId, spot.id, 'detail_button')
@@ -492,12 +492,19 @@ export default function SpotDetailScreen({
       setVisitToast({
         message: result.created ? '行ったを記録しました🐾' : '本日は記録済みです',
         tone: 'success',
-        vlogNudge: true,
       })
       if (result.created) track('spot_checked_in', { spot_id: spot.id })
     } finally {
+      visitRecordInFlight.current = false
       setVisitRecording(false)
     }
+  }
+
+  const openReviewAlbum = () => {
+    if (!spot) return
+    setShowVisitActions(false)
+    track('visited_button_review_flow_tapped', { spot_id: spot.id })
+    router.push('/(tabs)/camera')
   }
 
   const share = async (platform: string) => {
@@ -555,28 +562,14 @@ export default function SpotDetailScreen({
           onPress={
             visitToast.retry
               ? () => void recordVisitTap()
-              : visitToast.vlogNudge
-                ? () => {
-                    setVisitToast(null)
-                    track('visit_vlog_nudge_tapped', { spot_id: spot.id })
-                    router.push('/(tabs)/camera')
-                  }
-                : undefined
+              : undefined
           }
-          disabled={!visitToast.retry && !visitToast.vlogNudge}
+          disabled={!visitToast.retry}
         >
-          <Text style={styles.toastTxt}>
+          <Text style={[styles.toastTxt, visitToast.tone === 'error' && styles.toastTxtErr]}>
             {visitToast.message}
             {visitToast.retry ? '（タップで再試行）' : ''}
           </Text>
-          {visitToast.vlogNudge ? (
-            <View style={styles.toastNudgeRow}>
-              <Text style={styles.toastNudgeTxt} numberOfLines={1}>
-                写真をのこして、{dog?.name?.trim() || '愛犬'}との思い出をVLOGにしよう
-              </Text>
-              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.75)" />
-            </View>
-          ) : null}
         </Pressable>
       ) : null}
 
@@ -697,13 +690,19 @@ export default function SpotDetailScreen({
             </Pressable>
             <Pressable
               style={[styles.actHalf, checkedIn && styles.actHalfCheck]}
-              onPress={() => void recordVisitTap()}
+              onPress={() => {
+                if (checkedIn) {
+                  setShowVisitActions(true)
+                  return
+                }
+                void recordVisitTap()
+              }}
               disabled={visitRecording}
             >
               <Ionicons
-                name={checkedIn ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                name={checkedIn ? 'sparkles' : 'checkmark-circle-outline'}
                 size={20}
-                color={checkedIn ? MAP_VISITED_CHECK_COLOR : colors.textPrimary}
+                color={checkedIn ? '#7F5CFF' : colors.textPrimary}
               />
               <Text style={[styles.actLbl, checkedIn && styles.actLblCheck]}>
                 {checkedIn ? '行った ✓' : '行った'}
@@ -828,6 +827,19 @@ export default function SpotDetailScreen({
           </Pressable>
         </Pressable>
       </Modal>
+      <Modal visible={showVisitActions} transparent animationType="fade" onRequestClose={() => setShowVisitActions(false)}>
+        <Pressable style={styles.visitActionOverlay} onPress={() => setShowVisitActions(false)}>
+          <Pressable style={styles.visitActionSheet} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.visitActionHandle} />
+            <Text style={styles.visitActionTitle}>行った記録</Text>
+            <Text style={styles.visitActionSub}>行った記録は1日1回。削除はレビューアルバム側で管理できます。</Text>
+            <Pressable style={styles.visitActionPrimary} onPress={openReviewAlbum}>
+              <Ionicons name="sparkles" size={19} color="#fff" />
+              <Text style={styles.visitActionPrimaryText}>レビューをアルバムに残す</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   )
 }
@@ -839,33 +851,23 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     zIndex: 55,
-    backgroundColor: colors.textPrimary,
-    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 18,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(255,255,255,0.74)',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
   },
   toastErr: {
     backgroundColor: '#3a2a28',
     borderColor: colors.error,
   },
-  toastTxt: { color: '#fff', fontWeight: '700', textAlign: 'center', fontSize: 14 },
-  toastNudgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.25)',
-  },
-  toastNudgeTxt: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 12,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
+  toastTxt: { color: colors.textPrimary, fontWeight: '800', textAlign: 'center', fontSize: 14 },
+  toastTxtErr: { color: '#fff' },
   backFab: { position: 'absolute', left: 16, zIndex: 20 },
   fabBtn: {
     width: 40,
@@ -949,9 +951,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   actHalfLiked: { backgroundColor: '#FFF6E5', borderColor: '#f0e4c4' },
-  actHalfCheck: { backgroundColor: '#E8F5E9', borderColor: MAP_VISITED_CHECK_COLOR },
+  actHalfCheck: {
+    backgroundColor: 'rgba(127,92,255,0.1)',
+    borderColor: 'rgba(127,92,255,0.45)',
+  },
   actLbl: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  actLblCheck: { color: MAP_VISITED_CHECK_COLOR },
+  actLblCheck: { color: '#7F5CFF' },
   metaCard: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -1108,4 +1113,52 @@ const styles = StyleSheet.create({
   shareLblW: { fontSize: 12, fontWeight: '700', color: '#fff' },
   cancelShare: { marginTop: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center' },
   cancelShareTxt: { fontSize: 14, fontWeight: '700', color: '#888' },
+  visitActionOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(18,12,16,0.44)',
+    padding: 16,
+  },
+  visitActionSheet: {
+    borderRadius: 28,
+    padding: 18,
+    gap: 12,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.74)',
+    shadowColor: '#7F5CFF',
+    shadowOpacity: 0.16,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+  },
+  visitActionHandle: {
+    alignSelf: 'center',
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(46,40,37,0.18)',
+  },
+  visitActionTitle: { fontSize: 19, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
+  visitActionSub: {
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  visitActionPrimary: {
+    minHeight: 50,
+    borderRadius: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#7F5CFF',
+    shadowColor: '#7F5CFF',
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  visitActionPrimaryText: { fontSize: 15, fontWeight: '900', color: '#fff' },
 })

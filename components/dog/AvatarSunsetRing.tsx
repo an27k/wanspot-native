@@ -8,6 +8,7 @@ const GAP = 3
 
 /** グレー系（クリアな質感）のリング配色 */
 const GRADIENT_GRAY = ['#D6D9DE', '#A9AEB6', '#7C828B'] as const
+const GRADIENT_AURORA = ['#55E0B4', '#B66CFF', '#F27AD7'] as const
 
 type Props = {
   size: number
@@ -15,15 +16,16 @@ type Props = {
   /** 5/5 アンロック時 — リングをやや明るく */
   energized?: boolean
   /** リング配色 */
-  tone?: 'sunset' | 'gray'
+  tone?: 'sunset' | 'gray' | 'aurora'
 }
 
 /** アバターの細いリング（サンセット or グレー） */
 export function AvatarSunsetRing({ size, children, energized, tone = 'sunset' }: Props) {
   const outer = size + (RING + GAP) * 2
+  const ringColors = tone === 'gray' ? GRADIENT_GRAY : tone === 'aurora' ? GRADIENT_AURORA : GRADIENT_SUNSET
   return (
     <LinearGradient
-      colors={tone === 'gray' ? [...GRADIENT_GRAY] : [...GRADIENT_SUNSET]}
+      colors={[...ringColors]}
       start={GRADIENT_SUNSET_POINTS.start}
       end={GRADIENT_SUNSET_POINTS.end}
       style={[

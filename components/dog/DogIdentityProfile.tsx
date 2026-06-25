@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
@@ -54,6 +55,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoUri, setPhotoUri] = useState<string | null>(null)
   const [photoRemoved, setPhotoRemoved] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const editBirthdayYmd = ownerBirthdayToYmd(editYear, editMonth, editDay)
   const dogYBounds = dogBirthdayYearBounds()
@@ -177,6 +179,256 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
     </>
   )
 
+  if (isAlbum && !editing) {
+    return (
+      <View style={[styles.compactAlbumWrap, { marginTop: insets.top + 8 }]}>
+        <Pressable
+          style={styles.compactAlbumChip}
+          onPress={() => setProfileOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="愛犬プロフィールを表示"
+        >
+          <AvatarSunsetRing size={44} energized={ringEnergized} tone="aurora">
+            {avatarInner}
+          </AvatarSunsetRing>
+          <Text style={styles.compactAlbumName} numberOfLines={1}>
+            {dog.name}
+          </Text>
+          <Ionicons name="chevron-down" size={16} color={GOOGLE_HOME.textPrimary} />
+        </Pressable>
+        <Modal visible={profileOpen} transparent animationType="fade" onRequestClose={() => setProfileOpen(false)}>
+          <Pressable style={styles.profileSheetBackdrop} onPress={() => setProfileOpen(false)}>
+            <Pressable style={[styles.profileSheet, { paddingBottom: insets.bottom + 18 }]} onPress={() => {}}>
+              <LinearGradient
+                pointerEvents="none"
+                colors={['rgba(255,255,255,0.94)', 'rgba(255,255,255,0.82)', 'rgba(245,255,251,0.72)']}
+                locations={[0, 0.58, 1]}
+                style={StyleSheet.absoluteFill}
+              />
+              <View pointerEvents="none" style={styles.profileGlowPurple} />
+              <View pointerEvents="none" style={styles.profileGlowMint} />
+              <View style={styles.profileSheetHandle} />
+              <View style={styles.profileHero}>
+                <LinearGradient
+                  colors={['rgba(85,224,180,0.98)', 'rgba(182,108,255,0.92)', 'rgba(242,122,215,0.78)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.profileAvatarRing}
+                >
+                  <View style={styles.profileAvatarGlass}>{avatarInner}</View>
+                </LinearGradient>
+              </View>
+              <View style={styles.profileSheetCopy}>
+                <Text style={styles.profileSheetName}>{dog.name}</Text>
+                {metaParts.length > 0 ? (
+                  <Text style={styles.profileSheetMeta}>{metaParts.join(' · ')}</Text>
+                ) : (
+                  <Text style={styles.profileSheetMeta}>プロフィール情報</Text>
+                )}
+              </View>
+              <View style={styles.profileStatRow}>
+                {metaParts.slice(0, 3).map((part) => (
+                  <View key={part} style={styles.profileStatPill}>
+                    <Text style={styles.profileStatText}>{part}</Text>
+                  </View>
+                ))}
+                {genderSymbol ? (
+                  <View style={styles.profileStatPill}>
+                    <Text style={styles.profileStatText}>{genderSymbol}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <View style={styles.profileActionRow}>
+                <Pressable
+                  style={styles.profileEditBtn}
+                  onPress={() => {
+                    setProfileOpen(false)
+                    startEdit()
+                  }}
+                >
+                  <Ionicons name="create-outline" size={18} color="#fff" />
+                  <Text style={styles.profileEditText}>編集</Text>
+                </Pressable>
+                <Pressable style={styles.profileSheetClose} onPress={() => setProfileOpen(false)}>
+                  <Text style={styles.profileSheetCloseText}>閉じる</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      </View>
+    )
+  }
+
+  if (isAlbum && editing) {
+    return (
+      <View style={[styles.compactAlbumWrap, { marginTop: insets.top + 8 }]}>
+        <Modal visible transparent animationType="slide" onRequestClose={() => setEditing(false)}>
+          <View style={styles.profileEditBackdrop}>
+            <View style={[styles.profileEditSheet, { paddingBottom: insets.bottom + 18 }]}>
+              <View style={styles.profileSheetHandle} />
+              <View style={styles.profileEditHead}>
+                <Text style={styles.profileEditTitle}>プロフィール編集</Text>
+                <Pressable
+                  style={styles.profileEditCloseIcon}
+                  onPress={() => {
+                    setPhotoRemoved(false)
+                    setEditing(false)
+                  }}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="プロフィール編集を閉じる"
+                >
+                  <Ionicons name="close" size={22} color="rgba(42,37,34,0.72)" />
+                </Pressable>
+              </View>
+
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.profileEditScroll}
+              >
+                <View style={[styles.avatarWrap, styles.avatarWrapEditing, styles.profileEditAvatar]}>
+                  <LinearGradient
+                    colors={['rgba(85,224,180,0.98)', 'rgba(182,108,255,0.94)', 'rgba(242,122,215,0.8)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.profileEditAvatarRing}
+                  >
+                    <View style={styles.profileEditAvatarGlass}>{avatarInner}</View>
+                  </LinearGradient>
+                  <Pressable
+                    style={styles.camFab}
+                    onPress={() => void pickPhoto()}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel="愛犬の写真を変更"
+                  >
+                    <Ionicons name="camera" size={15} color="#fff" />
+                  </Pressable>
+                </View>
+
+                {(photoPreview ?? dog.photo_url) && !photoRemoved ? (
+                  <Pressable
+                    style={styles.photoRemoveBtn}
+                    onPress={() => {
+                      setPhotoRemoved(true)
+                      setPhotoPreview(null)
+                      setPhotoUri(null)
+                    }}
+                  >
+                    <Text style={styles.photoRemoveTxt}>写真を削除</Text>
+                  </Pressable>
+                ) : null}
+
+                <View style={styles.editFields}>
+                  <FormField label="名前">
+                    <TextInput
+                      style={styles.textInput}
+                      value={editName}
+                      onChangeText={setEditName}
+                      placeholder="例: モカ"
+                      placeholderTextColor={colors.textMuted}
+                      returnKeyType="next"
+                    />
+                  </FormField>
+                  <FormField label="犬種">
+                    <TextInput
+                      style={styles.textInput}
+                      value={editBreed}
+                      onChangeText={setEditBreed}
+                      placeholder="犬種名で検索"
+                      placeholderTextColor={colors.textMuted}
+                      returnKeyType="done"
+                      autoCorrect={false}
+                    />
+                    {showBreedSuggestions ? (
+                      <FlatList
+                        data={breedHits}
+                        keyExtractor={(item) => item}
+                        style={styles.breedSuggestionList}
+                        keyboardShouldPersistTaps="handled"
+                        nestedScrollEnabled
+                        renderItem={({ item }) => (
+                          <Pressable
+                            style={[styles.breedSuggestionRow, editBreed === item && styles.breedSuggestionRowOn]}
+                            onPress={() => setEditBreed(item)}
+                          >
+                            <Text style={styles.breedSuggestionText}>{item}</Text>
+                          </Pressable>
+                        )}
+                      />
+                    ) : null}
+                    {showBreedValidation ? (
+                      <Text style={styles.breedValidationText}>候補から犬種を選択してください。</Text>
+                    ) : null}
+                    {isExistingCustomBreed ? (
+                      <Text style={styles.breedValidationText}>保存済みの犬種です。変更する場合は候補から選んでください。</Text>
+                    ) : null}
+                  </FormField>
+                  <View style={styles.birthdayCard}>
+                    <OwnerBirthdayPickers
+                      year={editYear}
+                      month={editMonth}
+                      day={editDay}
+                      onChangeYear={setEditYear}
+                      onChangeMonth={setEditMonth}
+                      onChangeDay={setEditDay}
+                      yearMin={dogYBounds.min}
+                      yearMax={dogYBounds.max}
+                      fieldLabel="生年月日（任意）"
+                      hint="年・月・日をすべて選ぶと年齢表示に使います。"
+                    />
+                  </View>
+                  <Text style={styles.miniLbl}>性別</Text>
+                  <View style={styles.chipRow}>
+                    <Pressable style={[styles.chip, editGender === 'male' && styles.chipOn]} onPress={() => setEditGender('male')}>
+                      <Text style={styles.symMale}>♂</Text>
+                      <Text style={styles.chipLbl}>オス</Text>
+                    </Pressable>
+                    <Pressable style={[styles.chip, editGender === 'female' && styles.chipOn]} onPress={() => setEditGender('female')}>
+                      <Text style={styles.symFemale}>♀</Text>
+                      <Text style={styles.chipLbl}>メス</Text>
+                    </Pressable>
+                    <Pressable style={[styles.chip, editGender === null && styles.chipOn]} onPress={() => setEditGender(null)}>
+                      <Text style={styles.chipLblMuted}>未設定</Text>
+                    </Pressable>
+                  </View>
+                  <Text style={styles.miniLbl}>サイズ</Text>
+                  <View style={styles.chipRow}>
+                    {(['XS', 'S', 'M', 'L', 'XL'] as const).map((k) => (
+                      <Pressable key={k} style={[styles.chip, editSize === k && styles.chipOn]} onPress={() => setEditSize(k)}>
+                        <Text style={styles.chipLbl}>{k}</Text>
+                      </Pressable>
+                    ))}
+                    <Pressable style={[styles.chip, editSize === null && styles.chipOn]} onPress={() => setEditSize(null)}>
+                      <Text style={styles.chipLblMuted}>未設定</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </ScrollView>
+
+              <View style={styles.profileEditFooter}>
+                <Pressable
+                  style={[styles.btnGhost, styles.profileEditCancelBtn]}
+                  onPress={() => {
+                    setPhotoRemoved(false)
+                    setEditing(false)
+                  }}
+                >
+                  <Text style={[styles.btnGhostTxt, styles.profileEditCancelText]}>キャンセル</Text>
+                </Pressable>
+                <Pressable style={[styles.btnPri, styles.profileEditSaveBtn]} onPress={() => void saveIdentity()} disabled={saving}>
+                  <Text style={[styles.btnPriTxt, styles.profileEditSaveText]}>{saving ? '保存中...' : '保存する'}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    )
+  }
+
   return (
     <View style={[styles.wrap, isAlbum && styles.wrapAlbum]}>
       {!editing ? (
@@ -196,7 +448,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
       <View style={[styles.col, isAlbum && [styles.colAlbum, { marginTop: insets.top + 8 }]]}>
         <View style={[styles.avatarWrap, editing && styles.avatarWrapEditing, isAlbum && styles.avatarWrapAlbum]}>
           {isAlbum ? (
-            <AvatarSunsetRing size={avatarSize} energized={ringEnergized} tone="gray">
+            <AvatarSunsetRing size={avatarSize} energized={ringEnergized} tone="aurora">
               {avatarInner}
             </AvatarSunsetRing>
           ) : (
@@ -370,6 +622,254 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
 
 const styles = StyleSheet.create({
   wrap: { position: 'relative', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
+  compactAlbumWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 10,
+  },
+  compactAlbumChip: {
+    maxWidth: 168,
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 24,
+    paddingLeft: 4,
+    paddingRight: 12,
+    backgroundColor: 'rgba(255,255,255,0.46)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
+    shadowColor: '#7F5CFF',
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  compactAlbumName: {
+    flexShrink: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    color: GOOGLE_HOME.textPrimary,
+  },
+  profileSheetBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(18,12,16,0.48)',
+    paddingHorizontal: 16,
+  },
+  profileSheet: {
+    borderRadius: 36,
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.74)',
+    shadowColor: '#4A1E1D',
+    shadowOpacity: 0.28,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 20 },
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  profileGlowPurple: {
+    position: 'absolute',
+    top: -90,
+    right: -70,
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    backgroundColor: 'rgba(182,108,255,0.16)',
+  },
+  profileGlowMint: {
+    position: 'absolute',
+    bottom: -90,
+    left: -70,
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    backgroundColor: 'rgba(85,224,180,0.18)',
+  },
+  profileSheetHandle: {
+    alignSelf: 'center',
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(60,60,67,0.26)',
+    marginBottom: 16,
+  },
+  profileSheetHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  profileHero: { alignItems: 'center', marginTop: 4 },
+  profileAvatarRing: {
+    width: 124,
+    height: 124,
+    borderRadius: 62,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#7F5CFF',
+    shadowOpacity: 0.24,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  profileAvatarGlass: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.86)',
+  },
+  profileSheetCopy: {
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.42)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.64)',
+  },
+  profileSheetName: { fontSize: 29, fontWeight: '900', color: '#211C1A', letterSpacing: -0.4 },
+  profileSheetMeta: { fontSize: 13, fontWeight: '800', color: 'rgba(33,28,26,0.72)', lineHeight: 19, textAlign: 'center' },
+  profileStatRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 14,
+  },
+  profileStatPill: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: 'rgba(255,255,255,0.66)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(33,28,26,0.08)',
+  },
+  profileStatText: { fontSize: 12, fontWeight: '900', color: 'rgba(33,28,26,0.86)' },
+  profileActionRow: { flexDirection: 'row', gap: 10, marginTop: 18 },
+  profileEditBtn: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 23,
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(122,92,255,0.92)',
+    shadowColor: '#7F5CFF',
+    shadowOpacity: 0.26,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
+  },
+  profileEditText: { fontSize: 15, fontWeight: '900', color: '#fff' },
+  profileSheetClose: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(42,37,34,0.88)',
+  },
+  profileSheetCloseText: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  profileEditBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(18,12,14,0.72)',
+  },
+  profileEditSheet: {
+    maxHeight: '88%',
+    borderRadius: 32,
+    paddingTop: 12,
+    paddingHorizontal: 18,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.7)',
+    shadowColor: '#000',
+    shadowOpacity: 0.22,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 12,
+  },
+  profileEditHead: {
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  profileEditTitle: { fontSize: 18, fontWeight: '900', color: colors.text },
+  profileEditCloseIcon: {
+    position: 'absolute',
+    right: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(42,37,34,0.06)',
+  },
+  profileEditScroll: { paddingBottom: 14, alignItems: 'center' },
+  profileEditAvatar: {
+    width: 116,
+    height: 116,
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  profileEditAvatarRing: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#7F5CFF',
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  profileEditAvatarGlass: {
+    width: 98,
+    height: 98,
+    borderRadius: 49,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.76)',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
+  profileEditFooter: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(42,37,34,0.1)',
+  },
+  profileEditCancelBtn: {
+    backgroundColor: 'rgba(33,28,26,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(33,28,26,0.08)',
+  },
+  profileEditCancelText: { color: 'rgba(33,28,26,0.7)' },
+  profileEditSaveBtn: {
+    backgroundColor: 'rgba(122,92,255,0.92)',
+    shadowColor: '#7F5CFF',
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  profileEditSaveText: { color: '#fff' },
   wrapAlbum: {
     paddingTop: 0,
     paddingHorizontal: 16,
