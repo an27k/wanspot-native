@@ -44,6 +44,7 @@ import { personalizeArticlesFeed } from '@/lib/article-feed-ranking'
 import { CACHE_TTL, fetchWithCache, geoBucket, invalidateCache, isCacheFresh, readCache } from '@/lib/client-cache'
 import { getCachedPrefecture, getCachedPrefectureAndMunicipality } from '@/lib/geo-cache'
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
+import type { DogProfile } from '@/lib/dog-display'
 import { resolveSessionLocation } from '@/lib/location-session'
 import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
@@ -63,6 +64,8 @@ type SortKey = 'default' | 'rating' | 'distance'
 type DiscoverMode = 'ai' | 'articles' | 'ai_plan'
 
 const DEFAULT_SUGGESTIONS = [
+  '大型犬可',
+  'ドッグラン',
   'ドッグキャンプ',
   '代々木公園',
   '犬と温泉',
@@ -71,6 +74,34 @@ const DEFAULT_SUGGESTIONS = [
   '吉祥寺',
   'しつけ教室',
 ]
+
+function normalizeSuggestionTag(tag: string): string {
+  return tag.trim().replace(/ドッグ園/g, 'ドッグラン')
+}
+
+/**
+ * サイズ条件の候補は犬種によって必要度が違う（大型犬は入店可否の絞り込みが必須級だが、
+ * 小型犬は逆にほぼ全施設に入れるため「小型犬可」の絞り込みニーズが強い。中型犬はどちらも
+ * ほぼ通るため強制表示しない）。全ユーザーに同じタグを出すと無関係な人には邪魔な情報になる。
+ */
+function sizeFacilityTag(dogSize: DogProfile['size'] | null | undefined): string | null {
+  if (dogSize === 'L' || dogSize === 'XL') return '大型犬可'
+  if (dogSize === 'XS' || dogSize === 'S') return '小型犬可'
+  return null
+}
+
+function mergeSuggestionTags(tags: string[], dogSize: DogProfile['size'] | null | undefined): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  const forced = sizeFacilityTag(dogSize)
+  for (const raw of forced ? [forced, ...tags] : tags) {
+    const tag = normalizeSuggestionTag(raw)
+    if (!tag || seen.has(tag)) continue
+    seen.add(tag)
+    out.push(tag)
+  }
+  return out.length > 0 ? out : DEFAULT_SUGGESTIONS
+}
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'default', label: '近い順' },
@@ -95,7 +126,7 @@ function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-const ARTICLES_CACHE_KEY = 'search:articles:v3'
+const ARTICLES_CACHE_KEY = 'search:articles:v5:linked-spot-refs'
 
 const IconSearch = ({ color = GOOGLE_HOME.textMuted }: { color?: string }) => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round">
@@ -163,8 +194,13 @@ type ArticleRow = {
   image_url: string | null
   created_at: string
   published_at?: string | null
-  blocks?: unknown
-  spot_links?: unknown
+  target_prefectures?: string[] | null
+  target_municipalities?: string[] | null
+  target_walk_area_tags?: string[] | null
+  dog_size_tags?: string[] | null
+  topic_tags?: string[] | null
+  segment_level?: 'municipality' | 'walk_area' | 'prefecture' | 'region' | 'national' | null
+  linked_spot_refs?: string[] | null
 }
 
 function SearchTab() {
@@ -217,6 +253,7 @@ function SearchTab() {
   const tabBarScrollHandler = useTabBarScroll(updateScrollY)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
+  const [dogSize, setDogSize] = useState<DogProfile['size'] | null>(null)
   const [pullRefreshing, setPullRefreshing] = useState(false)
   const [recentArticleIds, setRecentArticleIds] = useState<string[]>([])
   const [adsRuntimeReady, setAdsRuntimeReady] = useState(false)
@@ -344,6 +381,7 @@ function SearchTab() {
         } = await supabase.auth.getUser()
         if (!user) {
           setUserWalkTags([])
+          setDogSize(null)
           return
         }
         const { data: tags } = await fetchWithCache(
@@ -352,6 +390,20 @@ function SearchTab() {
           () => fetchUserWalkAreaTagsByUserId(supabase, user.id)
         )
         setUserWalkTags(tags)
+
+        const { data: size } = await fetchWithCache(
+          `profile:dog-size:${user.id}`,
+          CACHE_TTL.DOG_PROFILE_MS,
+          async () => {
+            const { data: dog } = await supabase
+              .from('dogs')
+              .select('size')
+              .eq('user_id', user.id)
+              .maybeSingle()
+            return (dog?.size as DogProfile['size'] | undefined) ?? null
+          }
+        )
+        setDogSize(size)
       })()
     }, [nonCriticalReady])
   )
@@ -445,7 +497,8 @@ function SearchTab() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         const geoKey = location ? geoBucket(location.lat, location.lng) : 'none'
-        const cacheKey = `search:suggest-tags:${user?.id ?? 'anon'}:${geoKey}`
+        const walkTagsKey = userWalkTags.length > 0 ? [...userWalkTags].sort().join(',') : 'none'
+        const cacheKey = `search:suggest-tags:${user?.id ?? 'anon'}:${geoKey}:${dogSize ?? 'none'}:${walkTagsKey}`
         const { data: tags } = await fetchWithCache(cacheKey, CACHE_TTL.SUGGEST_TAGS_MS, async () => {
           const prefecture = location ? await getCachedPrefecture(location.lat, location.lng) : undefined
           const res = await wanspotFetch('/api/spots/suggest-tags', {
@@ -455,6 +508,8 @@ function SearchTab() {
               lat: location?.lat,
               lng: location?.lng,
               prefecture,
+              walkAreaTags: userWalkTags,
+              dogSize: dogSize ?? null,
             },
           })
           if (!res.ok) return null
@@ -462,7 +517,7 @@ function SearchTab() {
           return Array.isArray(data.tags) && data.tags.length > 0 ? data.tags : null
         })
         if (!cancelled && tags) {
-          setSuggestions(tags)
+          setSuggestions(mergeSuggestionTags(tags, dogSize))
           setSuggestionsReady(true)
         }
       } catch {
@@ -472,7 +527,7 @@ function SearchTab() {
     return () => {
       cancelled = true
     }
-  }, [location, nonCriticalReady])
+  }, [location, nonCriticalReady, userWalkTags, dogSize])
 
   const refreshSpotLikesCount = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -581,7 +636,9 @@ function SearchTab() {
               const { data } = await supabase
                 .from('articles')
                 .select(
-                  'id, title, summary, slug, category, theme, keywords, image_url, created_at, published_at, spot_links'
+                  // blocks/spot_links の重い JSON は一覧では取得しない。並べ替え用のスポット参照は
+                  // DB トリガーで事前計算された軽量カラム linked_spot_refs を使う
+                  'id, title, summary, slug, category, theme, keywords, image_url, created_at, published_at, target_prefectures, target_municipalities, target_walk_area_tags, dog_size_tags, topic_tags, segment_level, linked_spot_refs'
                 )
                 .eq('status', 'published')
                 .order('published_at', { ascending: false, nullsFirst: false })
