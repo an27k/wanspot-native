@@ -12,5 +12,9 @@ export async function fetchUserWalkAreaTags(client: SupabaseClient): Promise<str
 
 export async function fetchUserWalkAreaTagsByUserId(client: SupabaseClient, userId: string): Promise<string[]> {
   const { data } = await client.from('users').select('walk_area_tags, walk_area').eq('id', userId).maybeSingle()
-  return walkAreaTagsForUpsert(walkTagsFromUserRow(data))
+  const userTags = walkAreaTagsForUpsert(walkTagsFromUserRow(data))
+  if (userTags.length > 0) return userTags
+
+  const { data: dog } = await client.from('dogs').select('walk_area_tags').eq('user_id', userId).limit(1).maybeSingle()
+  return walkAreaTagsForUpsert(walkTagsFromUserRow(dog))
 }

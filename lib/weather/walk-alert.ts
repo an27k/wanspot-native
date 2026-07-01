@@ -53,28 +53,28 @@ export const WALK_ALERT_LEVELS: WalkAlertLevel[] = [
     key: 'comfortable',
     label: '快適',
     color: '#3FCB97',
-    rangeLabel: '16〜30℃',
-    advice: 'お散歩日和。たっぷり楽しめます。水分はこまめに。',
+    rangeLabel: '16〜24℃',
+    advice: 'お散歩しやすい気温です。日なたではこまめに休憩と水分補給を。',
   },
   {
     key: 'caution',
-    label: '警戒',
+    label: '暑さ注意',
     color: '#F4A74A',
-    rangeLabel: '31〜39℃',
-    advice: '暑さに注意。アスファルトの熱に気をつけ、水分補給を忘れずに。',
+    rangeLabel: '25〜31℃',
+    advice: '熱中症に注意。日なたとアスファルトの熱を避け、短めのお散歩に。',
   },
   {
     key: 'danger',
     label: '危険',
     color: '#FB7E5D',
-    rangeLabel: '40〜45℃',
-    advice: '熱中症の危険大。日中は避け、早朝・夜の涼しい時間にお散歩を。',
+    rangeLabel: '32〜39℃',
+    advice: '熱中症の危険大。日中は避け、早朝・夜の涼しい時間だけにしましょう。',
   },
   {
     key: 'stop',
     label: '中止',
     color: '#F65A78',
-    rangeLabel: '46℃以上',
+    rangeLabel: '40℃以上',
     advice: 'お散歩は中止を。室内で涼しく過ごしましょう。',
   },
 ]
@@ -96,8 +96,8 @@ export function walkAlertFromTemp(tempC: number): WalkAlertLevel {
   if (tempC <= 0) return BY_KEY.numb
   if (tempC <= 7) return BY_KEY.sting
   if (tempC <= 15) return BY_KEY.chilly
-  if (tempC <= 30) return BY_KEY.comfortable
-  if (tempC <= 39) return BY_KEY.caution
-  if (tempC <= 45) return BY_KEY.danger
+  if (tempC <= 24) return BY_KEY.comfortable
+  if (tempC <= 31) return BY_KEY.caution
+  if (tempC <= 39) return BY_KEY.danger
   return BY_KEY.stop
 }

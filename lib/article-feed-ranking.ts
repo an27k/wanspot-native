@@ -19,6 +19,12 @@ export type ArticleForFeed = {
   image_url: string | null
   created_at: string
   published_at?: string | null
+  target_prefectures?: string[] | null
+  target_municipalities?: string[] | null
+  target_walk_area_tags?: string[] | null
+  dog_size_tags?: string[] | null
+  topic_tags?: string[] | null
+  segment_level?: ArticleSegmentLevel | null
   /** blocks/spot_links から DB トリガーで自動抽出された軽量カラム（一覧では blocks 全体を転送しないため優先的に使う） */
   linked_spot_refs?: string[] | null
   blocks?: unknown
@@ -26,6 +32,7 @@ export type ArticleForFeed = {
 }
 
 type LatLng = { lat: number; lng: number }
+type ArticleSegmentLevel = 'municipality' | 'walk_area' | 'prefecture' | 'region' | 'national'
 
 type SpotRow = {
   id: string
@@ -68,6 +75,20 @@ function uniqStrings(list: string[]): string[] {
     out.push(s)
   }
   return out
+}
+
+function normalizeList(list: string[] | null | undefined): string[] {
+  return uniqStrings((Array.isArray(list) ? list : []).map((v) => (typeof v === 'string' ? v.trim() : '')))
+}
+
+function normalizedSet(list: string[]): Set<string> {
+  return new Set(list.map((v) => v.replace(/\s/g, '')).filter(Boolean))
+}
+
+function intersectsNormalized(a: string[], b: string[]): boolean {
+  if (a.length === 0 || b.length === 0) return false
+  const bSet = normalizedSet(b)
+  return a.some((v) => bSet.has(v.replace(/\s/g, '')))
 }
 
 function extractSpotIdsFromBlocks(blocks: unknown): string[] {
@@ -128,11 +149,11 @@ function recencyFactor(createdAt: string, nowMs: number): number {
 
 /** AIレコメンドの距離ブーストと同じ段階 */
 function distanceBoostKm(distKm: number): number {
-  if (distKm < 3) return 20
-  if (distKm < 10) return 15
-  if (distKm < 30) return 10
-  if (distKm < 100) return 3
-  return -10
+  if (distKm < 3) return 45
+  if (distKm < 10) return 34
+  if (distKm < 30) return 22
+  if (distKm < 100) return 4
+  return -24
 }
 
 function avg(nums: number[]): number {
@@ -147,11 +168,11 @@ function scoreWalkAreaText(searchText: string, tags: string[]): number {
   for (const t of tags) {
     const tag = t.trim()
     if (!tag) continue
-    if (normalized.includes(tag.replace(/\s/g, ''))) score += 15
+    if (normalized.includes(tag.replace(/\s/g, ''))) score += 55
     const cityIdx = tag.indexOf('市')
     if (cityIdx > 0 && cityIdx < tag.length - 1) {
       const afterCity = tag.slice(cityIdx + 1)
-      if (afterCity.length >= 2 && normalized.includes(afterCity.replace(/\s/g, ''))) score += 10
+      if (afterCity.length >= 2 && normalized.includes(afterCity.replace(/\s/g, ''))) score += 25
     }
   }
   return score
@@ -164,7 +185,7 @@ function scoreWalkAreaSpots(spots: SpotRow[], tags: string[]): number {
   let score = 0
   for (const spot of spots) {
     const muni = spot.municipality?.trim()
-    if (muni && tagSet.has(muni)) score += 15
+    if (muni && tagSet.has(muni)) score += 60
   }
   return score
 }
@@ -176,21 +197,93 @@ function scoreCatalogProximity(
   tags: string[]
 ): number {
   if (tags.length === 0) return 0
-  let best = 0
+  let best = Number.NEGATIVE_INFINITY
   for (const tag of tags) {
     const entry = catalogEntryByLabel(tag.trim())
     if (!entry) continue
     for (const spot of spots) {
       if (spot.lat == null || spot.lng == null) continue
-      const d = calcDistanceMeters(entry.lat, entry.lng, spot.lat, spot.lng)
-      best = Math.max(best, -d / 650)
+      const dKm = calcDistanceMeters(entry.lat, entry.lng, spot.lat, spot.lng) / 1000
+      best = Math.max(best, distanceBoostKm(dKm) + 18)
     }
     if (userLocation) {
-      const dUser = calcDistanceMeters(userLocation.lat, userLocation.lng, entry.lat, entry.lng)
-      best = Math.max(best, -dUser / 450)
+      const dUserKm = calcDistanceMeters(userLocation.lat, userLocation.lng, entry.lat, entry.lng) / 1000
+      best = Math.max(best, distanceBoostKm(dUserKm) * 0.4)
     }
   }
-  return best
+  return Number.isFinite(best) ? best : 0
+}
+
+function segmentLevelRank(level: ArticleSegmentLevel | null | undefined): number {
+  switch (level) {
+    case 'municipality':
+      return 0
+    case 'walk_area':
+      return 1
+    case 'prefecture':
+      return 2
+    case 'region':
+      return 3
+    case 'national':
+      return 4
+    default:
+      return 3
+  }
+}
+
+function articleHasExplicitSegments(article: ArticleForFeed): boolean {
+  return (
+    normalizeList(article.target_municipalities).length > 0 ||
+    normalizeList(article.target_walk_area_tags).length > 0 ||
+    normalizeList(article.target_prefectures).length > 0
+  )
+}
+
+function articleSegmentTier({
+  article,
+  articleSpots,
+  nearestDistanceKm,
+  userPrefecture,
+  userMunicipality,
+  walkAreaTags,
+}: {
+  article: ArticleForFeed
+  articleSpots: SpotRow[]
+  nearestDistanceKm: number
+  userPrefecture: string | null
+  userMunicipality: string | null
+  walkAreaTags: string[]
+}): number {
+  const targetPrefectures = normalizeList(article.target_prefectures)
+  const targetMunicipalities = normalizeList(article.target_municipalities)
+  const targetWalkAreas = normalizeList(article.target_walk_area_tags)
+  const userMuniTags = uniqStrings([userMunicipality ?? '', ...walkAreaTags])
+  const hasUserArea = userMuniTags.length > 0 || !!userPrefecture
+  const hasExplicitSegments = articleHasExplicitSegments(article)
+
+  if (!hasUserArea) return segmentLevelRank(article.segment_level)
+
+  const exactAreaMatch =
+    intersectsNormalized(targetMunicipalities, userMuniTags) ||
+    intersectsNormalized(targetWalkAreas, walkAreaTags) ||
+    articleSpots.some((spot) => {
+      const muni = spot.municipality?.trim()
+      return !!muni && intersectsNormalized([muni], userMuniTags)
+    })
+  if (exactAreaMatch) return 0
+
+  const prefectureMatch =
+    (!!userPrefecture && intersectsNormalized(targetPrefectures, [userPrefecture])) ||
+    (!!userPrefecture && articleSpots.some((spot) => spot.prefecture === userPrefecture))
+  if (prefectureMatch) return 1
+
+  if (Number.isFinite(nearestDistanceKm)) {
+    if (nearestDistanceKm < 30) return 1
+    if (nearestDistanceKm < 100) return 2
+  }
+
+  if (!hasExplicitSegments || article.segment_level === 'region' || article.segment_level === 'national') return 3
+  return 4
 }
 
 export type RankArticlesFeedArgs<T extends ArticleForFeed> = {
@@ -312,7 +405,7 @@ export async function rankArticlesFeed<T extends ArticleForFeed>({
   const recentSet = new Set(recentArticleIds)
   const seedBase = `${userId ?? 'anon'}|${dayKey}|${locKey}|${tagsKey}`
 
-  type Scored = { article: T; score: number; tieRand: number }
+  type Scored = { article: T; segmentTier: number; segmentRank: number; score: number; tieRand: number }
 
   const scored: Scored[] = []
 
@@ -350,7 +443,8 @@ export async function rankArticlesFeed<T extends ArticleForFeed>({
         distancesKm.push(dM / 1000)
       }
 
-      if (userPrefecture && spot.prefecture === userPrefecture) score += 5
+      if (userPrefecture && spot.prefecture === userPrefecture) score += 18
+      if (userMunicipality && spot.municipality === userMunicipality) score += 45
 
       const likedAt = likedCreatedAtBySpotId.get(spot.id)
       if (likedAt) retentionScore += 1.6 * recencyFactor(likedAt, nowMs)
@@ -360,6 +454,7 @@ export async function rankArticlesFeed<T extends ArticleForFeed>({
 
     distancesKm.sort((a, b) => a - b)
     const k = Math.min(3, distancesKm.length)
+    const nearestDistanceKm = distancesKm[0] ?? Number.POSITIVE_INFINITY
     if (k > 0) {
       score += distanceBoostKm(avg(distancesKm.slice(0, k)))
     }
@@ -372,11 +467,22 @@ export async function rankArticlesFeed<T extends ArticleForFeed>({
 
     if (recentSet.has(article.id)) score -= 12
 
+    const segmentTier = articleSegmentTier({
+      article,
+      articleSpots,
+      nearestDistanceKm,
+      userPrefecture,
+      userMunicipality,
+      walkAreaTags,
+    })
+    const segmentRank = segmentLevelRank(article.segment_level)
     const tieRand = rand01FromString(`${seedBase}|${article.id}`)
-    scored.push({ article, score, tieRand })
+    scored.push({ article, segmentTier, segmentRank, score, tieRand })
   }
 
   scored.sort((a, b) => {
+    if (a.segmentTier !== b.segmentTier) return a.segmentTier - b.segmentTier
+    if (a.segmentRank !== b.segmentRank) return a.segmentRank - b.segmentRank
     if (b.score !== a.score) return b.score - a.score
     return a.tieRand - b.tieRand
   })

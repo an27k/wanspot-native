@@ -10,10 +10,27 @@ import {
   type WalkAlertLevel,
 } from '@/lib/weather/walk-alert'
 import type { WalkDailyAdvice } from '@/lib/weather/walk-daily-advice'
+import type { WeatherCondition } from '@/lib/weather/fetch-weather'
+
+function weatherAwareLabel(levelLabel: string, condition: WeatherCondition | null | undefined): string {
+  switch (condition) {
+    case 'rain':
+      return '雨注意'
+    case 'thunder':
+      return '雷雨注意'
+    case 'snow':
+      return '雪注意'
+    case 'wind':
+      return '強風注意'
+    default:
+      return levelLabel
+  }
+}
 
 export function WalkAlertModal({
   visible,
   tempC,
+  currentCondition = null,
   loading = false,
   needsLocation = false,
   onRequestLocation,
@@ -23,6 +40,7 @@ export function WalkAlertModal({
 }: {
   visible: boolean
   tempC: number | null
+  currentCondition?: WeatherCondition | null
   loading?: boolean
   needsLocation?: boolean
   onRequestLocation?: () => void
@@ -65,7 +83,9 @@ export function WalkAlertModal({
                     />
                   </View>
                   <Text style={styles.headerStatus}>
-                    <Text style={[styles.levelInline, { color: level.color }]}>{level.label}</Text>
+                    <Text style={[styles.levelInline, { color: level.color }]}>
+                      {weatherAwareLabel(level.label, currentCondition)}
+                    </Text>
                     {tempC != null ? (
                       <Text style={styles.tempInline}> · 現在{tempC}℃</Text>
                     ) : null}

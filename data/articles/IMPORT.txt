@@ -14,12 +14,32 @@ wanspot 記事シードの取り込み手順
 3. Supabase へ入れる列（articles テーブル想定）
    - title, slug, body, summary, keywords (text[] または jsonb), blocks (jsonb),
      spot_links (jsonb, 空配列可), category, image_url (nullable), status = 'published'
+   - 地域セグメント列:
+     target_prefectures text[]（例: ["東京都", "神奈川県"]）
+     target_municipalities text[]（例: ["世田谷区", "武蔵野市"]）
+     target_walk_area_tags text[]（アプリの散歩エリアタグと合わせる。例: ["吉祥寺", "横浜みなとみらい"]）
+     dog_size_tags text[]（例: ["S", "M", "小型犬", "大型犬"]）
+     topic_tags text[]（例: ["ドッグラン", "大型犬可", "雨の日", "カフェ"]）
+     segment_level text（municipality / walk_area / prefecture / region / national）
 
 4. 一覧用
    アプリの検索タブ「まとめ記事」は title, summary, slug, keywords, image_url 等を参照します。
    blocks に spot が入っていれば記事本文内にスポットカードが並びます。
+   表示順は target_municipalities / target_walk_area_tags の完全一致を最優先し、
+   次に同一都道府県・近隣スポット、最後に広域/全国記事をフォールバック表示します。
 
 命名ルール（本シード）
 ====================
-タイトル形: 【地方エリア】犬サイズ・テーマのおすすめN選（N は 5〜10）
-keywords には [地方, 犬区分, テーマ, おすすめ] 系を含めています。
+タイトル形:
+- 細かい地域記事: 【世田谷区】大型犬可ドッグランおすすめ5選
+- 散歩エリア記事: 【吉祥寺】雨の日に行きやすい犬同伴カフェ5選
+- 広域フォールバック記事: 【関東】大型犬も走れるドッグランおすすめ6選
+
+keywords には [地域, 犬区分, テーマ, おすすめ] 系を含めます。
+新規作成では、できるだけ municipality / walk_area 粒度の記事を優先してください。
+
+記事不足セグメントの考え方
+====================
+例: ユーザーの散歩エリアが「世田谷区」で、topic_tags に「ドッグラン」「大型犬可」を持つ記事が無い場合、
+同一都道府県や関東の広域記事でフォールバック表示されます。
+ただし記事作成計画では「世田谷区 × ドッグラン × 大型犬可」を不足セグメントとして優先作成します。

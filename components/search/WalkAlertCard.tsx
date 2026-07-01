@@ -9,6 +9,22 @@ import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { useWeather } from '@/lib/weather/use-weather'
 import { useWalkDailyAdvice } from '@/lib/weather/use-walk-daily-advice'
 import { walkAlertFromTemp } from '@/lib/weather/walk-alert'
+import type { WeatherCondition } from '@/lib/weather/fetch-weather'
+
+function weatherAwareLabel(levelLabel: string, condition: WeatherCondition | null | undefined): string {
+  switch (condition) {
+    case 'rain':
+      return '雨注意'
+    case 'thunder':
+      return '雷雨注意'
+    case 'snow':
+      return '雪注意'
+    case 'wind':
+      return '強風注意'
+    default:
+      return levelLabel
+  }
+}
 
 /**
  * 検索タブ上部のお散歩アラートカード（デフォルト表示）。
@@ -31,6 +47,8 @@ export function WalkAlertCard({
   const { advice, loading: adviceLoading } = useWalkDailyAdvice(
     location,
     tempC,
+    weather?.condition,
+    dog?.size ?? null,
     dog?.name ?? null,
     !!location
   )
@@ -58,7 +76,7 @@ export function WalkAlertCard({
               <DogAlertFace size={42} level={level.key} ringColor={level.color} tempC={tempC} />
               <View style={styles.bodyCol}>
                 <Text style={styles.statusLine}>
-                  <Text style={styles.levelTxt}>{level.label}</Text>
+                  <Text style={styles.levelTxt}>{weatherAwareLabel(level.label, weather?.condition)}</Text>
                   {tempC != null ? <Text style={styles.tempTxt}> · 現在{tempC}℃</Text> : null}
                 </Text>
                 <Text style={styles.advice} numberOfLines={2}>
@@ -88,6 +106,7 @@ export function WalkAlertCard({
       <WalkAlertModal
         visible={open}
         tempC={tempC}
+        currentCondition={weather?.condition}
         loading={weatherLoading}
         needsLocation={needsLocation}
         onRequestLocation={onRequestLocation}

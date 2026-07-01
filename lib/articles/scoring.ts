@@ -26,11 +26,11 @@ export function buildArticleSearchText(article: Pick<ArticleLike, 'title' | 'the
 export function scoreArticleRegion(searchText: string, ctx: Pick<ArticleScoringContext, 'userPrefecture' | 'userMunicipality'>): number {
   let score = 0
   if (ctx.userPrefecture) {
-    if (searchText.includes(ctx.userPrefecture)) score += 30
+    if (searchText.includes(ctx.userPrefecture)) score += 45
     const shortPref = ctx.userPrefecture.replace(/[都道府県]$/, '')
-    if (shortPref && searchText.includes(shortPref)) score += 15
+    if (shortPref && searchText.includes(shortPref)) score += 20
   }
-  if (ctx.userMunicipality && searchText.includes(ctx.userMunicipality)) score += 20
+  if (ctx.userMunicipality && searchText.includes(ctx.userMunicipality)) score += 50
   return score
 }
 
