@@ -50,11 +50,6 @@ export function aggregateSpotUnits(plates: VisitPlate[]): SpotVlogUnit[] {
   return [...bySpot.values()].sort((a, b) => b.contribution - a.contribution)
 }
 
-/** @deprecated aggregateSpotUnits + computeVlogProgressFromPlates を使用 */
-export function countReviewedSpots(plates: { spot_id: string }[]): number {
-  return new Set(plates.map((p) => p.spot_id)).size
-}
-
 export function computeVlogProgressFromPlates(
   plates: VisitPlate[],
   target = VLOG_COMPLETION_TARGET
@@ -80,17 +75,5 @@ export function computeVlogProgressFromPlates(
     isUnlocked: totalContribution >= safeTarget,
     isNearUnlock: !totalContribution || totalContribution >= safeTarget ? false : completeUnits === safeTarget - 1,
     nudgeSpot,
-  }
-}
-
-/** 後方互換: 整数スポット数ベース */
-export function computeVlogProgress(reviewedSpotCount: number, target = VLOG_COMPLETION_TARGET): Omit<VlogProgress, 'units' | 'totalContribution' | 'completeUnits' | 'isUnlocked' | 'isNearUnlock' | 'nudgeSpot'> {
-  const safeTarget = Math.max(1, target)
-  const current = Math.max(0, Math.min(reviewedSpotCount, safeTarget))
-  return {
-    progress: current / safeTarget,
-    remaining: Math.max(0, safeTarget - reviewedSpotCount),
-    current,
-    target: safeTarget,
   }
 }

@@ -14,6 +14,7 @@ export const CACHE_TTL = {
   SPOT_LIKES_MS: 5 * 60_000,
   RECOMMEND_MS: 12 * 60_000,
   DOG_PROFILE_MS: 10 * 60_000,
+  AI_SUMMARY_MS: 30 * 60_000,
 } as const
 
 type CacheEntry<T> = {
@@ -54,10 +55,6 @@ export function invalidateCachePrefix(prefix: string): void {
   for (const key of store.keys()) {
     if (key.startsWith(prefix)) store.delete(key)
   }
-}
-
-export function invalidateAllCache(): void {
-  store.clear()
 }
 
 const inflight = new Map<string, Promise<unknown>>()

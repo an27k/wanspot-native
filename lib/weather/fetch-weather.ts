@@ -1,6 +1,5 @@
 import { Platform } from 'react-native'
 import Constants from 'expo-constants'
-import type { Ionicons } from '@expo/vector-icons'
 import { getGoogleMapsAndroidApiKey, getGoogleMapsIosApiKey } from '@/lib/google-maps-config'
 
 function getGoogleMapsApiKeyForWeather(): string {
@@ -118,34 +117,4 @@ export async function fetchCurrentWeather(
     if (g) return g
   }
   return fetchFromOpenMeteo(lat, lng)
-}
-
-/** 天気区分 → Ionicons 名 */
-export function weatherIcon(condition: WeatherCondition): keyof typeof Ionicons.glyphMap {
-  switch (condition) {
-    case 'clear':
-      return 'sunny'
-    case 'partly':
-      return 'partly-sunny'
-    case 'cloudy':
-      return 'cloudy'
-    case 'rain':
-      return 'rainy'
-    case 'snow':
-      return 'snow'
-    case 'thunder':
-      return 'thunderstorm'
-    case 'fog':
-      return 'cloudy'
-    case 'wind':
-      return 'cloudy'
-  }
-}
-
-/** 天気アイコンの色（晴れ=黄, 雨/雷=青, 雪=水色, それ以外=グレー） */
-export function weatherIconColor(condition: WeatherCondition): string {
-  if (condition === 'clear' || condition === 'partly') return '#f0b400'
-  if (condition === 'rain' || condition === 'thunder') return '#5b9bd5'
-  if (condition === 'snow') return '#7fc4e8'
-  return '#9a9a96'
 }

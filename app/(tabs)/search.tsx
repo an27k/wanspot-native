@@ -80,6 +80,11 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 
 const AI_LIKES_MIN = 5
 
+/** 単一 ScrollView 構成のため、リストは初期件数のみマウントし、下端に近づくたび段階的に増やす（簡易ウィンドウイング） */
+const LIST_INITIAL_VISIBLE = 8
+const LIST_VISIBLE_STEP = 8
+const LIST_LOAD_MORE_THRESHOLD_PX = 700
+
 function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000
   const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -189,9 +194,26 @@ function SearchTab() {
   const [spotLikesCount, setSpotLikesCount] = useState<number | null>(null)
   const restoredRef = useRef(false)
   const scrollYRef = useRef(0)
+  const contentHeightRef = useRef(0)
+  const viewportHeightRef = useRef(0)
+  const sortedResultsLenRef = useRef(0)
+  const articlesListLenRef = useRef(0)
+  const discoverResultsLenRef = useRef(0)
+  const [searchVisibleCount, setSearchVisibleCount] = useState(LIST_INITIAL_VISIBLE)
+  const [articlesVisibleCount, setArticlesVisibleCount] = useState(LIST_INITIAL_VISIBLE)
+  const [discoverVisibleCount, setDiscoverVisibleCount] = useState(LIST_INITIAL_VISIBLE)
+  /** スクロールが下端に近い、またはコンテンツが画面に対して短い場合に各リストの表示件数を伸ばす */
+  const checkAndGrowVisibleLists = useCallback(() => {
+    const remaining = contentHeightRef.current - viewportHeightRef.current - scrollYRef.current
+    if (remaining > LIST_LOAD_MORE_THRESHOLD_PX) return
+    setSearchVisibleCount((c) => Math.min(c + LIST_VISIBLE_STEP, sortedResultsLenRef.current))
+    setArticlesVisibleCount((c) => Math.min(c + LIST_VISIBLE_STEP, articlesListLenRef.current))
+    setDiscoverVisibleCount((c) => Math.min(c + LIST_VISIBLE_STEP, discoverResultsLenRef.current))
+  }, [])
   const updateScrollY = useCallback((y: number) => {
     scrollYRef.current = y
-  }, [])
+    checkAndGrowVisibleLists()
+  }, [checkAndGrowVisibleLists])
   const tabBarScrollHandler = useTabBarScroll(updateScrollY)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
@@ -752,6 +774,26 @@ function SearchTab() {
   }, [aiResults, location, userWalkTags])
   const discoverLoading = discoverMode === 'ai' ? aiLoading : articlesLoading
 
+  sortedResultsLenRef.current = sortedResults.length
+  articlesListLenRef.current = articlesList.length
+  discoverResultsLenRef.current = discoverResults.length
+
+  // 元データ（再取得）が変わった時のみ表示件数を初期値に戻す。並べ替えのみの更新（location/tags 変化）ではリセットしない
+  useEffect(() => {
+    setSearchVisibleCount(LIST_INITIAL_VISIBLE)
+  }, [results])
+  useEffect(() => {
+    setArticlesVisibleCount(LIST_INITIAL_VISIBLE)
+  }, [articlesRaw])
+  useEffect(() => {
+    setDiscoverVisibleCount(LIST_INITIAL_VISIBLE)
+  }, [aiResults])
+
+  // 表示件数の変化やコンテンツ再取得の直後は、画面がまだ埋まっていなければ追加で伸ばす（スクロール不要なケースの取りこぼし対策）
+  useEffect(() => {
+    checkAndGrowVisibleLists()
+  }, [searchVisibleCount, articlesVisibleCount, discoverVisibleCount, sortedResults.length, articlesList.length, discoverResults.length, checkAndGrowVisibleLists])
+
   useEffect(() => {
     if (!articlesLoading && articlesList.length > 0 && articlesListEnter) {
       const t = setTimeout(() => setArticlesListEnter(false), 700)
@@ -813,6 +855,14 @@ function SearchTab() {
         onScrollBeginDrag={() => Keyboard.dismiss()}
         scrollEventThrottle={16}
         onScroll={tabBarScrollHandler}
+        onContentSizeChange={(_w, h) => {
+          contentHeightRef.current = h
+          checkAndGrowVisibleLists()
+        }}
+        onLayout={(e) => {
+          viewportHeightRef.current = e.nativeEvent.layout.height
+          checkAndGrowVisibleLists()
+        }}
         refreshControl={
           <RefreshControl
             refreshing={pullRefreshing}
@@ -977,7 +1027,7 @@ function SearchTab() {
           {!loading && searched && results.length === 0 ? <PowState label="見つかりませんでした" /> : null}
           {!loading &&
             searched &&
-            sortedResults.map((spot, index) => (
+            sortedResults.slice(0, searchVisibleCount).map((spot, index) => (
               <ListEnterItem key={spot.place_id} index={index} animate={searchListEnter}>
                 <View>
                   <SearchDiscoverResultCard
@@ -1034,7 +1084,7 @@ function SearchTab() {
                   {!articlesLoading && !articlesFetchError && articlesRaw.length === 0 ? (
                     <PowState label="公開中の記事がありません" />
                   ) : null}
-                  {articlesList.map((article, index) => (
+                  {articlesList.slice(0, articlesVisibleCount).map((article, index) => (
                       <ListEnterItem key={article.id} index={index} animate={articlesListEnter}>
                         <View>
                           <DiscoverFeedCard
@@ -1095,7 +1145,7 @@ function SearchTab() {
                   ) : null}
                   {!discoverLoading &&
                     !(discoverMode === 'ai' && spotLikesCount !== null && spotLikesCount < AI_LIKES_MIN) &&
-                    discoverResults.map((spot, index) => (
+                    discoverResults.slice(0, discoverVisibleCount).map((spot, index) => (
                       <ListEnterItem key={spot.place_id} index={index} animate={discoverListEnter}>
                         <View>
                           <SearchDiscoverResultCard

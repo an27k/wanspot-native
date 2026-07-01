@@ -214,6 +214,10 @@ export const NearbyBottomSheet = forwardRef<NearbySheetHandle, NearbyBottomSheet
         ListFooterComponent={<View style={{ height: listBottomPad }} />}
         contentContainerStyle={[styles.listContent, { paddingBottom: listBottomPad }]}
         keyboardShouldPersistTaps="handled"
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
         onScrollToIndexFailed={(info) => {
           setTimeout(() => {
             try {

@@ -118,13 +118,3 @@ export async function signInWithGoogleOAuth(): Promise<OAuthSignInResult> {
     return { error: e instanceof Error ? e : new Error(String(e)) }
   }
 }
-
-export async function signInWithOAuthProvider(
-  provider: 'google' | 'apple'
-): Promise<OAuthSignInResult> {
-  if (provider === 'google') {
-    return signInWithGoogleOAuth()
-  }
-
-  return { error: new Error('Apple Sign-In はネイティブ方式（lib/apple-signin.ts）をご利用ください') }
-}

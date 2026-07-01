@@ -38,6 +38,8 @@ import { isPendingPlaceRouteId } from '@/lib/spot-detail-pending'
 import { formatVisitRecordError, recordSpotVisit } from '@/lib/visits-memories'
 import { logUserEvent } from '@/lib/user-events'
 import { useDogProfile } from '@/components/dog/useDogProfile'
+import { fetchAiSummary } from '@/lib/ai-summary'
+import { withTimeout } from '@/lib/promise-timeout'
 import type { PlaceResult } from '@/types/places'
 
 const { width: WIN_W, height: WIN_H } = Dimensions.get('window')
@@ -201,12 +203,13 @@ export default function SpotDetailScreen({
 }) {
   const router = useRouter()
   const requireAuth = useRequireAuth()
-  const { dog } = useDogProfile()
+  const { dog, loading: dogLoading } = useDogProfile()
   const insets = useSafeAreaInsets()
   const likeScale = useRef(new Animated.Value(1)).current
   const instagramAutoFetchSent = useRef<string | null>(null)
   const visitRecordInFlight = useRef(false)
   const photoListRef = useRef<FlatList<string>>(null)
+  const aiRequestKeyRef = useRef<string | null>(null)
 
   const [spot, setSpot] = useState<Spot | null>(null)
   const [likeCount, setLikeCount] = useState(0)
@@ -216,6 +219,7 @@ export default function SpotDetailScreen({
   const [currentPhoto, setCurrentPhoto] = useState(0)
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null)
   const [aiLoading, setAiLoading] = useState(true)
+  const [reviewsForAi, setReviewsForAi] = useState<string[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [googleRating, setGoogleRating] = useState<number | null>(null)
@@ -255,9 +259,31 @@ export default function SpotDetailScreen({
       setSpot(spotData as Spot)
       if (user) setUserId(user.id)
 
-      const detailHttp = await wanspotFetch(
-        `/api/spots/detail?place_id=${encodeURIComponent(spotData.place_id)}`
-      ).catch(() => null)
+      // Places Detail と いいね/チェックイン状態は互いに依存しないため並列化してラウンドトリップを1回減らす
+      const [detailHttp, [{ count: likeC }, myLikeResult, myVisit]] = await Promise.all([
+        wanspotFetch(`/api/spots/detail?place_id=${encodeURIComponent(spotData.place_id)}`).catch(() => null),
+        Promise.all([
+          supabase.from('spot_likes').select('*', { count: 'exact', head: true }).eq('spot_id', resolvedSpotId),
+          user
+            ? supabase
+                .from('spot_likes')
+                .select('id')
+                .eq('spot_id', resolvedSpotId)
+                .eq('user_id', user.id)
+                .maybeSingle()
+            : Promise.resolve({ data: null }),
+          user
+            ? supabase
+                .from('visits')
+                .select('id')
+                .eq('spot_id', resolvedSpotId)
+                .eq('user_id', user.id)
+                .eq('soft_deleted', false)
+                .limit(1)
+                .maybeSingle()
+            : Promise.resolve({ data: null }),
+        ]),
+      ])
       let detailRes: DetailJson | null = null
       if (detailHttp?.ok) {
         try {
@@ -266,32 +292,6 @@ export default function SpotDetailScreen({
           detailRes = null
         }
       }
-
-      const [
-        { count: likeC },
-        myLikeResult,
-        myVisit,
-      ] = await Promise.all([
-        supabase.from('spot_likes').select('*', { count: 'exact', head: true }).eq('spot_id', resolvedSpotId),
-        user
-          ? supabase
-              .from('spot_likes')
-              .select('id')
-              .eq('spot_id', resolvedSpotId)
-              .eq('user_id', user.id)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-        user
-          ? supabase
-              .from('visits')
-              .select('id')
-              .eq('spot_id', resolvedSpotId)
-              .eq('user_id', user.id)
-              .eq('soft_deleted', false)
-              .limit(1)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-      ])
 
       setLikeCount(likeC ?? 0)
       setLiked(!!myLikeResult.data)
@@ -336,51 +336,63 @@ export default function SpotDetailScreen({
       setGooglePriceLevel(priceLvl)
       setGooglePriceLabel(priceLbl)
       setGoogleAddress(detailRes?.formatted_address ?? detailRes?.vicinity ?? null)
+      setReviewsForAi(detailRes?.reviews?.slice(0, 5).map((r) => r.text).filter(Boolean) as string[] ?? [])
       setLoading(false)
-
-      const [walkTags, posCtx] = await Promise.all([
-        user?.id ? fetchUserWalkAreaTagsByUserId(supabase, user.id) : Promise.resolve([] as string[]),
-        Location.getCurrentPositionAsync({})
-          .then((p) => ({ lat: p.coords.latitude, lng: p.coords.longitude }))
-          .catch((): null => null),
-      ])
-
-      wanspotFetchJson<{ keywords?: string[]; summary?: string; wanspotRating?: { avg: number; count: number } }>(
-        '/api/ai-summary',
-        {
-          method: 'POST',
-          json: {
-            place_id: spotData.place_id,
-            spot_id: spotData.id,
-            name: spotData.name,
-            category: spotData.category,
-            rating: spotData.rating,
-            address: spotData.address,
-            reviews: detailRes?.reviews?.slice(0, 5).map((r) => r.text).filter(Boolean) ?? [],
-            dogSize: dog?.size ?? undefined,
-            dogBreed: dog?.breed ?? undefined,
-            userContext: {
-              walkAreaTags: walkTags,
-              lat: posCtx?.lat ?? null,
-              lng: posCtx?.lng ?? null,
-            },
-          },
-        }
-      )
-        .then((json) => {
-          if (json.keywords && json.summary) {
-            setAiSummary({
-              keywords: json.keywords,
-              summary: json.summary,
-              wanspotRating: json.wanspotRating,
-            })
-          }
-        })
-        .catch(() => {})
-        .finally(() => setAiLoading(false))
     }
     void init()
-  }, [spotId, pendingPlace, router, dog?.size, dog?.breed])
+    // dog は別 effect で扱う（変化時に spots/detail/likes を含む init 全体を再実行しないようにするため）
+  }, [spotId, pendingPlace, router])
+
+  // AIサマリーは spot 確定後に独立して実行。犬プロフィールの変化はこの effect のみ再実行させ、
+  // 上の init（Places Detail・いいね・チェックイン取得）を無駄に再実行させない。
+  useEffect(() => {
+    if (loading || !spot || dogLoading) return
+    const dogKey = `${dog?.size ?? 'none'}:${dog?.breed ?? 'none'}`
+    const requestKey = `${spot.id}:${dogKey}:${reviewsForAi.length > 0 ? 'r1' : 'r0'}`
+    if (aiRequestKeyRef.current === requestKey) return
+    aiRequestKeyRef.current = requestKey
+
+    let cancelled = false
+    setAiLoading(true)
+    ;(async () => {
+      const [walkTags, posCtx] = await Promise.all([
+        userId ? fetchUserWalkAreaTagsByUserId(supabase, userId) : Promise.resolve([] as string[]),
+        // GPS取得が遅い/権限待ちのままだとAIレビュー表示全体が止まってしまうため、
+        // 一定時間で位置情報なしのまま進める（レビュー内容には必須ではない）
+        withTimeout(
+          Location.getCurrentPositionAsync({})
+            .then((p) => ({ lat: p.coords.latitude, lng: p.coords.longitude }))
+            .catch((): null => null),
+          2500,
+          null
+        ),
+      ])
+
+      const result = await fetchAiSummary({
+        place_id: spot.place_id,
+        spot_id: spot.id,
+        name: spot.name,
+        category: spot.category,
+        rating: spot.rating,
+        address: spot.address,
+        reviews: reviewsForAi,
+        dogSize: dog?.size ?? undefined,
+        dogBreed: dog?.breed ?? undefined,
+        userContext: {
+          walkAreaTags: walkTags,
+          lat: posCtx?.lat ?? null,
+          lng: posCtx?.lng ?? null,
+        },
+      })
+      if (!cancelled && result) setAiSummary(result)
+    })().finally(() => {
+      if (!cancelled) setAiLoading(false)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [spot, loading, dogLoading, dog?.size, dog?.breed, userId, reviewsForAi])
 
   useEffect(() => {
     if (photoRefs.length === 0) return

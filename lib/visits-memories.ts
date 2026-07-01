@@ -160,18 +160,6 @@ export async function fetchVisitPlates(userId: string): Promise<VisitPlate[]> {
   return plates
 }
 
-export async function hasVisitForSpot(userId: string, spotId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from('visits')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('spot_id', spotId)
-    .eq('soft_deleted', false)
-    .limit(1)
-    .maybeSingle()
-  return !!data
-}
-
 /** 同日・同スポットの visit がなければ insert。check_ins は best-effort（失敗しても visits 成功なら OK）。 */
 export async function recordSpotVisit(
   userId: string,
@@ -242,20 +230,6 @@ async function syncCheckInBestEffort(userId: string, spotId: string): Promise<vo
   } catch (e) {
     console.warn('[recordSpotVisit] check_ins', e instanceof Error ? e.message : String(e))
   }
-}
-
-export async function createVisitForSpot(userId: string, spotId: string, visitedAt?: string): Promise<VisitRow | null> {
-  const { data, error } = await supabase
-    .from('visits')
-    .insert({
-      user_id: userId,
-      spot_id: spotId,
-      visited_at: visitedAt ?? new Date().toISOString(),
-    })
-    .select(VISIT_COLUMNS)
-    .single()
-  if (error || !data) return null
-  return data as VisitRow
 }
 
 export async function updateVisit(

@@ -20,6 +20,3 @@ export const listImageExpoProps = {
   transition: 80,
   backgroundColor: LIST_IMAGE_BG,
 }
-
-/** エイリアス（`remoteImageExpoProps` と同じ） */
-export const remoteImageDefaults = remoteImageExpoProps

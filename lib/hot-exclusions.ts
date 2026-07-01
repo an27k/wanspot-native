@@ -230,6 +230,3 @@ export function isExcludedHotSpot(spot: DiscoverSpotFilterInput): boolean {
 export function filterDiscoverRecommendSpots<T extends DiscoverSpotFilterInput>(spots: T[]): T[] {
   return spots.filter((s) => !isExcludedHotSpot(s))
 }
-
-/** @deprecated filterDiscoverRecommendSpots と同一。互換用。 */
-export const filterHotSpotResults = filterDiscoverRecommendSpots

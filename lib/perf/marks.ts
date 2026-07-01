@@ -12,13 +12,6 @@ export function perfMark(label: string): void {
   if (__DEV__) console.log(`[perf] mark  ${label}`)
 }
 
-export function perfMeasure(label: string, startLabel: string): number {
-  const start = marks.get(startLabel)
-  const elapsed = start != null ? nowMs() - start : -1
-  if (__DEV__) console.log(`[perf] ${label}: ${elapsed >= 0 ? `${Math.round(elapsed)}ms` : 'n/a'}`)
-  return elapsed
-}
-
 export async function perfAsync<T>(label: string, fn: () => Promise<T>): Promise<T> {
   const t0 = nowMs()
   try {

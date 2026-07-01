@@ -19,6 +19,8 @@ export type ArticleForFeed = {
   image_url: string | null
   created_at: string
   published_at?: string | null
+  /** blocks/spot_links から DB トリガーで自動抽出された軽量カラム（一覧では blocks 全体を転送しないため優先的に使う） */
+  linked_spot_refs?: string[] | null
   blocks?: unknown
   spot_links?: unknown
 }
@@ -96,6 +98,11 @@ function extractSpotIdsFromSpotLinks(spotLinks: unknown): string[] {
 }
 
 function extractSpotIdsFromArticle(a: ArticleForFeed): string[] {
+  // linked_spot_refs（DBトリガーで blocks/spot_links から事前計算）があれば、
+  // blocks 全体を持たない軽量な一覧取得でもスポット参照を取り出せる
+  if (Array.isArray(a.linked_spot_refs) && a.linked_spot_refs.length > 0) {
+    return uniqStrings(a.linked_spot_refs)
+  }
   return uniqStrings([...extractSpotIdsFromBlocks(a.blocks), ...extractSpotIdsFromSpotLinks(a.spot_links)])
 }
 

@@ -1,4 +1,3 @@
-import { TOKENS } from '@/constants/color-tokens'
 import type { AiPlanStop } from '@/components/ai-plan/types'
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -60,15 +59,4 @@ export function getCategoryLabel(stop: AiPlanStop): string {
     return cat
   }
   return 'スポット'
-}
-
-export function getCategoryBgColor(stop: AiPlanStop): string {
-  const label = getCategoryLabel(stop)
-  const greenish = ['公園', 'ドッグラン', '観光地', '神社仏閣']
-  const beige = ['カフェ', 'レストラン', 'ベーカリー', '温泉']
-  const purple = ['ショッピング', 'ショップ', 'アミューズメント', '博物館', '動物園', 'ペットショップ']
-  if (greenish.includes(label)) return TOKENS.category.park
-  if (beige.includes(label)) return TOKENS.category.food
-  if (purple.includes(label)) return TOKENS.category.retail
-  return TOKENS.category.fallback
 }

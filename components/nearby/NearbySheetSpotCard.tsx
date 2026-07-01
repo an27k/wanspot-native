@@ -9,10 +9,12 @@ import { IconPaw } from '@/components/IconPaw'
 import { HEART_ICON } from '@/lib/constants'
 import { formatDistanceLabel, calcDistanceMeters } from '@/lib/nearby/geo'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
-import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
+import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
+import { CACHE_TTL, fetchWithCache } from '@/lib/client-cache'
+import { fetchAiSummary } from '@/lib/ai-summary'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { supabase } from '@/lib/supabase'
-import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
+import { spotPhotoUrl } from '@/lib/wanspot-api'
 import { colors } from '@/constants/colors'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 
@@ -91,38 +93,48 @@ export function NearbySheetSpotCard({
   const uri = spotPhotoUrl(spot.photoRef, 'thumbnail')
 
   useEffect(() => {
-    void fetchUserWalkAreaTags(supabase).then(setUserWalkTags)
+    let cancelled = false
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const uid = session?.user?.id
+      if (!uid) {
+        if (!cancelled) setUserWalkTags([])
+        return
+      }
+      // カードごとの個別クエリを避け、画面内の全カードで同一キャッシュを共有する
+      const { data: tags } = await fetchWithCache(`user:walk-tags:${uid}`, CACHE_TTL.WALK_TAGS_MS, () =>
+        fetchUserWalkAreaTagsByUserId(supabase, uid)
+      )
+      if (!cancelled) setUserWalkTags(tags)
+    })()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const handleAiSummary = async () => {
     if (aiSummary || aiLoading) return
     setAiLoading(true)
     try {
-      const res = await wanspotFetch('/api/ai-summary', {
-        method: 'POST',
-        json: {
-          place_id: spot.placeId,
-          name: spot.name,
-          category: spot.category,
-          rating: spot.rating,
-          address: spot.address,
-          reviews: [],
-          dogSize: dog?.size ?? undefined,
-          dogBreed: dog?.breed ?? undefined,
-          userContext: {
-            walkAreaTags: userWalkTags,
-            lat: userLocation?.lat ?? null,
-            lng: userLocation?.lng ?? null,
-          },
+      const result = await fetchAiSummary({
+        place_id: spot.placeId,
+        name: spot.name,
+        category: spot.category,
+        rating: spot.rating,
+        address: spot.address,
+        reviews: [],
+        dogSize: dog?.size ?? undefined,
+        dogBreed: dog?.breed ?? undefined,
+        userContext: {
+          walkAreaTags: userWalkTags,
+          lat: userLocation?.lat ?? null,
+          lng: userLocation?.lng ?? null,
         },
       })
-      if (!res.ok) throw new Error(`ai-summary ${res.status}`)
-      const data = (await res.json()) as { keywords?: string[]; summary?: string }
-      setAiSummary(
-        data.keywords && data.summary
-          ? { keywords: data.keywords, summary: data.summary }
-          : { keywords: [], summary: typeof data.summary === 'string' ? data.summary : '' }
-      )
+      if (!result) throw new Error('ai-summary failed')
+      setAiSummary(result)
     } catch {
       setAiSummary({ keywords: [], summary: 'ワンスポAIレビューを生成できませんでした。時間をおいてもう一度お試しください。' })
     } finally {

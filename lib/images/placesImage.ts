@@ -17,14 +17,6 @@ export function widthForImageSize(size: ImageSize): number {
 }
 
 /**
- * photo_reference から Google Place Photo API の URL を生成（直接 Places を叩く箇所用）
- */
-export function getPlacesImageUrl(photoReference: string, size: ImageSize, apiKey: string): string {
-  const { maxwidth } = SIZE_MAP[size]
-  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxwidth}&photo_reference=${encodeURIComponent(photoReference)}&key=${encodeURIComponent(apiKey)}`
-}
-
-/**
  * 既存の画像URL（place/photo や wanspot プロキシ等）の幅指定を入れ替え
  */
 export function resizePlacesImageUrl(originalUrl: string, size: ImageSize): string {

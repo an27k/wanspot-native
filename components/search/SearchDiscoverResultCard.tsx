@@ -12,7 +12,8 @@ import { HEART_ICON } from '@/lib/constants'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
-import { spotPhotoUrl, wanspotFetch } from '@/lib/wanspot-api'
+import { spotPhotoUrl } from '@/lib/wanspot-api'
+import { fetchAiSummary } from '@/lib/ai-summary'
 import type { PlaceResult } from '@/types/places'
 import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
@@ -158,34 +159,23 @@ export function SearchDiscoverResultCard({
     if (aiSummary || aiLoading) return
     setAiLoading(true)
     try {
-      const res = await wanspotFetch('/api/ai-summary', {
-        method: 'POST',
-        json: {
-          place_id: spot.place_id,
-          name: spot.name,
-          category: spot.category,
-          rating: spot.rating,
-          address: spot.address,
-          reviews: [],
-          dogSize: dog?.size ?? undefined,
-          dogBreed: dog?.breed ?? undefined,
-          userContext: {
-            walkAreaTags: userWalkTags,
-            lat: userLocation?.lat ?? null,
-            lng: userLocation?.lng ?? null,
-          },
+      const result = await fetchAiSummary({
+        place_id: spot.place_id,
+        name: spot.name,
+        category: spot.category,
+        rating: spot.rating,
+        address: spot.address,
+        reviews: [],
+        dogSize: dog?.size ?? undefined,
+        dogBreed: dog?.breed ?? undefined,
+        userContext: {
+          walkAreaTags: userWalkTags,
+          lat: userLocation?.lat ?? null,
+          lng: userLocation?.lng ?? null,
         },
       })
-      if (!res.ok) throw new Error(`ai-summary ${res.status}`)
-      const data = (await res.json()) as { keywords?: string[]; summary?: string }
-      setAiSummary(
-        data.keywords && data.summary
-          ? { keywords: data.keywords, summary: data.summary }
-          : {
-              keywords: [],
-              summary: typeof data.summary === 'string' ? data.summary : '',
-            }
-      )
+      if (!result) throw new Error('ai-summary failed')
+      setAiSummary(result)
     } catch {
       setAiSummary({ keywords: [], summary: 'ワンスポAIレビューを生成できませんでした。時間をおいてもう一度お試しください。' })
     } finally {

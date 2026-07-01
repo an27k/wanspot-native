@@ -1,6 +1,5 @@
 import * as ImagePicker from 'expo-image-picker'
 import { Alert, Linking } from 'react-native'
-import { applyUtsurunFilter } from '@/lib/photo-filter/apply-utsurun-filter'
 import { compressImageToJpeg } from '@/lib/images/compress-image'
 
 export interface PickedImage {
@@ -47,36 +46,6 @@ export async function pickFromLibrary(): Promise<PickedImage | null> {
 
   const asset = result.assets[0]
   return await compressImage(asset.uri)
-}
-
-/**
- * 今日の1枚用：クロップなし撮影 → 写ルンです風フィルター焼き込み（オリジナルアスペクト維持）
- */
-export async function takeDailyPhoto(): Promise<PickedImage | null> {
-  const { status } = await ImagePicker.requestCameraPermissionsAsync()
-
-  if (status !== 'granted') {
-    Alert.alert(
-      '権限が必要です',
-      '設定アプリからカメラへのアクセスを許可してください。',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        { text: '設定を開く', onPress: () => Linking.openSettings() },
-      ]
-    )
-    return null
-  }
-
-  const result = await ImagePicker.launchCameraAsync({
-    allowsEditing: false,
-    quality: 1,
-    exif: false,
-  })
-
-  if (result.canceled) return null
-
-  const asset = result.assets[0]
-  return applyUtsurunFilter(asset.uri)
 }
 
 /**

@@ -9,6 +9,3 @@ export const LIST_ENTER_STAGGER_MS = 40
 
 /** FadeInDown の duration（ms） */
 export const LIST_ENTER_DURATION = 280
-
-/** レイアウト変化の spring（LinearTransition 用） */
-export const LAYOUT_SPRING = SOFT_SPRING

@@ -70,28 +70,6 @@ export function scoreArticleFreshness(publishedAt: string | null | undefined, no
   return 0
 }
 
-/**
- * テキストのみの簡易スコア（スポット座標なし時のフォールバック）
- */
-export function scoreArticleTextOnly(article: ArticleLike, ctx: ArticleScoringContext, nowMs = Date.now()): number {
-  const searchText = buildArticleSearchText(article)
-  let score = 50
-  score += scoreArticleRegion(searchText, ctx)
-  score += scoreArticleSeason(searchText, nowMs)
-  score += scoreArticleFreshness(article.published_at, nowMs)
-  if (ctx.likedArticleIds?.includes(article.id)) score += 30
-  if (ctx.readArticleIds?.includes(article.id)) score -= 15
-  return score
-}
-
-export function sortArticlesByScore<T extends ArticleLike>(articles: T[], ctx: ArticleScoringContext): T[] {
-  const nowMs = Date.now()
-  return [...articles]
-    .map((article) => ({ article, score: scoreArticleTextOnly(article, ctx, nowMs) }))
-    .sort((a, b) => b.score - a.score)
-    .map(({ article }) => article)
-}
-
 function getSeason(month: number): 'spring' | 'summer' | 'autumn' | 'winter' {
   if (month >= 3 && month <= 5) return 'spring'
   if (month >= 6 && month <= 8) return 'summer'
