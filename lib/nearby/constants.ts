@@ -35,7 +35,7 @@ export const MAP_GENRE_CHIPS = [
     key: 'veterinary_care',
     label: '動物病院',
     icon: 'medkit',
-    match: ['動物病院', '獣医', 'veterinary', 'animal hospital'],
+    match: ['動物病院', '獣医', 'アニマルクリニック', 'アニマルホスピタル', 'veterinary', 'animal hospital', 'animal clinic'],
   },
   {
     key: 'pet_hotel',
@@ -83,6 +83,18 @@ export const DOG_RUN_SUPPLEMENTARY_SEARCH_QUERY = '屋内ドッグラン'
  */
 export const DOG_RUN_RELEVANT_PATTERN =
   /(ドッグラン|ドッグパーク|ドッグガーデン|ドッグヴィレッジ|ドッグフィールド|ドッグエリア|わんこの広場|犬の遊び場|犬の広場|ノーリード広場|ペットラン|dog ?run|dog ?park|dog ?garden|dog ?village|dog ?field|off.?leash)/i
+
+/**
+ * Google Places に `pet_hotel`/`grooming` type は存在しない（実在するのは
+ * `pet_boarding_service`/`pet_care` だが、これらは Places API (New) 限定で、
+ * 本アプリが使う Nearby/Text Search (Legacy) の `types[]` には出現しない）。
+ * そのため types による救済はできず、名前ベースの正規表現が唯一の判定材料になる。
+ */
+export const PET_HOTEL_RELEVANT_PATTERN =
+  /(ホテル|わんこ ?の ?宿|犬 ?の ?宿|お泊り|おとまり|一時預かり|宿泊|ケンネル|kennel|hotel|pet ?boarding|dog ?boarding|boarding)/i
+
+/** 名前がトリミング（グルーミング）専業を強く示唆する語。宿泊系の語が併記されていなければペットホテルから除外する */
+export const GROOMING_ONLY_NAME_PATTERN = /(トリミング(サロン|専門|ルーム)?|グルーミング|grooming)/i
 
 /** @deprecated 全ジャンル並列取得用。地図タブではジャンル単位 fetch に移行 */
 export const NEARBY_GENRE_TYPES = [

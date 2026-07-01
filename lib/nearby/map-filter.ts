@@ -1,7 +1,9 @@
 import {
   DEFAULT_MAP_GENRE,
   DOG_RUN_RELEVANT_PATTERN,
+  GROOMING_ONLY_NAME_PATTERN,
   MAP_GENRE_CHIPS,
+  PET_HOTEL_RELEVANT_PATTERN,
   matchesGenre,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
@@ -9,7 +11,10 @@ import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import type { PlaceResult } from '@/types/places'
 
 const CAFE_GOOGLE_TYPES = new Set(['cafe', 'bakery', 'coffee_shop'])
-const RESTAURANT_GOOGLE_TYPES = new Set(['restaurant', 'meal_takeaway', 'bar', 'food'])
+const RESTAURANT_GOOGLE_TYPES = new Set(['restaurant', 'meal_takeaway', 'meal_delivery', 'bar', 'food'])
+/** Google Places の正式 type（park/veterinary_care は legacy API でも安定して付与される） */
+const PARK_GOOGLE_TYPES = new Set(['park'])
+const VETERINARY_GOOGLE_TYPES = new Set(['veterinary_care'])
 
 export type MapFilter =
   | { kind: 'genre'; genre: MapGenreKey }
@@ -71,6 +76,33 @@ export function placeMatchesGenreFilter(spot: PlaceResult, genre: MapGenreKey): 
     if (hasCafeType && !hasRestaurantType && !catRestaurant) return false
     if (catCafe && !catRestaurant && !hasRestaurantType) return false
     return hasRestaurantType || catRestaurant
+  }
+
+  if (genre === 'park') {
+    // types に park が付いていれば、category ラベルが旧ロジック由来の汎用値でも通す
+    if (types.some((t) => PARK_GOOGLE_TYPES.has(t))) return true
+    return matchesGenre(cat, 'park')
+  }
+
+  if (genre === 'veterinary_care') {
+    // veterinary_care は legacy API でも安定して付与されるため、types 一致を最優先で信頼する
+    if (types.some((t) => VETERINARY_GOOGLE_TYPES.has(t))) return true
+    return matchesGenre(cat, 'veterinary_care')
+  }
+
+  if (genre === 'pet_hotel') {
+    // pet_hotel/grooming は Google Places に type が存在しない（Nearby/Text Search Legacy）ため、
+    // types による判定はできない。名前がトリミング専業を示し、宿泊を示す語が一切ないものだけ除外する
+    // （収集・検索側で既に「ペットホテル」意図の検索結果に絞られているため、除外は最小限に留める）。
+    const name = spot.name ?? ''
+    const groomingOnlySignal = GROOMING_ONLY_NAME_PATTERN.test(name)
+    if (!groomingOnlySignal) return true
+    // category は Nearby 側で「ペットホテル」に固定されがちなので判定材料に使わず、
+    // 施設名・住所だけで宿泊を示す語の有無を見る
+    const text = [name, spot.address]
+      .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+      .join(' ')
+    return PET_HOTEL_RELEVANT_PATTERN.test(text)
   }
 
   return matchesGenre(cat, genre)
