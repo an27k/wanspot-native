@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
@@ -12,6 +12,7 @@ import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
+import { CACHE_TTL, fetchWithCache, readCache } from '@/lib/client-cache'
 import type { PlaceCardEnrichment } from '@/lib/user-spot-list-utils'
 
 type Block =
@@ -220,7 +221,7 @@ function isTextBlockSectionTitle(content: string): boolean {
   return false
 }
 
-function ArticleSpotCard({
+const ArticleSpotCard = memo(function ArticleSpotCard({
   row,
   enrichment,
   onOpen,
@@ -286,9 +287,9 @@ function ArticleSpotCard({
       </View>
     </View>
   )
-}
+})
 
-function BlockRenderer({
+const BlockRenderer = memo(function BlockRenderer({
   block,
   spotRow,
   enrichment,
@@ -309,7 +310,7 @@ function BlockRenderer({
     return (
       <View style={styles.imgBlock}>
         <ArticleRemoteImage
-          uri={resizePlacesImageUrl(block.url, 'hero')}
+          uri={resizePlacesImageUrl(block.url, 'card')}
           style={styles.imgBlockImg}
           recyclingKey={blockImageRecyclingKey ?? `${articleId}-img-${block.url}`}
           priority="normal"
@@ -339,7 +340,7 @@ function BlockRenderer({
     return <Text style={styles.textBlock}>{block.content}</Text>
   }
   return null
-}
+})
 
 export default function ArticleDetailScreen({ articleId }: { articleId: string }) {
   const router = useRouter()
@@ -350,36 +351,46 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
   const [spotRowsById, setSpotRowsById] = useState<Record<string, SpotRow>>({})
   const [enrichmentByPlaceId, setEnrichmentByPlaceId] = useState<Record<string, PlaceCardEnrichment>>({})
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    const isUuid = /^[0-9a-f-]{36}$/i.test(articleId)
-    const base = supabase
-      .from('articles')
-      .select(
-        'id,title,slug,body,summary,keywords,blocks,spot_links,category,image_url,status'
+  const load = useCallback(
+    async (opts?: { force?: boolean }) => {
+      const cacheKey = `articleDetail:${articleId}`
+      const cached = !opts?.force ? readCache<Article | null>(cacheKey) : undefined
+      // キャッシュがあれば即表示し、裏で最新化（記事の再訪問時に白画面/再読み込み待ちを防ぐ）
+      if (cached !== undefined) {
+        setArticle(cached)
+        setLoading(false)
+      } else {
+        setLoading(true)
+      }
+      const { data } = await fetchWithCache(
+        cacheKey,
+        CACHE_TTL.ARTICLE_DETAIL_MS,
+        async () => {
+          const isUuid = /^[0-9a-f-]{36}$/i.test(articleId)
+          const base = supabase
+            .from('articles')
+            .select('id,title,slug,body,summary,keywords,blocks,spot_links,category,image_url,status')
+            .eq('status', 'published')
+          const res = isUuid ? await base.eq('id', articleId).maybeSingle() : await base.eq('slug', articleId).maybeSingle()
+          return (res.data as Article | null) ?? null
+        },
+        { force: opts?.force }
       )
-      .eq('status', 'published')
-    const { data } = isUuid ? await base.eq('id', articleId).maybeSingle() : await base.eq('slug', articleId).maybeSingle()
-    setArticle(data as Article | null)
-    setLoading(false)
-  }, [articleId])
+      setArticle(data)
+      setLoading(false)
+    },
+    [articleId]
+  )
 
   useEffect(() => {
     void load()
   }, [load])
 
-  /** ヒーロー・本文画像を先にキャッシュ（スクロール前の表示を短縮） */
+  /** ヒーロー画像のみ先にキャッシュ（スクロール前の表示を短縮）。本文中の画像は実際に表示される
+   *  幅に合わせた 'card' サイズで十分なため、hero(1600px) では先読みしない（帯域節約）。 */
   useEffect(() => {
-    if (!article) return
-    const urls: string[] = []
-    if (article.image_url?.trim()) urls.push(resizePlacesImageUrl(article.image_url.trim(), 'hero'))
-    for (const b of normalizeArticleBlocks(article.blocks)) {
-      if (b.type === 'image' && typeof b.url === 'string' && b.url.trim()) {
-        urls.push(resizePlacesImageUrl(b.url.trim(), 'hero'))
-      }
-    }
-    if (urls.length === 0) return
-    void Image.prefetch(urls, 'memory-disk')
+    if (!article?.image_url?.trim()) return
+    void Image.prefetch([resizePlacesImageUrl(article.image_url.trim(), 'hero')], 'memory-disk')
   }, [article])
 
   const blocks: Block[] = useMemo(() => {
@@ -453,41 +464,64 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
         if (row) byBlockKey[key] = row
       }
 
-      const missingPlaceIds = spotIds.filter((k) => !byBlockKey[k] && !isUuid(k))
-      if (missingPlaceIds.length > 0) {
-        const ensured = await Promise.all(
-          missingPlaceIds.map((pid) => ensureSpotRowFromPlaceId(pid, spotNameByKey[pid] ?? ''))
-        )
-        if (cancelled) return
-        for (let i = 0; i < missingPlaceIds.length; i++) {
-          const row = ensured[i]
-          const key = missingPlaceIds[i]
-          if (row) {
-            byBlockKey[key] = row
-            byBlockKey[row.id] = row
-            if (row.place_id) byBlockKey[row.place_id] = row
-          }
-        }
-      }
-
+      // 既に DB に存在するスポットは、未登録スポットの ensure（外部API+upsert）を待たずに即表示。
+      // 以前は1件でも未登録スポットがあると全カードの表示が ensure 完了まで止まっていた。
       setSpotRowsById(byBlockKey)
 
-      const placeIdsForEnrich = [
+      const knownPlaceIds = [
         ...new Set(
           Object.values(byBlockKey)
             .map((r) => r.place_id)
             .filter(Boolean)
         ),
       ] as string[]
-      if (placeIdsForEnrich.length === 0) {
-        setEnrichmentByPlaceId({})
-        return
+      const enrichKnownPromise =
+        knownPlaceIds.length > 0
+          ? (wanspotFetchJson<{ details?: Record<string, PlaceCardEnrichment> }>('/api/spots/batch-details', {
+              method: 'POST',
+              json: { place_ids: knownPlaceIds },
+            }).catch(() => ({}) as { details?: Record<string, PlaceCardEnrichment> }))
+          : Promise.resolve({} as { details?: Record<string, PlaceCardEnrichment> })
+
+      // 未登録スポットの ensure は既知スポットの写真取得と並列に進める（直列待ちをなくす）
+      const missingPlaceIds = spotIds.filter((k) => !byBlockKey[k] && !isUuid(k))
+      const ensuredRows =
+        missingPlaceIds.length > 0
+          ? await Promise.all(missingPlaceIds.map((pid) => ensureSpotRowFromPlaceId(pid, spotNameByKey[pid] ?? '')))
+          : []
+
+      if (cancelled) return
+
+      if (missingPlaceIds.length > 0) {
+        const patch: Record<string, SpotRow> = {}
+        for (let i = 0; i < missingPlaceIds.length; i++) {
+          const row = ensuredRows[i]
+          const key = missingPlaceIds[i]
+          if (row) {
+            patch[key] = row
+            patch[row.id] = row
+            if (row.place_id) patch[row.place_id] = row
+          }
+        }
+        if (Object.keys(patch).length > 0) {
+          setSpotRowsById((prev) => ({ ...prev, ...patch }))
+        }
       }
-      const json = (await wanspotFetchJson<{ details?: Record<string, PlaceCardEnrichment> }>(
-        '/api/spots/batch-details',
-        { method: 'POST', json: { place_ids: placeIdsForEnrich } }
-      ).catch(() => ({}))) as { details?: Record<string, PlaceCardEnrichment> }
-      if (!cancelled) setEnrichmentByPlaceId(json.details ?? {})
+
+      const enrichKnown = await enrichKnownPromise
+      if (cancelled) return
+      setEnrichmentByPlaceId(enrichKnown.details ?? {})
+
+      const newlyKnownPlaceIds = [
+        ...new Set(ensuredRows.filter((r): r is SpotRow => !!r).map((r) => r.place_id).filter(Boolean)),
+      ] as string[]
+      if (newlyKnownPlaceIds.length > 0) {
+        const json2 = (await wanspotFetchJson<{ details?: Record<string, PlaceCardEnrichment> }>(
+          '/api/spots/batch-details',
+          { method: 'POST', json: { place_ids: newlyKnownPlaceIds } }
+        ).catch(() => ({}))) as { details?: Record<string, PlaceCardEnrichment> }
+        if (!cancelled) setEnrichmentByPlaceId((prev) => ({ ...prev, ...(json2.details ?? {}) }))
+      }
     })()
     return () => {
       cancelled = true

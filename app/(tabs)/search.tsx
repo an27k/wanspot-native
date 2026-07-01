@@ -678,18 +678,24 @@ function SearchTab() {
     if (!nonCriticalReady) return
 
     let cancelled = false
+    // 内容が同じなら（タブ再フォーカス等での effect 再実行時に）DB 再クエリを避ける
+    const rankKey = `articleRank:${articlesRaw.map((a) => a.id).join(',')}:${
+      location ? geoBucket(location.lat, location.lng, 2) : 'noloc'
+    }:${[...userWalkTags].sort().join(',')}:${[...recentArticleIds].sort().join(',')}`
     void (async () => {
-      const geo =
-        location != null
-          ? await getCachedPrefectureAndMunicipality(location.lat, location.lng)
-          : { prefecture: null as string | null, municipality: null as string | null }
+      const { data: sorted } = await fetchWithCache(rankKey, 60_000, async () => {
+        const geo =
+          location != null
+            ? await getCachedPrefectureAndMunicipality(location.lat, location.lng)
+            : { prefecture: null as string | null, municipality: null as string | null }
 
-      const sorted = await personalizeArticlesFeed(supabase, articlesRaw, {
-        userLocation: location,
-        userPrefecture: geo.prefecture,
-        userMunicipality: geo.municipality,
-        walkAreaTags: userWalkTags,
-        recentArticleIds,
+        return personalizeArticlesFeed(supabase, articlesRaw, {
+          userLocation: location,
+          userPrefecture: geo.prefecture,
+          userMunicipality: geo.municipality,
+          walkAreaTags: userWalkTags,
+          recentArticleIds,
+        })
       })
 
       if (!cancelled) setArticlesList(sorted)

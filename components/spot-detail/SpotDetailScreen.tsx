@@ -28,6 +28,7 @@ import { IconPaw } from '@/components/IconPaw'
 import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
+import { CACHE_TTL, fetchWithCache } from '@/lib/client-cache'
 import { track } from '@/lib/analytics'
 import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { supabase } from '@/lib/supabase'
@@ -248,10 +249,19 @@ export default function SpotDetailScreen({
         resolvedSpotId = ensured
       }
 
-      const [{ data: { user } }, { data: spotData }] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.from('spots').select('*').eq('id', resolvedSpotId).single(),
+      // getUser() は Supabase Auth サーバーへの検証リクエストが走るため遅い。
+      // いいね/チェックイン状態の読み取りはセキュリティ境界ではないので、ローカル保存のセッションで十分。
+      const [{ data: { session } }, { data: spotData }] = await Promise.all([
+        supabase.auth.getSession(),
+        supabase
+          .from('spots')
+          .select(
+            'id, place_id, name, category, rating, address, lat, lng, price_level, price_label, instagram_id, ig_status, ig_last_checked'
+          )
+          .eq('id', resolvedSpotId)
+          .single(),
       ])
+      const user = session?.user ?? null
       if (!spotData) {
         router.replace('/(tabs)/search')
         return
@@ -356,7 +366,12 @@ export default function SpotDetailScreen({
     setAiLoading(true)
     ;(async () => {
       const [walkTags, posCtx] = await Promise.all([
-        userId ? fetchUserWalkAreaTagsByUserId(supabase, userId) : Promise.resolve([] as string[]),
+        // search タブと同じキャッシュキーを使い、既に取得済みならDB往復なしで即座に返す
+        userId
+          ? fetchWithCache(`user:walk-tags:${userId}`, CACHE_TTL.WALK_TAGS_MS, () =>
+              fetchUserWalkAreaTagsByUserId(supabase, userId)
+            ).then((r) => r.data)
+          : Promise.resolve([] as string[]),
         // GPS取得が遅い/権限待ちのままだとAIレビュー表示全体が止まってしまうため、
         // 一定時間で位置情報なしのまま進める（レビュー内容には必須ではない）
         withTimeout(

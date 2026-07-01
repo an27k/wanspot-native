@@ -17,9 +17,13 @@ export function useDogProfile() {
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async (force = false) => {
+    // getUser() は毎回 Supabase Auth サーバーへの検証リクエストが走り、
+    // 画面フォーカス毎に呼ばれるこの hook では店舗詳細の AI レビュー表示を無駄に遅らせる。
+    // 犬プロフィール読み込みはセキュリティ境界ではないため、ローカル保存のセッションで十分。
     const {
-      data: { user },
-    } = await supabase.auth.getUser()
+      data: { session },
+    } = await supabase.auth.getSession()
+    const user = session?.user ?? null
     if (!user) {
       setUserId(null)
       setDog(null)
