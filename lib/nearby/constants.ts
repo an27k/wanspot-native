@@ -72,7 +72,17 @@ export function matchesGenre(category: string | null | undefined, genre: MapGenr
 }
 
 export const DOG_RUN_SEARCH_QUERY = 'ドッグラン'
-export const DOG_RUN_RELEVANT_PATTERN = /(ドッグラン|ドッグパーク|犬の広場|dog ?run|dog ?park)/i
+/** 主検索で件数が不足したときだけ追加で投げる補助クエリ（民営・屋内施設の取り漏らし対策） */
+export const DOG_RUN_SUPPLEMENTARY_SEARCH_QUERY = '屋内ドッグラン'
+
+/**
+ * 民営・屋内ドッグランは「〇〇ガーデン」「△△ヴィレッジ」等の独自ブランド名が多く、
+ * 施設名に「ドッグラン」という文言そのものが入らないケースが多い。
+ * name/address からも拾えるよう、犬の運動施設を示唆する語を広めに列挙する
+ * （汎用的すぎる単語は誤ヒットを避けるため入れない）。
+ */
+export const DOG_RUN_RELEVANT_PATTERN =
+  /(ドッグラン|ドッグパーク|ドッグガーデン|ドッグヴィレッジ|ドッグフィールド|ドッグエリア|わんこの広場|犬の遊び場|犬の広場|ノーリード広場|ペットラン|dog ?run|dog ?park|dog ?garden|dog ?village|dog ?field|off.?leash)/i
 
 /** @deprecated 全ジャンル並列取得用。地図タブではジャンル単位 fetch に移行 */
 export const NEARBY_GENRE_TYPES = [

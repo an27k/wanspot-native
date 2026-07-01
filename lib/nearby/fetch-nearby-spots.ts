@@ -1,9 +1,11 @@
 import {
   DOG_RUN_SEARCH_QUERY,
+  DOG_RUN_SUPPLEMENTARY_SEARCH_QUERY,
   NEARBY_MIN_SPOTS_THRESHOLD,
   NEARBY_RADIUS_EXPANSION_STEPS_M,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
+import { sortDogRunSpotsByPriority } from '@/lib/nearby/dog-run-priority'
 import { placeMatchesGenreFilter } from '@/lib/nearby/map-filter'
 import { calcDistanceMeters } from '@/lib/nearby/geo'
 import { wanspotFetch } from '@/lib/wanspot-api'
@@ -27,8 +29,13 @@ async function fetchNearbyByType(
   return data.spots ?? []
 }
 
-async function fetchDogRunSpots(lat: number, lng: number, radiusM: number): Promise<PlaceResult[]> {
-  const q = `/api/spots/search?q=${encodeURIComponent(DOG_RUN_SEARCH_QUERY)}&lat=${lat}&lng=${lng}`
+async function fetchDogRunSpotsForQuery(
+  query: string,
+  lat: number,
+  lng: number,
+  radiusM: number
+): Promise<PlaceResult[]> {
+  const q = `/api/spots/search?q=${encodeURIComponent(query)}&lat=${lat}&lng=${lng}`
   const r = await wanspotFetch(q)
   let data: { spots?: PlaceResult[] } = {}
   try {
@@ -40,7 +47,27 @@ async function fetchDogRunSpots(lat: number, lng: number, radiusM: number): Prom
   return (data.spots ?? [])
     .filter((spot) => placeMatchesGenreFilter(spot, 'dog_run'))
     .filter((spot) => calcDistanceMeters(lat, lng, spot.lat, spot.lng) <= radiusM)
-    .map((spot) => ({ ...spot, category: 'ドッグラン' }))
+}
+
+async function fetchDogRunSpots(lat: number, lng: number, radiusM: number): Promise<PlaceResult[]> {
+  const primary = await fetchDogRunSpotsForQuery(DOG_RUN_SEARCH_QUERY, lat, lng, radiusM)
+  const merged = new Map<string, PlaceResult>()
+  for (const spot of primary) {
+    if (spot.place_id) merged.set(spot.place_id, spot)
+  }
+
+  // 件数が閾値未満のときだけ「屋内ドッグラン」で補助検索する
+  // （常時2クエリ投げると Places API コストが倍増するため、不足時限定）
+  if (merged.size < NEARBY_MIN_SPOTS_THRESHOLD) {
+    const supplementary = await fetchDogRunSpotsForQuery(DOG_RUN_SUPPLEMENTARY_SEARCH_QUERY, lat, lng, radiusM)
+    for (const spot of supplementary) {
+      if (spot.place_id && !merged.has(spot.place_id)) merged.set(spot.place_id, spot)
+    }
+  }
+
+  const spots = [...merged.values()].map((spot) => ({ ...spot, category: 'ドッグラン' }))
+  // 公営より民営・屋内・テーマパーク的なドッグランを優先表示（非表示にはしない）
+  return sortDogRunSpotsByPriority(spots)
 }
 
 /**

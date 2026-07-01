@@ -45,6 +45,9 @@ export function inferSpotGenre(spot: SheetSpot): MapGenreKey {
 /** 選択ジャンルに合致するスポットだけ残す（カフェ選択時にレストランが混ざるのを防ぐ） */
 export function placeMatchesGenreFilter(spot: PlaceResult, genre: MapGenreKey): boolean {
   if (genre === 'dog_run') {
+    // Google types に dog_park が付いていれば、施設名に「ドッグラン」等の文言がなくても通す
+    // （民営・屋内ドッグランは名前だけでは判定できないケースが多いため）。
+    if ((spot.types ?? []).includes('dog_park')) return true
     const text = [spot.name, spot.address, spot.category]
       .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
       .join(' ')
