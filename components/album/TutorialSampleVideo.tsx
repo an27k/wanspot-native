@@ -91,13 +91,15 @@ export function TutorialSampleVideo({ onFailed }: Props) {
 export function TutorialVideoFallback() {
   return (
     <View style={styles.fallback}>
-      <Ionicons name="play-circle" size={56} color="#fff" />
-      <Text style={styles.fallbackTxt}>サンプルVLOG（準備中）</Text>
+      <Ionicons name="film-outline" size={44} color="rgba(255,255,255,0.92)" />
+      <Text style={styles.fallbackTxt}>おでかけの記録がVLOGに</Text>
+      <Text style={styles.fallbackSubTxt}>あなたと愛犬の思い出が動画になるよ</Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  fallback: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16 },
+  fallback: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, padding: 20 },
   fallbackTxt: { fontSize: 15, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  fallbackSubTxt: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
 })

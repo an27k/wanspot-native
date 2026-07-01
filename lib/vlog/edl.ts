@@ -12,6 +12,8 @@ import { durationSecToBeats, estimateVlogDurationSec } from '@/lib/vlog/duration
 import { pickMusicTrack, type VlogMusicTrack } from '@/lib/vlog/music-tracks'
 import type { SelectedVlogCut, SpotCutSelection } from '@/lib/vlog/quality-gate'
 
+type FlattenedCut = SelectedVlogCut & { spotIndex: number }
+
 export type KenBurnsSpec = {
   zoom: 'in' | 'out'
   panX: number
@@ -35,6 +37,8 @@ export type EDLCut = {
   cropStrength: number
   smartCrop: 'dog_center_9_16'
   colorGrade: 'warm_lut_lifted_blacks'
+  /** 動画のみ: 冒頭の構えブレを避けるための開始位置（素材尺に対する割合 0-1） */
+  trimStartRatio: number | null
 }
 
 export type EDLDocument = {
@@ -116,6 +120,22 @@ function splitSpotBeatsIntoCuts(spotBeats: number, pool: SelectedVlogCut[]): Sel
   return chosen
 }
 
+/** Set logのrankScoreが最も高いカット（救済カットは除外優先）をピークとして選ぶ */
+function pickPeakCut(flattened: FlattenedCut[]): FlattenedCut | undefined {
+  if (flattened.length === 0) return undefined
+  const nonRescue = flattened.filter((c) => !c.isRescue)
+  const pool = nonRescue.length > 0 ? nonRescue : flattened
+  return [...pool].sort((a, b) => b.setLog.rankScore - a.setLog.rankScore)[0]
+}
+
+function buildIntroSubtitle(selections: SpotCutSelection[]): string {
+  if (selections.length <= 1) {
+    const name = selections[0]?.spotName?.trim()
+    return name ? `${name}での思い出` : 'とっておきのひとこま'
+  }
+  return `${selections.length}スポットのおでかけ`
+}
+
 function pickDiarySpots(
   selections: SpotCutSelection[],
   diaryBySpot: Map<string, string>,
@@ -143,11 +163,10 @@ export function buildEDL(params: {
   const avgRating = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 3
   const track = pickMusicTrack(avgRating)
 
-  const peakSpot = selections[0]
   const weights = selections.map((s) => starWeight(s.rating))
   const spotBeatBudgets = allocateBeats(bodyBeats, weights)
 
-  const flattened: (SelectedVlogCut & { spotIndex: number })[] = []
+  const flattened: FlattenedCut[] = []
   selections.forEach((spot, spotIndex) => {
     const budget = spotBeatBudgets[spotIndex] ?? CUT_BEATS_MIN
     const cuts = splitSpotBeatsIntoCuts(budget, spot.cuts)
@@ -199,13 +218,17 @@ export function buildEDL(params: {
       cropStrength: cut.cropStrength,
       smartCrop: 'dog_center_9_16',
       colorGrade: 'warm_lut_lifted_blacks',
+      trimStartRatio: cut.mediaType === 'video' ? cut.setLog.trimStartRatio : null,
     })
 
     beatCursor += cut.durationBeats
     prevSpotId = cut.spotId
   })
 
-  const peakSpotStartBeat = edlCuts.find((c) => c.spotId === peakSpot.spotId)?.startBeat ?? INTRO_BEATS
+  const peakCut = pickPeakCut(flattened)
+  const peakSpotId = peakCut?.spotId ?? selections[0]?.spotId ?? ''
+  const peakSpotStartBeat =
+    (peakCut ? edlCuts.find((c) => c.mediaId === peakCut.mediaId)?.startBeat : undefined) ?? INTRO_BEATS
   const totalBeats = beatCursor + OUTRO_BEATS
 
   return {
@@ -219,13 +242,13 @@ export function buildEDL(params: {
       durationBeats: INTRO_BEATS,
       dogName,
       monthLabel,
-      subtitle: '5スポットのおでかけ',
+      subtitle: buildIntroSubtitle(selections),
     },
     outro: {
       durationBeats: OUTRO_BEATS,
       message: 'また来月、あそぼうね',
     },
-    peakSpotId: peakSpot.spotId,
+    peakSpotId,
     peakStartBeat: peakSpotStartBeat,
     peakLengthBeats: track.peakLengthBeats,
     cuts: edlCuts,

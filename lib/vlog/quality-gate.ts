@@ -3,6 +3,7 @@ import {
   ABSOLUTE_QUALITY_THRESHOLD,
   RESCUE_CUT_BEATS,
 } from '@/lib/vlog/constants'
+import { buildMediaSetLog, type MediaSetLog } from '@/lib/vlog/set-log'
 
 export type VlogMediaCandidate = {
   id: string
@@ -14,6 +15,8 @@ export type VlogMediaCandidate = {
   rating: number | null
   hasDiary: boolean
   storagePath: string
+  /** 動き/構図/感情など、qualityScoreだけでは拾えない補助メタデータ */
+  setLog: MediaSetLog
 }
 
 export type SelectedVlogCut = {
@@ -25,6 +28,7 @@ export type SelectedVlogCut = {
   rating: number | null
   hasDiary: boolean
   storagePath: string
+  setLog: MediaSetLog
   /** 層1救済カット（絶対ゲート未達でも採用） */
   isRescue: boolean
   durationBeats: number
@@ -57,6 +61,7 @@ export function scoreMediaHeuristic(
   const base = memory.media_type === 'image' ? 0.62 : 0.52
   const ratingBoost = plate.rating ? (plate.rating - 3) * 0.04 : 0
   const qualityScore = Math.max(0, Math.min(1, base + jitter * 0.28 + ratingBoost))
+  const hasDiary = Boolean(plate.comment?.trim())
 
   return {
     id: memory.id,
@@ -65,8 +70,15 @@ export function scoreMediaHeuristic(
     mediaType: memory.media_type,
     qualityScore,
     rating: plate.rating,
-    hasDiary: Boolean(plate.comment?.trim()),
+    hasDiary,
     storagePath: memory.media_url,
+    setLog: buildMediaSetLog({
+      mediaId: memory.id,
+      mediaType: memory.media_type,
+      qualityScore,
+      rating: plate.rating,
+      hasDiary,
+    }),
   }
 }
 
@@ -120,7 +132,8 @@ export function selectCutsTwoLayerGate(
   const selections: SpotCutSelection[] = []
 
   for (const [spotId, list] of bySpot) {
-    const sorted = [...list].sort((a, b) => b.qualityScore - a.qualityScore)
+    // rankScore（品質+動き/構図/感情）で並べ、最も「使える瞬間」を1本目に選ぶ
+    const sorted = [...list].sort((a, b) => b.setLog.rankScore - a.setLog.rankScore)
     if (sorted.length === 0) continue
 
     const best = sorted[0]
@@ -137,6 +150,7 @@ export function selectCutsTwoLayerGate(
         rating: best.rating,
         hasDiary: best.hasDiary,
         storagePath: best.storagePath,
+        setLog: best.setLog,
         isRescue,
         ...rescueParams,
       },
@@ -153,6 +167,7 @@ export function selectCutsTwoLayerGate(
         rating: extra.rating,
         hasDiary: extra.hasDiary,
         storagePath: extra.storagePath,
+        setLog: extra.setLog,
         isRescue: false,
         ...standardCutParams(extra),
       })

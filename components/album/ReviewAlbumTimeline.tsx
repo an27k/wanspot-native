@@ -70,6 +70,29 @@ type Props = {
 
 type PickedMedia = { uri: string; mimeType: string }
 
+function hasVlogMedia(plate: VisitPlate): boolean {
+  return plate.memories.length > 0
+}
+
+function friendlyVlogErrorMessage(code: string, message: string): string {
+  if (code === 'network') {
+    return '通信が不安定でVlogを作れませんでした。電波の良い場所で、もう一度お試しください。'
+  }
+  if (code === 'not_ready') {
+    return 'Vlog生成機能を利用できません。時間をおいてもう一度お試しください。'
+  }
+  if (/media not found|storagePath|signed|invalid edl|invalid body/i.test(message)) {
+    return '選んだ写真・動画を読み込めませんでした。レビューに写真か動画を追加し直してから、もう一度お試しください。'
+  }
+  if (/unauthorized|forbidden/i.test(message)) {
+    return 'ログイン状態を確認できませんでした。アプリを開き直してから、もう一度お試しください。'
+  }
+  if (/too many requests/i.test(message)) {
+    return '短時間に何度も生成されています。少し待ってからもう一度お試しください。'
+  }
+  return message || 'Vlog生成に失敗しました。時間をおいて再度お試しください。'
+}
+
 function StarRow({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <View style={styles.starRow}>
@@ -855,6 +878,10 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
     [reviewedPlates, selectedPlateIds]
   )
   const selectedCount = selectedPlates.length
+  const selectedMediaCount = useMemo(
+    () => selectedPlates.reduce((count, plate) => count + plate.memories.length, 0),
+    [selectedPlates]
+  )
 
   const displayDogName = dogName?.trim() || '愛犬'
 
@@ -871,8 +898,15 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
   }, [onReload])
 
   const togglePlateSelection = useCallback((plate: VisitPlate) => {
-    if (plate.memories.length === 0 && !plate.comment && !plate.rating) {
-      openComposer(plate)
+    if (!hasVlogMedia(plate)) {
+      Alert.alert(
+        '写真・動画を追加してください',
+        'Vlogを作るには、レビューに写真または動画が1件以上必要です。',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          { text: '追加する', onPress: () => openComposer(plate) },
+        ]
+      )
       return
     }
     setSelectionMode(true)
@@ -900,27 +934,42 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
     track('vlog_generate_start', { selected_count: selectedPlates.length })
     logUserEvent({ eventType: 'vlog_generate', userId, props: { spot_count: selectedPlates.length } })
 
-    const payload = await buildVlogRenderPayloadAsync(selectedPlates, displayDogName)
-
     try {
+      if (selectedMediaCount === 0) {
+        Alert.alert(
+          '写真・動画を追加してください',
+          '選択したレビューにVlog素材がありません。写真または動画を追加してから作成してください。'
+        )
+        return
+      }
+
+      const payload = await buildVlogRenderPayloadAsync(selectedPlates, displayDogName)
       await simulateVlogGenerationStages(setGenerationStage)
       const res = await requestVlogRender(payload)
       if (res.ok) {
-        track('vlog_generate_success')
+        track('vlog_generate_success', {
+          spot_count: payload.meta.spotCount,
+          usable_cut_count: payload.meta.usableCutCount,
+          rescue_cut_count: payload.meta.rescueCutCount,
+          avg_quality_score: payload.meta.avgQualityScore,
+        })
         router.push({ pathname: '/vlog/preview', params: { uri: res.result.videoUrl } })
         return
       }
-      if (res.error.code === 'not_ready') {
-        track('vlog_generate_demo')
-        router.push({ pathname: '/vlog/preview', params: { demo: '1' } })
-        return
-      }
-      Alert.alert('VLOG生成に失敗しました', res.error.message)
+      track('vlog_generate_failure', {
+        error_code: res.error.code,
+        spot_count: payload.meta.spotCount,
+        avg_quality_score: payload.meta.avgQualityScore,
+      })
+      Alert.alert('Vlog生成に失敗しました', friendlyVlogErrorMessage(res.error.code, res.error.message))
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      Alert.alert('Vlog生成に失敗しました', friendlyVlogErrorMessage('server', message))
     } finally {
       setGenerating(false)
       setGenerateBusy(false)
     }
-  }, [generateBusy, generating, selectedPlates, userId, displayDogName, router])
+  }, [generateBusy, generating, selectedPlates, selectedMediaCount, userId, displayDogName, router])
 
   if (!userId) {
     return (

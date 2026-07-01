@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   Modal,
   Pressable,
@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { TutorialSampleVideo, TutorialVideoFallback } from '@/components/album/TutorialSampleVideo'
+import { TutorialVideoFallback } from '@/components/album/TutorialSampleVideo'
 import { colors } from '@/constants/colors'
 import { track } from '@/lib/analytics'
 import { markReviewTutorialSeen } from '@/lib/review/tutorial-storage'
@@ -43,21 +43,10 @@ export function ReviewTutorialModal({ visible, onClose, dogName }: Props) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const [page, setPage] = useState(0)
-  const [videoFailed, setVideoFailed] = useState(false)
-  const [videoReady, setVideoReady] = useState(false)
 
   const displayDogName = dogName?.trim() || '愛犬'
   const mainCopy = `おでかけを5スポットぶんレビューすると、${displayDogName}のVLOGが自動でできあがるよ🐶`
   const subCopy = '写真・動画を2枚以上つけると1スポット分。多いほどVLOGが豊かになるよ'
-
-  useEffect(() => {
-    if (!visible || page !== 0) {
-      setVideoReady(false)
-      return
-    }
-    const t = setTimeout(() => setVideoReady(true), 350)
-    return () => clearTimeout(t)
-  }, [page, visible])
 
   const finish = useCallback(
     async (event: 'tutorial_skip' | 'tutorial_complete') => {
@@ -93,12 +82,10 @@ export function ReviewTutorialModal({ visible, onClose, dogName }: Props) {
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
           {page === 0 ? (
             <>
+              {/* サンプル動画は差し替え予定のため一時的に非表示。TutorialSampleVideo/moka_vlog_sample.mp4を
+                  実際のVLOG品質のクリップに更新したら、ここをTutorialSampleVideoに戻す */}
               <View style={styles.videoSlot}>
-                {videoFailed || !videoReady ? (
-                  <TutorialVideoFallback />
-                ) : (
-                  <TutorialSampleVideo onFailed={() => setVideoFailed(true)} />
-                )}
+                <TutorialVideoFallback />
               </View>
               <Text style={styles.lead}>{mainCopy}</Text>
               <Text style={styles.leadSub}>{subCopy}</Text>
