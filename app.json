@@ -96,7 +96,15 @@
           "cameraPermission": "ワンちゃんやプロフィールの写真を撮影するため、カメラへのアクセスを許可してください。"
         }
       ],
-      "react-native-maps"
+      "react-native-maps",
+      "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "作ったVlogをカメラロールに保存するため、写真への追加を許可してください。"
+        }
+      ],
+      "expo-notifications"
     ],
     "extra": {
       "supabaseUrl": "",

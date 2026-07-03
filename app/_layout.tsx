@@ -13,6 +13,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { UpdateRestartNotice } from '@/components/updates/UpdateRestartNotice'
 import { initAnalytics } from '@/lib/analytics'
 import { iosUsesSafeConsoleGuards } from '@/lib/ads-policy'
+import { useNotificationDeeplink } from '@/lib/notifications/use-notification-deeplink'
 import { perfMark } from '@/lib/perf/marks'
 
 perfMark('app:root-layout')
@@ -40,6 +41,9 @@ enableScreens(false)
 export default function RootLayout() {
   /** Ionicons は裏で読み込み、認証/ルーティングの開始はブロックしない */
   useFonts(Ionicons.font)
+
+  /** 「◯ヶ月前の今日」通知のタップ → アルバムの該当レビューへ */
+  useNotificationDeeplink()
 
   useEffect(() => {
     initAnalytics()

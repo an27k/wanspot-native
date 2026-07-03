@@ -128,12 +128,23 @@ function pickPeakCut(flattened: FlattenedCut[]): FlattenedCut | undefined {
   return [...pool].sort((a, b) => b.setLog.rankScore - a.setLog.rankScore)[0]
 }
 
-function buildIntroSubtitle(selections: SpotCutSelection[]): string {
-  if (selections.length <= 1) {
-    const name = selections[0]?.spotName?.trim()
-    return name ? `${name}での思い出` : 'とっておきのひとこま'
+/** 「◯◯（犬名）のVlog」体裁 — イントロカードで犬を主役にする字幕 */
+function buildIntroSubtitle(selections: SpotCutSelection[], dogName: string): string {
+  const spotSelections = selections.filter((s) => !s.isDailyLog)
+
+  // 選択が日次ログ（きょうのログ）のみ: おうちの日のVlogとして紹介する
+  if (spotSelections.length === 0 && selections.length > 0) {
+    return selections.length === 1
+      ? `${dogName}のきょうのひとこま`
+      : `${dogName}のまいにちのきろく`
   }
-  return `${selections.length}スポットのおでかけ`
+
+  // スポットあり（混在時はスポット件数のみ数えて既存文言）
+  if (spotSelections.length <= 1) {
+    const name = spotSelections[0]?.spotName?.trim()
+    return name ? `${dogName}と${name}へ` : `${dogName}のとっておきのひとこま`
+  }
+  return `${dogName}と${spotSelections.length}スポットのおでかけ`
 }
 
 function pickDiarySpots(
@@ -242,7 +253,7 @@ export function buildEDL(params: {
       durationBeats: INTRO_BEATS,
       dogName,
       monthLabel,
-      subtitle: buildIntroSubtitle(selections),
+      subtitle: buildIntroSubtitle(selections, dogName),
     },
     outro: {
       durationBeats: OUTRO_BEATS,
