@@ -1,4 +1,5 @@
-import * as Notifications from 'expo-notifications'
+import type * as Notifications from 'expo-notifications'
+import { loadNotificationsModule } from '@/lib/notifications/notifications-module'
 import type { VisitPlate } from '@/lib/visits-memories'
 
 export const MEMORY_ANNIVERSARY_TYPE = 'memory_anniversary'
@@ -102,28 +103,32 @@ export async function syncMemoryAnniversaryNotifications(
   dogName?: string | null
 ): Promise<void> {
   try {
+    // ネイティブモジュール未搭載のバイナリでは何もしない（起動クラッシュ防止）
+    const notifications = loadNotificationsModule()
+    if (!notifications) return
+
     const upcoming = findUpcomingAnniversaries(plates)
 
     // 候補が1件もなければ権限は要求せず、過去の予約だけ掃除する
-    let permission = await Notifications.getPermissionsAsync()
+    let permission = await notifications.getPermissionsAsync()
     if (upcoming.length > 0 && !permission.granted && permission.canAskAgain) {
-      permission = await Notifications.requestPermissionsAsync()
+      permission = await notifications.requestPermissionsAsync()
     }
     if (!permission.granted) return
 
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync()
+    const scheduled = await notifications.getAllScheduledNotificationsAsync()
     await Promise.all(
       scheduled
         .filter((n) => n.content.data?.type === MEMORY_ANNIVERSARY_TYPE)
-        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
+        .map((n) => notifications.cancelScheduledNotificationAsync(n.identifier))
     )
 
     const displayName = dogName?.trim() || '愛犬'
     for (const item of upcoming) {
-      await Notifications.scheduleNotificationAsync({
+      await notifications.scheduleNotificationAsync({
         content: buildContent(item, displayName),
         trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          type: notifications.SchedulableTriggerInputTypes.DATE,
           date: item.notifyDate,
         },
       })

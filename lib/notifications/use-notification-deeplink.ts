@@ -1,17 +1,24 @@
 import { useEffect } from 'react'
-import * as Notifications from 'expo-notifications'
+import type * as Notifications from 'expo-notifications'
 import { useRouter } from 'expo-router'
 import { MEMORY_ANNIVERSARY_TYPE } from '@/lib/notifications/memory-anniversary'
+import { loadNotificationsModule } from '@/lib/notifications/notifications-module'
 
-// フォアグラウンド受信時もバナー表示する（音・バッジは使わない）
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-})
+let handlerInstalled = false
+
+/** フォアグラウンド受信時もバナー表示する（音・バッジは使わない） */
+function installNotificationHandler(module: NonNullable<ReturnType<typeof loadNotificationsModule>>): void {
+  if (handlerInstalled) return
+  handlerInstalled = true
+  module.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  })
+}
 
 function navigateFromResponse(
   response: Notifications.NotificationResponse | null | undefined,
@@ -32,18 +39,25 @@ export function useNotificationDeeplink(): void {
   const router = useRouter()
 
   useEffect(() => {
+    // ネイティブモジュール未搭載のバイナリでは通知機能ごと無効化（起動クラッシュ防止）
+    const module = loadNotificationsModule()
+    if (!module) return
+
+    installNotificationHandler(module)
+
     const push = (href: { pathname: string; params?: Record<string, string> }) => {
       router.push(href as never)
     }
 
     // アプリ起動中 / バックグラウンドからのタップ
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    const sub = module.addNotificationResponseReceivedListener((response) => {
       navigateFromResponse(response, push)
     })
 
     // 通知タップでコールドスタートした場合: ナビゲータのマウントを待ってから遷移
     const timer = setTimeout(() => {
-      void Notifications.getLastNotificationResponseAsync()
+      void module
+        .getLastNotificationResponseAsync()
         .then((response) => navigateFromResponse(response, push))
         .catch(() => undefined)
     }, 600)

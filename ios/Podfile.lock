@@ -23,9 +23,9 @@ PODS:
     - Yoga
   - EASClient (55.0.5):
     - ExpoModulesCore
-  - EXApplication (55.0.10):
+  - EXApplication (55.0.16):
     - ExpoModulesCore
-  - EXConstants (55.0.9):
+  - EXConstants (55.0.16):
     - ExpoModulesCore
   - EXJSONUtils (55.0.2)
   - EXManifests (55.0.17):
@@ -61,7 +61,7 @@ PODS:
     - ExpoModulesCore
   - ExpoBlur (55.0.14):
     - ExpoModulesCore
-  - ExpoCamera (55.0.19):
+  - ExpoCamera (55.0.20):
     - ExpoModulesCore
   - ExpoCrypto (55.0.14):
     - ExpoModulesCore
@@ -97,6 +97,9 @@ PODS:
     - ExpoModulesCore
   - ExpoLogBox (55.0.8):
     - React-Core
+  - ExpoMediaLibrary (55.0.18):
+    - ExpoModulesCore
+    - React-Core
   - ExpoModulesCore (55.0.18):
     - ExpoModulesJSI
     - hermes-engine
@@ -127,9 +130,13 @@ PODS:
     - React-Core
     - React-runtimescheduler
     - ReactCommon
+  - ExpoNotifications (55.0.24):
+    - ExpoModulesCore
   - ExpoRouter (55.0.8):
     - ExpoModulesCore
     - RNScreens
+  - ExpoSharing (55.0.21):
+    - ExpoModulesCore
   - ExpoSymbols (55.0.5):
     - ExpoModulesCore
   - ExpoTrackingTransparency (55.0.12):
@@ -2464,9 +2471,12 @@ DEPENDENCIES:
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
   - ExpoLocation (from `../node_modules/expo-location/ios`)
   - "ExpoLogBox (from `../node_modules/@expo/log-box`)"
+  - ExpoMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoModulesJSI (from `../node_modules/expo-modules-core`)
+  - ExpoNotifications (from `../node_modules/expo-notifications/ios`)
   - ExpoRouter (from `../node_modules/expo-router/ios`)
+  - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
   - ExpoTrackingTransparency (from `../node_modules/expo-tracking-transparency/ios`)
   - ExpoVideo (from `../node_modules/expo-video/ios`)
@@ -2624,12 +2634,18 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-location/ios"
   ExpoLogBox:
     :path: "../node_modules/@expo/log-box"
+  ExpoMediaLibrary:
+    :path: "../node_modules/expo-media-library/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   ExpoModulesJSI:
     :path: "../node_modules/expo-modules-core"
+  ExpoNotifications:
+    :path: "../node_modules/expo-notifications/ios"
   ExpoRouter:
     :path: "../node_modules/expo-router/ios"
+  ExpoSharing:
+    :path: "../node_modules/expo-sharing/ios"
   ExpoSymbols:
     :path: "../node_modules/expo-symbols/ios"
   ExpoTrackingTransparency:
@@ -2813,15 +2829,15 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   AsyncStorage: 59dba2e3aa2d4dea95e06c23cd176226fe243128
   EASClient: 8077eb9af46cc7ad3ad216cec12d2bf5763cca13
-  EXApplication: 83fdeb8d9e911c28c9dda8c71ae7a697278ce810
-  EXConstants: 898c24a310046c0e68335619d0f379099a52e199
+  EXApplication: a1413100c36551bef1d775fc6c64147286962bf8
+  EXConstants: dadbeba983acc30f855a919658a2b34fbd86615d
   EXJSONUtils: 04bc3807d351331a5fe154ce1da596ec15d99169
   EXManifests: 35b26ca30c8a6bd427d1cba20348cd3c43684bb2
   Expo: 2b15801036e64571ac2ca24857cd5384e50cece8
   ExpoAppleAuthentication: 08b3d0e502f46731abdf4c59203769fb685f66c8
   ExpoAsset: 4efd0227e808dfa84d286aa3663ded641ef73479
   ExpoBlur: 7a86e84e7728108fa6908d7103fa527705a3dbbf
-  ExpoCamera: 7926674f9ec1be53bfc83b21c908b7fadd381b32
+  ExpoCamera: 2de46080bc1a2472bdd969ec8ea6f1b7d6dba13d
   ExpoCrypto: 9fd0b78215cffa1aa20de026d452242401aa37dc
   ExpoDomWebView: f101fb3db4b6eec4163fca51f7507189b7e48661
   ExpoFileSystem: 61e663d0bbd1a973d324530d1d6ee559a5e5192c
@@ -2836,9 +2852,12 @@ SPEC CHECKSUMS:
   ExpoLinking: 1f0d112b2777e73eef2bb580b13283fc8c85ff08
   ExpoLocation: fa2f518dc01243ed21e11b28d884d803eae741d2
   ExpoLogBox: 393a66b37ef3005c2890eb8b4468329db20bee51
+  ExpoMediaLibrary: a894b8032d7b5a9992ed0765a03f3562969eb429
   ExpoModulesCore: 3e1724ad0e5b9ce66ec9d8f07ad8b8094f906535
   ExpoModulesJSI: ac54016a2f0945a9d9a54e1d54221f730f2daaa6
+  ExpoNotifications: f27e1d6e2852871419557397389385e91b9f5645
   ExpoRouter: 3e3ecbfd6baf14fc1a5c17fe840645b2db7559c5
+  ExpoSharing: 06ec115626db3732d31ca72f580e180e75948b2c
   ExpoSymbols: 3d67a96643245a5d933ce7fbf535f95eb541f617
   ExpoTrackingTransparency: 01f505d9fb0342c6046e5e4f11d703145594dab5
   ExpoVideo: 5e7aee124df2f7d9ffe1bd4dbf63119417b340a3
