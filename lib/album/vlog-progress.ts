@@ -30,15 +30,16 @@ function spotContribution(memoryCount: number): number {
   return Math.min(1, memoryCount / MIN_MEDIA_PER_UNIT)
 }
 
-/** スポット単位にメディア数を集約 */
+/** スポット単位にメディア数を集約（日次ログは visit uuid 単位 = 「その日のおさんぽ」等が1ユニット） */
 export function aggregateSpotUnits(plates: VisitPlate[]): SpotVlogUnit[] {
   const bySpot = new Map<string, SpotVlogUnit>()
 
   for (const plate of plates) {
-    const existing = bySpot.get(plate.spot_id)
+    const unitId = plate.spot_id ?? plate.id
+    const existing = bySpot.get(unitId)
     const memoryCount = (existing?.memoryCount ?? 0) + plate.memories.length
-    bySpot.set(plate.spot_id, {
-      spotId: plate.spot_id,
+    bySpot.set(unitId, {
+      spotId: unitId,
       spotName: plate.spot.name,
       memoryCount,
       contribution: spotContribution(memoryCount),

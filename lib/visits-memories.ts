@@ -1,4 +1,10 @@
 import { supabase } from '@/lib/supabase'
+import {
+  dailyLogSpotMini,
+  isDailyLogVisit,
+  type DailyLogContext,
+  type DailyLogMood,
+} from '@/lib/daily-log'
 import { compressImageToJpeg } from '@/lib/images/compress-image'
 import { logUserEvent } from '@/lib/user-events'
 
@@ -8,10 +14,15 @@ const SIGNED_URL_TTL_SEC = 3600
 export type VisitRow = {
   id: string
   user_id: string
-  spot_id: string
+  /** null = 日次ログ（きょうのログ）。spot に紐づかない記録 */
+  spot_id: string | null
   visited_at: string
   comment: string | null
   rating: number | null
+  /** 日次ログの記録コンテキスト。spot訪問は null */
+  context: DailyLogContext | null
+  /** 気分スタンプ（日次ログ用・任意） */
+  mood: DailyLogMood | null
   soft_deleted: boolean
   created_at: string
 }
@@ -20,7 +31,8 @@ export type MemoryRow = {
   id: string
   user_id: string
   visit_id: string
-  spot_id: string
+  /** null = 日次ログの memories */
+  spot_id: string | null
   media_url: string
   media_type: 'image' | 'video'
   thumbnail_url: string | null
@@ -40,7 +52,8 @@ export type VisitPlate = VisitRow & {
   memories: (MemoryRow & { signedUrl: string | null; thumbSignedUrl: string | null })[]
 }
 
-const VISIT_COLUMNS = 'id, user_id, spot_id, visited_at, comment, rating, soft_deleted, created_at'
+const VISIT_COLUMNS =
+  'id, user_id, spot_id, visited_at, comment, rating, context, mood, soft_deleted, created_at'
 const MEMORY_COLUMNS =
   'id, user_id, visit_id, spot_id, media_url, media_type, thumbnail_url, soft_deleted, created_at'
 
@@ -96,12 +109,18 @@ async function attachSignedUrls(memories: MemoryRow[]): Promise<VisitPlate['memo
   )
 }
 
+/** 「n回目」集計キー — 日次ログは同コンテキスト単位で数える */
+function ordinalKey(v: VisitRow): string {
+  return v.spot_id ?? `daily-log:${v.context ?? 'home'}`
+}
+
 function computeOrdinals(visits: VisitRow[]): Map<string, number> {
   const bySpot = new Map<string, VisitRow[]>()
   for (const v of visits) {
-    const list = bySpot.get(v.spot_id) ?? []
+    const key = ordinalKey(v)
+    const list = bySpot.get(key) ?? []
     list.push(v)
-    bySpot.set(v.spot_id, list)
+    bySpot.set(key, list)
   }
   const ordinals = new Map<string, number>()
   for (const list of bySpot.values()) {
@@ -124,8 +143,11 @@ export async function fetchVisitPlates(userId: string): Promise<VisitPlate[]> {
   if (vErr || !visits?.length) return []
 
   const visitRows = visits as VisitRow[]
-  const spotIds = [...new Set(visitRows.map((v) => v.spot_id))]
-  const { data: spots } = await supabase.from('spots').select('id, name, category').in('id', spotIds)
+  const spotIds = [...new Set(visitRows.map((v) => v.spot_id).filter((id): id is string => id != null))]
+  const { data: spots } =
+    spotIds.length > 0
+      ? await supabase.from('spots').select('id, name, category').in('id', spotIds)
+      : { data: [] }
   const spotById = new Map((spots ?? []).map((s) => [s.id as string, s as SpotMini]))
 
   const visitIds = visitRows.map((v) => v.id)
@@ -147,7 +169,8 @@ export async function fetchVisitPlates(userId: string): Promise<VisitPlate[]> {
 
   const plates: VisitPlate[] = []
   for (const v of visitRows) {
-    const spot = spotById.get(v.spot_id)
+    // 日次ログはコンテキストラベルの合成スポットで表示（アルバム/Vlog UIはスポット名の位置に出す）
+    const spot = isDailyLogVisit(v) ? dailyLogSpotMini(v.context) : spotById.get(v.spot_id!)
     if (!spot) continue
     const memories = await attachSignedUrls(memByVisit.get(v.id) ?? [])
     plates.push({
@@ -206,6 +229,64 @@ export async function recordSpotVisit(
   const visitId = inserted.id as string
   void syncCheckInBestEffort(userId, spotId)
   logUserEvent({ eventType: 'visit', spotId, userId, props: { source, created: true } })
+
+  return { ok: true, visitId, created: true }
+}
+
+/**
+ * きょうのログ (P3) — 日次ログ visit の記録。
+ * 「1日1コンテキスト1行」: 同日・同コンテキストの記録は同じ visits 行に memories を追記する
+ * （recordSpotVisit の「同日・同スポット1回」と同じ流儀）。mood は最後に押したスタンプで上書き。
+ */
+export async function recordDailyLog(
+  userId: string,
+  context: DailyLogContext,
+  mood: DailyLogMood | null
+): Promise<{ ok: boolean; visitId?: string; created?: boolean; error?: VisitRecordError }> {
+  const { start, end } = localDayBounds()
+  const { data: existing, error: existingErr } = await supabase
+    .from('visits')
+    .select('id')
+    .eq('user_id', userId)
+    .is('spot_id', null)
+    .eq('context', context)
+    .eq('soft_deleted', false)
+    .gte('visited_at', start)
+    .lte('visited_at', end)
+    .maybeSingle()
+
+  if (existingErr) {
+    console.warn('[recordDailyLog] visits.select', existingErr.code, existingErr.message)
+    return { ok: false, error: toRecordError('visits', existingErr) }
+  }
+
+  if (existing?.id) {
+    if (mood) {
+      await supabase.from('visits').update({ mood }).eq('id', existing.id)
+    }
+    return { ok: true, visitId: existing.id as string, created: false }
+  }
+
+  const { data: inserted, error: insertErr } = await supabase
+    .from('visits')
+    .insert({
+      user_id: userId,
+      spot_id: null,
+      context,
+      mood,
+      visited_at: new Date().toISOString(),
+      source: 'other',
+    })
+    .select('id')
+    .single()
+
+  if (insertErr || !inserted) {
+    console.warn('[recordDailyLog] visits.insert', insertErr?.code, insertErr?.message)
+    return { ok: false, error: toRecordError('visits', insertErr) }
+  }
+
+  const visitId = inserted.id as string
+  logUserEvent({ eventType: 'visit', userId, props: { source: 'daily_log', context, created: true } })
 
   return { ok: true, visitId, created: true }
 }
@@ -299,7 +380,8 @@ export async function uploadMemoryFile(
 export async function insertMemory(params: {
   userId: string
   visitId: string
-  spotId: string
+  /** null = 日次ログ（spot に紐づかない memories） */
+  spotId: string | null
   storagePath: string
   mediaType: 'image' | 'video'
 }): Promise<{ row: MemoryRow | null; error?: VisitRecordError }> {

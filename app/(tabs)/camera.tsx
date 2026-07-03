@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { InteractionManager, StyleSheet, Text, View } from 'react-native'
 import Animated from 'react-native-reanimated'
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ReviewAlbumTimeline } from '@/components/album/ReviewAlbumTimeline'
 import { ReviewTutorialModal } from '@/components/album/ReviewTutorialModal'
@@ -13,6 +13,7 @@ import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { track } from '@/lib/analytics'
+import { syncMemoryAnniversaryNotifications } from '@/lib/notifications/memory-anniversary'
 import { hasSeenReviewTutorial } from '@/lib/review/tutorial-storage'
 import { fetchVisitPlates, type VisitPlate } from '@/lib/visits-memories'
 import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
@@ -21,6 +22,8 @@ import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
 export default function ReviewAlbumTab() {
   const insets = useSafeAreaInsets()
   const { dog, setDog, userId, loading: dogLoading } = useDogProfile()
+  const params = useLocalSearchParams<{ focusVisitId?: string }>()
+  const focusVisitId = typeof params.focusVisitId === 'string' ? params.focusVisitId : null
   const [plates, setPlates] = useState<VisitPlate[]>([])
   const [albumLoading, setAlbumLoading] = useState(true)
   const [tutorialOpen, setTutorialOpen] = useState(false)
@@ -38,6 +41,12 @@ export default function ReviewAlbumTab() {
     setPlates(next)
     setAlbumLoading(false)
   }, [userId])
+
+  // 「◯ヶ月前の今日」ローカル通知をアルバムデータから同期（ベストエフォート）
+  useEffect(() => {
+    if (albumLoading || !userId) return
+    void syncMemoryAnniversaryNotifications(plates, dog?.name)
+  }, [albumLoading, userId, plates, dog?.name])
 
   useFocusEffect(
     useCallback(() => {
@@ -115,10 +124,12 @@ export default function ReviewAlbumTab() {
               <ReviewAlbumTimeline
                 userId={userId}
                 dogName={dog?.name ?? null}
+                dogPhotoUrl={dog?.photo_url ?? null}
                 plates={plates}
                 loading={albumLoading}
                 onReload={() => void loadAlbum()}
                 onOpenTutorial={() => setTutorialOpen(true)}
+                focusVisitId={focusVisitId}
               />
             </>
           )}

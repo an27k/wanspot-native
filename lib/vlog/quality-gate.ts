@@ -7,8 +7,12 @@ import { buildMediaSetLog, type MediaSetLog } from '@/lib/vlog/set-log'
 
 export type VlogMediaCandidate = {
   id: string
+  /** グルーピングキー。日次ログは visit uuid をフォールバック（サーバーEDLスキーマは uuid のみ要求） */
   spotId: string
+  /** スポット名 or 日次ログのコンテキストラベル（「おさんぽ」等） */
   spotName: string
+  /** きょうのログ（spotなしvisit）由来か。イントロ字幕の分岐にのみ使用 */
+  isDailyLog: boolean
   mediaType: 'image' | 'video'
   /** 0–1 品質スコア（クラウド解析 or ヒューリスティック） */
   qualityScore: number
@@ -23,6 +27,7 @@ export type SelectedVlogCut = {
   mediaId: string
   spotId: string
   spotName: string
+  isDailyLog: boolean
   mediaType: 'image' | 'video'
   qualityScore: number
   rating: number | null
@@ -41,6 +46,7 @@ export type SelectedVlogCut = {
 export type SpotCutSelection = {
   spotId: string
   spotName: string
+  isDailyLog: boolean
   rating: number | null
   hasDiary: boolean
   cuts: SelectedVlogCut[]
@@ -65,8 +71,10 @@ export function scoreMediaHeuristic(
 
   return {
     id: memory.id,
-    spotId: plate.spot_id,
+    // 日次ログは visit uuid をグルーピングキーにフォールバック（EDLスキーマ変更なし）
+    spotId: plate.spot_id ?? plate.id,
     spotName: plate.spot.name,
+    isDailyLog: plate.spot_id == null,
     mediaType: memory.media_type,
     qualityScore,
     rating: plate.rating,
@@ -145,6 +153,7 @@ export function selectCutsTwoLayerGate(
         mediaId: best.id,
         spotId: best.spotId,
         spotName: best.spotName,
+        isDailyLog: best.isDailyLog,
         mediaType: best.mediaType,
         qualityScore: best.qualityScore,
         rating: best.rating,
@@ -162,6 +171,7 @@ export function selectCutsTwoLayerGate(
         mediaId: extra.id,
         spotId: extra.spotId,
         spotName: extra.spotName,
+        isDailyLog: extra.isDailyLog,
         mediaType: extra.mediaType,
         qualityScore: extra.qualityScore,
         rating: extra.rating,
@@ -176,6 +186,7 @@ export function selectCutsTwoLayerGate(
     selections.push({
       spotId,
       spotName: best.spotName,
+      isDailyLog: best.isDailyLog,
       rating: best.rating,
       hasDiary: best.hasDiary,
       cuts,

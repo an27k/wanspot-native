@@ -28,10 +28,14 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SafeRemoteImage } from '@/components/common/SafeRemoteImage'
+import { DailyLogComposerModal } from '@/components/album/DailyLogComposerModal'
+import { DailyLogEntryCard } from '@/components/album/DailyLogEntryCard'
 import { VlogGeneratingPanel } from '@/components/album/VlogGeneratingPanel'
+import { VlogOneTapOffer } from '@/components/album/VlogOneTapOffer'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { isDailyLogVisit, moodEmoji, type DailyLogContext } from '@/lib/daily-log'
 import { buildVlogRenderPayloadAsync } from '@/lib/vlog/build-payload'
 import {
   requestVlogRender,
@@ -62,10 +66,13 @@ const DECK_CARD_H = Math.min(360, Math.round(DECK_CARD_W * 1.02))
 type Props = {
   userId: string | null
   dogName?: string | null
+  dogPhotoUrl?: string | null
   plates: VisitPlate[]
   loading: boolean
   onReload: () => void
   onOpenTutorial?: () => void
+  /** 通知タップ等からのディープリンクで、このvisitのレビュー詳細を自動で開く */
+  focusVisitId?: string | null
 }
 
 type PickedMedia = { uri: string; mimeType: string }
@@ -848,9 +855,18 @@ function ReviewDeckCard({
                 <Text style={styles.deckMeta}>{plate.rating}</Text>
               </>
             ) : null}
+            {moodEmoji(plate.mood) ? (
+              <>
+                <Text style={styles.deckDot}>・</Text>
+                <Text style={styles.deckMeta}>{moodEmoji(plate.mood)}</Text>
+              </>
+            ) : null}
           </View>
           <Text style={styles.deckComment} numberOfLines={2}>
-            {plate.comment?.trim() || '写真・評価・ひとことを追加すると、このレビューをVlog素材として選べます。'}
+            {plate.comment?.trim() ||
+              (isDailyLogVisit(plate)
+                ? 'きょうのログのひとこま。そのままVlog素材として選べます。'
+                : '写真・評価・ひとことを追加すると、このレビューをVlog素材として選べます。')}
           </Text>
         </View>
       </Pressable>
@@ -858,9 +874,19 @@ function ReviewDeckCard({
   )
 }
 
-export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload, onOpenTutorial }: Props) {
+export function ReviewAlbumTimeline({
+  userId,
+  dogName,
+  dogPhotoUrl,
+  plates,
+  loading,
+  onReload,
+  onOpenTutorial,
+  focusVisitId,
+}: Props) {
   const router = useRouter()
   const [detailPlate, setDetailPlate] = useState<VisitPlate | null>(null)
+  const [consumedFocusId, setConsumedFocusId] = useState<string | null>(null)
   const [composerPlate, setComposerPlate] = useState<VisitPlate | null>(null)
   const [selectedPlateIds, setSelectedPlateIds] = useState<Set<string>>(() => new Set())
   const [selectionMode, setSelectionMode] = useState(false)
@@ -868,6 +894,10 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
   const [generating, setGenerating] = useState(false)
   const [generationStage, setGenerationStage] = useState<VlogRenderStage>('selecting')
   const [generateBusy, setGenerateBusy] = useState(false)
+  /** きょうのログ クイック記録（null = 閉じている） */
+  const [dailyLogContext, setDailyLogContext] = useState<DailyLogContext | null>(null)
+  /** P6: レビュー保存直後のワンタップVlog提案の対象visit */
+  const [offerVisitId, setOfferVisitId] = useState<string | null>(null)
 
   const reviewedPlates = useMemo(
     () => plates.filter((plate) => plate.memories.length > 0 || !!plate.comment || !!plate.rating),
@@ -878,12 +908,17 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
     [reviewedPlates, selectedPlateIds]
   )
   const selectedCount = selectedPlates.length
-  const selectedMediaCount = useMemo(
-    () => selectedPlates.reduce((count, plate) => count + plate.memories.length, 0),
-    [selectedPlates]
-  )
 
   const displayDogName = dogName?.trim() || '愛犬'
+
+  // 「◯ヶ月前の今日」通知のディープリンク: 対象レビューを1回だけ自動で開く
+  useEffect(() => {
+    if (!focusVisitId || focusVisitId === consumedFocusId) return
+    const target = plates.find((p) => p.id === focusVisitId)
+    if (!target) return
+    setConsumedFocusId(focusVisitId)
+    setDetailPlate(target)
+  }, [focusVisitId, consumedFocusId, plates])
 
   const openComposer = useCallback((plate: VisitPlate) => {
     setDetailPlate(null)
@@ -891,11 +926,21 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
   }, [])
 
   const onComposerSaved = useCallback(() => {
+    // P6: 保存したレビューを再読込後にワンタップVlog提案の対象にする
+    // （実際の表示は、再読込済み plates 上でメディアが確認できた場合のみ）
+    setOfferVisitId(composerPlate?.id ?? null)
     setComposerPlate(null)
     onReload()
     setCelebrating(true)
     setTimeout(() => setCelebrating(false), 4000)
-  }, [onReload])
+  }, [composerPlate, onReload])
+
+  // 保存後のアルバム再読込が完了し、対象レビューにメディアが確認できた時点でのみ提案を出す
+  const offerPlate = useMemo(() => {
+    if (!offerVisitId) return null
+    const plate = plates.find((p) => p.id === offerVisitId)
+    return plate && plate.memories.length > 0 ? plate : null
+  }, [offerVisitId, plates])
 
   const togglePlateSelection = useCallback((plate: VisitPlate) => {
     if (!hasVlogMedia(plate)) {
@@ -926,16 +971,19 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
     setSelectionMode(false)
   }, [])
 
-  const handleGenerateVlog = useCallback(async () => {
-    if (generateBusy || generating || selectedPlates.length === 0 || !userId) return
+  const generateVlog = useCallback(async (targetPlates: VisitPlate[], source: 'selection' | 'one_tap') => {
+    if (generateBusy || generating || targetPlates.length === 0 || !userId) return
+    // 生成開始でワンタップ提案カードを即時クローズ（多重生成防止）
+    setOfferVisitId(null)
     setGenerateBusy(true)
     setGenerating(true)
     setGenerationStage('selecting')
-    track('vlog_generate_start', { selected_count: selectedPlates.length })
-    logUserEvent({ eventType: 'vlog_generate', userId, props: { spot_count: selectedPlates.length } })
+    track('vlog_generate_start', { selected_count: targetPlates.length, source })
+    logUserEvent({ eventType: 'vlog_generate', userId, props: { spot_count: targetPlates.length, source } })
 
     try {
-      if (selectedMediaCount === 0) {
+      const targetMediaCount = targetPlates.reduce((count, plate) => count + plate.memories.length, 0)
+      if (targetMediaCount === 0) {
         Alert.alert(
           '写真・動画を追加してください',
           '選択したレビューにVlog素材がありません。写真または動画を追加してから作成してください。'
@@ -943,7 +991,7 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
         return
       }
 
-      const payload = await buildVlogRenderPayloadAsync(selectedPlates, displayDogName)
+      const payload = await buildVlogRenderPayloadAsync(targetPlates, displayDogName)
       await simulateVlogGenerationStages(setGenerationStage)
       const res = await requestVlogRender(payload)
       if (res.ok) {
@@ -969,7 +1017,12 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
       setGenerating(false)
       setGenerateBusy(false)
     }
-  }, [generateBusy, generating, selectedPlates, selectedMediaCount, userId, displayDogName, router])
+  }, [generateBusy, generating, userId, displayDogName, router])
+
+  const handleGenerateVlog = useCallback(
+    () => generateVlog(selectedPlates, 'selection'),
+    [generateVlog, selectedPlates]
+  )
 
   if (!userId) {
     return (
@@ -985,6 +1038,14 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
         <View style={styles.albumAuraWarm} />
         <View style={styles.albumAuraMint} />
       </View>
+
+      <DailyLogEntryCard
+        dogName={displayDogName}
+        plates={plates}
+        onRecord={(context) => setDailyLogContext(context)}
+        onOpenPlate={(plate) => setDetailPlate(plate)}
+      />
+
       {reviewedPlates.length > 0 ? (
         <View style={styles.deckHeaderCompact}>
           <Pressable
@@ -1014,6 +1075,16 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
           <Text style={styles.celebrationTitle}>レビューをアルバムに追加しました</Text>
           <Text style={styles.celebrationSub}>アルバムに追加しました。タップするとVlog素材に選べます。</Text>
         </Animated.View>
+      ) : null}
+
+      {offerPlate && !generating && !selectionMode ? (
+        <VlogOneTapOffer
+          plate={offerPlate}
+          dogName={displayDogName}
+          busy={generateBusy || generating}
+          onCreate={() => void generateVlog([offerPlate], 'one_tap')}
+          onDismiss={() => setOfferVisitId(null)}
+        />
       ) : null}
 
       {loading && plates.length === 0 ? (
@@ -1114,7 +1185,12 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
               <Ionicons name={generating ? 'hourglass-outline' : 'arrow-forward'} size={20} color="#fff" />
             </View>
           </Pressable>
-          <VlogGeneratingPanel stage={generationStage} visible={generating} />
+          <VlogGeneratingPanel
+            stage={generationStage}
+            visible={generating}
+            dogName={displayDogName}
+            dogPhotoUrl={dogPhotoUrl}
+          />
         </View>
       ) : null}
 
@@ -1136,6 +1212,20 @@ export function ReviewAlbumTimeline({ userId, dogName, plates, loading, onReload
           visible={composerPlate != null}
           onClose={() => setComposerPlate(null)}
           onSaved={onComposerSaved}
+        />
+      ) : null}
+
+      {dailyLogContext && userId ? (
+        <DailyLogComposerModal
+          userId={userId}
+          dogName={displayDogName}
+          visible={dailyLogContext != null}
+          initialContext={dailyLogContext}
+          onClose={() => setDailyLogContext(null)}
+          onSaved={() => {
+            setDailyLogContext(null)
+            onReload()
+          }}
         />
       ) : null}
     </View>

@@ -111,6 +111,48 @@ export async function pickMemoryMediaMulti(limit = 10): Promise<{ uri: string; m
   }))
 }
 
+export type PickedDailyLogMedia = { uri: string; mimeType: string }
+
+/**
+ * きょうのログ用：カメラで写真 or 短い動画（最大10秒）を1点撮影
+ */
+export async function captureDailyLogMedia(): Promise<PickedDailyLogMedia | null> {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync()
+  if (status !== 'granted') {
+    Alert.alert(
+      '権限が必要です',
+      '設定アプリからカメラへのアクセスを許可してください。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '設定を開く', onPress: () => Linking.openSettings() },
+      ]
+    )
+    return null
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.All,
+    allowsEditing: false,
+    quality: 1,
+    videoMaxDuration: 10,
+  })
+
+  if (result.canceled || result.assets.length === 0) return null
+  const asset = result.assets[0]
+  return {
+    uri: asset.uri,
+    mimeType: asset.mimeType ?? (asset.type === 'video' ? 'video/mp4' : 'image/jpeg'),
+  }
+}
+
+/**
+ * きょうのログ用：ライブラリから写真・動画を1点選択
+ */
+export async function pickDailyLogMedia(): Promise<PickedDailyLogMedia | null> {
+  const items = await pickMemoryMediaMulti(1)
+  return items?.[0] ?? null
+}
+
 /**
  * ユーザーに「ライブラリ / カメラ / キャンセル」のアクションシートを表示
  */

@@ -95,7 +95,8 @@ function buildPayloadFromCandidates(
   const diaryBySpot = new Map<string, string>()
   for (const plate of plates) {
     const text = plate.comment?.trim()
-    if (text) diaryBySpot.set(plate.spot_id, text)
+    // 日次ログはグルーピングキー（visit uuid）にフォールバック（コメントは通常 null）
+    if (text) diaryBySpot.set(plate.spot_id ?? plate.id, text)
   }
 
   const edl = buildEDL({
