@@ -9,10 +9,31 @@ import { isPendingPlaceRouteId, pendingPlaceFromParams } from '@/lib/spot-detail
 export default function SpotDetailRoute() {
   const params = useLocalSearchParams()
   const rawId = params.id
-  const spotId = Array.isArray(rawId) ? rawId[0] : rawId
+  const spotIdRaw = Array.isArray(rawId) ? rawId[0] : rawId
+  const spotId = spotIdRaw
+    ? (() => {
+        try {
+          return decodeURIComponent(spotIdRaw)
+        } catch {
+          return spotIdRaw
+        }
+      })()
+    : undefined
   const pendingPlace = useMemo(
     () => pendingPlaceFromParams(params as Record<string, string | string[] | undefined>),
-    [params.id, params.place_id, params.name, params.lat, params.lng]
+    [
+      params.place_id,
+      params.name,
+      params.category,
+      params.address,
+      params.lat,
+      params.lng,
+      params.photo_ref,
+      params.rating,
+      params.price_level,
+      params.price_label,
+      params.user_ratings_total,
+    ]
   )
 
   useEffect(() => {

@@ -48,6 +48,7 @@ import type { DogProfile } from '@/lib/dog-display'
 import { resolveSessionLocation } from '@/lib/location-session'
 import { filterDiscoverRecommendSpots } from '@/lib/hot-exclusions'
 import { track } from '@/lib/analytics'
+import { openSpotDetailFromPlace } from '@/lib/open-spot-detail'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { shouldInjectListAd } from '@/lib/ads/list-injection'
@@ -878,8 +879,8 @@ function SearchTab() {
     }
   }, [discoverLoading, discoverListEnter, discoverResults.length])
 
-  const openSpot = (id: string) => {
-    router.push(`/spots/${id}`)
+  const openSpot = (_id: string, place: PlaceResult) => {
+    openSpotDetailFromPlace(router, place)
   }
 
   const beforeNavSearch = async () => {

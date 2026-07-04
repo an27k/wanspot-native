@@ -1,19 +1,11 @@
-import { useEffect, useState } from 'react'
-import { Image } from 'expo-image'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
-import { RunningDog } from '@/components/DogStates'
-import { IconPaw } from '@/components/IconPaw'
 import { HEART_ICON } from '@/lib/constants'
 import { formatDistanceLabel, calcDistanceMeters } from '@/lib/nearby/geo'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
-import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
-import { CACHE_TTL, fetchWithCache } from '@/lib/client-cache'
-import { fetchAiSummary } from '@/lib/ai-summary'
-import { useDogProfile } from '@/components/dog/useDogProfile'
-import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
 import { colors } from '@/constants/colors'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
@@ -86,61 +78,7 @@ export function NearbySheetSpotCard({
   onToggleLike?: () => void
   onClose?: () => void
 }) {
-  const { dog } = useDogProfile()
-  const [userWalkTags, setUserWalkTags] = useState<string[]>([])
-  const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
   const uri = spotPhotoUrl(spot.photoRef, 'thumbnail')
-
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      const uid = session?.user?.id
-      if (!uid) {
-        if (!cancelled) setUserWalkTags([])
-        return
-      }
-      // カードごとの個別クエリを避け、画面内の全カードで同一キャッシュを共有する
-      const { data: tags } = await fetchWithCache(`user:walk-tags:${uid}`, CACHE_TTL.WALK_TAGS_MS, () =>
-        fetchUserWalkAreaTagsByUserId(supabase, uid)
-      )
-      if (!cancelled) setUserWalkTags(tags)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const handleAiSummary = async () => {
-    if (aiSummary || aiLoading) return
-    setAiLoading(true)
-    try {
-      const result = await fetchAiSummary({
-        place_id: spot.placeId,
-        name: spot.name,
-        category: spot.category,
-        rating: spot.rating,
-        address: spot.address,
-        reviews: [],
-        dogSize: dog?.size ?? undefined,
-        dogBreed: dog?.breed ?? undefined,
-        userContext: {
-          walkAreaTags: userWalkTags,
-          lat: userLocation?.lat ?? null,
-          lng: userLocation?.lng ?? null,
-        },
-      })
-      if (!result) throw new Error('ai-summary failed')
-      setAiSummary(result)
-    } catch {
-      setAiSummary({ keywords: [], summary: 'ワンスポAIレビューを生成できませんでした。時間をおいてもう一度お試しください。' })
-    } finally {
-      setAiLoading(false)
-    }
-  }
 
   const distLabel =
     userLocation &&
@@ -204,35 +142,6 @@ export function NearbySheetSpotCard({
           {spot.name}
         </Text>
         {!compact ? <Text style={styles.spotAddr} numberOfLines={2}>{spot.address}</Text> : null}
-        {!aiSummary && !aiLoading ? (
-          <TouchableOpacity
-            style={styles.aiBtn}
-            onPress={(e) => {
-              e.stopPropagation?.()
-              void handleAiSummary()
-            }}
-          >
-            <View style={styles.aiBtnIcon}>
-              <IconPaw size={11} color="#aaa" />
-            </View>
-            <Text style={styles.aiBtnTxt}>ワンスポAIレビューを見る</Text>
-          </TouchableOpacity>
-        ) : null}
-        {aiLoading ? <RunningDog label="ワンスポAIレビューを生成中..." /> : null}
-        {aiSummary && !aiLoading ? (
-          <View style={styles.aiBox}>
-            <View style={styles.kwRow}>
-              {aiSummary.keywords.map((kw) => (
-                <Text key={kw} style={styles.kw}>
-                  {kw}
-                </Text>
-              ))}
-            </View>
-            <Text style={styles.aiSum} numberOfLines={compact ? 3 : undefined}>
-              {aiSummary.summary}
-            </Text>
-          </View>
-        ) : null}
       </View>
     </TouchableOpacity>
   )
@@ -278,7 +187,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardImg: { width: '100%', height: '100%' },
-  cardBody: { padding: 12, gap: 4 },
+  cardBody: { padding: 12, gap: 2 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   spotCat: {
     fontSize: 12,
@@ -297,33 +206,6 @@ const styles = StyleSheet.create({
   distSmall: { fontSize: 12, color: '#aaa' },
   spotName: { fontWeight: '700', fontSize: 14, color: colors.textPrimary },
   spotAddr: { fontSize: 12, color: '#aaa' },
-  aiBtn: {
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
-    backgroundColor: GOOGLE_HOME.listActionBg,
-    borderWidth: 1,
-    borderColor: GOOGLE_HOME.listActionBorder,
-  },
-  aiBtnIcon: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
-  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: GOOGLE_HOME.listActionText, lineHeight: 16 },
-  aiBox: { marginTop: 8, padding: 12, borderRadius: 12, backgroundColor: '#FFFBEC' },
-  kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  kw: {
-    fontSize: 12,
-    fontWeight: '700',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: colors.primary,
-    color: colors.textPrimary,
-  },
-  aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   qMark: { fontSize: 12, color: '#ccc' },
 })

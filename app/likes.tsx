@@ -24,6 +24,7 @@ import {
   type PlaceCardEnrichment,
   type UserSpotSortKey,
 } from '@/lib/user-spot-list-utils'
+import { openSpotDetailFromUserSpotRow } from '@/lib/open-spot-detail'
 import { wanspotFetch } from '@/lib/wanspot-api'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
@@ -212,7 +213,10 @@ export default function LikesPage() {
             enrichment={enrichment}
             userLocation={userLocation}
             heartMode="likedOnly"
-            onOpenSpot={(id) => router.push(`/spots/${id}`)}
+            onOpenSpot={(id) => {
+              const row = sortedSpots.find((s) => s.id === id)
+              if (row) openSpotDetailFromUserSpotRow(router, row)
+            }}
             onUnlike={(id) => {
               const s = sortedSpots.find((x) => x.id === id)
               if (s) void handleUnlike(s)

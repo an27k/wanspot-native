@@ -11,9 +11,11 @@ import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
+import { openSpotDetailFromPlace } from '@/lib/open-spot-detail'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 import { CACHE_TTL, fetchWithCache, readCache } from '@/lib/client-cache'
 import type { PlaceCardEnrichment } from '@/lib/user-spot-list-utils'
+import type { PlaceResult } from '@/types/places'
 
 type Block =
   | { type: 'text'; content: string }
@@ -301,7 +303,7 @@ const BlockRenderer = memo(function BlockRenderer({
   block: Block
   spotRow: SpotRow | undefined
   enrichment: PlaceCardEnrichment | undefined
-  onOpenSpot: (id: string) => void
+  onOpenSpot: (row: SpotRow) => void
   blockIndex: number
   articleId: string
   blockImageRecyclingKey?: string
@@ -325,7 +327,7 @@ const BlockRenderer = memo(function BlockRenderer({
       <ArticleSpotCard
         row={spotRow}
         enrichment={enrichment}
-        onOpen={() => onOpenSpot(spotRow.id)}
+        onOpen={() => onOpenSpot(spotRow)}
         photoRecyclingKey={`${articleId}-spot-${spotRow.place_id}`}
       />
     )
@@ -538,8 +540,21 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
   }, [enrichmentByPlaceId])
 
   const onOpenSpot = useCallback(
-    (id: string) => {
-      router.push(`/spots/${id}?from=article`)
+    (row: SpotRow) => {
+      const place: PlaceResult = {
+        place_id: row.place_id,
+        name: row.name,
+        category: row.category,
+        address: row.address ?? '',
+        lat: 0,
+        lng: 0,
+        photo_ref: null,
+        rating: null,
+        price_level: null,
+        price_label: null,
+        user_ratings_total: null,
+      }
+      openSpotDetailFromPlace(router, place, row.id)
     },
     [router]
   )
@@ -679,7 +694,13 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
                   <Text style={styles.relatedName}>{sl.spot_name}</Text>
                   <Text style={styles.relatedDesc}>{sl.description}</Text>
                   {sl.spot_id ? (
-                    <Pressable style={styles.relatedBtn} onPress={() => onOpenSpot(sl.spot_id!)}>
+                    <Pressable
+                      style={styles.relatedBtn}
+                      onPress={() => {
+                        const row = spotRowsById[sl.spot_id!]
+                        if (row) onOpenSpot(row)
+                      }}
+                    >
                       <Text style={styles.relatedBtnTxt}>→ スポットを見る</Text>
                     </Pressable>
                   ) : (

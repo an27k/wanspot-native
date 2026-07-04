@@ -23,6 +23,7 @@ import {
   type PlaceCardEnrichment,
   type UserSpotSortKey,
 } from '@/lib/user-spot-list-utils'
+import { openSpotDetailFromUserSpotRow } from '@/lib/open-spot-detail'
 import { wanspotFetch } from '@/lib/wanspot-api'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 
@@ -186,7 +187,10 @@ export default function CheckinsPage() {
             enrichment={enrichment}
             userLocation={userLocation}
             heartMode="toggle"
-            onOpenSpot={(id) => router.push(`/spots/${id}`)}
+            onOpenSpot={(id) => {
+              const row = sortedSpots.find((s) => s.id === id)
+              if (row) openSpotDetailFromUserSpotRow(router, row)
+            }}
           />
         ) : null}
       </ScrollView>

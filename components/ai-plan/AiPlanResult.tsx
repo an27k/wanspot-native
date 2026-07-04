@@ -16,7 +16,9 @@ import { AiPlanTimelineNode } from '@/components/ai-plan/AiPlanTimelineNode'
 import type { AiPlanCore, AiPlanLeg, AiPlanMood, AiPlanStop, AiPlanTravelMode } from '@/components/ai-plan/types'
 import { TOKENS } from '@/constants/color-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { openSpotDetailFromPlace } from '@/lib/open-spot-detail'
 import { fetchSpotPhotoRefFromDetail, resolveSpotPhotoUri } from '@/lib/wanspot-api'
+import type { PlaceResult } from '@/types/places'
 
 /** タブ内表示のためネイティブ pop ジェスチャの対象外 — iOS は左端スワイプで onBack を再現 */
 const IOS_EDGE_BACK_WIDTH = 24
@@ -35,6 +37,22 @@ type SpotRow = {
   price_level: number | null
   google_types: string[] | null
   extended_category: string | null
+}
+
+function placeFromAiPlanStop(stop: AiPlanStop, row: SpotRow | null): PlaceResult {
+  return {
+    place_id: row?.place_id ?? stop.spot_id,
+    name: stop.name ?? row?.name ?? 'スポット',
+    category: stop.category ?? row?.category ?? '',
+    address: row?.address ?? '',
+    lat: typeof row?.lat === 'number' ? row.lat : stop.lat ?? 0,
+    lng: typeof row?.lng === 'number' ? row.lng : stop.lng ?? 0,
+    photo_ref: row?.photo_ref ?? null,
+    rating: row?.rating ?? null,
+    price_level: row?.price_level ?? null,
+    price_label: null,
+    user_ratings_total: null,
+  }
 }
 
 export function AiPlanResult({
@@ -170,7 +188,10 @@ export function AiPlanResult({
                 <AiPlanSpotCard
                   stop={stop}
                   db={spotById[stop.spot_id] ?? null}
-                  onPress={() => router.push(`/spots/${stop.spot_id}`)}
+                  onPress={() => {
+                    const row = spotById[stop.spot_id] ?? null
+                    openSpotDetailFromPlace(router, placeFromAiPlanStop(stop, row), stop.spot_id)
+                  }}
                 />
               </AiPlanTimelineNode>
               {i < mergedStops.length - 1 ? <AiPlanLegDisplay leg={legs[i] ?? null} mode={travelMode} /> : null}

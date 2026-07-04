@@ -13,7 +13,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.wanspot.native",
-      "buildNumber": "97",
+      "buildNumber": "179",
       "usesAppleSignIn": true,
       "config": {
         "googleMapsApiKey": "AIzaSyB-uH0kWeDvbOyGVyEkO5zttWg7TE6nBdg"
@@ -58,7 +58,7 @@
     "updates": {
       "url": "https://u.expo.dev/8b297e38-b0be-4eb7-86d1-e3f36c90b6f2",
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 3000
     },
     "runtimeVersion": "1.0.0",
     "plugins": [

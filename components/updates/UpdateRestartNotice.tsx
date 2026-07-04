@@ -1,77 +1,31 @@
-import { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as Updates from 'expo-updates'
 import Ionicons from '@expo/vector-icons/Ionicons'
 
-type NoticeState = 'hidden' | 'checking' | 'ready' | 'restarting' | 'error'
-
+/**
+ * OTA 更新の適用案内。
+ *
+ * `checkAutomatically: ON_LOAD` でバックグラウンド取得済みの更新を `useUpdates().isUpdatePending` で検知し、
+ * ユーザーには完全終了→再起動を案内する（`EXUpdatesLaunchWaitMs: 0` 構成ではこちらが安全）。
+ *
+ * `Updates.reloadAsync()` は呼ばない。reload 直前の setState やナビゲーション中の bridge 再生成と競合し、
+ * iOS のクラッシュ判定を誘発しやすいため。
+ */
 export function UpdateRestartNotice() {
-  const [noticeState, setNoticeState] = useState<NoticeState>('hidden')
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { isUpdatePending } = Updates.useUpdates()
+  const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    let cancelled = false
+    if (!isUpdatePending) setDismissed(false)
+  }, [isUpdatePending])
 
-    const checkForUpdate = async () => {
-      if (__DEV__ || !Updates.isEnabled) return
+  if (__DEV__ || !Updates.isEnabled || dismissed || !isUpdatePending) return null
 
-      try {
-        const check = await Updates.checkForUpdateAsync()
-        if (cancelled || !check.isAvailable) return
-
-        setNoticeState('checking')
-        const fetched = await Updates.fetchUpdateAsync()
-        if (cancelled) return
-
-        if (fetched.isNew) {
-          setNoticeState('ready')
-        } else {
-          setNoticeState('hidden')
-        }
-      } catch {
-        if (!cancelled) {
-          setNoticeState('error')
-          timerRef.current = setTimeout(() => setNoticeState('hidden'), 3600)
-        }
-      }
-    }
-
-    timerRef.current = setTimeout(checkForUpdate, 1400)
-
-    return () => {
-      cancelled = true
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [])
-
-  const restart = async () => {
-    if (noticeState !== 'ready') return
-    try {
-      setNoticeState('restarting')
-      await Updates.reloadAsync()
-    } catch {
-      setNoticeState('ready')
-    }
+  const dismiss = () => {
+    setDismissed(true)
   }
-
-  if (noticeState === 'hidden') return null
-
-  const isBusy = noticeState === 'checking' || noticeState === 'restarting'
-  const title =
-    noticeState === 'ready'
-      ? 'アップデート準備完了'
-      : noticeState === 'error'
-        ? '更新確認に失敗しました'
-        : noticeState === 'restarting'
-          ? '再起動しています'
-          : 'アップデートを確認中'
-  const message =
-    noticeState === 'ready'
-      ? '再起動すると最新デザインに切り替わります。'
-      : noticeState === 'error'
-        ? '通信状態を確認して、次回起動時に再試行します。'
-        : '最新バージョンを読み込んでいます。'
 
   return (
     <View pointerEvents="box-none" style={styles.host}>
@@ -79,21 +33,21 @@ export function UpdateRestartNotice() {
         <View style={styles.glassTubeTop} />
         <View style={styles.glassTubeBottom} />
         <View style={styles.iconWrap}>
-          {isBusy ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          ) : (
-            <Ionicons name={noticeState === 'error' ? 'cloud-offline-outline' : 'sparkles'} color="#FFFFFF" size={18} />
-          )}
+          <Ionicons name="sparkles" color="#FFFFFF" size={18} />
         </View>
         <View style={styles.copy}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
+          <Text style={styles.title}>アップデート準備完了</Text>
+          <Text style={styles.message}>
+            アプリを完全終了（App Switcher から上にスワイプ）して、再度開くと最新版に切り替わります。
+          </Text>
         </View>
-        {noticeState === 'ready' ? (
-          <Pressable onPress={restart} style={({ pressed }) => [styles.restartBtn, pressed && styles.restartBtnPressed]}>
-            <Text style={styles.restartText}>再起動</Text>
-          </Pressable>
-        ) : null}
+        <Pressable
+          onPress={dismiss}
+          style={({ pressed }) => [styles.restartBtn, pressed && styles.restartBtnPressed]}
+          accessibilityLabel="了解"
+        >
+          <Text style={styles.restartText}>了解</Text>
+        </Pressable>
       </LinearGradient>
     </View>
   )

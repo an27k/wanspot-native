@@ -7,7 +7,7 @@
     <key>EXUpdatesEnabled</key>
     <true/>
     <key>EXUpdatesLaunchWaitMs</key>
-    <integer>0</integer>
+    <integer>3000</integer>
     <key>EXUpdatesRequestHeaders</key>
     <dict>
       <key>expo-channel-name</key>

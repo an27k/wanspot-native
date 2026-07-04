@@ -1,19 +1,17 @@
 import { useRef, useState } from 'react'
 import { Image } from 'expo-image'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useRouter } from 'expo-router'
 import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
-import { RunningDog } from '@/components/DogStates'
 import { PressableScale } from '@/components/common/PressableScale'
-import { IconPaw } from '@/components/IconPaw'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
-import { useDogProfile } from '@/components/dog/useDogProfile'
 import { HEART_ICON } from '@/lib/constants'
 import { ensureSpotId } from '@/lib/ensureSpot'
+import { openSpotDetailFromPlace } from '@/lib/open-spot-detail'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
-import { fetchAiSummary } from '@/lib/ai-summary'
 import type { PlaceResult } from '@/types/places'
 import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
@@ -84,9 +82,8 @@ const PriceLevel = ({ level }: { level: number | null | undefined }) => {
 type Props = {
   spot: PlaceResult
   userLocation: { lat: number; lng: number } | null
-  /** 現在地タブのカードと同様、AIまとめの文脈に利用 */
   userWalkTags?: string[]
-  onOpen: (spotId: string) => void
+  onOpen?: (spotId: string, place: PlaceResult) => void
   onLikesChange?: () => void
   onBeforeNavigate?: () => void
   /** google = 検索タブのグラデ背景向けダークガラス */
@@ -96,19 +93,15 @@ type Props = {
 export function SearchDiscoverResultCard({
   spot,
   userLocation,
-  userWalkTags = [],
-  onOpen,
   onLikesChange,
   onBeforeNavigate,
   chrome = 'light',
 }: Props) {
+  const router = useRouter()
   const isGoogle = chrome === 'google'
   const requireAuth = useRequireAuth()
-  const { dog } = useDogProfile()
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
-  const [aiSummary, setAiSummary] = useState<{ keywords: string[]; summary: string } | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
   const likeScale = useRef(new Animated.Value(1)).current
   const photoUrl = spotPhotoUrl(spot.photo_ref, 'thumbnail')
 
@@ -117,11 +110,9 @@ export function SearchDiscoverResultCard({
       ? formatDist(calcDistance(userLocation.lat, userLocation.lng, spot.lat, spot.lng))
       : null
 
-  const handleOpen = async () => {
-    const id = await ensureSpotId(spot)
-    if (!id) return
+  const handleOpen = () => {
     onBeforeNavigate?.()
-    onOpen(id)
+    openSpotDetailFromPlace(router, spot)
   }
 
   const handleLike = async (e?: { stopPropagation?: () => void }) => {
@@ -155,37 +146,9 @@ export function SearchDiscoverResultCard({
     setLikeLoading(false)
   }
 
-  const handleAiSummary = async () => {
-    if (aiSummary || aiLoading) return
-    setAiLoading(true)
-    try {
-      const result = await fetchAiSummary({
-        place_id: spot.place_id,
-        name: spot.name,
-        category: spot.category,
-        rating: spot.rating,
-        address: spot.address,
-        reviews: [],
-        dogSize: dog?.size ?? undefined,
-        dogBreed: dog?.breed ?? undefined,
-        userContext: {
-          walkAreaTags: userWalkTags,
-          lat: userLocation?.lat ?? null,
-          lng: userLocation?.lng ?? null,
-        },
-      })
-      if (!result) throw new Error('ai-summary failed')
-      setAiSummary(result)
-    } catch {
-      setAiSummary({ keywords: [], summary: 'ワンスポAIレビューを生成できませんでした。時間をおいてもう一度お試しください。' })
-    } finally {
-      setAiLoading(false)
-    }
-  }
-
   const inner = (
     <View style={[styles.card, isGoogle && styles.cardGoogle]}>
-      <PressableScale onPress={() => void handleOpen()}>
+      <PressableScale onPress={handleOpen}>
         <View style={[styles.thumbWrap, isGoogle && styles.thumbWrapGoogle]}>
           {photoUrl ? (
             <Image
@@ -231,29 +194,6 @@ export function SearchDiscoverResultCard({
           </Text>
         </View>
       </PressableScale>
-      <View style={styles.aiFooter}>
-        {!aiSummary && !aiLoading ? (
-          <Pressable style={[styles.aiBtn, isGoogle && styles.aiBtnGoogle]} onPress={() => void handleAiSummary()}>
-            <View style={styles.aiBtnIcon}>
-              <IconPaw size={11} color={isGoogle ? GOOGLE_HOME.textMuted : '#aaa'} />
-            </View>
-            <Text style={[styles.aiBtnTxt, isGoogle && styles.aiBtnTxtGoogle]}>ワンスポAIレビューを見る</Text>
-          </Pressable>
-        ) : null}
-        {aiLoading ? <RunningDog label="ワンスポAIレビューを生成中..." /> : null}
-        {aiSummary && !aiLoading ? (
-          <View style={[styles.aiBox, isGoogle && styles.aiBoxGoogle]}>
-            <View style={styles.kwRow}>
-              {aiSummary.keywords.map((kw) => (
-                <Text key={kw} style={[styles.kw, isGoogle && styles.kwGoogle]}>
-                  {kw}
-                </Text>
-              ))}
-            </View>
-            <Text style={[styles.aiSum, isGoogle && styles.aiSumGoogle]}>{aiSummary.summary}</Text>
-          </View>
-        ) : null}
-      </View>
     </View>
   )
 
@@ -293,7 +233,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
-  body: { padding: 12, gap: 4 },
+  body: { padding: 12, paddingBottom: 10, gap: 2 },
   row1: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   catPill: { backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   catPillGoogle: { backgroundColor: 'rgba(255,255,255,0.14)' },
@@ -310,40 +250,4 @@ const styles = StyleSheet.create({
   nameGoogle: { fontSize: 15, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
   addr: { fontSize: 12, color: '#aaa' },
   addrGoogle: { color: GOOGLE_HOME.textSecondary },
-  aiFooter: { paddingHorizontal: 12, paddingBottom: 12, gap: 4 },
-  aiBtn: {
-    marginTop: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
-  },
-  aiBtnIcon: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
-  aiBtnTxt: { fontSize: 12, fontWeight: '700', color: '#888', lineHeight: 16 },
-  aiBtnGoogle: {
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  aiBtnTxtGoogle: { color: GOOGLE_HOME.textSecondary },
-  aiBox: { marginTop: 4, padding: 12, borderRadius: 12, backgroundColor: '#FFFBEC' },
-  aiBoxGoogle: { backgroundColor: 'rgba(255,255,255,0.08)' },
-  kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  kw: {
-    fontSize: 12,
-    fontWeight: '700',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: colors.primary,
-    color: colors.textPrimary,
-  },
-  aiSum: { fontSize: 12, lineHeight: 18, color: '#555' },
-  aiSumGoogle: { color: GOOGLE_HOME.textSecondary },
-  kwGoogle: { backgroundColor: 'rgba(255,138,122,0.55)', color: GOOGLE_HOME.textPrimary },
 })

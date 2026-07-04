@@ -17,14 +17,12 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as Location from 'expo-location'
-import { LinearGradient } from 'expo-linear-gradient'
-import Svg, { Circle, Path, Text as SvgTextNode } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Svg, { Circle, Path } from 'react-native-svg'
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { TOKENS } from '@/constants/color-tokens'
-import { GRADIENT_INSTAGRAM } from '@/constants/gradients'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { IconInstagram } from '@/components/IconInstagram'
 import { IconPaw } from '@/components/IconPaw'
@@ -37,14 +35,20 @@ import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { supabase } from '@/lib/supabase'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
-import { ensureSpotId } from '@/lib/ensureSpot'
-import { isPendingPlaceRouteId } from '@/lib/spot-detail-pending'
+import {
+  bootstrapSpotForDetail,
+  ensureSpotUuidForPlace,
+  isSpotUuid,
+  resolveSpotForDetail,
+  type SpotDetailRow,
+} from '@/lib/spot-detail-load'
 import { formatVisitRecordError, fetchVisitPlates, recordSpotVisit } from '@/lib/visits-memories'
 import { logUserEvent } from '@/lib/user-events'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { fetchAiSummary } from '@/lib/ai-summary'
 import { withTimeout } from '@/lib/promise-timeout'
 import { calcDistanceMeters, formatDistanceLabel } from '@/lib/nearby/geo'
+import { formatPriceDisplay, getSpotOpenStatus } from '@/lib/business-hours'
 import { getGoogleMapsIosApiKey } from '@/lib/google-maps-config'
 import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
 import type { PlaceResult } from '@/types/places'
@@ -55,21 +59,7 @@ const FIXED_ACTION_H = 56
 
 type IgStatus = 'unprocessed' | 'registered' | 'verified' | 'fetching' | 'not_found'
 
-type Spot = {
-  id: string
-  place_id: string
-  name: string
-  category: string
-  rating: number | null
-  address: string | null
-  lat: number | null
-  lng: number | null
-  price_level?: number | null
-  price_label?: string | null
-  instagram_id?: string | null
-  ig_status?: IgStatus | string | null
-  ig_last_checked?: string | null
-}
+type Spot = SpotDetailRow
 
 type AISummary = {
   keywords: string[]
@@ -85,7 +75,7 @@ type DetailJson = {
   price_level?: number | null
   price_label?: string | null
   vicinity?: string
-  opening_hours?: { weekday_text?: string[] }
+  opening_hours?: { weekday_text?: string[]; open_now?: boolean }
   reviews?: { text?: string }[]
 }
 
@@ -93,7 +83,7 @@ function buildSpotMapMiniUrl(lat: number, lng: number): string {
   const apiKey = getGoogleMapsIosApiKey()
   if (!apiKey) return ''
   const marker = encodeURIComponent(`color:0xFB6B53|${lat},${lng}`)
-  return `https://maps.googleapis.com/maps/api/staticmap?size=640x128&scale=2&maptype=roadmap&markers=${marker}&key=${encodeURIComponent(apiKey)}`
+  return `https://maps.googleapis.com/maps/api/staticmap?size=640x240&scale=2&maptype=roadmap&markers=${marker}&key=${encodeURIComponent(apiKey)}`
 }
 
 function normalizePriceLevel(raw: unknown): number | null {
@@ -133,9 +123,12 @@ const IconChevronLeft = ({ color = colors.textPrimary }: { color?: string }) => 
   </Svg>
 )
 
-const IconShareUp = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={TOKENS.text.primary} strokeWidth={2.2} strokeLinecap="round">
-    <Path d="M7 17L17 7M17 7H9M17 7v8" />
+const IconShare = () => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={TOKENS.text.primary} strokeWidth={2} strokeLinecap="round">
+    <Circle cx={18} cy={5} r={3} />
+    <Circle cx={6} cy={12} r={3} />
+    <Circle cx={18} cy={19} r={3} />
+    <Path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" />
   </Svg>
 )
 
@@ -144,36 +137,6 @@ const IconHeart = ({ filled }: { filled: boolean }) => (
     <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
   </Svg>
 )
-
-const META_STAR_PX = 14
-
-function PriceLevel({ level }: { level: number | null }) {
-  if (level === null || level === undefined) {
-    return <Text style={styles.priceQ}>?</Text>
-  }
-  const px = META_STAR_PX
-  const yenFs = Math.round((11 * px) / 10)
-  return (
-    <View style={styles.priceLevelRow}>
-      {[1, 2, 3, 4].map((i) => (
-        <Svg key={i} width={px} height={px} viewBox="0 0 24 24">
-          <Circle cx={12} cy={12} r={10} fill={i <= level ? colors.primary : '#e8e8e8'} />
-          <SvgTextNode
-            x={12}
-            y={12}
-            textAnchor="middle"
-            alignmentBaseline="central"
-            fontSize={yenFs}
-            fill={i <= level ? colors.textPrimary : '#bbb'}
-            fontWeight="bold"
-          >
-            ¥
-          </SvgTextNode>
-        </Svg>
-      ))}
-    </View>
-  )
-}
 
 const IconGoogle = () => (
   <Svg width={14} height={14} viewBox="0 0 24 24">
@@ -213,7 +176,9 @@ export default function SpotDetailScreen({
   const photoListRef = useRef<FlatList<string>>(null)
   const aiRequestKeyRef = useRef<string | null>(null)
 
-  const [spot, setSpot] = useState<Spot | null>(null)
+  const initialBootstrap = bootstrapSpotForDetail(spotId, pendingPlace ?? null)
+
+  const [spot, setSpot] = useState<Spot | null>(initialBootstrap)
   const [likeCount, setLikeCount] = useState(0)
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
@@ -223,13 +188,14 @@ export default function SpotDetailScreen({
   const [aiLoading, setAiLoading] = useState(true)
   const [reviewsForAi, setReviewsForAi] = useState<string[]>([])
   const [userId, setUserId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!initialBootstrap)
   const [googleRating, setGoogleRating] = useState<number | null>(null)
   const [googleReviewCount, setGoogleReviewCount] = useState<number | null>(null)
   const [googlePriceLevel, setGooglePriceLevel] = useState<number | null>(null)
   const [googlePriceLabel, setGooglePriceLabel] = useState<string | null>(null)
   const [googleAddress, setGoogleAddress] = useState<string | null>(null)
   const [openingHours, setOpeningHours] = useState<string[] | null>(null)
+  const [openNow, setOpenNow] = useState<boolean | null>(null)
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [checkedIn, setCheckedIn] = useState(false)
   const [visitRecording, setVisitRecording] = useState(false)
@@ -243,36 +209,66 @@ export default function SpotDetailScreen({
     tone: 'success' | 'error'
     retry?: boolean
   } | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [reloadNonce, setReloadNonce] = useState(0)
+
+  const pendingPlaceKey = pendingPlace
+    ? `${pendingPlace.place_id}|${pendingPlace.name}|${pendingPlace.lat}|${pendingPlace.lng}`
+    : ''
+
   useEffect(() => {
+    let cancelled = false
+
     const init = async () => {
-      let resolvedSpotId = spotId
-      if (isPendingPlaceRouteId(spotId) && pendingPlace) {
-        const ensured = await ensureSpotId(pendingPlace)
-        if (!ensured) {
-          router.replace('/(tabs)/search')
+      setLoadError(null)
+
+      let spotData = bootstrapSpotForDetail(spotId, pendingPlace ?? null)
+      if (spotData) {
+        setSpot(spotData)
+        setLoading(false)
+      } else {
+        setLoading(true)
+        const resolved = await resolveSpotForDetail(spotId, pendingPlace ?? null)
+        if (cancelled) return
+        if (!resolved.ok) {
+          setLoadError(resolved.message)
+          setLoading(false)
           return
         }
-        resolvedSpotId = ensured
+        spotData = resolved.spot
+        setSpot(spotData)
+        setLoading(false)
       }
 
-      // getUser() は Supabase Auth サーバーへの検証リクエストが走るため遅い。
-      // いいね/チェックイン状態の読み取りはセキュリティ境界ではないので、ローカル保存のセッションで十分。
-      const [{ data: { session } }, { data: spotData }] = await Promise.all([
-        supabase.auth.getSession(),
-        supabase
-          .from('spots')
-          .select(
-            'id, place_id, name, category, rating, address, lat, lng, price_level, price_label, instagram_id, ig_status, ig_last_checked'
-          )
-          .eq('id', resolvedSpotId)
-          .single(),
-      ])
-      const user = session?.user ?? null
-      if (!spotData) {
-        router.replace('/(tabs)/search')
-        return
+      if (!spotData || cancelled) return
+      const resolvedSpotId = spotData.id
+      if (!isSpotUuid(resolvedSpotId)) {
+        void ensureSpotUuidForPlace(
+          {
+            place_id: spotData.place_id,
+            name: spotData.name,
+            category: spotData.category,
+            address: spotData.address ?? '',
+            lat: spotData.lat ?? 0,
+            lng: spotData.lng ?? 0,
+            photo_ref: null,
+            rating: spotData.rating,
+            price_level: spotData.price_level ?? null,
+            price_label: spotData.price_label ?? null,
+            user_ratings_total: null,
+          },
+          resolvedSpotId
+        ).then((uuid) => {
+          if (cancelled || !uuid || uuid === resolvedSpotId) return
+          setSpot((prev) => (prev ? { ...prev, id: uuid } : prev))
+        })
       }
-      setSpot(spotData as Spot)
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (cancelled) return
+      const user = session?.user ?? null
       if (user) setUserId(user.id)
 
       // Places Detail と いいね/チェックイン状態は互いに依存しないため並列化してラウンドトリップを1回減らす
@@ -353,12 +349,16 @@ export default function SpotDetailScreen({
       setGooglePriceLabel(priceLbl)
       setGoogleAddress(detailRes?.formatted_address ?? detailRes?.vicinity ?? null)
       setOpeningHours(detailRes?.opening_hours?.weekday_text ?? null)
+      setOpenNow(typeof detailRes?.opening_hours?.open_now === 'boolean' ? detailRes.opening_hours.open_now : null)
       setReviewsForAi(detailRes?.reviews?.slice(0, 5).map((r) => r.text).filter(Boolean) as string[] ?? [])
-      setLoading(false)
+      if (!cancelled) setLoadError(null)
     }
     void init()
+    return () => {
+      cancelled = true
+    }
     // dog は別 effect で扱う（変化時に spots/detail/likes を含む init 全体を再実行しないようにするため）
-  }, [spotId, pendingPlace, router])
+  }, [spotId, pendingPlaceKey, reloadNonce])
 
   useEffect(() => {
     void Location.getCurrentPositionAsync({})
@@ -366,8 +366,6 @@ export default function SpotDetailScreen({
       .catch(() => setUserCoords(null))
   }, [])
 
-  // AIサマリーは spot 確定後に独立して実行。犬プロフィールの変化はこの effect のみ再実行させ、
-  // 上の init（Places Detail・いいね・チェックイン取得）を無駄に再実行させない。
   useEffect(() => {
     if (loading || !spot || dogLoading) return
     const dogKey = `${dog?.size ?? 'none'}:${dog?.breed ?? 'none'}`
@@ -379,14 +377,11 @@ export default function SpotDetailScreen({
     setAiLoading(true)
     ;(async () => {
       const [walkTags, posCtx] = await Promise.all([
-        // search タブと同じキャッシュキーを使い、既に取得済みならDB往復なしで即座に返す
         userId
           ? fetchWithCache(`user:walk-tags:${userId}`, CACHE_TTL.WALK_TAGS_MS, () =>
               fetchUserWalkAreaTagsByUserId(supabase, userId)
             ).then((r) => r.data)
           : Promise.resolve([] as string[]),
-        // GPS取得が遅い/権限待ちのままだとAIレビュー表示全体が止まってしまうため、
-        // 一定時間で位置情報なしのまま進める（レビュー内容には必須ではない）
         withTimeout(
           Location.getCurrentPositionAsync({})
             .then((p) => ({ lat: p.coords.latitude, lng: p.coords.longitude }))
@@ -564,7 +559,8 @@ export default function SpotDetailScreen({
 
   const share = async (platform: string) => {
     if (!spot) return
-    const url = wanspotPublicUrl(`/spots/${spotId}/share`)
+    const shareId = isSpotUuid(spot.id) ? spot.id : isSpotUuid(spotId) ? spotId : spot.id
+    const url = wanspotPublicUrl(`/spots/${encodeURIComponent(shareId)}`)
     const text = `${spot.name}｜ワンちゃんと行けるスポット見つけた🐾 #wanspot`
     if (platform === 'x') {
       const u = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
@@ -585,6 +581,8 @@ export default function SpotDetailScreen({
       : null
   const mapMiniUrl =
     spot?.lat != null && spot?.lng != null ? buildSpotMapMiniUrl(spot.lat, spot.lng) : ''
+  const openStatus = getSpotOpenStatus(openingHours, openNow)
+  const displayPrice = formatPriceDisplay(googlePriceLabel ?? spot?.price_label, googlePriceLevel ?? spot?.price_level)
   const igUrl = spot?.instagram_id?.trim()
     ? `https://www.instagram.com/${spot.instagram_id.replace(/^@/, '')}/`
     : `https://www.google.com/search?q=${encodeURIComponent(spot?.name ? `${spot.name} Instagram` : 'Instagram')}`
@@ -609,6 +607,22 @@ export default function SpotDetailScreen({
     return (
       <View style={[styles.screen, { justifyContent: 'center' }]}>
         <RunningDog label="スポット詳細を読み込み中..." />
+      </View>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <View style={[styles.screen, { paddingTop: Math.max(12, insets.top) }]}>
+        <Pressable style={styles.loadErrBack} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="戻る">
+          <IconChevronLeft />
+        </Pressable>
+        <View style={styles.loadErrBody}>
+          <PowState label={loadError} />
+          <Pressable style={styles.loadErrRetry} onPress={() => setReloadNonce((n) => n + 1)}>
+            <Text style={styles.loadErrRetryTxt}>再試行</Text>
+          </Pressable>
+        </View>
       </View>
     )
   }
@@ -660,7 +674,7 @@ export default function SpotDetailScreen({
                   <IconChevronLeft />
                 </Pressable>
                 <Pressable style={styles.heroFab} onPress={() => setShowShareSheet(true)} accessibilityLabel="シェア">
-                  <IconShareUp />
+                  <IconShare />
                 </Pressable>
               </View>
               <View style={styles.photoBadge}>
@@ -676,7 +690,7 @@ export default function SpotDetailScreen({
                   <IconChevronLeft />
                 </Pressable>
                 <Pressable style={styles.heroFab} onPress={() => setShowShareSheet(true)} accessibilityLabel="シェア">
-                  <IconShareUp />
+                  <IconShare />
                 </Pressable>
               </View>
               <IconPaw size={40} color={TOKENS.text.hint} />
@@ -699,10 +713,19 @@ export default function SpotDetailScreen({
               {reviewCountLabel ? <Text style={styles.ratingMeta}>· {reviewCountLabel}</Text> : null}
               <Text style={styles.ratingMeta}>· {spot.category}</Text>
               {distanceLabel ? <Text style={styles.ratingMeta}>· {distanceLabel}</Text> : null}
+              {openStatus !== 'unknown' ? (
+                <Text
+                  style={[
+                    styles.openInline,
+                    openStatus === 'open' ? styles.openInlineOpen : styles.openInlineClosed,
+                  ]}
+                >
+                  · {openStatus === 'open' ? 'Open' : 'Close'}
+                </Text>
+              ) : null}
             </View>
             <View style={styles.linkRow}>
               <Pressable style={styles.igBtn} onPress={() => Linking.openURL(igUrl)} accessibilityLabel="Instagram">
-                <LinearGradient colors={[...GRADIENT_INSTAGRAM]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
                 <IconInstagram size={18} style={{ opacity: 1 }} />
               </Pressable>
               <Pressable style={styles.mapsBtn} onPress={() => Linking.openURL(mapsUrl)} accessibilityLabel="Google Maps">
@@ -736,7 +759,7 @@ export default function SpotDetailScreen({
             )}
           </View>
 
-          <Pressable style={styles.mapMini} onPress={() => router.push('/(tabs)/index')} accessibilityLabel="マップで見る">
+          <Pressable style={styles.mapMini} onPress={() => Linking.openURL(mapsUrl)} accessibilityLabel="Google Mapsで開く">
             {mapMiniUrl ? (
               <Image source={{ uri: mapMiniUrl }} style={styles.mapMiniImg} contentFit="cover" {...remoteImageExpoProps} />
             ) : (
@@ -772,11 +795,8 @@ export default function SpotDetailScreen({
               </View>
               <View style={styles.detailBlock}>
                 <Text style={styles.detailLbl}>料金</Text>
-                {googlePriceLevel != null || googlePriceLabel ? (
-                  <View style={styles.priceRow}>
-                    <PriceLevel level={googlePriceLevel} />
-                    {googlePriceLabel ? <Text style={styles.detailVal}> {googlePriceLabel}</Text> : null}
-                  </View>
+                {displayPrice ? (
+                  <Text style={styles.detailVal}>{displayPrice}</Text>
                 ) : (
                   <Text style={styles.detailValMuted}>—</Text>
                 )}
@@ -869,6 +889,26 @@ export default function SpotDetailScreen({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: TOKENS.surface.paper },
+  loadErrBack: {
+    marginLeft: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: TOKENS.surface.primary,
+    borderWidth: 1,
+    borderColor: TOKENS.border.default,
+  },
+  loadErrBody: { flex: 1, justifyContent: 'center', paddingHorizontal: 24, gap: 20 },
+  loadErrRetry: {
+    alignSelf: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 999,
+    backgroundColor: TOKENS.brand.primary,
+  },
+  loadErrRetryTxt: { fontSize: 15, fontWeight: '800', color: TOKENS.surface.primary },
   toast: {
     position: 'absolute',
     left: 16,
@@ -931,6 +971,9 @@ const styles = StyleSheet.create({
   },
   ratingStar: { fontSize: 14, fontWeight: '800', color: TOKENS.brand.primary },
   ratingMeta: { fontSize: 12, fontWeight: '600', color: TOKENS.text.secondary },
+  openInline: { fontSize: 12, fontWeight: '800' },
+  openInlineOpen: { color: '#2E7D32' },
+  openInlineClosed: { color: '#C62828' },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   igBtn: {
     width: 32,
@@ -939,6 +982,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: TOKENS.surface.primary,
+    borderWidth: 1,
+    borderColor: TOKENS.border.default,
   },
   mapsBtn: {
     width: 32,
@@ -968,12 +1014,13 @@ const styles = StyleSheet.create({
   aiBody: { fontSize: 12, lineHeight: 18, color: TOKENS.text.primary },
   aiExpandHint: { marginTop: 6, fontSize: 11, fontWeight: '700', color: TOKENS.text.secondary },
   mapMini: {
-    height: 64,
+    height: 120,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: TOKENS.surface.primary,
     borderWidth: 1,
     borderColor: TOKENS.border.default,
+    position: 'relative',
   },
   mapMiniImg: { width: '100%', height: '100%' },
   mapMiniPh: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: TOKENS.surface.mapMuted },
@@ -1003,9 +1050,6 @@ const styles = StyleSheet.create({
   detailLbl: { fontSize: 10, fontWeight: '800', color: TOKENS.text.secondary, letterSpacing: 0.4 },
   detailVal: { fontSize: 13, lineHeight: 19, color: TOKENS.text.primary },
   detailValMuted: { fontSize: 13, color: TOKENS.text.secondary },
-  priceRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
-  priceLevelRow: { flexDirection: 'row', gap: 2, alignItems: 'center', flexShrink: 0 },
-  priceQ: { fontSize: 14, fontWeight: '800', color: TOKENS.text.disabled, lineHeight: META_STAR_PX },
   fixedActions: {
     position: 'absolute',
     left: 0,
