@@ -1,302 +1,286 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Ionicons } from '@expo/vector-icons'
 import Animated, {
   Easing,
-  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withRepeat,
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
 import { SafeDogAvatar } from '@/components/dog/SafeDogAvatar'
+import { TOKENS } from '@/constants/color-tokens'
+import { GRADIENT_VLOG_LIQUID } from '@/constants/gradients'
 import type { VlogRenderStage } from '@/lib/vlog/render-client'
-import { VLOG_GENERATION_COPY } from '@/lib/vlog/render-client'
 
-const MINT = '#55E0B4'
-const PURPLE = '#7F5CFF'
-const PINK = '#F27AD7'
+const AVATAR_PX = 104
+const RING_PX = 4
+const ORBIT_PX = 168
+const ORBIT_BORDER = 2.5
+const PROGRESS_W = 200
+const PROGRESS_H = 5
+const MINT = GRADIENT_VLOG_LIQUID[0]
 
 const STAGE_ORDER: VlogRenderStage[] = ['selecting', 'connecting', 'finishing']
+
+const STAGE_LABELS: Record<VlogRenderStage, string> = {
+  selecting: '画質解析',
+  connecting: 'カット選定',
+  finishing: 'レンダリング',
+}
 
 type Props = {
   stage: VlogRenderStage
   visible: boolean
   dogName?: string | null
   dogPhotoUrl?: string | null
+  /** 0–1。未指定時は indeterminate */
+  progress?: number | null
 }
 
-/** アバターの周りを公転する光の粒 */
-function Orbit({
-  size,
-  durationMs,
-  reverse,
-  dots,
-}: {
-  size: number
-  durationMs: number
-  reverse?: boolean
-  dots: { color: string; dotSize: number; angleDeg: number }[]
-}) {
+function OrbitSpark({ angleDeg, orbitSize }: { angleDeg: number; orbitSize: number }) {
   const spin = useSharedValue(0)
 
   useEffect(() => {
-    spin.value = withRepeat(withTiming(1, { duration: durationMs, easing: Easing.linear }), -1, false)
-  }, [spin, durationMs])
+    spin.value = withRepeat(withTiming(1, { duration: 4000, easing: Easing.linear }), -1, false)
+  }, [spin])
 
-  const style = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${(reverse ? -1 : 1) * spin.value * 360}deg` }],
-  }))
+  const style = useAnimatedStyle(() => {
+    const rad = ((angleDeg + spin.value * 360) * Math.PI) / 180
+    const r = orbitSize / 2
+    const cx = r + r * Math.cos(rad) - 8
+    const cy = r + r * Math.sin(rad) - 8
+    return { transform: [{ translateX: cx - orbitSize / 2 + 8 }, { translateY: cy - orbitSize / 2 + 8 }] }
+  })
 
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={[{ position: 'absolute', width: size, height: size, borderRadius: size / 2 }, style]}
-    >
-      <View style={[styles.orbitTrack, { borderRadius: size / 2 }]} />
-      {dots.map((dot, i) => {
-        const rad = (dot.angleDeg * Math.PI) / 180
-        const r = size / 2
-        const x = r + r * Math.cos(rad) - dot.dotSize / 2
-        const y = r + r * Math.sin(rad) - dot.dotSize / 2
-        return (
-          <View
-            key={i}
-            style={[
-              styles.orbitDot,
-              {
-                left: x,
-                top: y,
-                width: dot.dotSize,
-                height: dot.dotSize,
-                borderRadius: dot.dotSize / 2,
-                backgroundColor: dot.color,
-                shadowColor: dot.color,
-              },
-            ]}
-          />
-        )
-      })}
+    <Animated.View pointerEvents="none" style={[styles.sparkWrap, { width: orbitSize, height: orbitSize }, style]}>
+      <Text style={styles.sparkChar}>✦</Text>
     </Animated.View>
   )
 }
 
-/** 下からふわっと立ちのぼるスパーク */
-function RisingSpark({ delayMs, x, color }: { delayMs: number; x: number; color: string }) {
-  const t = useSharedValue(0)
+function ProgressBar({ progress }: { progress?: number | null }) {
+  const indeterminate = useSharedValue(0)
 
   useEffect(() => {
-    t.value = withDelay(
-      delayMs,
-      withRepeat(withTiming(1, { duration: 2600, easing: Easing.out(Easing.quad) }), -1, false)
-    )
-  }, [t, delayMs])
-
-  const style = useAnimatedStyle(() => ({
-    opacity: t.value < 0.12 ? t.value / 0.12 : 1 - t.value,
-    transform: [{ translateY: -t.value * 92 }, { scale: 0.6 + t.value * 0.5 }],
-  }))
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[styles.spark, { left: x, backgroundColor: color, shadowColor: color }, style]}
-    />
-  )
-}
-
-/**
- * 生成中 — 犬のアバターを主役に、グラデーションの光輪と粒子が回る待機演出。
- * 「未来の犬専用Vlogをつくっている」感を伝える。
- */
-export function VlogGeneratingPanel({ stage, visible, dogName, dogPhotoUrl }: Props) {
-  const [dots, setDots] = useState('')
-  const pulse = useSharedValue(0)
-
-  useEffect(() => {
-    if (!visible) return
-    const id = setInterval(() => {
-      setDots((d) => (d.length >= 3 ? '' : d + '…'))
-    }, 520)
-    return () => clearInterval(id)
-  }, [visible])
-
-  useEffect(() => {
-    if (!visible) return
-    pulse.value = withRepeat(
+    if (progress != null && Number.isFinite(progress)) return
+    indeterminate.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.quad) })
+        withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.quad) })
       ),
       -1,
       false
     )
-  }, [pulse, visible])
+  }, [indeterminate, progress])
+
+  const fillStyle = useAnimatedStyle(() => {
+    if (progress != null && Number.isFinite(progress)) {
+      return { width: Math.max(PROGRESS_H, PROGRESS_W * Math.min(1, Math.max(0, progress))) }
+    }
+    const w = PROGRESS_W * (0.28 + indeterminate.value * 0.52)
+    return { width: w }
+  })
+
+  return (
+    <View style={styles.progressTrack}>
+      <Animated.View style={[styles.progressFillWrap, fillStyle]}>
+        <LinearGradient
+          colors={[...GRADIENT_VLOG_LIQUID]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+    </View>
+  )
+}
+
+function StageStepper({ stage }: { stage: VlogRenderStage }) {
+  const stageIndex = STAGE_ORDER.indexOf(stage)
+  return (
+    <View style={styles.stepper}>
+      {STAGE_ORDER.map((s, i) => {
+        const done = i < stageIndex
+        const active = i === stageIndex
+        return (
+          <View key={s} style={styles.stepItem}>
+            {i > 0 ? <Text style={styles.stepSep}>—</Text> : null}
+            {done ? (
+              <Text style={[styles.stepLabel, styles.stepDone]}>✓{STAGE_LABELS[s]}</Text>
+            ) : (
+              <Text style={[styles.stepLabel, active ? styles.stepActive : styles.stepIdle]}>{STAGE_LABELS[s]}</Text>
+            )}
+          </View>
+        )
+      })}
+    </View>
+  )
+}
+
+/**
+ * 生成中 — 犬アバター中心の液体オービット演出（5a）。
+ * ReviewAlbumTimeline から Modal 全画面で表示する想定。
+ */
+export function VlogGeneratingPanel({ stage, visible, dogName, dogPhotoUrl, progress }: Props) {
+  const spin = useSharedValue(0)
+  const glow = useSharedValue(0)
+
+  useEffect(() => {
+    if (!visible) return
+    spin.value = withRepeat(withTiming(1, { duration: 4000, easing: Easing.linear }), -1, false)
+    glow.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 600, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 600, easing: Easing.inOut(Easing.quad) })
+      ),
+      -1,
+      false
+    )
+  }, [spin, glow, visible])
+
+  const orbitStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.value * 360}deg` }],
+  }))
 
   const glowStyle = useAnimatedStyle(() => ({
-    opacity: 0.4 + pulse.value * 0.35,
-    transform: [{ scale: 1 + pulse.value * 0.1 }],
-  }))
-  const avatarStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pulse.value * 0.035 }],
+    opacity: 0.55 * (0.45 + glow.value * 0.55),
+    transform: [{ scale: 1 + glow.value * 0.08 }],
   }))
 
   if (!visible) return null
 
-  const stageIndex = STAGE_ORDER.indexOf(stage)
   const displayName = dogName?.trim() || '愛犬'
+  const outerSize = AVATAR_PX + RING_PX * 2
 
   return (
-    <Animated.View entering={FadeInDown.duration(240)} style={styles.card}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(85,224,180,0.2)', 'rgba(127,92,255,0.22)', 'rgba(22,18,34,0.92)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={styles.root}>
+      <View style={styles.center}>
+        <Animated.View pointerEvents="none" style={[styles.glow, glowStyle]}>
+          <LinearGradient colors={[...GRADIENT_VLOG_LIQUID]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+        </Animated.View>
 
-      <View style={styles.stage}>
-        <RisingSpark delayMs={0} x={34} color={MINT} />
-        <RisingSpark delayMs={900} x={96} color={PINK} />
-        <RisingSpark delayMs={1700} x={230} color={PURPLE} />
-        <RisingSpark delayMs={600} x={286} color={MINT} />
-
-        <Animated.View pointerEvents="none" style={[styles.avatarGlow, glowStyle]}>
+        <Animated.View pointerEvents="none" style={[styles.orbitRing, { width: ORBIT_PX, height: ORBIT_PX, borderRadius: ORBIT_PX / 2 }, orbitStyle]}>
           <LinearGradient
-            colors={['rgba(85,224,180,0.7)', 'rgba(127,92,255,0.65)']}
+            colors={[...GRADIENT_VLOG_LIQUID]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
+            style={[StyleSheet.absoluteFill, { borderRadius: ORBIT_PX / 2, padding: ORBIT_BORDER }]}
+          >
+            <View style={[styles.orbitInner, { borderRadius: ORBIT_PX / 2 - ORBIT_BORDER }]} />
+          </LinearGradient>
         </Animated.View>
 
-        <Orbit
-          size={124}
-          durationMs={7200}
-          dots={[
-            { color: MINT, dotSize: 8, angleDeg: -90 },
-            { color: PINK, dotSize: 5, angleDeg: 140 },
-          ]}
-        />
-        <Orbit
-          size={96}
-          durationMs={4800}
-          reverse
-          dots={[
-            { color: PURPLE, dotSize: 6, angleDeg: 0 },
-            { color: '#fff', dotSize: 4, angleDeg: 200 },
-          ]}
-        />
+        <OrbitSpark angleDeg={-30} orbitSize={ORBIT_PX} />
+        <OrbitSpark angleDeg={90} orbitSize={ORBIT_PX} />
+        <OrbitSpark angleDeg={210} orbitSize={ORBIT_PX} />
 
-        <Animated.View style={[styles.avatarWrap, avatarStyle]}>
-          <SafeDogAvatar uri={dogPhotoUrl} size={26} />
-        </Animated.View>
+        <LinearGradient
+          colors={[...GRADIENT_VLOG_LIQUID]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.avatarRing, { width: outerSize, height: outerSize, borderRadius: outerSize / 2, padding: RING_PX }]}
+        >
+          <View style={[styles.avatarInner, { width: AVATAR_PX, height: AVATAR_PX, borderRadius: AVATAR_PX / 2 }]}>
+            <SafeDogAvatar uri={dogPhotoUrl} size={AVATAR_PX} />
+          </View>
+        </LinearGradient>
       </View>
 
-      <Text style={styles.title}>
-        {displayName}の専用Vlogを生成中{dots}
-      </Text>
-      <Text style={styles.copy}>{VLOG_GENERATION_COPY[stage]}</Text>
-
-      <View style={styles.stageDots}>
-        {STAGE_ORDER.map((s, i) => (
-          <View key={s} style={[styles.stageDot, i <= stageIndex && styles.stageDotOn]} />
-        ))}
-        <Ionicons name="sparkles" size={12} color={MINT} style={{ marginLeft: 4 }} />
-      </View>
-    </Animated.View>
+      <Text style={styles.title}>{displayName}の1日を編集中</Text>
+      <StageStepper stage={stage} />
+      <ProgressBar progress={progress} />
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  card: {
-    position: 'relative',
-    overflow: 'hidden',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 26,
-    paddingTop: 18,
-    paddingBottom: 16,
-    paddingHorizontal: 18,
-    backgroundColor: '#161222',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    shadowColor: PURPLE,
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
-  },
-  stage: {
-    width: '100%',
-    height: 138,
+  root: {
+    flex: 1,
+    backgroundColor: TOKENS.brand.vessel,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    paddingHorizontal: 24,
+    gap: 20,
   },
-  orbitTrack: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+  center: {
+    width: ORBIT_PX + 40,
+    height: ORBIT_PX + 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  orbitDot: {
+  glow: {
     position: 'absolute',
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
+    width: ORBIT_PX + 28,
+    height: ORBIT_PX + 28,
+    borderRadius: (ORBIT_PX + 28) / 2,
+    overflow: 'hidden',
+    shadowColor: GRADIENT_VLOG_LIQUID[1],
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
     shadowOffset: { width: 0, height: 0 },
   },
-  avatarGlow: {
+  orbitRing: {
     position: 'absolute',
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  avatarWrap: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.85)',
+  orbitInner: {
+    flex: 1,
+    backgroundColor: TOKENS.brand.vessel,
   },
-  spark: {
+  sparkWrap: {
     position: 'absolute',
-    bottom: 8,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    shadowOpacity: 0.9,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 0 },
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sparkChar: {
+    fontSize: 14,
+    color: GRADIENT_VLOG_LIQUID[2],
+    textShadowColor: GRADIENT_VLOG_LIQUID[1],
+    textShadowRadius: 6,
+    textShadowOffset: { width: 0, height: 0 },
+  },
+  avatarRing: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInner: {
+    overflow: 'hidden',
+    backgroundColor: TOKENS.surface.primary,
   },
   title: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#fff',
+    fontSize: 17,
+    fontWeight: '800',
+    color: TOKENS.surface.primary,
     textAlign: 'center',
   },
-  copy: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.66)',
-  },
-  stageDots: {
-    marginTop: 4,
+  stepper: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
+    gap: 4,
+    maxWidth: 320,
   },
-  stageDot: {
-    width: 22,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.16)',
+  stepItem: { flexDirection: 'row', alignItems: 'center' },
+  stepSep: { color: 'rgba(255,255,255,0.25)', marginHorizontal: 4, fontSize: 11 },
+  stepLabel: { fontSize: 12, fontWeight: '700' },
+  stepDone: { color: MINT, fontWeight: '800' },
+  stepActive: { color: TOKENS.surface.primary, fontWeight: '800' },
+  stepIdle: { color: 'rgba(255,255,255,0.4)' },
+  progressTrack: {
+    width: PROGRESS_W,
+    height: PROGRESS_H,
+    borderRadius: PROGRESS_H / 2,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
   },
-  stageDotOn: { backgroundColor: MINT },
+  progressFillWrap: {
+    height: PROGRESS_H,
+    borderRadius: PROGRESS_H / 2,
+    overflow: 'hidden',
+  },
 })

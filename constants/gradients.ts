@@ -4,6 +4,9 @@ export const GRADIENT_SUNSET = ['#FF5E8A', '#FF7E5F', '#FEB47B'] as const
 /** VLOG 液体専用 — ミントグリーン→ラベンダー→ピンク（パレット右上のグラデを参考） */
 export const GRADIENT_VLOG_LIQUID = ['#3FDCA6', '#9D8BF2', '#EC6FB0'] as const
 
+/** スポット詳細 Instagram アイコン — ゴールド→ピンク→ラベンダー */
+export const GRADIENT_INSTAGRAM = ['#F5B54A', '#EC6FB0', '#9D8BF2'] as const
+
 export type GradientVariant = 'sunset' | 'vlog'
 
 export const GRADIENTS: Record<GradientVariant, readonly [string, string, string]> = {

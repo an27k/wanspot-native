@@ -1141,7 +1141,7 @@ export function ReviewAlbumTimeline({
         </View>
       ) : null}
 
-      {selectedCount > 0 || generating ? (
+      {selectedCount > 0 && !generating ? (
         <View style={styles.vlogDockWrap}>
           <Pressable
             style={[styles.vlogDock, selectedCount === 0 && styles.vlogDockDisabled]}
@@ -1182,17 +1182,20 @@ export function ReviewAlbumTimeline({
               <Text style={styles.vlogDockSub}>選んだカードだけを映像素材にします</Text>
             </View>
             <View style={[styles.vlogDockArrow, selectedCount === 0 && styles.vlogDockArrowDisabled]}>
-              <Ionicons name={generating ? 'hourglass-outline' : 'arrow-forward'} size={20} color="#fff" />
+              <Ionicons name="arrow-forward" size={20} color="#fff" />
             </View>
           </Pressable>
-          <VlogGeneratingPanel
-            stage={generationStage}
-            visible={generating}
-            dogName={displayDogName}
-            dogPhotoUrl={dogPhotoUrl}
-          />
         </View>
       ) : null}
+
+      <Modal visible={generating} animationType="fade" statusBarTranslucent presentationStyle="fullScreen">
+        <VlogGeneratingPanel
+          stage={generationStage}
+          visible={generating}
+          dogName={displayDogName}
+          dogPhotoUrl={dogPhotoUrl}
+        />
+      </Modal>
 
       {detailPlate ? (
         <PlateDetailModal

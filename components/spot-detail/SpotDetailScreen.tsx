@@ -17,11 +17,14 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as Location from 'expo-location'
-import Svg, { Circle, Path, Polygon, Text as SvgTextNode } from 'react-native-svg'
+import { LinearGradient } from 'expo-linear-gradient'
+import Svg, { Circle, Path, Text as SvgTextNode } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
+import { TOKENS } from '@/constants/color-tokens'
+import { GRADIENT_INSTAGRAM } from '@/constants/gradients'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { IconInstagram } from '@/components/IconInstagram'
 import { IconPaw } from '@/components/IconPaw'
@@ -36,14 +39,19 @@ import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { isPendingPlaceRouteId } from '@/lib/spot-detail-pending'
-import { formatVisitRecordError, recordSpotVisit } from '@/lib/visits-memories'
+import { formatVisitRecordError, fetchVisitPlates, recordSpotVisit } from '@/lib/visits-memories'
 import { logUserEvent } from '@/lib/user-events'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { fetchAiSummary } from '@/lib/ai-summary'
 import { withTimeout } from '@/lib/promise-timeout'
+import { calcDistanceMeters, formatDistanceLabel } from '@/lib/nearby/geo'
+import { getGoogleMapsIosApiKey } from '@/lib/google-maps-config'
+import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
 import type { PlaceResult } from '@/types/places'
 
-const { width: WIN_W, height: WIN_H } = Dimensions.get('window')
+const { width: WIN_W } = Dimensions.get('window')
+const HERO_H = 290
+const FIXED_ACTION_H = 56
 
 type IgStatus = 'unprocessed' | 'registered' | 'verified' | 'fetching' | 'not_found'
 
@@ -69,8 +77,6 @@ type AISummary = {
   wanspotRating?: { avg: number; count: number }
 }
 
-const WANSPOT_RATING_THRESHOLD = 3
-
 type DetailJson = {
   photos?: { photo_reference?: string }[]
   rating?: number
@@ -79,7 +85,15 @@ type DetailJson = {
   price_level?: number | null
   price_label?: string | null
   vicinity?: string
+  opening_hours?: { weekday_text?: string[] }
   reviews?: { text?: string }[]
+}
+
+function buildSpotMapMiniUrl(lat: number, lng: number): string {
+  const apiKey = getGoogleMapsIosApiKey()
+  if (!apiKey) return ''
+  const marker = encodeURIComponent(`color:0xFB6B53|${lat},${lng}`)
+  return `https://maps.googleapis.com/maps/api/staticmap?size=640x128&scale=2&maptype=roadmap&markers=${marker}&key=${encodeURIComponent(apiKey)}`
 }
 
 function normalizePriceLevel(raw: unknown): number | null {
@@ -113,9 +127,15 @@ function priceLabelFromDetail(d: DetailJson | null): string | null {
   return typeof label === 'string' && label.trim().length > 0 ? label.trim() : null
 }
 
-const IconChevronLeft = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.5} strokeLinecap="round">
+const IconChevronLeft = ({ color = colors.textPrimary }: { color?: string }) => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round">
     <Path d="M15 18l-6-6 6-6" />
+  </Svg>
+)
+
+const IconShareUp = () => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={TOKENS.text.primary} strokeWidth={2.2} strokeLinecap="round">
+    <Path d="M7 17L17 7M17 7H9M17 7v8" />
   </Svg>
 )
 
@@ -125,23 +145,13 @@ const IconHeart = ({ filled }: { filled: boolean }) => (
   </Svg>
 )
 
-const IconStar = ({ filled, size = 28 }: { filled: boolean; size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? colors.gold : 'none'} stroke={filled ? colors.gold : '#ddd'} strokeWidth={1.5}>
-    <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-  </Svg>
-)
-
-/** メタカード内のレビュー星と同じ表示サイズ */
 const META_STAR_PX = 14
-
-const IconStarSm = ({ filled }: { filled: boolean }) => <IconStar filled={filled} size={META_STAR_PX} />
 
 function PriceLevel({ level }: { level: number | null }) {
   if (level === null || level === undefined) {
     return <Text style={styles.priceQ}>?</Text>
   }
   const px = META_STAR_PX
-  /** viewBox 24 内の円 (r=10) に収まる文字サイズ（デバイス px に比例） */
   const yenFs = Math.round((11 * px) / 10)
   return (
     <View style={styles.priceLevelRow}>
@@ -171,15 +181,6 @@ const IconGoogle = () => (
     <Path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
     <Path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
     <Path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-  </Svg>
-)
-
-const IconShare = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
-    <Circle cx={18} cy={5} r={3} />
-    <Circle cx={6} cy={12} r={3} />
-    <Circle cx={18} cy={19} r={3} />
-    <Path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" />
   </Svg>
 )
 
@@ -228,9 +229,14 @@ export default function SpotDetailScreen({
   const [googlePriceLevel, setGooglePriceLevel] = useState<number | null>(null)
   const [googlePriceLabel, setGooglePriceLabel] = useState<string | null>(null)
   const [googleAddress, setGoogleAddress] = useState<string | null>(null)
+  const [openingHours, setOpeningHours] = useState<string[] | null>(null)
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [checkedIn, setCheckedIn] = useState(false)
   const [visitRecording, setVisitRecording] = useState(false)
-  const [showVisitActions, setShowVisitActions] = useState(false)
+  const [showVisitSheet, setShowVisitSheet] = useState(false)
+  const [vlogRemaining, setVlogRemaining] = useState<number | null>(null)
+  const [aiExpanded, setAiExpanded] = useState(false)
+  const [detailsExpanded, setDetailsExpanded] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [visitToast, setVisitToast] = useState<{
     message: string
@@ -346,12 +352,19 @@ export default function SpotDetailScreen({
       setGooglePriceLevel(priceLvl)
       setGooglePriceLabel(priceLbl)
       setGoogleAddress(detailRes?.formatted_address ?? detailRes?.vicinity ?? null)
+      setOpeningHours(detailRes?.opening_hours?.weekday_text ?? null)
       setReviewsForAi(detailRes?.reviews?.slice(0, 5).map((r) => r.text).filter(Boolean) as string[] ?? [])
       setLoading(false)
     }
     void init()
     // dog は別 effect で扱う（変化時に spots/detail/likes を含む init 全体を再実行しないようにするため）
   }, [spotId, pendingPlace, router])
+
+  useEffect(() => {
+    void Location.getCurrentPositionAsync({})
+      .then((p) => setUserCoords({ lat: p.coords.latitude, lng: p.coords.longitude }))
+      .catch(() => setUserCoords(null))
+  }, [])
 
   // AIサマリーは spot 確定後に独立して実行。犬プロフィールの変化はこの effect のみ再実行させ、
   // 上の init（Places Detail・いいね・チェックイン取得）を無駄に再実行させない。
@@ -501,6 +514,24 @@ export default function SpotDetailScreen({
     }
   }
 
+  const loadVlogRemaining = async () => {
+    if (!userId) {
+      setVlogRemaining(null)
+      return
+    }
+    try {
+      const plates = await fetchVisitPlates(userId)
+      setVlogRemaining(computeVlogProgressFromPlates(plates).remaining)
+    } catch {
+      setVlogRemaining(null)
+    }
+  }
+
+  const openVisitSheet = () => {
+    setShowVisitSheet(true)
+    void loadVlogRemaining()
+  }
+
   const recordVisitTap = async () => {
     if (!spot || visitRecording || visitRecordInFlight.current) return
     if (!requireAuth('チェックインするにはログインしてください。')) return
@@ -516,11 +547,8 @@ export default function SpotDetailScreen({
         return
       }
       setCheckedIn(true)
-      setVisitToast({
-        message: result.created ? '行ったを記録しました🐾' : '本日は記録済みです',
-        tone: 'success',
-      })
       if (result.created) track('spot_checked_in', { spot_id: spot.id })
+      openVisitSheet()
     } finally {
       visitRecordInFlight.current = false
       setVisitRecording(false)
@@ -529,7 +557,7 @@ export default function SpotDetailScreen({
 
   const openReviewAlbum = () => {
     if (!spot) return
-    setShowVisitActions(false)
+    setShowVisitSheet(false)
     track('visited_button_review_flow_tapped', { spot_id: spot.id })
     router.push('/(tabs)/camera')
   }
@@ -550,8 +578,18 @@ export default function SpotDetailScreen({
   }
 
   const displayRating = googleRating ?? spot?.rating ?? null
-  const showWanspotRating =
-    aiSummary?.wanspotRating != null && aiSummary.wanspotRating.count >= WANSPOT_RATING_THRESHOLD
+  const reviewCountLabel = googleReviewCount != null ? `${googleReviewCount}件` : null
+  const distanceLabel =
+    userCoords && spot?.lat != null && spot?.lng != null
+      ? formatDistanceLabel(calcDistanceMeters(userCoords.lat, userCoords.lng, spot.lat, spot.lng))
+      : null
+  const mapMiniUrl =
+    spot?.lat != null && spot?.lng != null ? buildSpotMapMiniUrl(spot.lat, spot.lng) : ''
+  const igUrl = spot?.instagram_id?.trim()
+    ? `https://www.instagram.com/${spot.instagram_id.replace(/^@/, '')}/`
+    : `https://www.google.com/search?q=${encodeURIComponent(spot?.name ? `${spot.name} Instagram` : 'Instagram')}`
+  const displayAddress = spot?.address ?? googleAddress
+  const fixedBottomPad = FIXED_ACTION_H + 16 + insets.bottom
 
   const onPhotoScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = e.nativeEvent.contentOffset.x
@@ -567,8 +605,6 @@ export default function SpotDetailScreen({
         ? `https://www.google.com/maps/search/?api=1&query=${spot.lat},${spot.lng}`
         : `https://www.google.com/maps/search/${encodeURIComponent(spot?.name ?? '')}`
 
-  const bottomInset = 16 + insets.bottom
-
   if (loading) {
     return (
       <View style={[styles.screen, { justifyContent: 'center' }]}>
@@ -580,17 +616,15 @@ export default function SpotDetailScreen({
   if (!spot) return null
 
   const photoUris = photoRefs.map((r) => spotPhotoUrl(r, 'hero')).filter(Boolean) as string[]
+  const heroThumb = photoUris[0] ?? null
+  const aiKeywords = aiSummary?.keywords.slice(0, 3) ?? []
 
   return (
     <View style={styles.screen}>
       {visitToast ? (
         <Pressable
-          style={[styles.toast, { bottom: bottomInset }, visitToast.tone === 'error' && styles.toastErr]}
-          onPress={
-            visitToast.retry
-              ? () => void recordVisitTap()
-              : undefined
-          }
+          style={[styles.toast, { bottom: fixedBottomPad + 8 }, visitToast.tone === 'error' && styles.toastErr]}
+          onPress={visitToast.retry ? () => void recordVisitTap() : undefined}
           disabled={!visitToast.retry}
         >
           <Text style={[styles.toastTxt, visitToast.tone === 'error' && styles.toastTxtErr]}>
@@ -600,14 +634,8 @@ export default function SpotDetailScreen({
         </Pressable>
       ) : null}
 
-      <View style={[styles.backFab, { top: Math.max(16, insets.top) }]}>
-        <Pressable style={styles.fabBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="戻る">
-          <IconChevronLeft />
-        </Pressable>
-      </View>
-
-      <ScrollView contentContainerStyle={{ paddingBottom: bottomInset + 24 }} showsVerticalScrollIndicator={false}>
-        <View style={[styles.photoWrap, { height: 260 }]}>
+      <ScrollView contentContainerStyle={{ paddingBottom: fixedBottomPad + 16 }} showsVerticalScrollIndicator={false}>
+        <View style={[styles.photoWrap, { height: HERO_H }]}>
           {photoUris.length > 0 ? (
             <>
               <FlatList
@@ -623,55 +651,18 @@ export default function SpotDetailScreen({
                 windowSize={3}
                 removeClippedSubviews
                 renderItem={({ item }) => (
-                  <Image
-                    source={{ uri: item }}
-                    style={{ width: WIN_W, height: 260 }}
-                    contentFit="cover"
-                    {...remoteImageExpoProps}
-                  />
+                  <Image source={{ uri: item }} style={{ width: WIN_W, height: HERO_H }} contentFit="cover" {...remoteImageExpoProps} />
                 )}
                 getItemLayout={(_, index) => ({ length: WIN_W, offset: WIN_W * index, index })}
               />
-              {currentPhoto > 0 ? (
-                <Pressable
-                  style={[styles.photoNav, { left: 16 }]}
-                  onPress={() => {
-                    const next = Math.max(0, currentPhoto - 1)
-                    photoListRef.current?.scrollToOffset({ offset: next * WIN_W, animated: true })
-                    setCurrentPhoto(next)
-                  }}
-                  accessibilityLabel="前の写真"
-                >
+              <View style={[styles.heroOverlayTop, { top: Math.max(12, insets.top) }]}>
+                <Pressable style={styles.heroFab} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="戻る">
                   <IconChevronLeft />
                 </Pressable>
-              ) : null}
-              {currentPhoto < photoUris.length - 1 ? (
-                <Pressable
-                  style={[styles.photoNav, { right: 16, transform: [{ scaleX: -1 }] }]}
-                  onPress={() => {
-                    const next = Math.min(photoUris.length - 1, currentPhoto + 1)
-                    photoListRef.current?.scrollToOffset({ offset: next * WIN_W, animated: true })
-                    setCurrentPhoto(next)
-                  }}
-                  accessibilityLabel="次の写真"
-                >
-                  <IconChevronLeft />
+                <Pressable style={styles.heroFab} onPress={() => setShowShareSheet(true)} accessibilityLabel="シェア">
+                  <IconShareUp />
                 </Pressable>
-              ) : null}
-              {photoUris.length > 1 ? (
-                <View style={styles.dots}>
-                  {photoUris.map((_, i) => (
-                    <Pressable
-                      key={i}
-                      onPress={() => {
-                        photoListRef.current?.scrollToOffset({ offset: i * WIN_W, animated: true })
-                        setCurrentPhoto(i)
-                      }}
-                      style={[styles.dot, i === currentPhoto && styles.dotOn]}
-                    />
-                  ))}
-                </View>
-              ) : null}
+              </View>
               <View style={styles.photoBadge}>
                 <Text style={styles.photoBadgeTxt}>
                   {currentPhoto + 1} / {photoUris.length}
@@ -680,155 +671,148 @@ export default function SpotDetailScreen({
             </>
           ) : (
             <View style={styles.noPhoto}>
-              <IconPaw size={40} color="#ddd" />
+              <View style={[styles.heroOverlayTop, { top: Math.max(12, insets.top) }]}>
+                <Pressable style={styles.heroFab} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="戻る">
+                  <IconChevronLeft />
+                </Pressable>
+                <Pressable style={styles.heroFab} onPress={() => setShowShareSheet(true)} accessibilityLabel="シェア">
+                  <IconShareUp />
+                </Pressable>
+              </View>
+              <IconPaw size={40} color={TOKENS.text.hint} />
               <Text style={styles.noPhotoTxt}>写真なし</Text>
             </View>
           )}
         </View>
 
         <View style={styles.pad}>
-          <View style={styles.card}>
-            <View style={styles.catPill}>
-              <Text style={styles.catTxt}>{spot.category}</Text>
-            </View>
-            <Text style={styles.h1}>{spot.name}</Text>
-            <View style={styles.addrRow}>
-              {(spot.address ?? googleAddress) ? (
-                <Text style={styles.addr}>{spot.address ?? googleAddress}</Text>
-              ) : (
-                <View style={{ flex: 1 }} />
-              )}
-              <Pressable style={styles.shareSm} onPress={() => setShowShareSheet(true)} accessibilityLabel="シェア">
-                <IconShare />
-              </Pressable>
-            </View>
-          </View>
+          <Text style={styles.h1}>{spot.name}</Text>
 
-          <View style={styles.actionsRow}>
-            <Pressable
-              style={[styles.actHalf, liked && styles.actHalfLiked]}
-              onPress={() => void toggleLike()}
-              disabled={likeLoading}
-            >
-              <Animated.View style={{ transform: [{ scale: likeScale }] }}>
-                <IconHeart filled={liked} />
-              </Animated.View>
-              <Text style={styles.actLbl}>{likeCount > 0 ? String(likeCount) : 'いいね'}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.actHalf, checkedIn && styles.actHalfCheck]}
-              onPress={() => {
-                if (checkedIn) {
-                  setShowVisitActions(true)
-                  return
-                }
-                void recordVisitTap()
-              }}
-              disabled={visitRecording}
-            >
-              <Ionicons
-                name={checkedIn ? 'sparkles' : 'checkmark-circle-outline'}
-                size={20}
-                color={checkedIn ? '#7F5CFF' : colors.textPrimary}
-              />
-              <Text style={[styles.actLbl, checkedIn && styles.actLblCheck]}>
-                {checkedIn ? '行った ✓' : '行った'}
-              </Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.metaCard}>
-            <View style={[styles.metaSeg, { flex: 1.5 }]}>
-              <View style={styles.metaStackReview}>
-                <View style={styles.metaReviewTopRow}>
-                  <IconGoogle />
-                  <Text style={styles.metaLbl}>レビュー</Text>
-                  {googleReviewCount != null ? (
-                    <Text style={styles.reviewCountTxt}>({googleReviewCount})</Text>
-                  ) : null}
-                </View>
-                <View style={styles.rateRow}>
-                  {displayRating != null && Number.isFinite(displayRating) ? (
-                    <>
-                      <Text style={styles.rateNum}>{displayRating.toFixed(1)}</Text>
-                      <View style={{ flexDirection: 'row', gap: 2 }}>
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <IconStarSm key={s} filled={s <= Math.round(displayRating)} />
-                        ))}
-                      </View>
-                    </>
-                  ) : (
-                    <Text style={styles.rateDash}>—</Text>
-                  )}
-                </View>
+          <View style={styles.ratingRow}>
+            <View style={styles.ratingLeft}>
+              <View style={styles.gBadge}>
+                <IconGoogle />
               </View>
+              {displayRating != null && Number.isFinite(displayRating) ? (
+                <Text style={styles.ratingStar}>★{displayRating.toFixed(1)}</Text>
+              ) : null}
+              {reviewCountLabel ? <Text style={styles.ratingMeta}>· {reviewCountLabel}</Text> : null}
+              <Text style={styles.ratingMeta}>· {spot.category}</Text>
+              {distanceLabel ? <Text style={styles.ratingMeta}>· {distanceLabel}</Text> : null}
             </View>
-            <View style={[styles.metaSeg, { flex: 1 }]}>
-              <View style={styles.metaStackPrice}>
-                <Text style={[styles.metaLbl, styles.metaLblOverRate]}>価格帯</Text>
-                <View style={styles.rateRow}>
-                  {googlePriceLevel != null || googlePriceLabel ? (
-                    <PriceLevel level={googlePriceLevel} />
-                  ) : (
-                    <Text style={styles.rateDash}>—</Text>
-                  )}
-                </View>
-              </View>
-            </View>
-            <View style={[styles.metaSegIcons, { flex: 1.5 }]}>
-              <Pressable
-                style={styles.iconSq}
-                onPress={() =>
-                  Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(spot.name + ' Instagram')}`)
-                }
-              >
-                <IconInstagram size={24} />
+            <View style={styles.linkRow}>
+              <Pressable style={styles.igBtn} onPress={() => Linking.openURL(igUrl)} accessibilityLabel="Instagram">
+                <LinearGradient colors={[...GRADIENT_INSTAGRAM]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                <IconInstagram size={18} style={{ opacity: 1 }} />
               </Pressable>
-              <Pressable style={styles.iconSq} onPress={() => Linking.openURL(mapsUrl)}>
-                <Image
-                  source={require('@/assets/icon-google-maps.png')}
-                  style={{ width: 24, height: 24 }}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                />
+              <Pressable style={styles.mapsBtn} onPress={() => Linking.openURL(mapsUrl)} accessibilityLabel="Google Maps">
+                <Image source={require('@/assets/icon-google-maps.png')} style={{ width: 20, height: 20 }} contentFit="contain" cachePolicy="memory-disk" />
               </Pressable>
             </View>
           </View>
 
-          <View style={[styles.card, styles.aiCard]}>
+          <View style={styles.aiCard}>
             {aiLoading ? (
               <RunningDog label="ワンスポAIレビューを生成中..." />
             ) : aiSummary ? (
-              <>
-                <View style={styles.wanspotHeadRow}>
-                  <View style={styles.wanspotHeadLeft}>
-                    <View style={styles.wanspotHeadPaw}>
-                      <IconPaw size={11} color="#aaa" />
-                    </View>
-                    <Text style={styles.wanspotHeadLbl}>ワンスポAIレビュー</Text>
-                  </View>
-                  {showWanspotRating && aiSummary.wanspotRating ? (
-                    <View style={styles.wanspotRatingRow}>
-                      <Text style={styles.wanspotRatingNum}>{aiSummary.wanspotRating.avg.toFixed(1)}</Text>
-                      <IconStarSm filled />
-                    </View>
-                  ) : null}
-                </View>
+              <Pressable onPress={() => setAiExpanded((v) => !v)}>
+                <Text style={styles.aiHead}>🐾 ワンスポAIレビュー</Text>
                 <View style={styles.kwRow}>
-                  {aiSummary.keywords.map((tag) => (
+                  {aiKeywords.map((tag) => (
                     <View key={tag} style={styles.kwPill}>
-                      <Text style={styles.kwTxt}>#{tag}</Text>
+                      <Text style={styles.kwTxt} numberOfLines={1}>
+                        {tag}
+                      </Text>
                     </View>
                   ))}
                 </View>
-                <Text style={styles.aiBody}>{aiSummary.summary}</Text>
-              </>
+                <Text style={styles.aiBody} numberOfLines={aiExpanded ? undefined : 2}>
+                  {aiSummary.summary}
+                </Text>
+                {!aiExpanded ? <Text style={styles.aiExpandHint}>タップで続きを読む</Text> : null}
+              </Pressable>
             ) : (
               <PowState label="ワンスポAIレビューを生成できませんでした" />
             )}
           </View>
+
+          <Pressable style={styles.mapMini} onPress={() => router.push('/(tabs)/index')} accessibilityLabel="マップで見る">
+            {mapMiniUrl ? (
+              <Image source={{ uri: mapMiniUrl }} style={styles.mapMiniImg} contentFit="cover" {...remoteImageExpoProps} />
+            ) : (
+              <View style={styles.mapMiniPh}>
+                <Ionicons name="map-outline" size={22} color={TOKENS.text.secondary} />
+              </View>
+            )}
+          </Pressable>
+
+          <Pressable style={styles.detailsRow} onPress={() => setDetailsExpanded((v) => !v)}>
+            <Text style={styles.detailsRowTxt}>住所・営業時間・料金</Text>
+            <Text style={styles.detailsChevron}>{detailsExpanded ? '⌄' : '›'}</Text>
+          </Pressable>
+          {detailsExpanded ? (
+            <View style={styles.detailsBody}>
+              {displayAddress ? (
+                <View style={styles.detailBlock}>
+                  <Text style={styles.detailLbl}>住所</Text>
+                  <Text style={styles.detailVal}>{displayAddress}</Text>
+                </View>
+              ) : null}
+              <View style={styles.detailBlock}>
+                <Text style={styles.detailLbl}>営業時間</Text>
+                {openingHours?.length ? (
+                  openingHours.map((line) => (
+                    <Text key={line} style={styles.detailVal}>
+                      {line}
+                    </Text>
+                  ))
+                ) : (
+                  <Text style={styles.detailValMuted}>Google Mapsで確認</Text>
+                )}
+              </View>
+              <View style={styles.detailBlock}>
+                <Text style={styles.detailLbl}>料金</Text>
+                {googlePriceLevel != null || googlePriceLabel ? (
+                  <View style={styles.priceRow}>
+                    <PriceLevel level={googlePriceLevel} />
+                    {googlePriceLabel ? <Text style={styles.detailVal}> {googlePriceLabel}</Text> : null}
+                  </View>
+                ) : (
+                  <Text style={styles.detailValMuted}>—</Text>
+                )}
+              </View>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
+
+      <View style={[styles.fixedActions, { paddingBottom: insets.bottom + 12 }]}>
+        <Pressable
+          style={[styles.likePill, liked && styles.likePillOn]}
+          onPress={() => void toggleLike()}
+          disabled={likeLoading}
+          accessibilityLabel="いいね"
+        >
+          <Animated.View style={{ transform: [{ scale: likeScale }] }}>
+            <IconHeart filled={liked} />
+          </Animated.View>
+          <Text style={styles.likePillTxt}>いいね{likeCount > 0 ? ` ${likeCount}` : ''}</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.visitPill, checkedIn && styles.visitPillDone]}
+          onPress={() => {
+            if (checkedIn) {
+              openVisitSheet()
+              return
+            }
+            void recordVisitTap()
+          }}
+          disabled={visitRecording}
+          accessibilityLabel="行った"
+        >
+          <Text style={styles.visitPillTxt}>🐾 行った{checkedIn ? ' ✓' : ''}</Text>
+        </Pressable>
+      </View>
 
       <Modal visible={showShareSheet} transparent animationType="fade" onRequestClose={() => setShowShareSheet(false)}>
         <Pressable style={styles.shareOverlay} onPress={() => setShowShareSheet(false)}>
@@ -854,15 +838,27 @@ export default function SpotDetailScreen({
           </Pressable>
         </Pressable>
       </Modal>
-      <Modal visible={showVisitActions} transparent animationType="fade" onRequestClose={() => setShowVisitActions(false)}>
-        <Pressable style={styles.visitActionOverlay} onPress={() => setShowVisitActions(false)}>
-          <Pressable style={styles.visitActionSheet} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.visitActionHandle} />
-            <Text style={styles.visitActionTitle}>行った記録</Text>
-            <Text style={styles.visitActionSub}>行った記録は1日1回。削除はレビューアルバム側で管理できます。</Text>
-            <Pressable style={styles.visitActionPrimary} onPress={openReviewAlbum}>
-              <Ionicons name="sparkles" size={19} color="#fff" />
-              <Text style={styles.visitActionPrimaryText}>レビューをアルバムに残す</Text>
+
+      <Modal visible={showVisitSheet} transparent animationType="slide" onRequestClose={() => setShowVisitSheet(false)}>
+        <Pressable style={styles.visitSheetOverlay} onPress={() => setShowVisitSheet(false)}>
+          <Pressable style={styles.visitSheet} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.visitSheetHandle} />
+            {heroThumb ? (
+              <Image source={{ uri: heroThumb }} style={styles.visitSheetThumb} contentFit="cover" {...remoteImageExpoProps} />
+            ) : (
+              <View style={[styles.visitSheetThumb, styles.visitSheetThumbPh]}>
+                <IconPaw size={28} color={TOKENS.text.hint} />
+              </View>
+            )}
+            <Text style={styles.visitSheetTitle}>{spot.name}</Text>
+            <Text style={styles.visitSheetSub}>
+              Vlogまで あと{vlogRemaining != null ? Math.ceil(vlogRemaining) : '—'}スポット
+            </Text>
+            <Pressable style={styles.visitSheetPrimary} onPress={openReviewAlbum}>
+              <Text style={styles.visitSheetPrimaryTxt}>★とメモをのこす</Text>
+            </Pressable>
+            <Pressable style={styles.visitSheetSecondary} onPress={() => setShowVisitSheet(false)}>
+              <Text style={styles.visitSheetSecondaryTxt}>あとで</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -872,7 +868,7 @@ export default function SpotDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.paper },
+  screen: { flex: 1, backgroundColor: TOKENS.surface.paper },
   toast: {
     position: 'absolute',
     left: 16,
@@ -889,45 +885,29 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 5,
   },
-  toastErr: {
-    backgroundColor: '#3a2a28',
-    borderColor: colors.error,
-  },
+  toastErr: { backgroundColor: '#3a2a28', borderColor: colors.error },
   toastTxt: { color: colors.textPrimary, fontWeight: '800', textAlign: 'center', fontSize: 14 },
   toastTxtErr: { color: '#fff' },
-  backFab: { position: 'absolute', left: 16, zIndex: 20 },
-  fabBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  photoWrap: { backgroundColor: '#e8e4de', width: '100%', position: 'relative' },
-  photoNav: {
+  photoWrap: { backgroundColor: TOKENS.surface.mapMuted, width: '100%', position: 'relative' },
+  heroOverlayTop: {
     position: 'absolute',
-    top: '50%',
-    marginTop: -18,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    zIndex: 10,
+  },
+  heroFab: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
   },
-  dots: { position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.45)' },
-  dotOn: { width: 20, backgroundColor: '#fff' },
   photoBadge: {
     position: 'absolute',
-    top: 12,
+    bottom: 12,
     right: 12,
     backgroundColor: 'rgba(0,0,0,0.45)',
     paddingHorizontal: 8,
@@ -936,199 +916,133 @@ const styles = StyleSheet.create({
   },
   photoBadgeTxt: { color: '#fff', fontSize: 12, fontWeight: '700' },
   noPhoto: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  noPhotoTxt: { fontSize: 12, color: '#bbb' },
+  noPhotoTxt: { fontSize: 12, color: TOKENS.text.meta },
   pad: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
+  h1: { fontSize: 20, fontWeight: '800', color: TOKENS.text.primary, lineHeight: 26 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  ratingLeft: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 },
+  gBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: TOKENS.surface.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ratingStar: { fontSize: 14, fontWeight: '800', color: TOKENS.brand.primary },
+  ratingMeta: { fontSize: 12, fontWeight: '600', color: TOKENS.text.secondary },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  igBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapsBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: TOKENS.surface.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: TOKENS.border.default,
   },
   aiCard: {
-    backgroundColor: colors.tintWeak,
-    borderColor: colors.border,
-  },
-  catPill: { alignSelf: 'flex-start', backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, marginBottom: 8 },
-  catTxt: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
-  h1: { fontSize: 20, fontWeight: '800', color: colors.textPrimary, lineHeight: 26 },
-  addrRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 8 },
-  addr: { flex: 1, fontSize: 12, color: '#aaa', lineHeight: 18 },
-  shareSm: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#fafafa',
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionsRow: { flexDirection: 'row', gap: 8 },
-  actHalf: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
+    backgroundColor: 'rgba(251,107,83,0.07)',
     borderRadius: 16,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: colors.border,
+    padding: 14,
   },
-  actHalfLiked: { backgroundColor: '#FFF6E5', borderColor: '#f0e4c4' },
-  actHalfCheck: {
-    backgroundColor: 'rgba(127,92,255,0.1)',
-    borderColor: 'rgba(127,92,255,0.45)',
+  aiHead: { fontSize: 11, fontWeight: '800', color: '#C24B36', marginBottom: 8 },
+  kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  kwPill: {
+    backgroundColor: TOKENS.surface.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    maxWidth: '100%',
   },
-  actLbl: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  actLblCheck: { color: '#7F5CFF' },
-  metaCard: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    backgroundColor: '#fff',
+  kwTxt: { fontSize: 11, fontWeight: '700', color: '#C24B36' },
+  aiBody: { fontSize: 12, lineHeight: 18, color: TOKENS.text.primary },
+  aiExpandHint: { marginTop: 6, fontSize: 11, fontWeight: '700', color: TOKENS.text.secondary },
+  mapMini: {
+    height: 64,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minHeight: 92,
     overflow: 'hidden',
-  },
-  metaSeg: {
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRightWidth: 1,
-    borderRightColor: colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  /** G の左端＝下段の点数の左端。「レビュー」は G の右隣 */
-  metaStackReview: {
-    width: '100%',
-    minHeight: 48,
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-  },
-  metaReviewTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 6,
-    alignSelf: 'stretch',
-  },
-  /** 価格帯: ラベルと円マーク列の左端を揃える（高さは metaStackReview と同じ minHeight） */
-  metaStackPrice: {
-    width: '100%',
-    minHeight: 48,
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-  },
-  metaSegIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-  },
-  /** 点数・円行の直上ラベル（左端を下段の先頭に合わせる） */
-  metaLblOverRate: { marginBottom: 6, textAlign: 'left', alignSelf: 'stretch' },
-  metaLbl: { fontSize: 10, lineHeight: 14, fontWeight: '700', color: '#aaa', letterSpacing: 0.6 },
-  rateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 6,
-    minHeight: 28,
-    alignSelf: 'stretch',
-  },
-  rateNum: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
-  reviewCountTxt: { fontSize: 10, lineHeight: 14, fontWeight: '700', color: colors.textMuted },
-  rateDash: { fontSize: 18, fontWeight: '800', color: '#ccc' },
-  priceLevelRow: { flexDirection: 'row', gap: 2, alignItems: 'center', flexShrink: 0 },
-  priceQ: { fontSize: 14, fontWeight: '800', color: '#ccc', lineHeight: META_STAR_PX },
-  iconSq: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#fafafa',
+    backgroundColor: TOKENS.surface.primary,
     borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: TOKENS.border.default,
   },
-  wanspotHeadRow: {
+  mapMiniImg: { width: '100%', height: '100%' },
+  mapMiniPh: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: TOKENS.surface.mapMuted },
+  detailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    backgroundColor: TOKENS.surface.primary,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: TOKENS.border.default,
   },
-  wanspotHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 },
-  wanspotHeadPaw: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
-  wanspotHeadLbl: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, letterSpacing: 0.2 },
-  wanspotRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  wanspotRatingNum: { fontSize: 16, fontWeight: '800', color: colors.gold },
-  kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  kwPill: { backgroundColor: colors.tintStrong, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  kwTxt: { fontSize: 12, fontWeight: '700', color: colors.primary },
-  aiBody: { fontSize: 14, lineHeight: 22, color: colors.textSecondary },
-  revHint: { fontSize: 14, color: '#aaa', textAlign: 'center', paddingVertical: 16 },
-  revItem: { paddingBottom: 12 },
-  revBorder: { borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
-  revTop: {
+  detailsRowTxt: { fontSize: 14, fontWeight: '700', color: TOKENS.text.primary },
+  detailsChevron: { fontSize: 18, fontWeight: '700', color: TOKENS.text.secondary },
+  detailsBody: {
+    backgroundColor: TOKENS.surface.primary,
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: TOKENS.border.default,
+    marginTop: -4,
+  },
+  detailBlock: { gap: 4 },
+  detailLbl: { fontSize: 10, fontWeight: '800', color: TOKENS.text.secondary, letterSpacing: 0.4 },
+  detailVal: { fontSize: 13, lineHeight: 19, color: TOKENS.text.primary },
+  detailValMuted: { fontSize: 13, color: TOKENS.text.secondary },
+  priceRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  priceLevelRow: { flexDirection: 'row', gap: 2, alignItems: 'center', flexShrink: 0 },
+  priceQ: { fontSize: 14, fontWeight: '800', color: TOKENS.text.disabled, lineHeight: META_STAR_PX },
+  fixedActions: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    backgroundColor: TOKENS.surface.paper,
+    borderTopWidth: 1,
+    borderTopColor: TOKENS.border.subtle,
+  },
+  likePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-    gap: 8,
-    marginBottom: 6,
-  },
-  revStarsWrap: { flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 0 },
-  revDateCol: { flex: 1, minWidth: 0, justifyContent: 'center' },
-  revDate: { fontSize: 12, color: '#bbb', textAlign: 'right' },
-  revComment: { fontSize: 14, lineHeight: 22, color: '#555', marginTop: 2, alignSelf: 'stretch' },
-  adviceFoot: { fontSize: 12, color: '#bbb', marginTop: 12, lineHeight: 18 },
-  checkInKeyboardRoot: { flex: 1 },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    maxHeight: WIN_H * 0.88,
-  },
-  checkInSheetScrollContent: {
-    flexGrow: 1,
-    gap: 12,
-    paddingBottom: 8,
-  },
-  sheetGrab: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#e8e8e8', alignSelf: 'center', marginBottom: 8 },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
-  sheetHint: { fontSize: 14, color: '#aaa' },
-  starsRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginVertical: 8 },
-  ta: {
-    minHeight: 80,
-    borderRadius: 12,
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 18,
+    minHeight: FIXED_ACTION_H,
+    borderRadius: 999,
+    backgroundColor: TOKENS.surface.primary,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.paper,
-    padding: 12,
-    fontSize: 14,
-    color: colors.textPrimary,
-    textAlignVertical: 'top',
+    borderColor: TOKENS.border.default,
   },
-  taFoot: { fontSize: 12, color: '#aaa', lineHeight: 18 },
-  primaryBtn: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 16,
+  likePillOn: { backgroundColor: TOKENS.brand.tintWeak, borderColor: TOKENS.brand.tintStrong },
+  likePillTxt: { fontSize: 14, fontWeight: '800', color: TOKENS.text.primary },
+  visitPill: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    minHeight: FIXED_ACTION_H,
+    borderRadius: 999,
+    backgroundColor: TOKENS.brand.primary,
   },
-  primaryBtnTxt: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
-  secondaryBtn: { backgroundColor: '#f5f5f5', paddingVertical: 14, borderRadius: 16, alignItems: 'center' },
-  secondaryBtnTxt: { fontSize: 14, fontWeight: '700', color: '#888' },
+  visitPillDone: { opacity: 0.92 },
+  visitPillTxt: { fontSize: 15, fontWeight: '800', color: TOKENS.surface.primary },
   shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
   shareBox: { backgroundColor: '#fff', borderRadius: 24, padding: 24, maxWidth: 340, alignSelf: 'center', width: '100%' },
   shareTitle: { fontSize: 14, fontWeight: '700', color: '#aaa', textAlign: 'center', marginBottom: 20, letterSpacing: 0.6 },
@@ -1140,52 +1054,46 @@ const styles = StyleSheet.create({
   shareLblW: { fontSize: 12, fontWeight: '700', color: '#fff' },
   cancelShare: { marginTop: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center' },
   cancelShareTxt: { fontSize: 14, fontWeight: '700', color: '#888' },
-  visitActionOverlay: {
+  visitSheetOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(18,12,16,0.44)',
-    padding: 16,
   },
-  visitActionSheet: {
-    borderRadius: 28,
-    padding: 18,
+  visitSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    paddingTop: 12,
     gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.74)',
-    shadowColor: '#7F5CFF',
-    shadowOpacity: 0.16,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
+    backgroundColor: TOKENS.surface.primary,
   },
-  visitActionHandle: {
+  visitSheetHandle: {
     alignSelf: 'center',
     width: 38,
     height: 4,
     borderRadius: 2,
     backgroundColor: 'rgba(46,40,37,0.18)',
+    marginBottom: 4,
   },
-  visitActionTitle: { fontSize: 19, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
-  visitActionSub: {
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 18,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  visitActionPrimary: {
+  visitSheetThumb: { width: '100%', height: 140, borderRadius: 16 },
+  visitSheetThumbPh: { backgroundColor: TOKENS.surface.mapMuted, alignItems: 'center', justifyContent: 'center' },
+  visitSheetTitle: { fontSize: 18, fontWeight: '800', color: TOKENS.text.primary, textAlign: 'center' },
+  visitSheetSub: { fontSize: 13, fontWeight: '700', color: TOKENS.text.secondary, textAlign: 'center' },
+  visitSheetPrimary: {
     minHeight: 50,
     borderRadius: 25,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#7F5CFF',
-    shadowColor: '#7F5CFF',
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    backgroundColor: TOKENS.brand.primary,
   },
-  visitActionPrimaryText: { fontSize: 15, fontWeight: '900', color: '#fff' },
+  visitSheetPrimaryTxt: { fontSize: 15, fontWeight: '800', color: TOKENS.surface.primary },
+  visitSheetSecondary: {
+    minHeight: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: TOKENS.surface.alt,
+  },
+  visitSheetSecondaryTxt: { fontSize: 14, fontWeight: '700', color: TOKENS.text.secondary },
 })
