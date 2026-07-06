@@ -1,6 +1,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors } from '@/constants/colors'
+import { safeToString } from '@/lib/ios-safe-console'
 
 type Props = {
   children: ReactNode
@@ -21,7 +22,7 @@ export class ScreenErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    const msg = error?.message ?? 'unknown'
+    const msg = safeToString(error)
     const stack = typeof info.componentStack === 'string' ? info.componentStack : ''
     console.error(`[ScreenErrorBoundary:${this.props.label ?? 'screen'}] ${msg}${stack ? ` ${stack}` : ''}`)
   }

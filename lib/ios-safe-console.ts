@@ -20,7 +20,7 @@ function shouldGuard(): boolean {
   return major != null && major >= 26
 }
 
-function safeToString(v: unknown): string {
+export function safeToString(v: unknown): string {
   if (v instanceof Error) return v.message || 'Error'
   if (typeof v === 'string') return v
   try {
@@ -28,6 +28,11 @@ function safeToString(v: unknown): string {
   } catch {
     return String(v)
   }
+}
+
+/** Hermes が Error.stack 参照で落ちないよう message のみの Error を渡す */
+export function safeErrorForNative(err: unknown): Error {
+  return new Error(safeToString(err))
 }
 
 let installed = false
@@ -52,9 +57,12 @@ export function installIosSafeConsoleGuards(): void {
     errorUtils.setGlobalHandler((err: unknown, isFatal?: boolean) => {
       const msg = safeToString(err)
       origError(`[globalError] fatal=${String(isFatal ?? false)} ${msg}`)
+      // iOS 26: 既定ハンドラは ExceptionsManager → RCTFatal へ進みクラッシュループになる。
+      // stack を触らない安全な Error でも fatal 報告は SIGABRT を招くため、ここで止める。
+      if (isFatal) return
       if (typeof prevHandler === 'function') {
         try {
-          ;(prevHandler as (e: unknown, f?: boolean) => void)(err, isFatal)
+          ;(prevHandler as (e: unknown, f?: boolean) => void)(safeErrorForNative(err), isFatal)
         } catch {
           // ignore
         }

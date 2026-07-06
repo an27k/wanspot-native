@@ -327,6 +327,7 @@ function SearchTab() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!nonCriticalReady) return () => {}
       let cancelled = false
 
       const run = async () => {
@@ -363,15 +364,24 @@ function SearchTab() {
       return () => {
         cancelled = true
       }
-    }, [])
+    }, [nonCriticalReady])
   )
 
   useEffect(() => {
+    if (!nonCriticalReady) return
+    let cancelled = false
     void (async () => {
-      const result = await resolveSessionLocation(null)
-      if (result.ok) setLocation(result.location)
+      try {
+        const result = await resolveSessionLocation(null)
+        if (!cancelled && result.ok) setLocation(result.location)
+      } catch {
+        /* ignore */
+      }
     })()
-  }, [])
+    return () => {
+      cancelled = true
+    }
+  }, [nonCriticalReady])
 
   useFocusEffect(
     useCallback(() => {
@@ -712,9 +722,10 @@ function SearchTab() {
   }, [articlesRaw, location, userWalkTags, recentArticleIds, nonCriticalReady])
 
   useEffect(() => {
+    if (!nonCriticalReady) return
     if (searched) return
     if (discoverMode === 'articles') void handleArticles()
-  }, [discoverMode, searched, handleArticles])
+  }, [discoverMode, searched, handleArticles, nonCriticalReady])
 
   useEffect(() => {
     if (!nonCriticalReady) return
