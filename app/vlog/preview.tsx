@@ -24,6 +24,7 @@ import Animated, {
 import { TOKENS } from '@/constants/color-tokens'
 import { GRADIENT_VLOG_LIQUID } from '@/constants/gradients'
 import { REVIEW_TUTORIAL_SAMPLE_VLOG } from '@/lib/review/sample-vlog-video'
+import { VLOG_ENABLED } from '@/lib/feature-flags'
 import { saveVlogToCameraRoll, shareVlogFile } from '@/lib/vlog/share'
 import { track } from '@/lib/analytics'
 
@@ -56,6 +57,12 @@ export default function VlogPreviewScreen() {
   const [durationSec, setDurationSec] = useState(0)
 
   const checkScale = useSharedValue(0)
+
+  useEffect(() => {
+    if (!VLOG_ENABLED) {
+      router.replace('/(tabs)/search')
+    }
+  }, [router])
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => setReady(true))

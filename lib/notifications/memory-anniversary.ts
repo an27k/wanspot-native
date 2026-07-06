@@ -1,4 +1,5 @@
 import type * as Notifications from 'expo-notifications'
+import { REVIEW_ALBUM_TAB_ENABLED, VLOG_ENABLED } from '@/lib/feature-flags'
 import { loadNotificationsModule } from '@/lib/notifications/notifications-module'
 import type { VisitPlate } from '@/lib/visits-memories'
 
@@ -76,18 +77,19 @@ export function findUpcomingAnniversaries(plates: VisitPlate[], now = new Date()
 }
 
 function buildContent(item: MemoryAnniversary, dogName: string): Notifications.NotificationContentInput {
+  const vlogSuffix = VLOG_ENABLED ? 'アルバムで見返して、Vlogにしてみませんか？' : '思い出を見返してみませんか？'
   // 日次ログ（きょうのログ）は「行った」ではなく日常の記録として案内する
   const body =
     item.plate.spot_id == null
-      ? `${dogName}の「${item.plate.spot.name}」を記録した日です。アルバムで見返して、Vlogにしてみませんか？`
-      : `${dogName}と「${item.plate.spot.name}」に行った日です。アルバムで見返して、Vlogにしてみませんか？`
+      ? `${dogName}の「${item.plate.spot.name}」を記録した日です。${vlogSuffix}`
+      : `${dogName}と「${item.plate.spot.name}」に行った日です。${vlogSuffix}`
   return {
     title: `${item.label}の今日の思い出 🐾`,
     body,
     sound: false,
     data: {
       type: MEMORY_ANNIVERSARY_TYPE,
-      url: '/(tabs)/camera',
+      url: REVIEW_ALBUM_TAB_ENABLED ? '/(tabs)/camera' : '/(tabs)/search',
       visitId: item.plate.id,
     },
   }
@@ -102,6 +104,8 @@ export async function syncMemoryAnniversaryNotifications(
   plates: VisitPlate[],
   dogName?: string | null
 ): Promise<void> {
+  if (!REVIEW_ALBUM_TAB_ENABLED) return
+
   try {
     // ネイティブモジュール未搭載のバイナリでは何もしない（起動クラッシュ防止）
     const notifications = loadNotificationsModule()

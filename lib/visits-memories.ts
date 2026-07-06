@@ -184,6 +184,29 @@ export async function fetchVisitPlates(userId: string): Promise<VisitPlate[]> {
 }
 
 /** 同日・同スポットの visit がなければ insert。check_ins は best-effort（失敗しても visits 成功なら OK）。 */
+export async function fetchTodaySpotVisit(
+  userId: string,
+  spotId: string
+): Promise<{ id: string; rating: number | null; comment: string | null } | null> {
+  const { start, end } = localDayBounds()
+  const { data, error } = await supabase
+    .from('visits')
+    .select('id, rating, comment')
+    .eq('user_id', userId)
+    .eq('spot_id', spotId)
+    .eq('soft_deleted', false)
+    .gte('visited_at', start)
+    .lte('visited_at', end)
+    .maybeSingle()
+
+  if (error || !data?.id) return null
+  return {
+    id: data.id as string,
+    rating: (data.rating as number | null) ?? null,
+    comment: (data.comment as string | null) ?? null,
+  }
+}
+
 export async function recordSpotVisit(
   userId: string,
   spotId: string,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Image } from 'expo-image'
 import {
   Animated,
@@ -13,6 +13,7 @@ import {
   Share,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -42,7 +43,9 @@ import {
   resolveSpotForDetail,
   type SpotDetailRow,
 } from '@/lib/spot-detail-load'
-import { formatVisitRecordError, fetchVisitPlates, recordSpotVisit } from '@/lib/visits-memories'
+import { formatVisitRecordError, fetchTodaySpotVisit, fetchVisitPlates, recordSpotVisit, updateVisit } from '@/lib/visits-memories'
+import { REVIEW_ALBUM_TAB_ENABLED, VLOG_ENABLED } from '@/lib/feature-flags'
+import { pickSpotReviewMemoPlaceholder } from '@/lib/spot-review-memo'
 import { logUserEvent } from '@/lib/user-events'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { fetchAiSummary } from '@/lib/ai-summary'
@@ -159,6 +162,18 @@ const IconCopy = () => (
   </Svg>
 )
 
+function StarRow({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  return (
+    <View style={styles.starRow}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Pressable key={n} onPress={() => onChange(n)} hitSlop={6}>
+          <Ionicons name={n <= value ? 'star' : 'star-outline'} size={22} color={colors.gold} />
+        </Pressable>
+      ))}
+    </View>
+  )
+}
+
 export default function SpotDetailScreen({
   spotId,
   pendingPlace = null,
@@ -173,6 +188,7 @@ export default function SpotDetailScreen({
   const likeScale = useRef(new Animated.Value(1)).current
   const instagramAutoFetchSent = useRef<string | null>(null)
   const visitRecordInFlight = useRef(false)
+  const memoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const photoListRef = useRef<FlatList<string>>(null)
   const aiRequestKeyRef = useRef<string | null>(null)
 
@@ -198,6 +214,9 @@ export default function SpotDetailScreen({
   const [openNow, setOpenNow] = useState<boolean | null>(null)
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [checkedIn, setCheckedIn] = useState(false)
+  const [visitId, setVisitId] = useState<string | null>(null)
+  const [userRating, setUserRating] = useState(0)
+  const [userMemo, setUserMemo] = useState('')
   const [visitRecording, setVisitRecording] = useState(false)
   const [showVisitSheet, setShowVisitSheet] = useState(false)
   const [vlogRemaining, setVlogRemaining] = useState<number | null>(null)
@@ -272,7 +291,7 @@ export default function SpotDetailScreen({
       if (user) setUserId(user.id)
 
       // Places Detail と いいね/チェックイン状態は互いに依存しないため並列化してラウンドトリップを1回減らす
-      const [detailHttp, [{ count: likeC }, myLikeResult, myVisit]] = await Promise.all([
+      const [detailHttp, [{ count: likeC }, myLikeResult]] = await Promise.all([
         wanspotFetch(`/api/spots/detail?place_id=${encodeURIComponent(spotData.place_id)}`).catch(() => null),
         Promise.all([
           supabase.from('spot_likes').select('*', { count: 'exact', head: true }).eq('spot_id', resolvedSpotId),
@@ -282,16 +301,6 @@ export default function SpotDetailScreen({
                 .select('id')
                 .eq('spot_id', resolvedSpotId)
                 .eq('user_id', user.id)
-                .maybeSingle()
-            : Promise.resolve({ data: null }),
-          user
-            ? supabase
-                .from('visits')
-                .select('id')
-                .eq('spot_id', resolvedSpotId)
-                .eq('user_id', user.id)
-                .eq('soft_deleted', false)
-                .limit(1)
                 .maybeSingle()
             : Promise.resolve({ data: null }),
         ]),
@@ -307,9 +316,26 @@ export default function SpotDetailScreen({
 
       setLikeCount(likeC ?? 0)
       setLiked(!!myLikeResult.data)
-      setCheckedIn(!!myVisit.data)
       if (user) {
+        const todayVisit = await fetchTodaySpotVisit(user.id, resolvedSpotId)
+        if (cancelled) return
+        if (todayVisit) {
+          setVisitId(todayVisit.id)
+          setCheckedIn(true)
+          setUserRating(todayVisit.rating ?? 0)
+          setUserMemo(todayVisit.comment ?? '')
+        } else {
+          setVisitId(null)
+          setCheckedIn(false)
+          setUserRating(0)
+          setUserMemo('')
+        }
         logUserEvent({ eventType: 'spot_view', spotId: resolvedSpotId, userId: user.id })
+      } else {
+        setVisitId(null)
+        setCheckedIn(false)
+        setUserRating(0)
+        setUserMemo('')
       }
 
       if (detailRes?.photos?.length) {
@@ -479,11 +505,54 @@ export default function SpotDetailScreen({
 
   useEffect(() => {
     if (!visitToast) return
-    // VLOG 導線付きはタップの猶予を持たせて長めに表示
     const ms = visitToast.tone === 'error' ? 5000 : 2000
     const t = setTimeout(() => setVisitToast(null), ms)
     return () => clearTimeout(t)
   }, [visitToast])
+
+  useEffect(() => {
+    return () => {
+      if (memoDebounceRef.current) clearTimeout(memoDebounceRef.current)
+    }
+  }, [])
+
+  const memoPlaceholder = useMemo(
+    () => pickSpotReviewMemoPlaceholder(dog?.name, spot?.id ?? spotId),
+    [dog?.name, spot?.id, spotId]
+  )
+
+  const ensureVisitId = async (): Promise<string | null> => {
+    if (visitId) return visitId
+    if (!spot || !userId) return null
+    const result = await recordSpotVisit(userId, spot.id, 'review')
+    if (!result.ok || !result.visitId) return null
+    setVisitId(result.visitId)
+    setCheckedIn(true)
+    return result.visitId
+  }
+
+  const saveUserRating = async (rating: number) => {
+    if (!spot) return
+    if (!requireAuth('評価を残すにはログインしてください。')) return
+    if (!userId) return
+    const id = await ensureVisitId()
+    if (!id) return
+    setUserRating(rating)
+    await updateVisit(id, { rating })
+  }
+
+  const saveUserMemo = (comment: string) => {
+    if (memoDebounceRef.current) clearTimeout(memoDebounceRef.current)
+    memoDebounceRef.current = setTimeout(() => {
+      void (async () => {
+        if (!spot || !userId) return
+        if (!requireAuth('メモを残すにはログインしてください。')) return
+        const id = await ensureVisitId()
+        if (!id) return
+        await updateVisit(id, { comment: comment.trim() || null })
+      })()
+    }, 800)
+  }
 
   const toggleLike = async () => {
     if (!spot || likeLoading) return
@@ -510,7 +579,7 @@ export default function SpotDetailScreen({
   }
 
   const loadVlogRemaining = async () => {
-    if (!userId) {
+    if (!VLOG_ENABLED || !userId) {
       setVlogRemaining(null)
       return
     }
@@ -523,8 +592,9 @@ export default function SpotDetailScreen({
   }
 
   const openVisitSheet = () => {
+    if (!REVIEW_ALBUM_TAB_ENABLED) return
     setShowVisitSheet(true)
-    void loadVlogRemaining()
+    if (VLOG_ENABLED) void loadVlogRemaining()
   }
 
   const recordVisitTap = async () => {
@@ -542,8 +612,13 @@ export default function SpotDetailScreen({
         return
       }
       setCheckedIn(true)
+      if (result.visitId) setVisitId(result.visitId)
       if (result.created) track('spot_checked_in', { spot_id: spot.id })
-      openVisitSheet()
+      if (REVIEW_ALBUM_TAB_ENABLED) {
+        openVisitSheet()
+      } else {
+        setVisitToast({ message: '行ったを記録しました', tone: 'success' })
+      }
     } finally {
       visitRecordInFlight.current = false
       setVisitRecording(false)
@@ -551,7 +626,7 @@ export default function SpotDetailScreen({
   }
 
   const openReviewAlbum = () => {
-    if (!spot) return
+    if (!REVIEW_ALBUM_TAB_ENABLED || !spot) return
     setShowVisitSheet(false)
     track('visited_button_review_flow_tapped', { spot_id: spot.id })
     router.push('/(tabs)/camera')
@@ -734,6 +809,23 @@ export default function SpotDetailScreen({
             </View>
           </View>
 
+          <View style={styles.userReviewCard}>
+            <Text style={styles.userReviewTitle}>わんこの評価</Text>
+            <StarRow value={userRating} onChange={(n) => void saveUserRating(n)} />
+            <TextInput
+              style={styles.userReviewInput}
+              value={userMemo}
+              onChangeText={(text) => {
+                setUserMemo(text)
+                saveUserMemo(text)
+              }}
+              placeholder={memoPlaceholder}
+              placeholderTextColor={TOKENS.text.secondary}
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+
           <View style={styles.aiCard}>
             {aiLoading ? (
               <RunningDog label="ワンスポAIレビューを生成中..." />
@@ -822,7 +914,7 @@ export default function SpotDetailScreen({
           style={[styles.visitPill, checkedIn && styles.visitPillDone]}
           onPress={() => {
             if (checkedIn) {
-              openVisitSheet()
+              if (REVIEW_ALBUM_TAB_ENABLED) openVisitSheet()
               return
             }
             void recordVisitTap()
@@ -859,30 +951,34 @@ export default function SpotDetailScreen({
         </Pressable>
       </Modal>
 
-      <Modal visible={showVisitSheet} transparent animationType="slide" onRequestClose={() => setShowVisitSheet(false)}>
-        <Pressable style={styles.visitSheetOverlay} onPress={() => setShowVisitSheet(false)}>
-          <Pressable style={styles.visitSheet} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.visitSheetHandle} />
-            {heroThumb ? (
-              <Image source={{ uri: heroThumb }} style={styles.visitSheetThumb} contentFit="cover" {...remoteImageExpoProps} />
-            ) : (
-              <View style={[styles.visitSheetThumb, styles.visitSheetThumbPh]}>
-                <IconPaw size={28} color={TOKENS.text.hint} />
-              </View>
-            )}
-            <Text style={styles.visitSheetTitle}>{spot.name}</Text>
-            <Text style={styles.visitSheetSub}>
-              Vlogまで あと{vlogRemaining != null ? Math.ceil(vlogRemaining) : '—'}スポット
-            </Text>
-            <Pressable style={styles.visitSheetPrimary} onPress={openReviewAlbum}>
-              <Text style={styles.visitSheetPrimaryTxt}>★とメモをのこす</Text>
-            </Pressable>
-            <Pressable style={styles.visitSheetSecondary} onPress={() => setShowVisitSheet(false)}>
-              <Text style={styles.visitSheetSecondaryTxt}>あとで</Text>
+      {REVIEW_ALBUM_TAB_ENABLED ? (
+        <Modal visible={showVisitSheet} transparent animationType="slide" onRequestClose={() => setShowVisitSheet(false)}>
+          <Pressable style={styles.visitSheetOverlay} onPress={() => setShowVisitSheet(false)}>
+            <Pressable style={styles.visitSheet} onPress={(e) => e.stopPropagation()}>
+              <View style={styles.visitSheetHandle} />
+              {heroThumb ? (
+                <Image source={{ uri: heroThumb }} style={styles.visitSheetThumb} contentFit="cover" {...remoteImageExpoProps} />
+              ) : (
+                <View style={[styles.visitSheetThumb, styles.visitSheetThumbPh]}>
+                  <IconPaw size={28} color={TOKENS.text.hint} />
+                </View>
+              )}
+              <Text style={styles.visitSheetTitle}>{spot.name}</Text>
+              {VLOG_ENABLED ? (
+                <Text style={styles.visitSheetSub}>
+                  Vlogまで あと{vlogRemaining != null ? Math.ceil(vlogRemaining) : '—'}スポット
+                </Text>
+              ) : null}
+              <Pressable style={styles.visitSheetPrimary} onPress={openReviewAlbum}>
+                <Text style={styles.visitSheetPrimaryTxt}>★とメモをのこす</Text>
+              </Pressable>
+              <Pressable style={styles.visitSheetSecondary} onPress={() => setShowVisitSheet(false)}>
+                <Text style={styles.visitSheetSecondaryTxt}>あとで</Text>
+              </Pressable>
             </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
+      ) : null}
     </View>
   )
 }
@@ -996,6 +1092,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: TOKENS.border.default,
   },
+  userReviewCard: {
+    backgroundColor: TOKENS.surface.primary,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: TOKENS.border.default,
+    gap: 10,
+  },
+  userReviewTitle: { fontSize: 12, fontWeight: '800', color: TOKENS.text.secondary },
+  starRow: { flexDirection: 'row', gap: 4 },
+  userReviewInput: {
+    minHeight: 72,
+    fontSize: 13,
+    lineHeight: 19,
+    color: TOKENS.text.primary,
+    padding: 0,
+  },
   aiCard: {
     backgroundColor: 'rgba(251,107,83,0.07)',
     borderRadius: 16,
@@ -1064,6 +1177,7 @@ const styles = StyleSheet.create({
     borderTopColor: TOKENS.border.subtle,
   },
   likePill: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
