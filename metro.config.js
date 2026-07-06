@@ -4,7 +4,7 @@ const { getDefaultConfig } = require('expo/metro-config')
 const projectRoot = __dirname
 const config = getDefaultConfig(projectRoot)
 
-function adsEnabledEnv(): boolean {
+function adsEnabledEnv() {
   const raw = process.env.EXPO_PUBLIC_ADS_ENABLED
   return raw === 'true' || raw === '1'
 }
