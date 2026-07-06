@@ -7,7 +7,8 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 /**
  * OTA 更新の適用案内。
  *
- * `checkAutomatically: ON_LOAD` でバックグラウンド取得済みの更新を `useUpdates().isUpdatePending` で検知し、
+ * `checkAutomatically: ON_ERROR_RECOVERY` — 起動直後の OTA 適用で壊れたバンドルが当たるループを避ける。
+ * バックグラウンド取得済みの更新は `useUpdates().isUpdatePending` で検知し、
  * ユーザーには完全終了→再起動を案内する（`EXUpdatesLaunchWaitMs: 0` 構成ではこちらが安全）。
  *
  * `Updates.reloadAsync()` は呼ばない。reload 直前の setState やナビゲーション中の bridge 再生成と競合し、
