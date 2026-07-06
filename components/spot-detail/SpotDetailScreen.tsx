@@ -44,7 +44,7 @@ import {
   type SpotDetailRow,
 } from '@/lib/spot-detail-load'
 import { formatVisitRecordError, fetchTodaySpotVisit, fetchVisitPlates, recordSpotVisit, updateVisit } from '@/lib/visits-memories'
-import { REVIEW_ALBUM_TAB_ENABLED, VLOG_ENABLED } from '@/lib/feature-flags'
+import { REVIEW_ALBUM_TAB_ENABLED, SPOT_INLINE_REVIEW_ENABLED, VLOG_ENABLED } from '@/lib/feature-flags'
 import { pickSpotReviewMemoPlaceholder } from '@/lib/spot-review-memo'
 import { logUserEvent } from '@/lib/user-events'
 import { useDogProfile } from '@/components/dog/useDogProfile'
@@ -322,20 +322,26 @@ export default function SpotDetailScreen({
         if (todayVisit) {
           setVisitId(todayVisit.id)
           setCheckedIn(true)
-          setUserRating(todayVisit.rating ?? 0)
-          setUserMemo(todayVisit.comment ?? '')
+          if (SPOT_INLINE_REVIEW_ENABLED) {
+            setUserRating(todayVisit.rating ?? 0)
+            setUserMemo(todayVisit.comment ?? '')
+          }
         } else {
           setVisitId(null)
           setCheckedIn(false)
-          setUserRating(0)
-          setUserMemo('')
+          if (SPOT_INLINE_REVIEW_ENABLED) {
+            setUserRating(0)
+            setUserMemo('')
+          }
         }
         logUserEvent({ eventType: 'spot_view', spotId: resolvedSpotId, userId: user.id })
       } else {
         setVisitId(null)
         setCheckedIn(false)
-        setUserRating(0)
-        setUserMemo('')
+        if (SPOT_INLINE_REVIEW_ENABLED) {
+          setUserRating(0)
+          setUserMemo('')
+        }
       }
 
       if (detailRes?.photos?.length) {
@@ -532,7 +538,7 @@ export default function SpotDetailScreen({
   }
 
   const saveUserRating = async (rating: number) => {
-    if (!spot) return
+    if (!SPOT_INLINE_REVIEW_ENABLED || !spot) return
     if (!requireAuth('評価を残すにはログインしてください。')) return
     if (!userId) return
     const id = await ensureVisitId()
@@ -542,6 +548,7 @@ export default function SpotDetailScreen({
   }
 
   const saveUserMemo = (comment: string) => {
+    if (!SPOT_INLINE_REVIEW_ENABLED) return
     if (memoDebounceRef.current) clearTimeout(memoDebounceRef.current)
     memoDebounceRef.current = setTimeout(() => {
       void (async () => {
@@ -809,22 +816,24 @@ export default function SpotDetailScreen({
             </View>
           </View>
 
-          <View style={styles.userReviewCard}>
-            <Text style={styles.userReviewTitle}>わんこの評価</Text>
-            <StarRow value={userRating} onChange={(n) => void saveUserRating(n)} />
-            <TextInput
-              style={styles.userReviewInput}
-              value={userMemo}
-              onChangeText={(text) => {
-                setUserMemo(text)
-                saveUserMemo(text)
-              }}
-              placeholder={memoPlaceholder}
-              placeholderTextColor={TOKENS.text.secondary}
-              multiline
-              textAlignVertical="top"
-            />
-          </View>
+          {SPOT_INLINE_REVIEW_ENABLED ? (
+            <View style={styles.userReviewCard}>
+              <Text style={styles.userReviewTitle}>わんこの評価</Text>
+              <StarRow value={userRating} onChange={(n) => void saveUserRating(n)} />
+              <TextInput
+                style={styles.userReviewInput}
+                value={userMemo}
+                onChangeText={(text) => {
+                  setUserMemo(text)
+                  saveUserMemo(text)
+                }}
+                placeholder={memoPlaceholder}
+                placeholderTextColor={TOKENS.text.secondary}
+                multiline
+                textAlignVertical="top"
+              />
+            </View>
+          ) : null}
 
           <View style={styles.aiCard}>
             {aiLoading ? (

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import type * as Notifications from 'expo-notifications'
 import { useRouter } from 'expo-router'
 import { MEMORY_ANNIVERSARY_TYPE } from '@/lib/notifications/memory-anniversary'
+import { REVIEW_ALBUM_TAB_ENABLED } from '@/lib/feature-flags'
 import { loadNotificationsModule } from '@/lib/notifications/notifications-module'
 
 let handlerInstalled = false
@@ -28,8 +29,10 @@ function navigateFromResponse(
     | { type?: string; url?: string; visitId?: string }
     | undefined
   if (!data?.url || data.type !== MEMORY_ANNIVERSARY_TYPE) return
+  const pathname =
+    data.url === '/(tabs)/camera' && !REVIEW_ALBUM_TAB_ENABLED ? '/(tabs)/search' : data.url
   push({
-    pathname: data.url,
+    pathname,
     params: data.visitId ? { focusVisitId: data.visitId } : undefined,
   })
 }
