@@ -25,11 +25,13 @@ export function useWeather(location: { lat: number; lng: number } | null): Weath
       return
     }
     setLoading(true)
-    void fetchCurrentWeather(location.lat, location.lng).then((w) => {
-      writeCache(weatherKey, w)
-      setData(w)
-      setLoading(false)
-    })
+    void fetchCurrentWeather(location.lat, location.lng)
+      .then((w) => {
+        writeCache(weatherKey, w)
+        setData(w)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }, [location?.lat, location?.lng, weatherKey])
 
   useEffect(() => {
@@ -51,11 +53,15 @@ export function useWeather(location: { lat: number; lng: number } | null): Weath
 
     const refresh = async (withLoading: boolean) => {
       if (withLoading && !cancelled) setLoading(true)
-      const w = await fetchCurrentWeather(location.lat, location.lng)
-      if (!cancelled) {
-        writeCache(weatherKey, w)
-        setData(w)
-        setLoading(false)
+      try {
+        const w = await fetchCurrentWeather(location.lat, location.lng)
+        if (!cancelled) {
+          writeCache(weatherKey, w)
+          setData(w)
+          setLoading(false)
+        }
+      } catch {
+        if (!cancelled) setLoading(false)
       }
     }
 

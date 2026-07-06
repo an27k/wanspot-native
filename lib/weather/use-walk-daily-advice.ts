@@ -37,12 +37,16 @@ export function useWalkDailyAdvice(
     }
     let cancelled = false
     setLoading(true)
-    void fetchWalkDailyAdvice(location.lat, location.lng, tempC, dogName, { weatherCondition, dogSize }).then((next) => {
-      if (!cancelled) {
-        setAdvice(next)
-        setLoading(false)
-      }
-    })
+    void fetchWalkDailyAdvice(location.lat, location.lng, tempC, dogName, { weatherCondition, dogSize })
+      .then((next) => {
+        if (!cancelled) {
+          setAdvice(next)
+          setLoading(false)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false)
+      })
     return () => {
       cancelled = true
     }

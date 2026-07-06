@@ -21,7 +21,9 @@ export class ScreenErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error(`[ScreenErrorBoundary:${this.props.label ?? 'screen'}]`, error, info.componentStack)
+    const msg = error?.message ?? 'unknown'
+    const stack = typeof info.componentStack === 'string' ? info.componentStack : ''
+    console.error(`[ScreenErrorBoundary:${this.props.label ?? 'screen'}] ${msg}${stack ? ` ${stack}` : ''}`)
   }
 
   private retry = () => {
