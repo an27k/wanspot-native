@@ -22,9 +22,11 @@ export class ScreenErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    const label = this.props.label ?? 'screen'
+    const name = error instanceof Error && error.name ? error.name : 'Error'
     const msg = safeToString(error)
     const stack = typeof info.componentStack === 'string' ? info.componentStack : ''
-    console.error(`[ScreenErrorBoundary:${this.props.label ?? 'screen'}] ${msg}${stack ? ` ${stack}` : ''}`)
+    console.error(`[ScreenErrorBoundary:${label}] ${name}: ${msg}${stack ? ` ${stack}` : ''}`)
   }
 
   private retry = () => {
@@ -38,6 +40,11 @@ export class ScreenErrorBoundary extends Component<Props, State> {
         <View style={styles.root}>
           <Text style={styles.title}>表示中に問題が発生しました</Text>
           <Text style={styles.body}>もう一度お試しください。</Text>
+          {__DEV__ ? (
+            <Text style={styles.debug}>
+              {this.props.label ?? 'screen'}: {safeToString(this.state.error)}
+            </Text>
+          ) : null}
           <Pressable style={styles.btn} onPress={this.retry}>
             <Text style={styles.btnTxt}>再読み込み</Text>
           </Pressable>
@@ -59,6 +66,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
   body: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' },
+  debug: { fontSize: 12, fontWeight: '600', color: colors.textMuted, textAlign: 'center' },
   btn: {
     marginTop: 8,
     backgroundColor: colors.primary,

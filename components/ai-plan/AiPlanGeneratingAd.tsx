@@ -1,25 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { InteractionManager, StyleSheet } from 'react-native'
-import { NativeAdStandardCard } from '@/components/ads/NativeAdStandardCard'
-import { resolveAiPlanVideoNativeAdUnitId } from '@/constants/admob'
+import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
+import { InteractionManager, StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
-import { buildNativeAdRequestOptions, enqueueNativeAdRequest } from '@/lib/native-ad-request-queue'
 import { prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
-import { NativeAd, NativeMediaAspectRatio } from 'react-native-google-mobile-ads'
+import type { NativeAd } from 'react-native-google-mobile-ads'
 
 const LOAD_MAX_ATTEMPTS = 3
+type NativeAdCardComponent = ComponentType<{ nativeAd: NativeAd; adViewStyle?: StyleProp<ViewStyle> }>
 
 export function AiPlanGeneratingAd() {
   const [nativeAd, setNativeAd] = useState<NativeAd | null>(null)
+  const [NativeAdCard, setNativeAdCard] = useState<NativeAdCardComponent | null>(null)
   const nativeAdRef = useRef<NativeAd | null>(null)
   const loadInFlightRef = useRef(false)
 
   const adsEnabled = useMemo(() => adsEnabledForDevice(), [])
-  const unitId = useMemo(() => (adsEnabled ? resolveAiPlanVideoNativeAdUnitId() : null), [adsEnabled])
 
   useEffect(() => {
     if (!adsEnabled) return
-    if (unitId == null) return
 
     let cancelled = false
     setNativeAd(null)
@@ -42,6 +39,23 @@ export function AiPlanGeneratingAd() {
         }
 
         try {
+          const [
+            { NativeAdStandardCard },
+            { resolveAiPlanVideoNativeAdUnitId },
+            { buildNativeAdRequestOptions, enqueueNativeAdRequest },
+            { NativeMediaAspectRatio },
+          ] = await Promise.all([
+            import('@/components/ads/NativeAdStandardCard'),
+            import('@/constants/admob'),
+            import('@/lib/native-ad-request-queue'),
+            import('react-native-google-mobile-ads'),
+          ])
+          if (cancelled) {
+            loadInFlightRef.current = false
+            return
+          }
+          setNativeAdCard(() => NativeAdStandardCard)
+          const unitId = resolveAiPlanVideoNativeAdUnitId()
           const requestOptions = await buildNativeAdRequestOptions(attemptIdx, {
             aspectRatio: NativeMediaAspectRatio.LANDSCAPE,
           })
@@ -82,7 +96,7 @@ export function AiPlanGeneratingAd() {
       loadInFlightRef.current = false
       task.cancel()
     }
-  }, [adsEnabled, unitId])
+  }, [adsEnabled])
 
   useEffect(() => {
     return () => {
@@ -91,10 +105,10 @@ export function AiPlanGeneratingAd() {
     }
   }, [])
 
-  if (!adsEnabled || unitId == null) return null
-  if (!nativeAd) return null
+  if (!adsEnabled) return null
+  if (!nativeAd || NativeAdCard == null) return null
 
-  return <NativeAdStandardCard nativeAd={nativeAd} adViewStyle={styles.narrow} />
+  return <NativeAdCard nativeAd={nativeAd} adViewStyle={styles.narrow} />
 }
 
 const styles = StyleSheet.create({

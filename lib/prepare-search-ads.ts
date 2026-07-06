@@ -1,7 +1,5 @@
 import { Platform } from 'react-native'
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency'
-import mobileAds from 'react-native-google-mobile-ads'
-import { iosNativeAdUnitIdLooksLikeAppIdSuffix, isUsingIosDemoNativeAdUnit } from '@/constants/admob'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 
 let preparePromise: Promise<void> | null = null
@@ -22,6 +20,8 @@ export function prepareSearchTabAdsOnce(): Promise<void> {
   }
   if (preparePromise == null) {
     preparePromise = (async () => {
+      const [{ default: mobileAds }, { iosNativeAdUnitIdLooksLikeAppIdSuffix, isUsingIosDemoNativeAdUnit }] =
+        await Promise.all([import('react-native-google-mobile-ads'), import('@/constants/admob')])
       if (Platform.OS === 'ios' && isUsingIosDemoNativeAdUnit()) {
         console.warn(
           'AdMob: iOS release is using Google demo native ad unit. Set EXPO_PUBLIC_ADMOB_IOS_NATIVE_AD_UNIT_ID in .env for real monetization.'
