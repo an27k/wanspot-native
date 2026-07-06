@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Image } from 'expo-image'
 import {
-  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -231,6 +230,7 @@ export default function SpotDetailScreen({
   const [aiExpanded, setAiExpanded] = useState(false)
   const [detailsExpanded, setDetailsExpanded] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
+  const [showCancelVisitConfirm, setShowCancelVisitConfirm] = useState(false)
   const [visitToast, setVisitToast] = useState<{
     message: string
     tone: 'success' | 'error'
@@ -623,30 +623,27 @@ export default function SpotDetailScreen({
 
   const cancelVisitTap = () => {
     if (!spot || !userId || visitRecording || visitRecordInFlight.current) return
-    Alert.alert('取り消しますか？', undefined, [
-      { text: 'キャンセル', style: 'cancel' },
-      {
-        text: '取り消す',
-        style: 'destructive',
-        onPress: () => {
-          void (async () => {
-            visitRecordInFlight.current = true
-            setVisitRecording(true)
-            try {
-              const result = await cancelSpotVisit(userId, spot.id)
-              if (!result.ok) {
-                setVisitToast({ message: '取り消しに失敗しました', tone: 'error', retry: true })
-                return
-              }
-              resetVisitState()
-            } finally {
-              visitRecordInFlight.current = false
-              setVisitRecording(false)
-            }
-          })()
-        },
-      },
-    ])
+    setShowCancelVisitConfirm(true)
+  }
+
+  const confirmCancelVisit = () => {
+    if (!spot || !userId || visitRecording || visitRecordInFlight.current) return
+    setShowCancelVisitConfirm(false)
+    void (async () => {
+      visitRecordInFlight.current = true
+      setVisitRecording(true)
+      try {
+        const result = await cancelSpotVisit(userId, spot.id)
+        if (!result.ok) {
+          setVisitToast({ message: '取り消しに失敗しました', tone: 'error', retry: true })
+          return
+        }
+        resetVisitState()
+      } finally {
+        visitRecordInFlight.current = false
+        setVisitRecording(false)
+      }
+    })()
   }
 
   const recordVisitTap = async () => {
@@ -867,7 +864,12 @@ export default function SpotDetailScreen({
 
           {SPOT_INLINE_REVIEW_ENABLED && checkedIn ? (
             <View style={styles.userReviewCard}>
-              <Text style={styles.userReviewTitle}>あなたの評価</Text>
+              <View style={styles.userReviewHead}>
+                <Text style={styles.userReviewTitle}>あなたの評価</Text>
+                <Text style={styles.userReviewDisclaimer}>
+                  ※この情報は公開されずAIが学習して提案する内容に反映されます。
+                </Text>
+              </View>
               <StarRow value={userRating} onChange={(n) => void saveUserRating(n)} />
               <View style={styles.userReviewMemoFrame}>
                 <TextInput
@@ -1008,6 +1010,31 @@ export default function SpotDetailScreen({
             <Pressable style={styles.cancelShare} onPress={() => setShowShareSheet(false)}>
               <Text style={styles.cancelShareTxt}>キャンセル</Text>
             </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={showCancelVisitConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCancelVisitConfirm(false)}
+      >
+        <Pressable style={styles.confirmOverlay} onPress={() => setShowCancelVisitConfirm(false)}>
+          <Pressable style={styles.confirmCard} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.confirmTitle}>行ったを取り消しますか？</Text>
+            <Text style={styles.confirmBody}>「行った」の記録と、あなたの評価は削除されます。</Text>
+            <View style={styles.confirmActions}>
+              <Pressable
+                style={styles.confirmCancelBtn}
+                onPress={() => setShowCancelVisitConfirm(false)}
+              >
+                <Text style={styles.confirmCancelTxt}>キャンセル</Text>
+              </Pressable>
+              <Pressable style={styles.confirmDestructiveBtn} onPress={confirmCancelVisit}>
+                <Text style={styles.confirmDestructiveTxt}>取り消す</Text>
+              </Pressable>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -1161,7 +1188,22 @@ const styles = StyleSheet.create({
     borderColor: TOKENS.border.default,
     gap: 10,
   },
+  userReviewHead: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    gap: 6,
+  },
   userReviewTitle: { fontSize: 12, fontWeight: '800', color: TOKENS.text.secondary },
+  userReviewDisclaimer: {
+    flex: 1,
+    minWidth: 160,
+    fontSize: 10,
+    fontWeight: '500',
+    lineHeight: 14,
+    letterSpacing: 0.1,
+    color: TOKENS.text.meta,
+  },
   starRow: { flexDirection: 'row', gap: 4 },
   userReviewMemoFrame: {
     backgroundColor: TOKENS.surface.primary,
@@ -1282,6 +1324,74 @@ const styles = StyleSheet.create({
   shareLblW: { fontSize: 12, fontWeight: '700', color: '#fff' },
   cancelShare: { marginTop: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center' },
   cancelShareTxt: { fontSize: 14, fontWeight: '700', color: '#888' },
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(42,37,34,0.42)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 28,
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: TOKENS.surface.primary,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 16,
+    borderWidth: 1,
+    borderColor: TOKENS.border.default,
+    gap: 10,
+  },
+  confirmTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: TOKENS.text.primary,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
+  confirmBody: {
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 20,
+    color: TOKENS.text.secondary,
+    textAlign: 'center',
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  confirmCancelBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: TOKENS.surface.alt,
+  },
+  confirmCancelTxt: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: TOKENS.text.secondary,
+    letterSpacing: 0.1,
+  },
+  confirmDestructiveBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: 'rgba(251,107,83,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(251,107,83,0.28)',
+  },
+  confirmDestructiveTxt: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: TOKENS.brand.pillText,
+    letterSpacing: 0.1,
+  },
   visitSheetOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
