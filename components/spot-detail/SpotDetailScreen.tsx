@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Image } from 'expo-image'
 import {
+  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -43,7 +44,14 @@ import {
   resolveSpotForDetail,
   type SpotDetailRow,
 } from '@/lib/spot-detail-load'
-import { formatVisitRecordError, fetchTodaySpotVisit, fetchVisitPlates, recordSpotVisit, updateVisit } from '@/lib/visits-memories'
+import {
+  cancelSpotVisit,
+  formatVisitRecordError,
+  fetchTodaySpotVisit,
+  fetchVisitPlates,
+  recordSpotVisit,
+  updateVisit,
+} from '@/lib/visits-memories'
 import { REVIEW_ALBUM_TAB_ENABLED, SPOT_INLINE_REVIEW_ENABLED, VLOG_ENABLED } from '@/lib/feature-flags'
 import { pickSpotReviewMemoPlaceholder } from '@/lib/spot-review-memo'
 import { logUserEvent } from '@/lib/user-events'
@@ -538,7 +546,7 @@ export default function SpotDetailScreen({
   }
 
   const saveUserRating = async (rating: number) => {
-    if (!SPOT_INLINE_REVIEW_ENABLED || !spot) return
+    if (!SPOT_INLINE_REVIEW_ENABLED || !spot || !checkedIn) return
     if (!requireAuth('評価を残すにはログインしてください。')) return
     if (!userId) return
     const id = await ensureVisitId()
@@ -548,11 +556,11 @@ export default function SpotDetailScreen({
   }
 
   const saveUserMemo = (comment: string) => {
-    if (!SPOT_INLINE_REVIEW_ENABLED) return
+    if (!SPOT_INLINE_REVIEW_ENABLED || !checkedIn) return
     if (memoDebounceRef.current) clearTimeout(memoDebounceRef.current)
     memoDebounceRef.current = setTimeout(() => {
       void (async () => {
-        if (!spot || !userId) return
+        if (!spot || !userId || !checkedIn) return
         if (!requireAuth('メモを残すにはログインしてください。')) return
         const id = await ensureVisitId()
         if (!id) return
@@ -604,6 +612,43 @@ export default function SpotDetailScreen({
     if (VLOG_ENABLED) void loadVlogRemaining()
   }
 
+  const resetVisitState = () => {
+    setCheckedIn(false)
+    setVisitId(null)
+    if (SPOT_INLINE_REVIEW_ENABLED) {
+      setUserRating(0)
+      setUserMemo('')
+    }
+  }
+
+  const cancelVisitTap = () => {
+    if (!spot || !userId || visitRecording || visitRecordInFlight.current) return
+    Alert.alert('取り消しますか？', undefined, [
+      { text: 'キャンセル', style: 'cancel' },
+      {
+        text: '取り消す',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            visitRecordInFlight.current = true
+            setVisitRecording(true)
+            try {
+              const result = await cancelSpotVisit(userId, spot.id)
+              if (!result.ok) {
+                setVisitToast({ message: '取り消しに失敗しました', tone: 'error', retry: true })
+                return
+              }
+              resetVisitState()
+            } finally {
+              visitRecordInFlight.current = false
+              setVisitRecording(false)
+            }
+          })()
+        },
+      },
+    ])
+  }
+
   const recordVisitTap = async () => {
     if (!spot || visitRecording || visitRecordInFlight.current) return
     if (!requireAuth('チェックインするにはログインしてください。')) return
@@ -621,15 +666,19 @@ export default function SpotDetailScreen({
       setCheckedIn(true)
       if (result.visitId) setVisitId(result.visitId)
       if (result.created) track('spot_checked_in', { spot_id: spot.id })
-      if (REVIEW_ALBUM_TAB_ENABLED) {
-        openVisitSheet()
-      } else {
-        setVisitToast({ message: '行ったを記録しました', tone: 'success' })
-      }
+      if (REVIEW_ALBUM_TAB_ENABLED) openVisitSheet()
     } finally {
       visitRecordInFlight.current = false
       setVisitRecording(false)
     }
+  }
+
+  const visitPillTap = () => {
+    if (checkedIn) {
+      cancelVisitTap()
+      return
+    }
+    void recordVisitTap()
   }
 
   const openReviewAlbum = () => {
@@ -816,22 +865,24 @@ export default function SpotDetailScreen({
             </View>
           </View>
 
-          {SPOT_INLINE_REVIEW_ENABLED ? (
+          {SPOT_INLINE_REVIEW_ENABLED && checkedIn ? (
             <View style={styles.userReviewCard}>
-              <Text style={styles.userReviewTitle}>わんこの評価</Text>
+              <Text style={styles.userReviewTitle}>あなたの評価</Text>
               <StarRow value={userRating} onChange={(n) => void saveUserRating(n)} />
-              <TextInput
-                style={styles.userReviewInput}
-                value={userMemo}
-                onChangeText={(text) => {
-                  setUserMemo(text)
-                  saveUserMemo(text)
-                }}
-                placeholder={memoPlaceholder}
-                placeholderTextColor={TOKENS.text.secondary}
-                multiline
-                textAlignVertical="top"
-              />
+              <View style={styles.userReviewMemoFrame}>
+                <TextInput
+                  style={styles.userReviewInput}
+                  value={userMemo}
+                  onChangeText={(text) => {
+                    setUserMemo(text)
+                    saveUserMemo(text)
+                  }}
+                  placeholder={memoPlaceholder}
+                  placeholderTextColor={TOKENS.text.hint}
+                  multiline
+                  textAlignVertical="top"
+                />
+              </View>
             </View>
           ) : null}
 
@@ -921,17 +972,18 @@ export default function SpotDetailScreen({
         </Pressable>
         <Pressable
           style={[styles.visitPill, checkedIn && styles.visitPillDone]}
-          onPress={() => {
-            if (checkedIn) {
-              if (REVIEW_ALBUM_TAB_ENABLED) openVisitSheet()
-              return
-            }
-            void recordVisitTap()
-          }}
+          onPress={visitPillTap}
           disabled={visitRecording}
           accessibilityLabel="行った"
         >
-          <Text style={styles.visitPillTxt}>🐾 行った{checkedIn ? ' ✓' : ''}</Text>
+          <View style={styles.visitPillInner}>
+            {checkedIn ? (
+              <Ionicons name="checkmark" size={18} color={TOKENS.surface.primary} />
+            ) : (
+              <IconPaw size={16} color={TOKENS.surface.primary} />
+            )}
+            <Text style={styles.visitPillTxt}>行った</Text>
+          </View>
         </Pressable>
       </View>
 
@@ -1111,6 +1163,14 @@ const styles = StyleSheet.create({
   },
   userReviewTitle: { fontSize: 12, fontWeight: '800', color: TOKENS.text.secondary },
   starRow: { flexDirection: 'row', gap: 4 },
+  userReviewMemoFrame: {
+    backgroundColor: TOKENS.surface.primary,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: TOKENS.border.default,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   userReviewInput: {
     minHeight: 72,
     fontSize: 13,
@@ -1191,7 +1251,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 18,
     minHeight: FIXED_ACTION_H,
     borderRadius: 999,
     backgroundColor: TOKENS.surface.primary,
@@ -1202,6 +1261,7 @@ const styles = StyleSheet.create({
   likePillTxt: { fontSize: 14, fontWeight: '800', color: TOKENS.text.primary },
   visitPill: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: FIXED_ACTION_H,
@@ -1209,6 +1269,7 @@ const styles = StyleSheet.create({
     backgroundColor: TOKENS.brand.primary,
   },
   visitPillDone: { opacity: 0.92 },
+  visitPillInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   visitPillTxt: { fontSize: 15, fontWeight: '800', color: TOKENS.surface.primary },
   shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
   shareBox: { backgroundColor: '#fff', borderRadius: 24, padding: 24, maxWidth: 340, alignSelf: 'center', width: '100%' },

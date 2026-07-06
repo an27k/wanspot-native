@@ -351,6 +351,17 @@ export async function softDeleteVisit(visitId: string): Promise<boolean> {
   return true
 }
 
+/** きょうの同スポット visit を soft-delete（行った取り消し用） */
+export async function cancelSpotVisit(
+  userId: string,
+  spotId: string
+): Promise<{ ok: boolean; visitId?: string }> {
+  const todayVisit = await fetchTodaySpotVisit(userId, spotId)
+  if (!todayVisit?.id) return { ok: false }
+  const deleted = await softDeleteVisit(todayVisit.id)
+  return deleted ? { ok: true, visitId: todayVisit.id } : { ok: false }
+}
+
 export async function softDeleteMemory(memoryId: string): Promise<boolean> {
   const { error } = await supabase.from('memories').update({ soft_deleted: true }).eq('id', memoryId)
   return !error
