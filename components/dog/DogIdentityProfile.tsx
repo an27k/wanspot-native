@@ -36,7 +36,7 @@ type Props = {
   dog: DogProfile
   userId: string
   onUpdated: (dog: DogProfile) => void
-  variant?: 'default' | 'album'
+  variant?: 'default' | 'album' | 'settings'
   ringEnergized?: boolean
 }
 
@@ -161,6 +161,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
   const genderSymbol = dog.gender === 'male' ? '♂' : dog.gender === 'female' ? '♀' : null
 
   const isAlbum = variant === 'album'
+  const isSettings = variant === 'settings'
   const avatarSize = isAlbum ? 112 : 88
 
   const avatarInner = (
@@ -178,6 +179,196 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
       )}
     </>
   )
+
+  const editModal = (isAlbum || isSettings) && editing ? (
+    <Modal visible transparent animationType="slide" onRequestClose={() => setEditing(false)}>
+      <View style={styles.profileEditBackdrop}>
+        <View style={[styles.profileEditSheet, { paddingBottom: insets.bottom + 18 }]}>
+          <View style={styles.profileSheetHandle} />
+          <View style={styles.profileEditHead}>
+            <Text style={styles.profileEditTitle}>プロフィール編集</Text>
+            <Pressable
+              style={styles.profileEditCloseIcon}
+              onPress={() => {
+                setPhotoRemoved(false)
+                setEditing(false)
+              }}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="プロフィール編集を閉じる"
+            >
+              <Ionicons name="close" size={22} color="rgba(42,37,34,0.72)" />
+            </Pressable>
+          </View>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.profileEditScroll}
+          >
+            <View style={[styles.avatarWrap, styles.avatarWrapEditing, styles.profileEditAvatar]}>
+              <LinearGradient
+                colors={['rgba(85,224,180,0.98)', 'rgba(182,108,255,0.94)', 'rgba(242,122,215,0.8)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.profileEditAvatarRing}
+              >
+                <View style={styles.profileEditAvatarGlass}>{avatarInner}</View>
+              </LinearGradient>
+              <Pressable
+                style={styles.camFab}
+                onPress={() => void pickPhoto()}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel="愛犬の写真を変更"
+              >
+                <Ionicons name="camera" size={15} color="#fff" />
+              </Pressable>
+            </View>
+
+            {(photoPreview ?? dog.photo_url) && !photoRemoved ? (
+              <Pressable
+                style={styles.photoRemoveBtn}
+                onPress={() => {
+                  setPhotoRemoved(true)
+                  setPhotoPreview(null)
+                  setPhotoUri(null)
+                }}
+              >
+                <Text style={styles.photoRemoveTxt}>写真を削除</Text>
+              </Pressable>
+            ) : null}
+
+            <View style={styles.editFields}>
+              <FormField label="名前">
+                <TextInput
+                  style={styles.textInput}
+                  value={editName}
+                  onChangeText={setEditName}
+                  placeholder="例: モカ"
+                  placeholderTextColor={colors.textMuted}
+                  returnKeyType="next"
+                />
+              </FormField>
+              <FormField label="犬種">
+                <TextInput
+                  style={styles.textInput}
+                  value={editBreed}
+                  onChangeText={setEditBreed}
+                  placeholder="犬種名で検索"
+                  placeholderTextColor={colors.textMuted}
+                  returnKeyType="done"
+                  autoCorrect={false}
+                />
+                {showBreedSuggestions ? (
+                  <FlatList
+                    data={breedHits}
+                    keyExtractor={(item) => item}
+                    style={styles.breedSuggestionList}
+                    keyboardShouldPersistTaps="handled"
+                    nestedScrollEnabled
+                    renderItem={({ item }) => (
+                      <Pressable
+                        style={[styles.breedSuggestionRow, editBreed === item && styles.breedSuggestionRowOn]}
+                        onPress={() => setEditBreed(item)}
+                      >
+                        <Text style={styles.breedSuggestionText}>{item}</Text>
+                      </Pressable>
+                    )}
+                  />
+                ) : null}
+                {showBreedValidation ? (
+                  <Text style={styles.breedValidationText}>候補から犬種を選択してください。</Text>
+                ) : null}
+                {isExistingCustomBreed ? (
+                  <Text style={styles.breedValidationText}>保存済みの犬種です。変更する場合は候補から選んでください。</Text>
+                ) : null}
+              </FormField>
+              <View style={styles.birthdayCard}>
+                <OwnerBirthdayPickers
+                  year={editYear}
+                  month={editMonth}
+                  day={editDay}
+                  onChangeYear={setEditYear}
+                  onChangeMonth={setEditMonth}
+                  onChangeDay={setEditDay}
+                  yearMin={dogYBounds.min}
+                  yearMax={dogYBounds.max}
+                  fieldLabel="生年月日（任意）"
+                  hint="年・月・日をすべて選ぶと年齢表示に使います。"
+                />
+              </View>
+              <Text style={styles.miniLbl}>性別</Text>
+              <View style={styles.chipRow}>
+                <Pressable style={[styles.chip, editGender === 'male' && styles.chipOn]} onPress={() => setEditGender('male')}>
+                  <Text style={styles.symMale}>♂</Text>
+                  <Text style={styles.chipLbl}>オス</Text>
+                </Pressable>
+                <Pressable style={[styles.chip, editGender === 'female' && styles.chipOn]} onPress={() => setEditGender('female')}>
+                  <Text style={styles.symFemale}>♀</Text>
+                  <Text style={styles.chipLbl}>メス</Text>
+                </Pressable>
+                <Pressable style={[styles.chip, editGender === null && styles.chipOn]} onPress={() => setEditGender(null)}>
+                  <Text style={styles.chipLblMuted}>未設定</Text>
+                </Pressable>
+              </View>
+              <Text style={styles.miniLbl}>サイズ</Text>
+              <View style={styles.chipRow}>
+                {(['XS', 'S', 'M', 'L', 'XL'] as const).map((k) => (
+                  <Pressable key={k} style={[styles.chip, editSize === k && styles.chipOn]} onPress={() => setEditSize(k)}>
+                    <Text style={styles.chipLbl}>{k}</Text>
+                  </Pressable>
+                ))}
+                <Pressable style={[styles.chip, editSize === null && styles.chipOn]} onPress={() => setEditSize(null)}>
+                  <Text style={styles.chipLblMuted}>未設定</Text>
+                </Pressable>
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={styles.profileEditFooter}>
+            <Pressable
+              style={[styles.btnGhost, styles.profileEditCancelBtn]}
+              onPress={() => {
+                setPhotoRemoved(false)
+                setEditing(false)
+              }}
+            >
+              <Text style={[styles.btnGhostTxt, styles.profileEditCancelText]}>キャンセル</Text>
+            </Pressable>
+            <Pressable style={[styles.btnPri, styles.profileEditSaveBtn]} onPress={() => void saveIdentity()} disabled={saving}>
+              <Text style={[styles.btnPriTxt, styles.profileEditSaveText]}>{saving ? '保存中...' : '保存する'}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  ) : null
+
+  if (isSettings) {
+    return (
+      <>
+        <View style={styles.settingsWrap}>
+          <View style={styles.settingsAvatarWrap}>
+            <View style={styles.avatar}>{avatarInner}</View>
+          </View>
+          <Text style={styles.settingsName}>{dog.name}</Text>
+          {metaParts.length > 0 || genderSymbol ? (
+            <Text style={styles.settingsMeta} numberOfLines={2}>
+              {[...metaParts, genderSymbol].filter(Boolean).join(' · ')}
+            </Text>
+          ) : (
+            <Text style={styles.settingsMetaMuted}>名前・犬種・サイズなどを登録できます</Text>
+          )}
+          <Pressable style={styles.settingsEditBtn} onPress={startEdit} accessibilityRole="button" accessibilityLabel="プロフィールを編集">
+            <Ionicons name="create-outline" size={17} color={colors.brandDark} />
+            <Text style={styles.settingsEditBtnTxt}>プロフィールを編集</Text>
+          </Pressable>
+        </View>
+        {editModal}
+      </>
+    )
+  }
 
   if (isAlbum && !editing) {
     return (
@@ -261,172 +452,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
   }
 
   if (isAlbum && editing) {
-    return (
-      <View style={[styles.compactAlbumWrap, { marginTop: insets.top + 8 }]}>
-        <Modal visible transparent animationType="slide" onRequestClose={() => setEditing(false)}>
-          <View style={styles.profileEditBackdrop}>
-            <View style={[styles.profileEditSheet, { paddingBottom: insets.bottom + 18 }]}>
-              <View style={styles.profileSheetHandle} />
-              <View style={styles.profileEditHead}>
-                <Text style={styles.profileEditTitle}>プロフィール編集</Text>
-                <Pressable
-                  style={styles.profileEditCloseIcon}
-                  onPress={() => {
-                    setPhotoRemoved(false)
-                    setEditing(false)
-                  }}
-                  hitSlop={10}
-                  accessibilityRole="button"
-                  accessibilityLabel="プロフィール編集を閉じる"
-                >
-                  <Ionicons name="close" size={22} color="rgba(42,37,34,0.72)" />
-                </Pressable>
-              </View>
-
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.profileEditScroll}
-              >
-                <View style={[styles.avatarWrap, styles.avatarWrapEditing, styles.profileEditAvatar]}>
-                  <LinearGradient
-                    colors={['rgba(85,224,180,0.98)', 'rgba(182,108,255,0.94)', 'rgba(242,122,215,0.8)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.profileEditAvatarRing}
-                  >
-                    <View style={styles.profileEditAvatarGlass}>{avatarInner}</View>
-                  </LinearGradient>
-                  <Pressable
-                    style={styles.camFab}
-                    onPress={() => void pickPhoto()}
-                    hitSlop={6}
-                    accessibilityRole="button"
-                    accessibilityLabel="愛犬の写真を変更"
-                  >
-                    <Ionicons name="camera" size={15} color="#fff" />
-                  </Pressable>
-                </View>
-
-                {(photoPreview ?? dog.photo_url) && !photoRemoved ? (
-                  <Pressable
-                    style={styles.photoRemoveBtn}
-                    onPress={() => {
-                      setPhotoRemoved(true)
-                      setPhotoPreview(null)
-                      setPhotoUri(null)
-                    }}
-                  >
-                    <Text style={styles.photoRemoveTxt}>写真を削除</Text>
-                  </Pressable>
-                ) : null}
-
-                <View style={styles.editFields}>
-                  <FormField label="名前">
-                    <TextInput
-                      style={styles.textInput}
-                      value={editName}
-                      onChangeText={setEditName}
-                      placeholder="例: モカ"
-                      placeholderTextColor={colors.textMuted}
-                      returnKeyType="next"
-                    />
-                  </FormField>
-                  <FormField label="犬種">
-                    <TextInput
-                      style={styles.textInput}
-                      value={editBreed}
-                      onChangeText={setEditBreed}
-                      placeholder="犬種名で検索"
-                      placeholderTextColor={colors.textMuted}
-                      returnKeyType="done"
-                      autoCorrect={false}
-                    />
-                    {showBreedSuggestions ? (
-                      <FlatList
-                        data={breedHits}
-                        keyExtractor={(item) => item}
-                        style={styles.breedSuggestionList}
-                        keyboardShouldPersistTaps="handled"
-                        nestedScrollEnabled
-                        renderItem={({ item }) => (
-                          <Pressable
-                            style={[styles.breedSuggestionRow, editBreed === item && styles.breedSuggestionRowOn]}
-                            onPress={() => setEditBreed(item)}
-                          >
-                            <Text style={styles.breedSuggestionText}>{item}</Text>
-                          </Pressable>
-                        )}
-                      />
-                    ) : null}
-                    {showBreedValidation ? (
-                      <Text style={styles.breedValidationText}>候補から犬種を選択してください。</Text>
-                    ) : null}
-                    {isExistingCustomBreed ? (
-                      <Text style={styles.breedValidationText}>保存済みの犬種です。変更する場合は候補から選んでください。</Text>
-                    ) : null}
-                  </FormField>
-                  <View style={styles.birthdayCard}>
-                    <OwnerBirthdayPickers
-                      year={editYear}
-                      month={editMonth}
-                      day={editDay}
-                      onChangeYear={setEditYear}
-                      onChangeMonth={setEditMonth}
-                      onChangeDay={setEditDay}
-                      yearMin={dogYBounds.min}
-                      yearMax={dogYBounds.max}
-                      fieldLabel="生年月日（任意）"
-                      hint="年・月・日をすべて選ぶと年齢表示に使います。"
-                    />
-                  </View>
-                  <Text style={styles.miniLbl}>性別</Text>
-                  <View style={styles.chipRow}>
-                    <Pressable style={[styles.chip, editGender === 'male' && styles.chipOn]} onPress={() => setEditGender('male')}>
-                      <Text style={styles.symMale}>♂</Text>
-                      <Text style={styles.chipLbl}>オス</Text>
-                    </Pressable>
-                    <Pressable style={[styles.chip, editGender === 'female' && styles.chipOn]} onPress={() => setEditGender('female')}>
-                      <Text style={styles.symFemale}>♀</Text>
-                      <Text style={styles.chipLbl}>メス</Text>
-                    </Pressable>
-                    <Pressable style={[styles.chip, editGender === null && styles.chipOn]} onPress={() => setEditGender(null)}>
-                      <Text style={styles.chipLblMuted}>未設定</Text>
-                    </Pressable>
-                  </View>
-                  <Text style={styles.miniLbl}>サイズ</Text>
-                  <View style={styles.chipRow}>
-                    {(['XS', 'S', 'M', 'L', 'XL'] as const).map((k) => (
-                      <Pressable key={k} style={[styles.chip, editSize === k && styles.chipOn]} onPress={() => setEditSize(k)}>
-                        <Text style={styles.chipLbl}>{k}</Text>
-                      </Pressable>
-                    ))}
-                    <Pressable style={[styles.chip, editSize === null && styles.chipOn]} onPress={() => setEditSize(null)}>
-                      <Text style={styles.chipLblMuted}>未設定</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </ScrollView>
-
-              <View style={styles.profileEditFooter}>
-                <Pressable
-                  style={[styles.btnGhost, styles.profileEditCancelBtn]}
-                  onPress={() => {
-                    setPhotoRemoved(false)
-                    setEditing(false)
-                  }}
-                >
-                  <Text style={[styles.btnGhostTxt, styles.profileEditCancelText]}>キャンセル</Text>
-                </Pressable>
-                <Pressable style={[styles.btnPri, styles.profileEditSaveBtn]} onPress={() => void saveIdentity()} disabled={saving}>
-                  <Text style={[styles.btnPriTxt, styles.profileEditSaveText]}>{saving ? '保存中...' : '保存する'}</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      </View>
-    )
+    return <View style={[styles.compactAlbumWrap, { marginTop: insets.top + 8 }]}>{editModal}</View>
   }
 
   return (
@@ -870,6 +896,54 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   profileEditSaveText: { color: '#fff' },
+  settingsWrap: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    gap: 8,
+  },
+  settingsAvatarWrap: {
+    width: 88,
+    height: 88,
+    marginBottom: 4,
+  },
+  settingsName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  settingsMeta: {
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 19,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
+  settingsMetaMuted: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.textLight,
+    textAlign: 'center',
+  },
+  settingsEditBtn: {
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: colors.tintWeak,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  settingsEditBtnTxt: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.brandDark,
+  },
   wrapAlbum: {
     paddingTop: 0,
     paddingHorizontal: 16,

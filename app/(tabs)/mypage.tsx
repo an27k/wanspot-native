@@ -59,9 +59,20 @@ function SettingsTab() {
           <View style={styles.card}>
             {dog ? <DogVaccineSettings dog={dog} onUpdated={setDog} /> : null}
             {dog ? <View style={styles.rowDivider} /> : null}
-            <PressableScale style={styles.row} onPress={() => router.push('/settings/walk-area')} accessibilityLabel="散歩エリア">
+            <PressableScale
+              style={styles.row}
+              onPress={() => router.push('/settings/dog-profile')}
+              accessibilityLabel="愛犬情報編集"
+            >
               <WanspotIconPaw size={20} />
-              <Text style={styles.rowTxt}>散歩エリア</Text>
+              <View style={styles.rowTextCol}>
+                <Text style={styles.rowTxt}>愛犬情報編集</Text>
+                {dog ? (
+                  <Text style={styles.rowSubTxt} numberOfLines={1}>
+                    {dog.name} · 基本情報・散歩エリア
+                  </Text>
+                ) : null}
+              </View>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </PressableScale>
           </View>
@@ -143,7 +154,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  rowTxt: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  rowTxt: { fontSize: 15, fontWeight: '600', color: colors.text },
+  rowTextCol: { flex: 1, gap: 2 },
+  rowSubTxt: { fontSize: 12, fontWeight: '500', color: colors.textMuted },
   rowDivider: { height: 1, backgroundColor: colors.border, marginLeft: 48 },
   dangerCard: {
     backgroundColor: colors.cardBg,
