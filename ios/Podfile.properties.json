@@ -3,7 +3,7 @@
   "EX_DEV_CLIENT_NETWORK_INSPECTOR": "false",
   "expo-image.disable-libdav1d": "false",
   "ios.useFrameworks": "static",
-  "ios.buildReactNativeFromSource": "true",
   "ios.forceStaticLinking": "[]",
-  "apple.privacyManifestAggregationEnabled": "true"
+  "apple.privacyManifestAggregationEnabled": "true",
+  "ios.buildReactNativeFromSource": "true"
 }

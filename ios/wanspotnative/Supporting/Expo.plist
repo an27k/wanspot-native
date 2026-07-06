@@ -5,17 +5,8 @@
     <key>EXUpdatesCheckOnLaunch</key>
     <string>ALWAYS</string>
     <key>EXUpdatesEnabled</key>
-    <true/>
+    <false/>
     <key>EXUpdatesLaunchWaitMs</key>
-    <integer>3000</integer>
-    <key>EXUpdatesRequestHeaders</key>
-    <dict>
-      <key>expo-channel-name</key>
-      <string>production</string>
-    </dict>
-    <key>EXUpdatesRuntimeVersion</key>
-    <string>1.0.0</string>
-    <key>EXUpdatesURL</key>
-    <string>https://u.expo.dev/8b297e38-b0be-4eb7-86d1-e3f36c90b6f2</string>
+    <integer>0</integer>
   </dict>
 </plist>
