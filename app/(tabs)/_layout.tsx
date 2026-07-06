@@ -72,7 +72,6 @@ export default function TabsLayout() {
               name="camera"
               options={{
                 href: null,
-                tabBarButton: () => null,
               }}
             />
           )}
