@@ -63,6 +63,7 @@ export default function TabsLayout() {
         name="camera"
         options={{
           href: REVIEW_ALBUM_TAB_ENABLED ? undefined : null,
+          tabBarButton: REVIEW_ALBUM_TAB_ENABLED ? undefined : () => null,
           title: 'レビュー',
           freezeOnBlur: true,
           /** レビュータブも検索と同じグラデ背景を全面に見せる */

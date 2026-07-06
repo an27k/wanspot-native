@@ -21,8 +21,14 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTabBarScrollContext } from '@/context/TabBarScrollContext'
 import { DISABLE_TABBAR_SCROLL } from '@/lib/debug/review-crash-flags'
+import { REVIEW_ALBUM_TAB_ENABLED } from '@/lib/feature-flags'
 import { SOFT_SPRING } from '@/lib/motion/constants'
 import { colors } from '@/constants/colors'
+
+function isTabBarVisible(routeName: string): boolean {
+  if (routeName === 'camera' && !REVIEW_ALBUM_TAB_ENABLED) return false
+  return true
+}
 
 /** ピル本体の高さ。container の paddingTop と insets と合わせて TAB_BAR_HEIGHT と整合させる */
 export const PILL_HEIGHT = 58
@@ -128,6 +134,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           <Animated.View style={[styles.row, animatedRow]}>
             <Animated.View pointerEvents="none" style={[styles.indicator, animatedIndicator]} />
             {state.routes.map((route, index) => {
+              if (!isTabBarVisible(route.name)) return null
               const { options } = descriptors[route.key]
               const focused = state.index === index
               const activeColor = options.tabBarActiveTintColor ?? colors.primary
