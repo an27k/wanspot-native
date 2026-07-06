@@ -13,6 +13,6 @@ export default function CameraTabRoute() {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const ReviewAlbumTabScreen = require('@/components/review/ReviewAlbumTabScreen').default
+  const ReviewAlbumTabScreen = require('@/components/album/ReviewAlbumTabScreen').default
   return <ReviewAlbumTabScreen />
 }

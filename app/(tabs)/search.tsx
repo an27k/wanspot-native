@@ -317,7 +317,7 @@ function SearchTab() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null
     const task = InteractionManager.runAfterInteractions(() => {
-      timer = setTimeout(() => setNonCriticalReady(true), 500)
+      timer = setTimeout(() => setNonCriticalReady(true), 1200)
     })
     return () => {
       task.cancel()

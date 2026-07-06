@@ -52,21 +52,11 @@ export function installIosSafeConsoleGuards(): void {
     ErrorUtils?: { getGlobalHandler?: () => unknown; setGlobalHandler?: (h: unknown) => void }
   }
   const errorUtils = anyGlobal.ErrorUtils
-  const prevHandler = errorUtils?.getGlobalHandler?.()
   if (errorUtils?.setGlobalHandler) {
     errorUtils.setGlobalHandler((err: unknown, isFatal?: boolean) => {
-      const msg = safeToString(err)
-      origError(`[globalError] fatal=${String(isFatal ?? false)} ${msg}`)
-      // iOS 26: 既定ハンドラは ExceptionsManager → RCTFatal へ進みクラッシュループになる。
-      // stack を触らない安全な Error でも fatal 報告は SIGABRT を招くため、ここで止める。
-      if (isFatal) return
-      if (typeof prevHandler === 'function') {
-        try {
-          ;(prevHandler as (e: unknown, f?: boolean) => void)(safeErrorForNative(err), isFatal)
-        } catch {
-          // ignore
-        }
-      }
+      origError(`[globalError] fatal=${String(isFatal ?? false)} ${safeToString(err)}`)
+      // iOS 26: prevHandler（RCTFatal）を呼ぶと SIGABRT → セッション残存の再起動ループになる。
+      // fatal / non-fatal 問わずここで止め、JS 側の ErrorBoundary に委ねる。
     })
   }
 }

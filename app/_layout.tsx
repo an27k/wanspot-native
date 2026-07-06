@@ -10,6 +10,7 @@ import { Platform } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { enableScreens } from 'react-native-screens'
+import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import { AuthProvider } from '@/context/AuthContext'
 import { initAnalytics } from '@/lib/analytics'
 import { useNotificationDeeplink } from '@/lib/notifications/use-notification-deeplink'
@@ -61,6 +62,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthProvider>
           <StatusBar style="dark" />
+          <ScreenErrorBoundary label="root">
           <Stack screenOptions={stackScreenOptions}>
             {/* タブシェル・ゲート画面のみスワイプ pop を無効化。詳細ルートは stackScreenOptions のまま */}
             <Stack.Screen
@@ -78,6 +80,7 @@ export default function RootLayout() {
               }}
             />
           </Stack>
+          </ScreenErrorBoundary>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

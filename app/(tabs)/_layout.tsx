@@ -34,6 +34,7 @@ export default function TabsLayout() {
             name="search"
             options={{
               title: '検索',
+              freezeOnBlur: false,
               sceneStyle: { backgroundColor: 'transparent' },
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons name={focused ? 'search' : 'search-outline'} color={color} size={focused ? 26 : 24} />
