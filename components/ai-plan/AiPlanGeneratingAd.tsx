@@ -2,15 +2,16 @@ import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import { InteractionManager, StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
-import type { NativeAd } from 'react-native-google-mobile-ads'
+
+type NativeAdHandle = { destroy: () => void }
 
 const LOAD_MAX_ATTEMPTS = 3
-type NativeAdCardComponent = ComponentType<{ nativeAd: NativeAd; adViewStyle?: StyleProp<ViewStyle> }>
+type NativeAdCardComponent = ComponentType<{ nativeAd: NativeAdHandle; adViewStyle?: StyleProp<ViewStyle> }>
 
 export function AiPlanGeneratingAd() {
-  const [nativeAd, setNativeAd] = useState<NativeAd | null>(null)
+  const [nativeAd, setNativeAd] = useState<NativeAdHandle | null>(null)
   const [NativeAdCard, setNativeAdCard] = useState<NativeAdCardComponent | null>(null)
-  const nativeAdRef = useRef<NativeAd | null>(null)
+  const nativeAdRef = useRef<NativeAdHandle | null>(null)
   const loadInFlightRef = useRef(false)
 
   const adsEnabled = useMemo(() => adsEnabledForDevice(), [])
@@ -54,7 +55,7 @@ export function AiPlanGeneratingAd() {
             loadInFlightRef.current = false
             return
           }
-          setNativeAdCard(() => NativeAdStandardCard)
+          setNativeAdCard(() => NativeAdStandardCard as NativeAdCardComponent)
           const unitId = resolveAiPlanVideoNativeAdUnitId()
           const requestOptions = await buildNativeAdRequestOptions(attemptIdx, {
             aspectRatio: NativeMediaAspectRatio.LANDSCAPE,

@@ -40,11 +40,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>187</string>
-	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-4709188613454491~3258937977</string>
-	<key>GADDelayAppMeasurementInit</key>
-	<false/>
+	<string>191</string>
 	<key>GADNativeAdValidatorEnabled</key>
 	<false/>
 	<key>GMSApiKey</key>
@@ -81,7 +77,7 @@
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
 	</array>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>パーソナライズされた広告の表示に使用します。</string>
+	<string>Allow this app to collect app-related data that can be used for tracking you or your device.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

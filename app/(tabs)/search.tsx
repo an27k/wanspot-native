@@ -25,8 +25,8 @@ import { IconAiPlan } from '@/components/common/IconAiPlan'
 import { ListEnterItem } from '@/components/common/ListEnterItem'
 import { ArticleListSkeleton, SearchResultSkeleton } from '@/components/common/ShimmerSkeleton'
 import { PressableScale } from '@/components/common/PressableScale'
-import { AdNativeCard } from '@/components/AdNativeCard'
-import { AiPlanTab } from '@/components/ai-plan/AiPlanTab'
+import { ListAdSlot } from '@/components/ads/ListAdSlot'
+import { AiPlanTabLazyMount } from '@/components/ai-plan/AiPlanTabLazyMount'
 import { GlassSearchShell } from '@/components/search/GlassSearchShell'
 import { LikesShortcutCard } from '@/components/search/LikesShortcutCard'
 import { WalkAlertCard } from '@/components/search/WalkAlertCard'
@@ -1119,7 +1119,7 @@ function SearchTab() {
                     chrome="google"
                   />
                   {isFocused && shouldInjectListAd(index, sortedResults.length) ? (
-                    <AdNativeCard adsReady={adsRuntimeReady} />
+                    <ListAdSlot adsReady={adsRuntimeReady} />
                   ) : null}
                 </View>
               </ListEnterItem>
@@ -1182,7 +1182,7 @@ function SearchTab() {
                             }}
                           />
                           {isFocused && shouldInjectListAd(index, articlesList.length) ? (
-                            <AdNativeCard adsReady={adsRuntimeReady} />
+                            <ListAdSlot adsReady={adsRuntimeReady} />
                           ) : null}
                         </View>
                       </ListEnterItem>
@@ -1239,7 +1239,7 @@ function SearchTab() {
                             chrome="google"
                           />
                           {isFocused && shouldInjectListAd(index, discoverResults.length) ? (
-                            <AdNativeCard adsReady={adsRuntimeReady} />
+                            <ListAdSlot adsReady={adsRuntimeReady} />
                           ) : null}
                         </View>
                       </ListEnterItem>
@@ -1262,7 +1262,7 @@ function SearchTab() {
 
       {showAiPlan ? (
         <View style={[styles.aiPlanOverlay, { top: aiPlanChromeVisible ? headerH : 0 }]}>
-          <AiPlanTab onEmbeddedChromeVisibility={setAiPlanChromeVisible} />
+          <AiPlanTabLazyMount onEmbeddedChromeVisibility={setAiPlanChromeVisible} />
         </View>
       ) : null}
 

@@ -166,12 +166,9 @@ PODS:
   - glog (0.3.5)
   - Google-Maps-iOS-Utils (6.1.0):
     - GoogleMaps (~> 9.0)
-  - Google-Mobile-Ads-SDK (13.1.0):
-    - GoogleUserMessagingPlatform (>= 1.1)
   - GoogleMaps (9.4.0):
     - GoogleMaps/Maps (= 9.4.0)
   - GoogleMaps/Maps (9.4.0)
-  - GoogleUserMessagingPlatform (3.1.0)
   - hermes-engine (0.14.1):
     - hermes-engine/Pre-built (= 0.14.1)
   - hermes-engine/Pre-built (0.14.1)
@@ -2869,36 +2866,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNGoogleMobileAds (16.3.2):
-    - boost
-    - DoubleConversion
-    - fast_float
-    - fmt
-    - glog
-    - Google-Mobile-Ads-SDK (= 13.1.0)
-    - GoogleUserMessagingPlatform (= 3.1.0)
-    - hermes-engine
-    - RCT-Folly
-    - RCT-Folly/Fabric
-    - RCTRequired
-    - RCTTypeSafety
-    - React-Core
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-jsi
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-renderercss
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - SocketRocket
-    - Yoga
   - RNReanimated (4.2.1):
     - boost
     - DoubleConversion
@@ -3324,7 +3291,6 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
-  - RNGoogleMobileAds (from `../node_modules/react-native-google-mobile-ads`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
@@ -3335,9 +3301,7 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - Google-Maps-iOS-Utils
-    - Google-Mobile-Ads-SDK
     - GoogleMaps
-    - GoogleUserMessagingPlatform
     - libavif
     - libdav1d
     - libwebp
@@ -3573,8 +3537,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
-  RNGoogleMobileAds:
-    :path: "../node_modules/react-native-google-mobile-ads"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -3626,9 +3588,7 @@ SPEC CHECKSUMS:
   fmt: 530618a01105dae0fa3a2f27c81ae11fa8f67eac
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   Google-Maps-iOS-Utils: 0a484b05ed21d88c9f9ebbacb007956edd508a96
-  Google-Mobile-Ads-SDK: 8429bef6ee1a4e322b0a5571b64217ed8317a3d5
   GoogleMaps: 0608099d4870cac8754bdba9b6953db543432438
-  GoogleUserMessagingPlatform: befe603da6501006420c206222acd449bba45a9c
   hermes-engine: 11d9d1f23245447423836d979155e7fae4752b99
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
@@ -3706,7 +3666,6 @@ SPEC CHECKSUMS:
   ReactCodegen: cc3d2fde2f7d3674ff992ad73700aa6854c69000
   ReactCommon: fe0c37881180b5366786f21671908395be7e34ea
   RNGestureHandler: 8cf03fa922e1677e7ff1e3d352921ba1a7444ff0
-  RNGoogleMobileAds: 104d81859506feaceef525d4b84893e4321c2a54
   RNReanimated: fbcb7fd8da5b0b088401542c58fb5d266388f1cf
   RNScreens: d1d1631794b8d9e3b062f6bd37c5bbf2dee2acdb
   RNSVG: 4a2ac4d20e011e0168f79adc3c04d42bcd69f7b5

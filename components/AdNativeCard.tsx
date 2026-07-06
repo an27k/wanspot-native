@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import { InteractionManager, StyleSheet, Text, View } from 'react-native'
 import { sharedNativeAdStyles } from '@/lib/ads/nativeAdCardStyles'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
-import type { NativeAd } from 'react-native-google-mobile-ads'
+
+type NativeAdHandle = {
+  destroy: () => void
+}
 
 type Props = {
   /** ATT + SDK 初期化が完了してから true（それまでネイティブ広告をロードしない） */
@@ -10,13 +13,13 @@ type Props = {
 }
 
 type NativeAdCardComponent = ComponentType<{
-  nativeAd: NativeAd
+  nativeAd: NativeAdHandle
 }>
 
 const NATIVE_LOAD_MAX_ATTEMPTS = 4
 
 export function AdNativeCard({ adsReady }: Props) {
-  const [nativeAd, setNativeAd] = useState<NativeAd | null>(null)
+  const [nativeAd, setNativeAd] = useState<NativeAdHandle | null>(null)
   const [NativeAdCard, setNativeAdCard] = useState<NativeAdCardComponent | null>(null)
   const [loadExhausted, setLoadExhausted] = useState(false)
   const loadInFlightRef = useRef(false)
@@ -52,7 +55,7 @@ export function AdNativeCard({ adsReady }: Props) {
             loadInFlightRef.current = false
             return
           }
-          setNativeAdCard(() => NativeAdStandardCard)
+          setNativeAdCard(() => NativeAdStandardCard as NativeAdCardComponent)
           const unitId = getNativeAdUnitId()
           const requestOptions = await buildNativeAdRequestOptions(attemptIdx, {
             aspectRatio: NativeMediaAspectRatio.LANDSCAPE,

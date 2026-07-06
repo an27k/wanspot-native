@@ -13,7 +13,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.wanspot.native",
-      "buildNumber": "190",
+      "buildNumber": "191",
       "usesAppleSignIn": true,
       "config": {
         "googleMapsApiKey": "AIzaSyB-uH0kWeDvbOyGVyEkO5zttWg7TE6nBdg"
@@ -116,10 +116,5 @@
       }
     },
     "owner": "atsu_nemoto"
-  },
-  "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-3940256099942544~3347511713",
-    "ios_app_id": "ca-app-pub-4709188613454491~3258937977",
-    "user_tracking_usage_description": "パーソナライズされた広告の表示に使用します。"
   }
 }

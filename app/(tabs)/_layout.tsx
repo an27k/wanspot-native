@@ -4,32 +4,30 @@ import { colors } from '@/constants/colors'
 import { GlassTabBar } from '@/components/navigation/GlassTabBar'
 import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton'
 import { AlbumTabIcon } from '@/components/icons/AlbumTabIcon'
-import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import { TabBarScrollProvider } from '@/context/TabBarScrollContext'
 import { track } from '@/lib/analytics'
 import { REVIEW_ALBUM_TAB_ENABLED } from '@/lib/feature-flags'
 
 export default function TabsLayout() {
   return (
-    <ScreenErrorBoundary label="tabs">
-      <TabBarScrollProvider>
-        <Tabs
-          initialRouteName="search"
-          /** 非アクティブタブを切り離し、ログイン直後に map/Skia 等が同時マウントされないようにする */
-          detachInactiveScreens
-          tabBar={(props) => <GlassTabBar {...props} />}
-          screenOptions={{
-            headerShown: false,
-            animation: 'fade',
-            sceneStyle: { backgroundColor: colors.paper },
-            /** 起動時に全タブをマウントしない（検索のみ先に描画） */
-            lazy: true,
-            freezeOnBlur: true,
-            tabBarActiveTintColor: colors.primary,
-            tabBarInactiveTintColor: colors.textSecondary,
-            tabBarShowLabel: false,
-          }}
-        >
+    <TabBarScrollProvider>
+      <Tabs
+        initialRouteName="search"
+        /** 非アクティブタブを切り離し、ログイン直後に map/Skia 等が同時マウントされないようにする */
+        detachInactiveScreens
+        tabBar={(props) => <GlassTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+          animation: 'fade',
+          sceneStyle: { backgroundColor: colors.paper },
+          /** 起動時に全タブをマウントしない（検索のみ先に描画） */
+          lazy: true,
+          freezeOnBlur: true,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textSecondary,
+          tabBarShowLabel: false,
+        }}
+      >
           <Tabs.Screen
             name="search"
             options={{
@@ -95,6 +93,5 @@ export default function TabsLayout() {
         </Tabs>
         <FloatingFeedbackButton />
       </TabBarScrollProvider>
-    </ScreenErrorBoundary>
   )
 }

@@ -40,11 +40,9 @@ export class ScreenErrorBoundary extends Component<Props, State> {
         <View style={styles.root}>
           <Text style={styles.title}>表示中に問題が発生しました</Text>
           <Text style={styles.body}>もう一度お試しください。</Text>
-          {__DEV__ ? (
-            <Text style={styles.debug}>
-              {this.props.label ?? 'screen'}: {safeToString(this.state.error)}
-            </Text>
-          ) : null}
+          <Text style={styles.debug}>
+            {this.props.label ?? 'screen'}: {safeToString(this.state.error)}
+          </Text>
           <Pressable style={styles.btn} onPress={this.retry}>
             <Text style={styles.btnTxt}>再読み込み</Text>
           </Pressable>
