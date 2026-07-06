@@ -40,7 +40,6 @@
     "expo-sharing": "~55.0.21",
     "expo-status-bar": "~55.0.4",
     "expo-tracking-transparency": "~55.0.12",
-    "expo-updates": "~55.0.24",
     "expo-video": "~55.0.17",
     "expo-web-browser": "~55.0.10",
     "react": "19.2.0",

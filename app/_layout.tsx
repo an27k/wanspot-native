@@ -11,7 +11,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { enableScreens } from 'react-native-screens'
 import { AuthProvider } from '@/context/AuthContext'
-import { UpdateRestartNotice } from '@/components/updates/UpdateRestartNotice'
 import { initAnalytics } from '@/lib/analytics'
 import { useNotificationDeeplink } from '@/lib/notifications/use-notification-deeplink'
 import { perfMark } from '@/lib/perf/marks'
@@ -79,7 +78,6 @@ export default function RootLayout() {
               }}
             />
           </Stack>
-          <UpdateRestartNotice />
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
