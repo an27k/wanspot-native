@@ -181,16 +181,64 @@ const FEASIBILITY_FAIL_OPEN: AiPlanFeasibilityResult = {
   is_major_area: false,
 }
 
+export type AiPlanStationItem = {
+  id: string
+  name: string
+  lat: number
+  lng: number
+  distance_km: number
+}
+
+/** 市区町村周辺の駅一覧（GET /api/ai-plan/stations）。失敗時は空配列。 */
+export async function fetchAiPlanStations(
+  prefecture: string,
+  municipality: string,
+  q?: string
+): Promise<AiPlanStationItem[]> {
+  try {
+    const params = new URLSearchParams({ prefecture, municipality })
+    const query = q?.trim()
+    if (query) params.set('q', query)
+    const res = await wanspotFetch(`/api/ai-plan/stations?${params.toString()}`, { auth: false })
+    if (!res.ok) return []
+    const json = (await res.json()) as { ok?: boolean; stations?: unknown }
+    if (!json.ok || !Array.isArray(json.stations)) return []
+    return json.stations
+      .map((row) => {
+        if (!row || typeof row !== 'object') return null
+        const o = row as Record<string, unknown>
+        const id = typeof o.id === 'string' ? o.id : ''
+        const name = typeof o.name === 'string' ? o.name : ''
+        const lat = typeof o.lat === 'number' ? o.lat : Number.NaN
+        const lng = typeof o.lng === 'number' ? o.lng : Number.NaN
+        const distance_km = typeof o.distance_km === 'number' ? o.distance_km : Number.NaN
+        if (!id || !name || !Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(distance_km)) {
+          return null
+        }
+        return { id, name, lat, lng, distance_km }
+      })
+      .filter((row): row is AiPlanStationItem => row != null)
+  } catch (e) {
+    console.warn('fetchAiPlanStations failed:', e)
+    return []
+  }
+}
+
 /** エリアのプラン組み可否（徒歩・車）。失敗時はオプティミスティックに許可（生成 API で再チェック）。 */
 export async function checkAiPlanFeasibility(
   prefecture: string,
-  municipality?: string
+  municipality?: string,
+  stationId?: string | null
 ): Promise<AiPlanFeasibilityResult> {
   try {
+    const body: Record<string, string> = { prefecture }
+    if (municipality) body.municipality = municipality
+    const sid = stationId?.trim()
+    if (sid) body.station_id = sid
     const res = await wanspotFetch('/api/ai-plan/feasibility', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prefecture, municipality }),
+      body: JSON.stringify(body),
     })
     if (!res.ok) return FEASIBILITY_FAIL_OPEN
     const json = (await res.json()) as Record<string, unknown>

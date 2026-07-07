@@ -48,6 +48,8 @@ type GeneratingRequest = {
   travel_mode: AiPlanTravelMode
   mood: AiPlanMood
   dogSize: DogSize
+  station_id?: string
+  station_name?: string
 }
 
 function AiPlanGeneratingSession({
@@ -106,6 +108,7 @@ function AiPlanGeneratingSession({
             duration_hours: request.durationHours,
             departure_time: request.departureTime,
             dog_size: request.dogSize,
+            ...(request.station_id ? { station_id: request.station_id } : {}),
           },
           {
             signal: ac.signal,
@@ -344,6 +347,8 @@ export function AiPlanTab({
     travel_mode: AiPlanTravelMode
     mood: 'active' | 'relaxed'
     dogSize: DogSize
+    station_id?: string
+    station_name?: string
   }) => {
     if (!requireAuth('AIプランを保存するにはログインしてください。')) return
     generationAbortedByTimeoutRef.current = false
@@ -370,6 +375,7 @@ export function AiPlanTab({
       travel_mode: v.travel_mode,
       mood: v.mood,
       dogSize: v.dogSize,
+      ...(v.station_id ? { station_id: v.station_id, station_name: v.station_name } : {}),
     })
     generatingRequestRef.current = {
       prefecture: v.prefecture,
@@ -379,9 +385,11 @@ export function AiPlanTab({
       travel_mode: v.travel_mode,
       mood: v.mood,
       dogSize: v.dogSize,
+      ...(v.station_id ? { station_id: v.station_id, station_name: v.station_name } : {}),
     }
     setGeneratingContext({
       municipality: v.municipality,
+      ...(v.station_name ? { stationName: v.station_name } : {}),
       hours: v.durationHours,
       travel_mode: v.travel_mode,
       mood: v.mood,

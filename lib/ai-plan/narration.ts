@@ -9,9 +9,15 @@
 export type NarrationContextData = {
   dogName?: string
   municipality?: string
+  stationName?: string
   hours?: number
   travelLabel?: string
   moodLabel?: string
+}
+
+function contextAreaLabel(d: NarrationContextData): string | undefined {
+  if (d.stationName) return `${d.stationName}周辺`
+  return d.municipality
 }
 
 export type NarrationEnvData = {
@@ -57,10 +63,14 @@ function pickRandom<T>(items: readonly T[]): T {
 export const NARRATION = {
   context: {
     withData: [
-      (d: NarrationContextData) =>
-        `${d.dogName ? `${d.dogName}と` : ''}${d.municipality}を${d.hours}時間・${d.travelLabel}でめぐるプランを組み立てます`,
-      (d: NarrationContextData) =>
-        `条件を読み込みました — ${d.municipality}、${d.hours}時間、${d.moodLabel}`,
+      (d: NarrationContextData) => {
+        const area = contextAreaLabel(d)
+        return `${d.dogName ? `${d.dogName}と` : ''}${area}を${d.hours}時間・${d.travelLabel}でめぐるプランを組み立てます`
+      },
+      (d: NarrationContextData) => {
+        const area = contextAreaLabel(d)
+        return `条件を読み込みました — ${area}、${d.hours}時間、${d.moodLabel}`
+      },
     ],
     fallback: '条件を読み込んでいます',
   },
@@ -117,11 +127,12 @@ export function resolveNarrationText(
     const d: NarrationContextData = {
       dogName: dogName?.trim() || undefined,
       municipality: typeof data?.municipality === 'string' ? data.municipality : undefined,
+      stationName: typeof data?.stationName === 'string' ? data.stationName : undefined,
       hours: typeof data?.hours === 'number' ? data.hours : undefined,
       travelLabel: travelLabel(typeof data?.travel_mode === 'string' ? data.travel_mode : undefined),
       moodLabel: moodLabel(typeof data?.mood === 'string' ? data.mood : undefined),
     }
-    if (d.municipality && d.hours != null && d.travelLabel && d.moodLabel) {
+    if (contextAreaLabel(d) && d.hours != null && d.travelLabel && d.moodLabel) {
       return pickRandom(NARRATION.context.withData)(d)
     }
     return NARRATION.context.fallback

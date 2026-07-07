@@ -7,7 +7,7 @@ import { sortMunicipalityNames } from '@/constants/municipality-sort'
 import { listMunicipalities, listPrefectures } from '@/constants/municipality-centers'
 import { sortPrefecturesJis } from '@/constants/prefectures'
 import { formatAiPlanDogDisplayName } from '@/lib/ai-plan/formatters'
-import { checkAiPlanFeasibility } from '@/lib/wanspot-api'
+import { checkAiPlanFeasibility, fetchAiPlanStations, type AiPlanStationItem } from '@/lib/wanspot-api'
 import { AreaRequestForm } from '@/components/ai-plan/AreaRequestForm'
 import { SegmentedControl } from '@/components/common/SegmentedControl'
 import { MoodCard } from '@/components/common/MoodCard'
@@ -169,6 +169,68 @@ function PickerSheet({
   )
 }
 
+/** 駅ピッカー（任意選択） */
+function StationPickerSheet({
+  visible,
+  stations,
+  selectedId,
+  onClose,
+  onPick,
+}: {
+  visible: boolean
+  stations: AiPlanStationItem[]
+  selectedId?: string
+  onClose: () => void
+  onPick: (station: AiPlanStationItem | null) => void
+}) {
+  const insets = useSafeAreaInsets()
+  const items = useMemo(
+    () => [{ id: '', name: '指定なし（エリア中心）', lat: 0, lng: 0, distance_km: 0 }, ...stations],
+    [stations]
+  )
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.sheetBg} onPress={onClose}>
+        <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + 8 }]} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.sheetGrabber} />
+          <Text style={styles.sheetTitle}>最寄り駅（任意）</Text>
+          <FlatList
+            data={items}
+            keyExtractor={(item) => item.id || '__none__'}
+            style={styles.sheetList}
+            keyboardShouldPersistTaps="handled"
+            initialNumToRender={14}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+            removeClippedSubviews
+            renderItem={({ item }) => {
+              const isNone = !item.id
+              const isSelected = isNone ? !selectedId : item.id === selectedId
+              return (
+                <Pressable
+                  style={({ pressed }) => [styles.sheetRow, pressed && styles.sheetRowPressed]}
+                  onPress={() => {
+                    onPick(isNone ? null : item)
+                    onClose()
+                  }}
+                >
+                  <View style={styles.stationRowMain}>
+                    <Text style={[styles.sheetRowTxt, isSelected && styles.sheetRowTxtOn]}>{item.name}</Text>
+                    {!isNone ? (
+                      <Text style={styles.stationDistanceTxt}>{item.distance_km.toFixed(1)} km</Text>
+                    ) : null}
+                  </View>
+                  {isSelected ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
+                </Pressable>
+              )
+            }}
+          />
+        </Pressable>
+      </Pressable>
+    </Modal>
+  )
+}
+
 export function AiPlanInputForm({
   initialDogName,
   dbDogSize,
@@ -186,6 +248,8 @@ export function AiPlanInputForm({
     travel_mode: TravelPick
     mood: MoodPick
     dogSize: DogSize
+    station_id?: string
+    station_name?: string
   }) => void
   onCancel: () => void
   areaPreset?: { prefecture: string; municipality: string } | null
@@ -209,6 +273,10 @@ export function AiPlanInputForm({
   const [sizePickerOpen, setSizePickerOpen] = useState(false)
   const [prefOpen, setPrefOpen] = useState(false)
   const [muniOpen, setMuniOpen] = useState(false)
+  const [stationOpen, setStationOpen] = useState(false)
+  const [stations, setStations] = useState<AiPlanStationItem[]>([])
+  const [stationsLoading, setStationsLoading] = useState(false)
+  const [selectedStation, setSelectedStation] = useState<AiPlanStationItem | null>(null)
   const [areaRequestOpen, setAreaRequestOpen] = useState(false)
   const [areaRequestToast, setAreaRequestToast] = useState<string | null>(null)
 
@@ -235,7 +303,28 @@ export function AiPlanInputForm({
     if (munis.length > 0 && !munis.includes(muni)) {
       setMuni('')
     }
+    setSelectedStation(null)
   }, [pref, munis, muni])
+
+  useEffect(() => {
+    if (!pref || !muni) {
+      setStations([])
+      setSelectedStation(null)
+      setStationsLoading(false)
+      return
+    }
+    setSelectedStation(null)
+    setStationsLoading(true)
+    let cancelled = false
+    void fetchAiPlanStations(pref, muni).then((rows) => {
+      if (cancelled) return
+      setStations(rows)
+      setStationsLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [pref, muni])
 
   useEffect(() => {
     if (!pref || !muni) {
@@ -244,7 +333,7 @@ export function AiPlanInputForm({
     }
     setFeasibility((prev) => ({ ...prev, loading: true }))
     let cancelled = false
-    void checkAiPlanFeasibility(pref, muni).then((result) => {
+    void checkAiPlanFeasibility(pref, muni, selectedStation?.id).then((result) => {
       if (cancelled) return
       setFeasibility({
         walking_feasible: result.walking_feasible,
@@ -261,7 +350,15 @@ export function AiPlanInputForm({
     return () => {
       cancelled = true
     }
-  }, [pref, muni])
+  }, [pref, muni, selectedStation?.id])
+
+  const stationLabel = selectedStation
+    ? selectedStation.name
+    : stationsLoading
+      ? '駅を読み込み中…'
+      : stations.length > 0
+        ? '指定なし（エリア中心）'
+        : '最寄り駅（任意）'
 
   const effectiveSize = overrideSize ?? dbDogSize
   const bothInfeasible =
@@ -295,6 +392,18 @@ export function AiPlanInputForm({
               />
             </View>
           </View>
+          {muni ? (
+            <View style={styles.stationPickerWrap}>
+              <SelectorRow
+                label={stationLabel}
+                selected={!!selectedStation}
+                disabled={stationsLoading || stations.length === 0}
+                onPress={() => {
+                  if (stations.length > 0) setStationOpen(true)
+                }}
+              />
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.section}>
@@ -397,6 +506,7 @@ export function AiPlanInputForm({
                 travel_mode: travel,
                 mood,
                 dogSize: effectiveSize,
+                ...(selectedStation ? { station_id: selectedStation.id, station_name: selectedStation.name } : {}),
               })
             }}
           >
@@ -427,6 +537,13 @@ export function AiPlanInputForm({
           selectedItem={muni || undefined}
           onClose={() => setMuniOpen(false)}
           onPick={setMuni}
+        />
+        <StationPickerSheet
+          visible={stationOpen}
+          stations={stations}
+          selectedId={selectedStation?.id}
+          onClose={() => setStationOpen(false)}
+          onPick={setSelectedStation}
         />
 
         <Modal visible={areaRequestOpen} transparent animationType="slide" onRequestClose={() => setAreaRequestOpen(false)}>
@@ -547,6 +664,9 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', gap: 12 },
   flex1: { flex: 1 },
+  stationPickerWrap: { marginTop: 10 },
+  stationRowMain: { flex: 1, gap: 2 },
+  stationDistanceTxt: { fontSize: 11, color: '#999' },
   selector: {
     flexDirection: 'row',
     alignItems: 'center',

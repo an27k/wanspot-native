@@ -17,6 +17,7 @@ export const STALL_TIMEOUT_MS = 60_000
 
 export type LocalContextData = {
   municipality: string
+  stationName?: string
   hours: number
   travel_mode: string
   mood: string

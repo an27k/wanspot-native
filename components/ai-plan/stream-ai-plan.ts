@@ -12,6 +12,7 @@ export type AiPlanRequestBody = {
   departure_time?: string
   duration?: 'half_day' | 'full_day'
   dog_size?: 'XS' | 'S' | 'M' | 'L' | 'XL'
+  station_id?: string
 }
 
 export async function streamAiPlan(
@@ -37,6 +38,7 @@ export async function streamAiPlan(
     ...(body.duration_hours != null ? { duration_hours: body.duration_hours } : {}),
     ...(body.departure_time ? { departure_time: body.departure_time } : {}),
     ...(body.dog_size ? { dog_size: body.dog_size } : {}),
+    ...(body.station_id ? { station_id: body.station_id } : {}),
   }
 
   const base = getWanspotApiBase()
