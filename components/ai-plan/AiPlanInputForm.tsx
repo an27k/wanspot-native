@@ -13,10 +13,60 @@ import { MoodCard } from '@/components/common/MoodCard'
 import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { colors } from '@/constants/colors'
 
-export type DurationPick = 'half_day' | 'full_day'
+export type DurationHoursPick = 2 | 3 | 4 | 6 | 8
+export type DeparturePick = 'now' | 'morning' | 'noon' | 'evening'
 export type TravelPick = 'walking' | 'driving'
 export type MoodPick = 'active' | 'relaxed'
 export type DogSize = 'XS' | 'S' | 'M' | 'L' | 'XL'
+
+const DURATION_OPTIONS: { label: string; value: DurationHoursPick }[] = [
+  { label: '2時間', value: 2 },
+  { label: '3時間', value: 3 },
+  { label: '4時間', value: 4 },
+  { label: '6時間', value: 6 },
+  { label: '8時間', value: 8 },
+]
+
+const DEPARTURE_OPTIONS: { label: string; value: DeparturePick }[] = [
+  { label: 'いまから', value: 'now' },
+  { label: '朝 9:00', value: 'morning' },
+  { label: '昼 12:00', value: 'noon' },
+  { label: '夕方 16:00', value: 'evening' },
+]
+
+export function resolveDepartureIso(pick: DeparturePick): string {
+  if (pick === 'now') return new Date().toISOString()
+  const hour = pick === 'morning' ? 9 : pick === 'noon' ? 12 : 16
+  const d = new Date()
+  d.setHours(hour, 0, 0, 0)
+  if (d.getTime() <= Date.now()) {
+    d.setDate(d.getDate() + 1)
+  }
+  return d.toISOString()
+}
+
+function OptionChip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string
+  selected: boolean
+  onPress: () => void
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.optionChip,
+        selected && styles.optionChipSelected,
+        pressed && styles.optionChipPressed,
+      ]}
+    >
+      <Text style={[styles.optionChipTxt, selected && styles.optionChipTxtSelected]}>{label}</Text>
+    </Pressable>
+  )
+}
 
 const SIZE_LABEL: Record<DogSize, string> = {
   XS: '超小型犬（〜3kg）',
@@ -130,7 +180,8 @@ export function AiPlanInputForm({
   onSubmit: (v: {
     prefecture: string
     municipality: string
-    duration: DurationPick
+    durationHours: DurationHoursPick
+    departureTime: string
     travel_mode: TravelPick
     mood: MoodPick
     dogSize: DogSize
@@ -148,7 +199,8 @@ export function AiPlanInputForm({
     [pref]
   )
 
-  const [duration, setDuration] = useState<DurationPick | null>(null)
+  const [durationHours, setDurationHours] = useState<DurationHoursPick>(4)
+  const [departurePick, setDeparturePick] = useState<DeparturePick>('now')
   const [travel, setTravel] = useState<TravelPick | null>(null)
   const [mood, setMood] = useState<MoodPick | null>(null)
 
@@ -203,7 +255,7 @@ export function AiPlanInputForm({
   }, [pref, muni])
 
   const effectiveSize = overrideSize ?? dbDogSize
-  const isFormValid = !!pref && !!muni && !!duration && !!travel && !!mood && !!effectiveSize
+  const isFormValid = !!pref && !!muni && !!travel && !!mood && !!effectiveSize
 
   const dogDisplay = formatAiPlanDogDisplayName(initialDogName)
   const sizeShort = effectiveSize ? SIZE_LABEL_SHORT[effectiveSize] : ''
@@ -236,14 +288,30 @@ export function AiPlanInputForm({
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>所要時間</Text>
-          <SegmentedControl
-            options={[
-              { label: '半日', value: 'half_day' },
-              { label: '1日', value: 'full_day' },
-            ]}
-            value={duration ?? ''}
-            onChange={(v) => setDuration(v === 'full_day' ? 'full_day' : 'half_day')}
-          />
+          <View style={styles.chipRow}>
+            {DURATION_OPTIONS.map((opt) => (
+              <OptionChip
+                key={opt.value}
+                label={opt.label}
+                selected={durationHours === opt.value}
+                onPress={() => setDurationHours(opt.value)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>出発</Text>
+          <View style={styles.chipRowWrap}>
+            {DEPARTURE_OPTIONS.map((opt) => (
+              <OptionChip
+                key={opt.value}
+                label={opt.label}
+                selected={departurePick === opt.value}
+                onPress={() => setDeparturePick(opt.value)}
+              />
+            ))}
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -301,8 +369,16 @@ export function AiPlanInputForm({
               pressed && isFormValid && styles.ctaButtonPressed,
             ]}
             onPress={() => {
-              if (!duration || !travel || !mood || !effectiveSize) return
-              onSubmit({ prefecture: pref, municipality: muni, duration, travel_mode: travel, mood, dogSize: effectiveSize })
+              if (!travel || !mood || !effectiveSize) return
+              onSubmit({
+                prefecture: pref,
+                municipality: muni,
+                durationHours,
+                departureTime: resolveDepartureIso(departurePick),
+                travel_mode: travel,
+                mood,
+                dogSize: effectiveSize,
+              })
             }}
           >
             <Text style={[styles.ctaText, !isFormValid && styles.ctaTextDisabled]}>この内容でプランを作る</Text>
@@ -409,6 +485,25 @@ const styles = StyleSheet.create({
   selectorTxtOn: { color: '#1A1A1A', fontWeight: '600' },
   selectorTxtOff: { color: '#666' },
   moodGrid: { flexDirection: 'row', gap: 12 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chipRowWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  optionChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#F5F4F0',
+  },
+  optionChipSelected: {
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  optionChipPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+  optionChipTxt: { fontSize: 13, fontWeight: '700', color: '#1A1A1A' },
+  optionChipTxtSelected: { color: '#fff' },
   dogSelectRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

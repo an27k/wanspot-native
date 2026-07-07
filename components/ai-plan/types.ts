@@ -43,8 +43,27 @@ export type AiPlanHistoryRow = {
   generated_plan: AiPlanGenerated
 }
 
+export type AiPlanPhaseName = 'context' | 'env' | 'candidates' | 'building' | 'finalizing' | string
+
+export type AiPlanPhaseContextData = {
+  municipality?: string
+  hours?: number
+  travel_mode?: string
+  mood?: string
+}
+
+export type AiPlanPhaseEnvData = {
+  month?: number
+  daypart?: 'morning' | 'afternoon' | 'evening'
+}
+
+export type AiPlanPhaseBuildingData = {
+  stopCount?: number
+  allocations?: { name: string; dwellMinutes: number }[]
+}
+
 export type AiPlanSseEvent =
-  | { type: 'phase'; phase: string }
+  | { type: 'phase'; phase: AiPlanPhaseName; data?: AiPlanPhaseContextData | AiPlanPhaseEnvData | AiPlanPhaseBuildingData | Record<string, unknown> }
   | { type: 'candidates'; count: number }
   | { type: 'plan'; plan: AiPlanCore }
   | { type: 'leg'; leg: any }

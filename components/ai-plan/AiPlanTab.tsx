@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { AiPlanHistory } from '@/components/ai-plan/AiPlanHistory'
-import { AiPlanInputForm, type DogSize } from '@/components/ai-plan/AiPlanInputForm'
+import { AiPlanInputForm, type DogSize, type DurationHoursPick } from '@/components/ai-plan/AiPlanInputForm'
 import { AiPlanGenerating } from '@/components/ai-plan/AiPlanGenerating'
 import { AiPlanError, type SuggestedArea } from '@/components/ai-plan/AiPlanError'
 import { AiPlanResult } from '@/components/ai-plan/AiPlanResult'
@@ -17,8 +17,8 @@ import type {
 import { streamAiPlan } from '@/components/ai-plan/stream-ai-plan'
 import { TOKENS } from '@/constants/color-tokens'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
-
-const MAX_GENERATION_TIMEOUT_MS = 30_000
+import { useGenerationNarrator, type LocalContextData } from '@/lib/ai-plan/narrator'
+import { logUserEvent } from '@/lib/user-events'
 
 type UiState = 'history' | 'form' | 'generating' | 'result' | 'error'
 
@@ -40,6 +40,138 @@ function normalizeErrorCode(code: string | undefined): string {
   return code
 }
 
+type GeneratingRequest = {
+  prefecture: string
+  municipality: string
+  durationHours: DurationHoursPick
+  departureTime: string
+  travel_mode: AiPlanTravelMode
+  mood: AiPlanMood
+  dogSize: DogSize
+}
+
+function AiPlanGeneratingSession({
+  dogName,
+  request,
+  localContext,
+  onError,
+  onComplete,
+  onSaved,
+  onPlan,
+  onLeg,
+}: {
+  dogName: string
+  request: GeneratingRequest
+  localContext: LocalContextData
+  onError: (code: string, detail: string | null) => void
+  onComplete: () => void
+  onSaved: (id: string) => void
+  onPlan: (plan: AiPlanCore) => void
+  onLeg: (leg: AiPlanLeg) => void
+}) {
+  const abortRef = useRef<AbortController | null>(null)
+  const stalledRef = useRef(false)
+
+  const narrator = useGenerationNarrator({
+    dogName,
+    localContext,
+    onStall: () => {
+      stalledRef.current = true
+      abortRef.current?.abort()
+      onError('generation_timeout', null)
+    },
+    onDone: onComplete,
+  })
+
+  const feedPhaseRef = useRef(narrator.feedPhase)
+  const feedCandidatesRef = useRef(narrator.feedCandidates)
+  const notifyPlanReceivedRef = useRef(narrator.notifyPlanReceived)
+  feedPhaseRef.current = narrator.feedPhase
+  feedCandidatesRef.current = narrator.feedCandidates
+  notifyPlanReceivedRef.current = narrator.notifyPlanReceived
+
+  useEffect(() => {
+    stalledRef.current = false
+    const ac = new AbortController()
+    abortRef.current = ac
+
+    void (async () => {
+      try {
+        await streamAiPlan(
+          {
+            mood: request.mood,
+            prefecture: request.prefecture,
+            municipality: request.municipality,
+            travel_mode: request.travel_mode,
+            duration_hours: request.durationHours,
+            departure_time: request.departureTime,
+            dog_size: request.dogSize,
+          },
+          {
+            signal: ac.signal,
+            onPhase: (phase, data) => {
+              feedPhaseRef.current(phase, data)
+            },
+            onEvent: (ev: AiPlanSseEvent) => {
+              if (ev.type === 'candidates') {
+                feedCandidatesRef.current(ev.count)
+                return
+              }
+              if (ev.type === 'plan') {
+                onPlan(ev.plan)
+                notifyPlanReceivedRef.current()
+                return
+              }
+              if (ev.type === 'leg') {
+                const leg = normalizeLeg((ev as { leg?: unknown }).leg)
+                if (leg) onLeg(leg)
+                return
+              }
+              if (ev.type === 'saved') {
+                if (typeof ev.id === 'string' && ev.id) onSaved(ev.id)
+                return
+              }
+              if (ev.type === 'error') {
+                const raw = typeof ev.code === 'string' ? ev.code : ''
+                let code = normalizeErrorCode(ev.code)
+                let detail: string | null = typeof ev.message === 'string' ? ev.message : null
+                if (raw === 'walking_not_feasible') {
+                  code = 'unsupported_area'
+                  detail = detail ?? 'feasibility_walking'
+                } else if (raw === 'driving_not_feasible') {
+                  code = 'unsupported_area'
+                  detail = detail ?? 'feasibility_driving'
+                }
+                onError(code, detail)
+                return
+              }
+            },
+          }
+        )
+      } catch (e) {
+        if ((e as { name?: string })?.name === 'AbortError') {
+          if (stalledRef.current) return
+          return
+        }
+        onError('internal_error', null)
+      }
+    })()
+
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [request, onComplete, onError, onLeg, onPlan, onSaved])
+
+  return (
+    <AiPlanGenerating
+      dogName={dogName}
+      currentStep={narrator.currentStep}
+      currentText={narrator.currentText}
+      completedPhaseIds={narrator.completedPhaseIds}
+    />
+  )
+}
+
 export function AiPlanTab({
   onEmbeddedChromeVisibility,
 }: {
@@ -54,6 +186,8 @@ export function AiPlanTab({
   const [dbDogSize, setDbDogSize] = useState<DogSize | null>(null)
 
   const [streamPlanReady, setStreamPlanReady] = useState(false)
+  const [generatingRequest, setGeneratingRequest] = useState<GeneratingRequest | null>(null)
+  const [generatingContext, setGeneratingContext] = useState<LocalContextData | null>(null)
   const [resultPlanId, setResultPlanId] = useState<string | null>(null)
   const [currentPlan, setCurrentPlan] = useState<AiPlanCore | null>(null)
   const [travelMode, setTravelMode] = useState<AiPlanTravelMode>('walking')
@@ -69,25 +203,15 @@ export function AiPlanTab({
 
   const abortRef = useRef<AbortController | null>(null)
   const planReceivedRef = useRef(false)
+  const currentPlanRef = useRef<AiPlanCore | null>(null)
+  const generatingRequestRef = useRef<GeneratingRequest | null>(null)
   const generationAbortedByTimeoutRef = useRef(false)
+  const narratorDoneRef = useRef(false)
 
   /** 個別プラン表示時も検索ヘッダー分の余白を残し、下に白い戻るバーを置く */
   useEffect(() => {
     onEmbeddedChromeVisibility?.(true)
   }, [onEmbeddedChromeVisibility])
-
-  useEffect(() => {
-    if (ui !== 'generating') return
-    const t = setTimeout(() => {
-      if (planReceivedRef.current) return
-      generationAbortedByTimeoutRef.current = true
-      abortRef.current?.abort()
-      setErrorCode('generation_timeout')
-      setErrorDetail(null)
-      setUi('error')
-    }, MAX_GENERATION_TIMEOUT_MS)
-    return () => clearTimeout(t)
-  }, [ui])
 
   useEffect(() => {
     return () => {
@@ -152,9 +276,12 @@ export function AiPlanTab({
 
   const startNew = useCallback(() => {
     generationAbortedByTimeoutRef.current = false
+    narratorDoneRef.current = false
     abortRef.current?.abort()
     abortRef.current = null
     setStreamPlanReady(false)
+    setGeneratingRequest(null)
+    setGeneratingContext(null)
     setResultPlanId(null)
     planReceivedRef.current = false
     setCurrentPlan(null)
@@ -165,7 +292,16 @@ export function AiPlanTab({
   }, [])
 
   const onReadyForResult = useCallback(() => {
-    setUi('result')
+    if (planReceivedRef.current && narratorDoneRef.current) {
+      setUi('result')
+    }
+  }, [])
+
+  const tryShowResult = useCallback(() => {
+    narratorDoneRef.current = true
+    if (planReceivedRef.current) {
+      setUi('result')
+    }
   }, [])
 
   const onSelectHistory = (row: AiPlanHistoryRow) => {
@@ -200,19 +336,20 @@ export function AiPlanTab({
     setUi('result')
   }
 
-  const submit = async (v: {
+  const submit = (v: {
     prefecture: string
     municipality: string
-    duration: 'half_day' | 'full_day'
+    durationHours: DurationHoursPick
+    departureTime: string
     travel_mode: AiPlanTravelMode
     mood: 'active' | 'relaxed'
     dogSize: DogSize
   }) => {
     if (!requireAuth('AIプランを保存するにはログインしてください。')) return
     generationAbortedByTimeoutRef.current = false
+    narratorDoneRef.current = false
     abortRef.current?.abort()
-    const ac = new AbortController()
-    abortRef.current = ac
+    abortRef.current = null
 
     setUi('generating')
     setStreamPlanReady(false)
@@ -223,80 +360,81 @@ export function AiPlanTab({
     setTravelMode(v.travel_mode)
     setResultMood(v.mood)
     setCurrentPlan(null)
+    currentPlanRef.current = null
     setLegsByIndex({})
-
-    try {
-      await streamAiPlan(
-        {
-          mood: v.mood,
-          prefecture: v.prefecture,
-          municipality: v.municipality,
-          travel_mode: v.travel_mode,
-          duration: v.duration,
-          dog_size: v.dogSize,
-        },
-        {
-          signal: ac.signal,
-          onEvent: (ev: AiPlanSseEvent) => {
-            if (ev.type === 'phase') {
-              // UI は擬似進行のみ（サーバーの phase は無視）
-              return
-            }
-            if (ev.type === 'plan') {
-              setCurrentPlan(ev.plan)
-              planReceivedRef.current = true
-              setStreamPlanReady(true)
-              return
-            }
-            if (ev.type === 'leg') {
-              const leg = normalizeLeg((ev as { leg?: unknown }).leg)
-              if (!leg) return
-              setLegsByIndex((prev) => ({ ...prev, [leg.index]: leg }))
-              return
-            }
-            if (ev.type === 'saved') {
-              if (typeof ev.id === 'string' && ev.id) setResultPlanId(ev.id)
-              void loadHistory({ onlyRefresh: true })
-              return
-            }
-            if (ev.type === 'error') {
-              const raw = typeof ev.code === 'string' ? ev.code : ''
-              let code = normalizeErrorCode(ev.code)
-              let detail: string | null = typeof ev.message === 'string' ? ev.message : null
-              if (raw === 'walking_not_feasible') {
-                code = 'unsupported_area'
-                detail = detail ?? 'feasibility_walking'
-              } else if (raw === 'driving_not_feasible') {
-                code = 'unsupported_area'
-                detail = detail ?? 'feasibility_driving'
-              }
-              setErrorCode(code)
-              setErrorDetail(detail)
-              setUi('error')
-              return
-            }
-            if (ev.type === 'done') {
-              abortRef.current = null
-            }
-          },
-        }
-      )
-    } catch (e) {
-      if ((e as { name?: string })?.name === 'AbortError') {
-        if (generationAbortedByTimeoutRef.current) {
-          generationAbortedByTimeoutRef.current = false
-          return
-        }
-        setUi('form')
-        return
-      }
-      setErrorCode('internal_error')
-      setErrorDetail(null)
-      setUi('error')
-    } finally {
-      // history refresh handled on saved
+    setGeneratingRequest({
+      prefecture: v.prefecture,
+      municipality: v.municipality,
+      durationHours: v.durationHours,
+      departureTime: v.departureTime,
+      travel_mode: v.travel_mode,
+      mood: v.mood,
+      dogSize: v.dogSize,
+    })
+    generatingRequestRef.current = {
+      prefecture: v.prefecture,
+      municipality: v.municipality,
+      durationHours: v.durationHours,
+      departureTime: v.departureTime,
+      travel_mode: v.travel_mode,
+      mood: v.mood,
+      dogSize: v.dogSize,
     }
+    setGeneratingContext({
+      municipality: v.municipality,
+      hours: v.durationHours,
+      travel_mode: v.travel_mode,
+      mood: v.mood,
+    })
   }
+
+  const handleGeneratingError = useCallback((code: string, detail: string | null) => {
+    setErrorCode(code)
+    setErrorDetail(detail)
+    setGeneratingRequest(null)
+    generatingRequestRef.current = null
+    currentPlanRef.current = null
+    setGeneratingContext(null)
+    setUi('error')
+  }, [])
+
+  const handleGeneratingPlan = useCallback((plan: AiPlanCore) => {
+    currentPlanRef.current = plan
+    setCurrentPlan(plan)
+    planReceivedRef.current = true
+    setStreamPlanReady(true)
+    if (narratorDoneRef.current) {
+      setUi('result')
+    }
+  }, [])
+
+  const handleGeneratingLeg = useCallback((leg: AiPlanLeg) => {
+    setLegsByIndex((prev) => ({ ...prev, [leg.index]: leg }))
+  }, [])
+
+  const handleGeneratingSaved = useCallback(
+    (id: string) => {
+      setResultPlanId(id)
+      void loadHistory({ onlyRefresh: true })
+      const req = generatingRequestRef.current
+      const plan = currentPlanRef.current
+      if (req) {
+        logUserEvent({
+          eventType: 'ai_plan_adopted',
+          props: {
+            plan_id: id,
+            prefecture: req.prefecture,
+            municipality: req.municipality,
+            duration_hours: req.durationHours,
+            travel_mode: req.travel_mode,
+            mood: req.mood,
+            stop_count: plan?.stops?.length ?? null,
+          },
+        })
+      }
+    },
+    [loadHistory]
+  )
 
   const goForm = useCallback(() => {
     setAreaPreset(null)
@@ -333,12 +471,17 @@ export function AiPlanTab({
     )
   }
 
-  if (ui === 'generating') {
+  if (ui === 'generating' && generatingRequest && generatingContext) {
     return (
-      <AiPlanGenerating
+      <AiPlanGeneratingSession
         dogName={dogName}
-        apiPlanReady={streamPlanReady}
-        onReadyForResult={onReadyForResult}
+        request={generatingRequest}
+        localContext={generatingContext}
+        onError={handleGeneratingError}
+        onComplete={tryShowResult}
+        onSaved={handleGeneratingSaved}
+        onPlan={handleGeneratingPlan}
+        onLeg={handleGeneratingLeg}
       />
     )
   }

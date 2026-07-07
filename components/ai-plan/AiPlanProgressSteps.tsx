@@ -1,17 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, View } from 'react-native'
+import { NARRATION_PHASE_ORDER, type NarrationPhaseId } from '@/lib/ai-plan/narration'
 import { TOKENS } from '@/constants/color-tokens'
-
-/** 擬似進行用。合計 15 秒（最終「仕上げ中」は API 完了まで） */
-export const AI_PLAN_PHASES = [
-  { id: 'search' as const, label: 'スポット候補を検索', duration: 3000 },
-  { id: 'route' as const, label: 'ルートを組み立て中', duration: 4000 },
-  { id: 'time' as const, label: '移動時間を計算中', duration: 4000 },
-  { id: 'finish' as const, label: '仕上げ中', duration: 4000 },
-] as const
-
-export type AiPlanProgressPhase = (typeof AI_PLAN_PHASES)[number]
-export type AiPlanProgressPhaseId = AiPlanProgressPhase['id']
 
 function DotPulse() {
   const op = useRef(new Animated.Value(0.4)).current
@@ -25,26 +15,26 @@ function DotPulse() {
     a.start()
     return () => a.stop()
   }, [op])
-  return (
-    <Animated.View style={[styles.innerDot, { opacity: op }]} />
-  )
+  return <Animated.View style={[styles.innerDot, { opacity: op }]} />
 }
 
 export function AiPlanProgressSteps({
-  currentPhaseId,
+  currentStep,
+  currentText,
   completedPhaseIds,
 }: {
-  currentPhaseId: AiPlanProgressPhaseId
-  completedPhaseIds: readonly AiPlanProgressPhaseId[]
+  currentStep: number
+  currentText: string
+  completedPhaseIds: readonly NarrationPhaseId[]
 }) {
   return (
     <View style={styles.wrap}>
-      {AI_PLAN_PHASES.map((s) => {
-        const done = completedPhaseIds.includes(s.id)
-        const active = s.id === currentPhaseId
+      {NARRATION_PHASE_ORDER.map((phaseId, index) => {
+        const done = completedPhaseIds.includes(phaseId)
+        const active = index === currentStep
 
         return (
-          <View key={s.id} style={styles.stepRow}>
+          <View key={phaseId} style={styles.stepRow}>
             <View style={styles.circleWrap}>
               {done ? (
                 <View style={styles.circleDone}>
@@ -58,13 +48,8 @@ export function AiPlanProgressSteps({
                 <View style={styles.circlePending} />
               )}
             </View>
-            <Text
-              style={[
-                styles.label,
-                done || active ? styles.labelOn : styles.labelOff,
-              ]}
-            >
-              {s.label}
+            <Text style={[styles.label, done || active ? styles.labelOn : styles.labelOff]}>
+              {active ? currentText : done ? '完了' : '…'}
             </Text>
           </View>
         )
@@ -75,7 +60,7 @@ export function AiPlanProgressSteps({
 
 const styles = StyleSheet.create({
   wrap: {
-    width: '80%',
+    width: '90%',
     alignSelf: 'center',
   },
   stepRow: {
@@ -130,6 +115,7 @@ const styles = StyleSheet.create({
   label: {
     flex: 1,
     fontSize: 13,
+    lineHeight: 18,
   },
   labelOn: {
     fontWeight: '600',

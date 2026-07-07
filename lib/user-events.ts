@@ -9,6 +9,7 @@ export type UserEventType =
   | 'spot_view'
   | 'search'
   | 'ai_plan_generate'
+  | 'ai_plan_adopted'
   | 'vlog_generate'
   | 'share'
 

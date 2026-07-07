@@ -42,8 +42,8 @@ const ERROR_MESSAGES: Record<string, { title: string; message: string }> = {
     message: 'ペット可スポットを随時追加しています。\n別のエリアで試してみませんか？',
   },
   no_candidates: {
-    title: 'このエリアはまだ準備中です',
-    message: 'ペット可スポットを随時追加しています。\n別のエリアで試してみませんか？',
+    title: 'この条件ではプランを組めませんでした',
+    message: 'ムードや移動手段、所要時間を変えると見つかることがあります',
   },
   llm_failed: {
     title: 'プラン作成に失敗しました',

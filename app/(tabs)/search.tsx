@@ -760,15 +760,21 @@ function SearchTab() {
       const res = await perfAsync('api:search', () =>
         wanspotFetch(`/api/spots/search?q=${encodeURIComponent(trimmed)}${locationParam}`)
       )
+      const data = (await res.json()) as { spots?: PlaceResult[] }
+      const spots = data.spots ?? []
+      setResults(spots)
       void supabase.auth.getUser().then(({ data: { user } }) => {
         if (!user) return
         void wanspotFetch('/api/search/history', {
           method: 'POST',
-          json: { userId: user.id, keyword: trimmed },
+          json: {
+            userId: user.id,
+            keyword: trimmed,
+            result_count: spots.length,
+            zero_result: spots.length === 0,
+          },
         }).catch(() => {})
       })
-      const data = (await res.json()) as { spots?: PlaceResult[] }
-      setResults(data.spots ?? [])
     } catch {
       setResults([])
     } finally {

@@ -8,7 +8,8 @@ export type AiPlanRequestBody = {
   prefecture: string
   municipality: string
   travel_mode: AiPlanTravelMode
-  // extra fields are allowed (server Zod is non-strict)
+  duration_hours?: number
+  departure_time?: string
   duration?: 'half_day' | 'full_day'
   dog_size?: 'XS' | 'S' | 'M' | 'L' | 'XL'
 }
@@ -18,6 +19,7 @@ export async function streamAiPlan(
   opts: {
     signal?: AbortSignal
     onEvent: (ev: AiPlanSseEvent) => void
+    onPhase?: (phase: string, data?: Record<string, unknown>) => void
   }
 ): Promise<void> {
   const { data } = await supabase.auth.getSession()
@@ -29,6 +31,14 @@ export async function streamAiPlan(
     throw new Error('この端末の実行環境では TextDecoder が利用できません（Expo SDK 55 の想定環境で再実行してください）')
   }
 
+  const { duration: _legacyDuration, ...rest } = body
+  const payload = {
+    ...rest,
+    ...(body.duration_hours != null ? { duration_hours: body.duration_hours } : {}),
+    ...(body.departure_time ? { departure_time: body.departure_time } : {}),
+    ...(body.dog_size ? { dog_size: body.dog_size } : {}),
+  }
+
   const base = getWanspotApiBase()
   const res = await expoFetch(`${base}/api/ai-plans/generate`, {
     method: 'POST',
@@ -37,7 +47,7 @@ export async function streamAiPlan(
       'Content-Type': 'application/json',
       Accept: 'text/event-stream',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
     signal: opts.signal,
   })
 
@@ -68,6 +78,10 @@ export async function streamAiPlan(
       const json = line.slice(6).trim()
       try {
         const ev = JSON.parse(json) as AiPlanSseEvent
+        if (ev.type === 'phase') {
+          const phaseEv = ev as { phase: string; data?: Record<string, unknown> }
+          opts.onPhase?.(phaseEv.phase, phaseEv.data)
+        }
         opts.onEvent(ev)
       } catch {
         // ignore parse errors
