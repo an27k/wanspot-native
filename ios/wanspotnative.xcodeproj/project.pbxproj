@@ -26,7 +26,7 @@
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = wanspotnative/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		BD0B42F5C754576B99634FD4 /* Pods_wanspotnative.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_wanspotnative.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		E28FFCECAC246BBEA7B83AA2 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = wanspotnative/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		E28FFCECAC246BBEA7B83AA2 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = wanspotnative/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = wanspotnative/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* wanspotnative-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "wanspotnative-Bridging-Header.h"; path = "wanspotnative/wanspotnative-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -128,7 +128,6 @@
 				18C4F147FAD9772B5019E9FB /* Pods-wanspotnative.debug.xcconfig */,
 				140A0BD863E23D40AED19EFC /* Pods-wanspotnative.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -147,6 +146,7 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				3C4191BE6B597BE081EEE735 /* [CP] Embed Pods Frameworks */,
+				F7A3B2C1D4E5A67890123456 /* Generate HermesVM dSYM */,
 			);
 			buildRules = (
 			);
@@ -260,6 +260,23 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-wanspotnative/Pods-wanspotnative-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		F7A3B2C1D4E5A67890123456 /* Generate HermesVM dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermesvm.framework/hermesvm",
+			);
+			name = "Generate HermesVM dSYM";
+			outputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/hermesvm.framework.dSYM",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/../scripts/generate-hermesvm-dsym.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -355,6 +372,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = wanspotnative/wanspotnative.entitlements;
 				CURRENT_PROJECT_VERSION = 200;
+				DEVELOPMENT_TEAM = 3ZKJY68M2F;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -391,6 +409,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = wanspotnative/wanspotnative.entitlements;
 				CURRENT_PROJECT_VERSION = 200;
+				DEVELOPMENT_TEAM = 3ZKJY68M2F;
 				INFOPLIST_FILE = wanspotnative/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
