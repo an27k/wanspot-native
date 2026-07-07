@@ -9,7 +9,6 @@ import { AppHeader } from '@/components/AppHeader'
 import { RunningDog } from '@/components/DogStates'
 import { PressableScale } from '@/components/common/PressableScale'
 import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
-import { DogVaccineSettings } from '@/components/settings/DogVaccineSettings'
 import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { colors } from '@/constants/colors'
@@ -23,7 +22,7 @@ function SettingsTab() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { signOut } = useAuth()
-  const { dog, setDog, loading } = useDogProfile()
+  const { dog, loading } = useDogProfile()
   const apiBase = useMemo(() => getWanspotApiBase(), [])
 
   const openWeb = useCallback(
@@ -55,10 +54,8 @@ function SettingsTab() {
         <AppHeader />
 
         <View style={styles.section}>
-          <Text style={styles.sectionCaption}>設定</Text>
+          <Text style={styles.sectionCaption}>愛犬</Text>
           <View style={styles.card}>
-            {dog ? <DogVaccineSettings dog={dog} onUpdated={setDog} /> : null}
-            {dog ? <View style={styles.rowDivider} /> : null}
             <PressableScale
               style={styles.row}
               onPress={() => router.push('/settings/dog-profile')}
@@ -67,11 +64,9 @@ function SettingsTab() {
               <WanspotIconPaw size={20} />
               <View style={styles.rowTextCol}>
                 <Text style={styles.rowTxt}>愛犬情報編集</Text>
-                {dog ? (
-                  <Text style={styles.rowSubTxt} numberOfLines={1}>
-                    {dog.name} · 基本情報・散歩エリア
-                  </Text>
-                ) : null}
+                <Text style={styles.rowSubTxt} numberOfLines={1}>
+                  {dog ? `${dog.name} · ` : ''}プロフィール・散歩エリア・ワクチン記録
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </PressableScale>
@@ -98,7 +93,12 @@ function SettingsTab() {
               <Text style={styles.rowTxt}>利用規約</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </PressableScale>
-            <View style={styles.rowDivider} />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionCaption}>アカウント</Text>
+          <View style={styles.card}>
             <PressableScale
               style={styles.row}
               onPress={async () => {
@@ -111,24 +111,20 @@ function SettingsTab() {
               <Text style={styles.rowTxt}>ログアウト</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </PressableScale>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <PressableScale
-            style={styles.dangerCard}
-            onPress={() => router.push('/account-delete')}
-            accessibilityLabel="アカウントを削除"
-          >
-            <View style={styles.dangerRow}>
-              <Ionicons name="trash-outline" size={22} color="#E84335" />
-              <View style={styles.dangerTextCol}>
+            <View style={styles.rowDivider} />
+            <PressableScale
+              style={styles.row}
+              onPress={() => router.push('/account-delete')}
+              accessibilityLabel="アカウントを削除"
+            >
+              <Ionicons name="trash-outline" size={20} color="#E84335" />
+              <View style={styles.rowTextCol}>
                 <Text style={styles.dangerTitle}>アカウントを削除</Text>
-                <Text style={styles.dangerSub}>取り消しできません</Text>
+                <Text style={styles.rowSubTxt}>取り消しできません</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#CCC" />
-            </View>
-          </PressableScale>
+              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+            </PressableScale>
+          </View>
         </View>
       </Animated.ScrollView>
     </View>
@@ -158,17 +154,7 @@ const styles = StyleSheet.create({
   rowTextCol: { flex: 1, gap: 2 },
   rowSubTxt: { fontSize: 12, fontWeight: '500', color: colors.textMuted },
   rowDivider: { height: 1, backgroundColor: colors.border, marginLeft: 48 },
-  dangerCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dangerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  dangerTextCol: { flex: 1 },
-  dangerTitle: { fontSize: 14, fontWeight: '700', color: '#E84335' },
-  dangerSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  dangerTitle: { fontSize: 15, fontWeight: '600', color: '#E84335' },
 })
 
 export default function SettingsTabScreen() {

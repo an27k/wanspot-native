@@ -284,6 +284,18 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
                   <Text style={styles.breedValidationText}>保存済みの犬種です。変更する場合は候補から選んでください。</Text>
                 ) : null}
               </FormField>
+              <Text style={styles.miniLbl}>サイズ</Text>
+              <Text style={styles.miniHint}>小型犬可・大型犬可などのおすすめ表示に使われます。</Text>
+              <View style={styles.chipRow}>
+                {(['XS', 'S', 'M', 'L', 'XL'] as const).map((k) => (
+                  <Pressable key={k} style={[styles.chip, editSize === k && styles.chipOn]} onPress={() => setEditSize(k)}>
+                    <Text style={styles.chipLbl}>{k}</Text>
+                  </Pressable>
+                ))}
+                <Pressable style={[styles.chip, editSize === null && styles.chipOn]} onPress={() => setEditSize(null)}>
+                  <Text style={styles.chipLblMuted}>未設定</Text>
+                </Pressable>
+              </View>
               <View style={styles.birthdayCard}>
                 <OwnerBirthdayPickers
                   year={editYear}
@@ -298,7 +310,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
                   hint="年・月・日をすべて選ぶと年齢表示に使います。"
                 />
               </View>
-              <Text style={styles.miniLbl}>性別</Text>
+              <Text style={styles.miniLbl}>性別（任意）</Text>
               <View style={styles.chipRow}>
                 <Pressable style={[styles.chip, editGender === 'male' && styles.chipOn]} onPress={() => setEditGender('male')}>
                   <Text style={styles.symMale}>♂</Text>
@@ -309,17 +321,6 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
                   <Text style={styles.chipLbl}>メス</Text>
                 </Pressable>
                 <Pressable style={[styles.chip, editGender === null && styles.chipOn]} onPress={() => setEditGender(null)}>
-                  <Text style={styles.chipLblMuted}>未設定</Text>
-                </Pressable>
-              </View>
-              <Text style={styles.miniLbl}>サイズ</Text>
-              <View style={styles.chipRow}>
-                {(['XS', 'S', 'M', 'L', 'XL'] as const).map((k) => (
-                  <Pressable key={k} style={[styles.chip, editSize === k && styles.chipOn]} onPress={() => setEditSize(k)}>
-                    <Text style={styles.chipLbl}>{k}</Text>
-                  </Pressable>
-                ))}
-                <Pressable style={[styles.chip, editSize === null && styles.chipOn]} onPress={() => setEditSize(null)}>
                   <Text style={styles.chipLblMuted}>未設定</Text>
                 </Pressable>
               </View>
@@ -1091,6 +1092,7 @@ const styles = StyleSheet.create({
     }),
   },
   miniLbl: { fontSize: 12, color: colors.textMuted, marginBottom: 4 },
+  miniHint: { fontSize: 11, color: colors.textLight, marginBottom: 6, lineHeight: 15 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   chip: {
     flexDirection: 'row',

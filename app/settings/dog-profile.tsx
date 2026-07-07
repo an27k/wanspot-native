@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { DogIdentityProfile } from '@/components/dog/DogIdentityProfile'
+import { DogVaccineSettings } from '@/components/settings/DogVaccineSettings'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { RunningDog } from '@/components/DogStates'
 import { WalkAreaTagPicker } from '@/components/walk-area/WalkAreaTagPicker'
@@ -103,6 +104,14 @@ export default function DogProfileSettingsScreen() {
               <Text style={styles.sectionHint}>よく散歩するエリアを選ぶと、おすすめスポットが近くなります。</Text>
             </View>
             <WalkAreaTagPicker anchor={anchor} value={tags} onChange={setTags} />
+
+            <View style={[styles.sectionHead, styles.sectionHeadSpaced]}>
+              <Text style={styles.sectionTitle}>ワクチン記録</Text>
+              <Text style={styles.sectionHint}>接種日をメモしておけます。タップして日付を変更できます。</Text>
+            </View>
+            <View style={styles.vaccineCard}>
+              <DogVaccineSettings dog={dog} onUpdated={setDog} />
+            </View>
           </>
         ) : (
           <Text style={styles.emptyTxt}>愛犬プロフィールが見つかりませんでした。</Text>
@@ -151,6 +160,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   sectionHead: { gap: 4, marginBottom: 12 },
+  sectionHeadSpaced: { marginTop: 28 },
+  vaccineCard: {
+    borderRadius: 16,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
   sectionTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
   sectionHint: { fontSize: 12, fontWeight: '500', lineHeight: 18, color: colors.textMuted },
   footer: {
