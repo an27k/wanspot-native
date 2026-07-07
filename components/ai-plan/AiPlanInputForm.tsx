@@ -8,6 +8,7 @@ import { listMunicipalities, listPrefectures } from '@/constants/municipality-ce
 import { sortPrefecturesJis } from '@/constants/prefectures'
 import { formatAiPlanDogDisplayName } from '@/lib/ai-plan/formatters'
 import { checkAiPlanFeasibility } from '@/lib/wanspot-api'
+import { AreaRequestForm } from '@/components/ai-plan/AreaRequestForm'
 import { SegmentedControl } from '@/components/common/SegmentedControl'
 import { MoodCard } from '@/components/common/MoodCard'
 import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
@@ -208,12 +209,20 @@ export function AiPlanInputForm({
   const [sizePickerOpen, setSizePickerOpen] = useState(false)
   const [prefOpen, setPrefOpen] = useState(false)
   const [muniOpen, setMuniOpen] = useState(false)
+  const [areaRequestOpen, setAreaRequestOpen] = useState(false)
+  const [areaRequestToast, setAreaRequestToast] = useState<string | null>(null)
 
   const [feasibility, setFeasibility] = useState<{
     walking_feasible: boolean
     driving_feasible: boolean
     loading: boolean
   }>({ walking_feasible: true, driving_feasible: true, loading: false })
+
+  useEffect(() => {
+    if (!areaRequestToast) return
+    const t = setTimeout(() => setAreaRequestToast(null), 2800)
+    return () => clearTimeout(t)
+  }, [areaRequestToast])
 
   useEffect(() => {
     if (!areaPreset) return
@@ -255,7 +264,9 @@ export function AiPlanInputForm({
   }, [pref, muni])
 
   const effectiveSize = overrideSize ?? dbDogSize
-  const isFormValid = !!pref && !!muni && !!travel && !!mood && !!effectiveSize
+  const bothInfeasible =
+    !!pref && !!muni && !feasibility.loading && !feasibility.walking_feasible && !feasibility.driving_feasible
+  const isFormValid = !!pref && !!muni && !!travel && !!mood && !!effectiveSize && !bothInfeasible
 
   const dogDisplay = formatAiPlanDogDisplayName(initialDogName)
   const sizeShort = effectiveSize ? SIZE_LABEL_SHORT[effectiveSize] : ''
@@ -334,8 +345,16 @@ export function AiPlanInputForm({
             value={travel ?? ''}
             onChange={(v) => setTravel(v === 'driving' ? 'driving' : 'walking')}
           />
-          {pref && muni && !feasibility.loading && !feasibility.walking_feasible && !feasibility.driving_feasible ? (
-            <Text style={styles.feasibilityHint}>このエリアではプランを作成できません</Text>
+          {bothInfeasible ? (
+            <View style={styles.feasibilityBlock}>
+              <Text style={styles.feasibilityHint}>このエリアはまだスポットデータが不足しています</Text>
+              <Pressable
+                onPress={() => setAreaRequestOpen(true)}
+                style={({ pressed }) => [styles.areaRequestBtn, pressed && styles.areaRequestBtnPressed]}
+              >
+                <Text style={styles.areaRequestBtnTxt}>このエリアのデータ追加をリクエストする</Text>
+              </Pressable>
+            </View>
           ) : null}
         </View>
 
@@ -410,6 +429,31 @@ export function AiPlanInputForm({
           onPick={setMuni}
         />
 
+        <Modal visible={areaRequestOpen} transparent animationType="slide" onRequestClose={() => setAreaRequestOpen(false)}>
+          <Pressable style={styles.sheetBg} onPress={() => setAreaRequestOpen(false)}>
+            <Pressable
+              style={[styles.sheet, styles.areaRequestSheet, { paddingBottom: insets.bottom + 16 }]}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View style={styles.sheetGrabber} />
+              <Text style={styles.sheetTitle}>エリアデータの追加リクエスト</Text>
+              <AreaRequestForm
+                prefecture={pref}
+                municipality={muni}
+                onToast={setAreaRequestToast}
+              />
+            </Pressable>
+          </Pressable>
+          {areaRequestToast ? (
+            <View
+              style={[styles.areaRequestToast, { bottom: Math.max(16, insets.bottom + 8) }]}
+              pointerEvents="none"
+            >
+              <Text style={styles.areaRequestToastTxt}>{areaRequestToast}</Text>
+            </View>
+          ) : null}
+        </Modal>
+
         <Modal visible={sizePickerOpen} transparent animationType="slide" onRequestClose={() => setSizePickerOpen(false)}>
           <Pressable style={styles.sheetBg} onPress={() => setSizePickerOpen(false)}>
             <Pressable
@@ -454,11 +498,52 @@ const styles = StyleSheet.create({
   pressed: { transform: [{ scale: 0.97 }], opacity: 0.9 },
   section: { paddingHorizontal: 16 },
   sectionTitle: { fontSize: 12, color: '#999', marginBottom: 8, fontWeight: '500' },
-  feasibilityHint: {
+  feasibilityBlock: {
     marginTop: 8,
+    gap: 10,
+  },
+  feasibilityHint: {
     fontSize: 12,
     color: '#c62828',
     lineHeight: 17,
+  },
+  areaRequestBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.tintWeak,
+  },
+  areaRequestBtnPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  areaRequestBtnTxt: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  areaRequestSheet: {
+    maxHeight: '85%',
+  },
+  areaRequestToast: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 55,
+    backgroundColor: colors.textPrimary,
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  areaRequestToastTxt: {
+    color: '#fff',
+    fontWeight: '700',
+    textAlign: 'center',
+    fontSize: 14,
   },
   row: { flexDirection: 'row', gap: 12 },
   flex1: { flex: 1 },
