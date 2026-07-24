@@ -77,6 +77,11 @@ function normalizePriceLabel(raw: unknown): string | null {
   return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null
 }
 
+/** ペット可否フラグ。カラム未追加・未確認（非 boolean）は null = unknown として扱う */
+function normalizePetFlag(raw: unknown): boolean | null {
+  return typeof raw === 'boolean' ? raw : null
+}
+
 async function mergePlacesDetailsFromBatch(spots: UserSpotRow[]): Promise<UserSpotRow[]> {
   if (spots.length === 0) return spots
   const details = await fetchBatchDetailsMerged(spots.map((s) => s.place_id))
@@ -109,6 +114,8 @@ export type UserSpotRow = {
   rating: number | null
   priceLevel: number | null
   priceLabel: string | null
+  /** 店内ペット同伴可否（spots テーブルのコントラクトカラム。未確認は null） */
+  pet_indoor_allowed?: boolean | null
 }
 
 type FetchResult =
@@ -179,6 +186,7 @@ export async function fetchLikedSpotsForUser(
           rating: normalizeRating(raw.rating),
           priceLevel: normalizePriceLevel(raw.price_level),
           priceLabel: normalizePriceLabel(raw.price_label),
+          pet_indoor_allowed: normalizePetFlag(raw.pet_indoor_allowed),
         } satisfies UserSpotRow,
       ]
     })
@@ -257,6 +265,7 @@ export async function fetchCheckedInSpotsForUser(
           rating: normalizeRating(raw.rating),
           priceLevel: normalizePriceLevel(raw.price_level),
           priceLabel: normalizePriceLabel(raw.price_label),
+          pet_indoor_allowed: normalizePetFlag(raw.pet_indoor_allowed),
         } satisfies UserSpotRow,
       ]
     })

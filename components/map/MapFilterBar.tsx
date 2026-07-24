@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
+import { Ionicons } from '@expo/vector-icons'
 import { GenreIcon } from '@/components/nearby/GenreIcon'
 import {
   MAP_GENRE_CHIPS,
@@ -8,8 +9,10 @@ import {
   MAP_LIKE_COLOR,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
+import { colors } from '@/constants/colors'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
-import { isSameMapFilter, type MapFilter } from '@/lib/nearby/map-filter'
+import { isSameMapFilter, type MapFilter, type MapFilterState } from '@/lib/nearby/map-filter'
+import { INDOOR_OK_FILTER_LABEL } from '@/lib/nearby/pet-policy'
 
 const HeartIcon = ({ color, size = 14 }: { color: string; size?: number }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -19,11 +22,13 @@ const HeartIcon = ({ color, size = 14 }: { color: string; size?: number }) => (
 
 export function MapFilterBar({
   active,
+  indoorOnly,
   onSelect,
+  onToggleIndoor,
   topInset,
-}: {
-  active: MapFilter | null
+}: MapFilterState & {
   onSelect: (filter: MapFilter) => void
+  onToggleIndoor: () => void
   topInset: number
 }) {
   const chip = (f: MapFilter, icon: ReactNode, label: string, accent: string) => {
@@ -51,6 +56,20 @@ export function MapFilterBar({
         contentContainerStyle={styles.row}
         style={styles.scroll}
       >
+        {/* 店内OK: ジャンルと直交する常設トグル（確認済みスポットのみに絞る） */}
+        <TouchableOpacity
+          style={[styles.chip, indoorOnly && styles.chipOn, indoorOnly && styles.indoorChipOn]}
+          onPress={onToggleIndoor}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityState={{ selected: indoorOnly }}
+          accessibilityLabel="店内OK（確認済み）で絞り込み"
+        >
+          <Ionicons name="home" size={15} color={colors.brand} />
+          <Text style={[styles.chipTxt, indoorOnly && styles.chipTxtOn, indoorOnly && styles.indoorChipTxtOn]}>
+            {INDOOR_OK_FILTER_LABEL}
+          </Text>
+        </TouchableOpacity>
         {chip(
           { kind: 'like' },
           <HeartIcon color={MAP_LIKE_COLOR} />,
@@ -110,4 +129,7 @@ const styles = StyleSheet.create({
   },
   chipTxt: { fontSize: 13, fontWeight: '700', color: GOOGLE_HOME.mapChipText },
   chipTxtOn: { fontWeight: '800' },
+  /** 店内OK選択中はブランド色で「絞り込み中」を明示する */
+  indoorChipOn: { borderColor: colors.brand },
+  indoorChipTxtOn: { color: colors.brand },
 })

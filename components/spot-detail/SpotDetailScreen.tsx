@@ -58,6 +58,7 @@ import { useDogProfile } from '@/components/dog/useDogProfile'
 import { fetchAiSummary } from '@/lib/ai-summary'
 import { withTimeout } from '@/lib/promise-timeout'
 import { calcDistanceMeters, formatDistanceLabel } from '@/lib/nearby/geo'
+import { petPolicyBadge, type PetPolicyBadge } from '@/lib/nearby/pet-policy'
 import { formatPriceDisplay, getSpotOpenStatus } from '@/lib/business-hours'
 import { getGoogleMapsIosApiKey } from '@/lib/google-maps-config'
 import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
@@ -760,6 +761,8 @@ export default function SpotDetailScreen({
   const photoUris = photoRefs.map((r) => spotPhotoUrl(r, 'hero')).filter(Boolean) as string[]
   const heroThumb = photoUris[0] ?? null
   const aiKeywords = aiSummary?.keywords.slice(0, 3) ?? []
+  // ペット同伴可否バッジ。確認済みデータがあるときだけ表示する（根拠が見えることが信頼につながる）
+  const petBadge = petPolicyBadge(spot)
 
   return (
     <View style={styles.screen}>
@@ -829,6 +832,16 @@ export default function SpotDetailScreen({
 
         <View style={styles.pad}>
           <Text style={styles.h1}>{spot.name}</Text>
+
+          {petBadge ? (
+            <View style={styles.petBadgeRow}>
+              <View style={[styles.petBadge, petBadgeToneStyles[petBadge.tone].pill]}>
+                <Text style={[styles.petBadgeTxt, petBadgeToneStyles[petBadge.tone].txt]}>
+                  {petBadge.label}
+                </Text>
+              </View>
+            </View>
+          ) : null}
 
           <View style={styles.ratingRow}>
             <View style={styles.ratingLeft}>
@@ -1143,6 +1156,14 @@ const styles = StyleSheet.create({
   noPhotoTxt: { fontSize: 12, color: TOKENS.text.meta },
   pad: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
   h1: { fontSize: 20, fontWeight: '800', color: TOKENS.text.primary, lineHeight: 26 },
+  petBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -4 },
+  petBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  petBadgeTxt: { fontSize: 12, fontWeight: '700' },
   ratingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   ratingLeft: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 },
   gBadge: {
@@ -1435,3 +1456,19 @@ const styles = StyleSheet.create({
   },
   visitSheetSecondaryTxt: { fontSize: 14, fontWeight: '700', color: TOKENS.text.secondary },
 })
+
+/** 同伴可否バッジの色分け: 確認済みOK=グリーン / テラスのみ=アンバー / 同伴不可の可能性=グレー */
+const petBadgeToneStyles: Record<PetPolicyBadge['tone'], { pill: object; txt: object }> = {
+  ok: {
+    pill: { backgroundColor: 'rgba(47,165,106,0.10)', borderColor: 'rgba(47,165,106,0.45)' },
+    txt: { color: '#1E8A54' },
+  },
+  terrace: {
+    pill: { backgroundColor: 'rgba(242,163,60,0.12)', borderColor: 'rgba(242,163,60,0.5)' },
+    txt: { color: '#A66A14' },
+  },
+  caution: {
+    pill: { backgroundColor: 'rgba(46,40,37,0.05)', borderColor: 'rgba(46,40,37,0.2)' },
+    txt: { color: TOKENS.text.secondary },
+  },
+}

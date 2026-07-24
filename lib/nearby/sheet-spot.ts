@@ -16,6 +16,8 @@ export type SheetSpot = {
   priceLevel: number | null
   priceLabel: string | null
   userRatingsTotal: number | null
+  /** 店内ペット同伴可否。コントラクト名のまま持ち、pet-policy の述語を3面で共用する */
+  pet_indoor_allowed?: boolean | null
 }
 
 export function sheetSpotFromPlace(p: PlaceResult): SheetSpot {
@@ -33,6 +35,7 @@ export function sheetSpotFromPlace(p: PlaceResult): SheetSpot {
     priceLevel: p.price_level,
     priceLabel: p.price_label ?? null,
     userRatingsTotal: p.user_ratings_total ?? null,
+    pet_indoor_allowed: p.pet_indoor_allowed ?? null,
   }
 }
 
@@ -52,5 +55,6 @@ export function sheetSpotFromUserRow(row: UserSpotRow): SheetSpot | null {
     priceLevel: row.priceLevel,
     priceLabel: row.priceLabel,
     userRatingsTotal: null,
+    pet_indoor_allowed: row.pet_indoor_allowed ?? null,
   }
 }

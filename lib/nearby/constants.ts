@@ -15,6 +15,9 @@ export const NEARBY_DEFAULT_SHEET_INDEX = 1
 
 export const NEARBY_MAP_GENRE_STORAGE_KEY = 'nearby_map_genre_v1'
 
+/** 「店内OK」常設フィルタの永続化キー（夏冬の常用条件になるため選択状態を保存する） */
+export const NEARBY_INDOOR_ONLY_STORAGE_KEY = 'nearby_indoor_only_v1'
+
 /** 地図上ジャンル（6種）。icon は Ionicons 名、match は category 文字列照合用キーワード。 */
 export const MAP_GENRE_CHIPS = [
   { key: 'cafe', label: 'カフェ', icon: 'cafe', match: ['カフェ', 'cafe', 'コーヒー', '珈琲', '喫茶'] },

@@ -17,4 +17,12 @@ export type PlaceResult = {
   types?: string[]
   /** 近傍表示用の短い所在地 */
   vicinity?: string
+  /** 店内へのペット同伴可否（共通コントラクト。サーバー未対応時は undefined、未確認は null） */
+  pet_indoor_allowed?: boolean | null
+  /** テラス席のみ同伴可か（共通コントラクト） */
+  pet_terrace_only?: boolean | null
+  /** ペット同伴ステータス文字列（例: 'not_allowed'。共通コントラクト） */
+  pet_friendly_status?: string | null
+  /** ペット同伴情報が確認済みか（共通コントラクト） */
+  pet_friendly_verified?: boolean | null
 }

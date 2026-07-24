@@ -28,6 +28,11 @@ export type SpotDetailRow = {
   instagram_id?: string | null
   ig_status?: string | null
   ig_last_checked?: string | null
+  /** ペット同伴可否（共通コントラクト。/api/spots/row やハンドオフ元の PlaceResult から引き継ぐ） */
+  pet_indoor_allowed?: boolean | null
+  pet_terrace_only?: boolean | null
+  pet_friendly_status?: string | null
+  pet_friendly_verified?: boolean | null
 }
 
 type ResolveOk = { ok: true; spot: SpotDetailRow; resolvedId: string }
@@ -51,6 +56,10 @@ export function spotRowFromPlace(routeId: string, place: PlaceResult, resolvedId
     lng: place.lng,
     price_level: place.price_level,
     price_label: place.price_label,
+    pet_indoor_allowed: place.pet_indoor_allowed ?? null,
+    pet_terrace_only: place.pet_terrace_only ?? null,
+    pet_friendly_status: place.pet_friendly_status ?? null,
+    pet_friendly_verified: place.pet_friendly_verified ?? null,
   }
 }
 
@@ -81,6 +90,12 @@ function placeFromDetailJson(json: unknown, placeId: string, fallbackName: strin
   const priceLabelRaw = o.price_label ?? o.priceLabel
   const price_label =
     typeof priceLabelRaw === 'string' && priceLabelRaw.trim().length > 0 ? priceLabelRaw.trim() : null
+  // ペット可否（共通コントラクト）。サーバー未対応・未確認は null = unknown として扱う
+  const petFlag = (v: unknown): boolean | null => (typeof v === 'boolean' ? v : null)
+  const pet_friendly_status =
+    typeof o.pet_friendly_status === 'string' && o.pet_friendly_status.trim().length > 0
+      ? o.pet_friendly_status.trim()
+      : null
   return {
     place_id: placeId,
     name,
@@ -96,6 +111,10 @@ function placeFromDetailJson(json: unknown, placeId: string, fallbackName: strin
       typeof o.user_ratings_total === 'number' && Number.isFinite(o.user_ratings_total)
         ? o.user_ratings_total
         : null,
+    pet_indoor_allowed: petFlag(o.pet_indoor_allowed),
+    pet_terrace_only: petFlag(o.pet_terrace_only),
+    pet_friendly_status,
+    pet_friendly_verified: petFlag(o.pet_friendly_verified),
   }
 }
 

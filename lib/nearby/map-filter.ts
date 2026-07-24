@@ -7,6 +7,7 @@ import {
   matchesGenre,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
+import { placeIsIndoorPetOk, type PetPolicySource } from '@/lib/nearby/pet-policy'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import type { PlaceResult } from '@/types/places'
 
@@ -19,6 +20,21 @@ const VETERINARY_GOOGLE_TYPES = new Set(['veterinary_care'])
 export type MapFilter =
   | { kind: 'genre'; genre: MapGenreKey }
   | { kind: 'like' }
+
+/**
+ * 地図フィルタの全体状態。indoorOnly はジャンル・いいね選択（active）と直交する常設トグルで、
+ * ON のとき表示中の母集団を「店内OK確認済み（pet_indoor_allowed === true）」だけに絞る。
+ * 排他選択の MapFilter に混ぜると解除時（active=null）にトグルが消えてしまうため別軸で持つ。
+ */
+export type MapFilterState = {
+  active: MapFilter | null
+  indoorOnly: boolean
+}
+
+/** indoorOnly が ON のときだけ「確認済み店内OK」述語で絞る（OFF なら母集団そのまま） */
+export function applyIndoorOnlyFilter<T extends PetPolicySource>(items: T[], indoorOnly: boolean): T[] {
+  return indoorOnly ? items.filter(placeIsIndoorPetOk) : items
+}
 
 export function isSameMapFilter(a: MapFilter | null, b: MapFilter): boolean {
   if (!a) return false

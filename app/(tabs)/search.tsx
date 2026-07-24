@@ -39,6 +39,7 @@ import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { supabase } from '@/lib/supabase'
+import { AI_PLAN_ENABLED, AI_RECOMMEND_ENABLED } from '@/lib/feature-flags'
 import { rankSpotsByWalkContext } from '@/lib/discover-spot-ranking'
 import { personalizeArticlesFeed } from '@/lib/article-feed-ranking'
 import { CACHE_TTL, fetchWithCache, geoBucket, invalidateCache, isCacheFresh, readCache } from '@/lib/client-cache'
@@ -56,23 +57,36 @@ import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepar
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 import { perfAsync, perfMark } from '@/lib/perf/marks'
 import { wanspotFetch, wanspotFetchJson } from '@/lib/wanspot-api'
+import { INDOOR_OK_FILTER_LABEL, placeIsIndoorPetOk } from '@/lib/nearby/pet-policy'
 import type { PlaceResult } from '@/types/places'
 
 const SEARCH_STORAGE_KEY = 'search_state_v1'
 const SEARCH_RESTORE_FLAG = 'search_pending_restore'
 
-type SortKey = 'default' | 'rating' | 'distance'
+/** AI ピル（AIプラン / AIレコメンド）を1つでも表示するか。両方 off の間はピル行ごと出さず記事フィード中心のレイアウトにする */
+const AI_PILLS_VISIBLE = AI_PLAN_ENABLED || AI_RECOMMEND_ENABLED
+
+type SortKey = 'default' | 'rating'
 type DiscoverMode = 'ai' | 'articles' | 'ai_plan'
 
+/** 旧バージョンで永続化された 'distance'（近い順と同実装だった）は 'default' として解釈する */
+function normalizeSortKey(v: unknown): SortKey {
+  return v === 'rating' ? 'rating' : 'default'
+}
+
+/** サーバーが返す検索中心。駅・エリア解決時は現在地ではなくその座標が距離の基準になる */
+type SearchCenter = { lat: number; lng: number; source: 'user' | 'station' | 'area' }
+
+// 固有の地名ではなく全国どこでも意味が通る条件語で揃える（地名はサーバー側サジェストに任せる）
 const DEFAULT_SUGGESTIONS = [
   '大型犬可',
   'ドッグラン',
   'ドッグキャンプ',
-  '代々木公園',
+  '室内ドッグラン',
   '犬と温泉',
   'ドッグビーチ',
   '犬と泊まれる',
-  '吉祥寺',
+  '雨の日OK',
   'しつけ教室',
 ]
 
@@ -104,10 +118,10 @@ function mergeSuggestionTags(tags: string[], dogSize: DogProfile['size'] | null 
   return out.length > 0 ? out : DEFAULT_SUGGESTIONS
 }
 
+// 「近い順」と「距離順」は実装が同一だったため1つに統合（旧 'distance' は normalizeSortKey で吸収）
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'default', label: '近い順' },
   { key: 'rating', label: '評価順' },
-  { key: 'distance', label: '距離順' },
 ]
 
 const AI_LIKES_MIN = 5
@@ -217,8 +231,12 @@ function SearchTab() {
   /** AIプランの結果表示中は検索ヘッダー/タブを隠して全画面に */
   const [aiPlanChromeVisible, setAiPlanChromeVisible] = useState(true)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  /** 直近の検索でサーバーが解決した検索中心。null の間は現行どおり現在地基準（後方互換） */
+  const [searchCenter, setSearchCenter] = useState<SearchCenter | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('default')
   const [showSort, setShowSort] = useState(false)
+  /** 店内OK（確認済みのみ）絞り込み。地図タブと同じ語・同じ述語を使う */
+  const [indoorOnly, setIndoorOnly] = useState(false)
   const [suggestions, setSuggestions] = useState<string[]>(DEFAULT_SUGGESTIONS)
   const [suggestionsReady, setSuggestionsReady] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
@@ -438,15 +456,17 @@ function SearchTab() {
           try {
             const saved = await AsyncStorage.getItem(SEARCH_STORAGE_KEY)
             if (saved && active) {
-              const { query: q, results: r, sortKey: sk, scroll } = JSON.parse(saved) as {
+              const { query: q, results: r, sortKey: sk, scroll, searchCenter: sc } = JSON.parse(saved) as {
                 query: string
                 results: PlaceResult[]
-                sortKey: SortKey
+                sortKey: string
                 scroll: number
+                searchCenter?: SearchCenter | null
               }
               setQuery(q ?? '')
               setResults(r ?? [])
-              setSortKey(sk ?? 'default')
+              setSortKey(normalizeSortKey(sk))
+              setSearchCenter(sc ?? null)
               setSearched((r?.length ?? 0) > 0 || (q?.length ?? 0) > 0)
               if (scroll && !restoredRef.current) {
                 restoredRef.current = true
@@ -497,9 +517,9 @@ function SearchTab() {
     if (!searched) return
     void AsyncStorage.setItem(
       SEARCH_STORAGE_KEY,
-      JSON.stringify({ query, results, sortKey, scroll: scrollYRef.current })
+      JSON.stringify({ query, results, sortKey, searchCenter, scroll: scrollYRef.current })
     )
-  }, [query, results, sortKey, searched])
+  }, [query, results, sortKey, searchCenter, searched])
 
   useEffect(() => {
     if (!nonCriticalReady) return
@@ -728,6 +748,7 @@ function SearchTab() {
   }, [discoverMode, searched, handleArticles, nonCriticalReady])
 
   useEffect(() => {
+    if (!AI_RECOMMEND_ENABLED) return
     if (!nonCriticalReady) return
     if (searched || spotLikesCount === null || spotLikesCount < AI_LIKES_MIN) return
     if (discoverMode !== 'ai') return
@@ -735,6 +756,7 @@ function SearchTab() {
   }, [discoverMode, spotLikesCount, searched, handleAiRecommend, nonCriticalReady])
 
   useEffect(() => {
+    if (!AI_RECOMMEND_ENABLED) return
     if (!nonCriticalReady) return
     if (searched || !location || spotLikesCount === null || spotLikesCount < AI_LIKES_MIN) return
     if (discoverMode !== 'ai') return
@@ -760,9 +782,15 @@ function SearchTab() {
       const res = await perfAsync('api:search', () =>
         wanspotFetch(`/api/spots/search?q=${encodeURIComponent(trimmed)}${locationParam}`)
       )
-      const data = (await res.json()) as { spots?: PlaceResult[] }
+      const data = (await res.json()) as { spots?: PlaceResult[]; search_center?: SearchCenter | null }
       const spots = data.spots ?? []
       setResults(spots)
+      // サーバーが検索中心（駅・エリア解決結果）を返した場合はそれを距離基準に使う。
+      // search_center を返さない旧応答では null のままにして現行挙動（現在地基準）を維持する
+      const sc = data.search_center
+      setSearchCenter(
+        sc && typeof sc.lat === 'number' && typeof sc.lng === 'number' ? sc : null
+      )
       void supabase.auth.getUser().then(({ data: { user } }) => {
         if (!user) return
         void wanspotFetch('/api/search/history', {
@@ -777,6 +805,7 @@ function SearchTab() {
       })
     } catch {
       setResults([])
+      setSearchCenter(null)
     } finally {
       if (!silent) setLoading(false)
     }
@@ -826,30 +855,42 @@ function SearchTab() {
     handleAiRecommend,
   ])
 
+  /** 検索結果の距離基準点。search_center があればそれを優先（駅・エリア検索の遠方対応）、無ければ現在地（後方互換） */
+  const searchDistanceBase = useMemo(
+    () => (searchCenter ? { lat: searchCenter.lat, lng: searchCenter.lng } : location),
+    [searchCenter, location]
+  )
+  /** 検索中心が現在地起点か（旧応答で search_center が無い場合も現在地起点として扱う） */
+  const searchCenterIsUser = !searchCenter || searchCenter.source === 'user'
+
   const sortedResults = useMemo(() => {
-    let copy = [...results]
-    if (location) {
-      const maxM = 50_000
-      copy = copy.filter((s) => {
-        if (s.lat == null || s.lng == null) return true
-        return calcDistance(location.lat, location.lng, s.lat, s.lng) <= maxM
-      })
-      copy = rankSpotsByWalkContext(copy, location, userWalkTags)
+    // 店内OKは確認済み（pet_indoor_allowed === true）だけを母集団にする。unknown は含めない
+    let copy = indoorOnly ? results.filter(placeIsIndoorPetOk) : [...results]
+    const base = searchDistanceBase
+    if (base) {
+      // 現在地起点の検索だけ 50km 上限をかける。駅・エリア解決（source !== 'user'）は遠方が前提のため上限なし
+      if (searchCenterIsUser) {
+        const maxM = 50_000
+        copy = copy.filter((s) => {
+          if (s.lat == null || s.lng == null) return true
+          return calcDistance(base.lat, base.lng, s.lat, s.lng) <= maxM
+        })
+      }
+      // 遠方エリア検索では自宅周辺の散歩エリアタグは並べ替えの雑音になるため使わない
+      copy = rankSpotsByWalkContext(copy, base, searchCenterIsUser ? userWalkTags : [])
     }
     copy.sort((a, b) => {
       if (sortKey === 'rating') return (b.rating ?? 0) - (a.rating ?? 0)
-      if (location && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
-        if (sortKey === 'distance' || sortKey === 'default') {
-          return (
-            calcDistance(location.lat, location.lng, a.lat, a.lng) -
-            calcDistance(location.lat, location.lng, b.lat, b.lng)
-          )
-        }
+      if (base && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
+        return (
+          calcDistance(base.lat, base.lng, a.lat, a.lng) -
+          calcDistance(base.lat, base.lng, b.lat, b.lng)
+        )
       }
       return 0
     })
     return copy
-  }, [results, sortKey, location, userWalkTags])
+  }, [results, sortKey, searchDistanceBase, searchCenterIsUser, userWalkTags, indoorOnly])
 
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
   /** 取得済み結果に対し、タグ・現在地で再ランク（fetch 内でも適用済みだが、タブ復帰後のタグ更新に追従） */
@@ -906,13 +947,13 @@ function SearchTab() {
 
   const beforeNavSearch = async () => {
     await AsyncStorage.setMany({
-      [SEARCH_STORAGE_KEY]: JSON.stringify({ query, results, sortKey, scroll: scrollYRef.current }),
+      [SEARCH_STORAGE_KEY]: JSON.stringify({ query, results, sortKey, searchCenter, scroll: scrollYRef.current }),
       [SEARCH_RESTORE_FLAG]: '1',
     })
   }
 
-  /** 「AIプラン」チップ選択時は AiPlanTab を全画面オーバーレイで表示（挙動は従来のまま） */
-  const showAiPlan = !searched && discoverMode === 'ai_plan'
+  /** 「AIプラン」チップ選択時は AiPlanTab を全画面オーバーレイで表示（フラグ off 中は到達不能。discoverMode は非永続） */
+  const showAiPlan = AI_PLAN_ENABLED && !searched && discoverMode === 'ai_plan'
 
   const exitDiscoverMode = useCallback(() => {
     Keyboard.dismiss()
@@ -982,6 +1023,7 @@ function SearchTab() {
                     Keyboard.dismiss()
                     setQuery('')
                     setResults([])
+                    setSearchCenter(null)
                     setSearched(false)
                   }}
                 >
@@ -993,17 +1035,34 @@ function SearchTab() {
               </PressableScale>
             </GlassSearchShell>
             {searched ? (
-              <View style={styles.sortWrap}>
+              <View style={styles.resultHeaderBtns}>
+                {/* 店内OK: 確認済みスポットだけに絞るトグル（地図タブと同じ語・同じ述語） */}
                 <Pressable
-                  style={styles.sortBtn}
+                  style={[styles.indoorBtn, indoorOnly && styles.indoorBtnOn]}
                   onPress={() => {
                     Keyboard.dismiss()
-                    setShowSort(true)
+                    setIndoorOnly((v) => !v)
                   }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: indoorOnly }}
+                  accessibilityLabel="店内OK（確認済み）で絞り込み"
                 >
-                  <IconSort />
-                  <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
+                  <Text style={[styles.indoorBtnTxt, indoorOnly && styles.indoorBtnTxtOn]}>
+                    {INDOOR_OK_FILTER_LABEL}
+                  </Text>
                 </Pressable>
+                <View style={styles.sortWrap}>
+                  <Pressable
+                    style={styles.sortBtn}
+                    onPress={() => {
+                      Keyboard.dismiss()
+                      setShowSort(true)
+                    }}
+                  >
+                    <IconSort />
+                    <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
+                  </Pressable>
+                </View>
               </View>
             ) : null}
           </View>
@@ -1019,7 +1078,8 @@ function SearchTab() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={{ marginTop: 12, opacity: suggestionsReady ? 1 : 0.6 }}
+                // ピル行非表示中はサジェスト行がヘッダー最下段になるため、ピル行ぶんの下余白をこちらで持つ
+                style={{ marginTop: 12, marginBottom: AI_PILLS_VISIBLE ? 0 : 10, opacity: suggestionsReady ? 1 : 0.6 }}
                 contentContainerStyle={{ paddingRight: GOOGLE_HOME.padH }}
               >
                 <View style={styles.sugRow}>
@@ -1030,71 +1090,77 @@ function SearchTab() {
                   ))}
                 </View>
               </ScrollView>
-              {/* Google アプリ風: 2モードピル — 選択中のみピル右端に Back */}
-              <View style={styles.aiPillRow}>
-                <View style={styles.aiPillSlot}>
-                  {discoverMode === 'ai_plan' ? (
-                    <View style={[styles.aiPill, styles.aiPillOn]}>
-                      <View style={styles.aiPillMain}>
-                        <IconAiPlan fill={aiIconOn} />
-                        <Text style={[styles.aiPillTxt, styles.aiPillTxtOn]}>AIプラン</Text>
-                      </View>
-                      <PressableScale
-                        style={styles.aiPillBack}
-                        onPress={exitDiscoverMode}
-                        accessibilityLabel="まとめ記事に戻る"
-                      >
-                        <IconBackHook />
-                      </PressableScale>
+              {/* Google アプリ風: 2モードピル — 選択中のみピル右端に Back。フラグ off のピルは行ごと非表示 */}
+              {AI_PILLS_VISIBLE ? (
+                <View style={styles.aiPillRow}>
+                  {AI_PLAN_ENABLED ? (
+                    <View style={styles.aiPillSlot}>
+                      {discoverMode === 'ai_plan' ? (
+                        <View style={[styles.aiPill, styles.aiPillOn]}>
+                          <View style={styles.aiPillMain}>
+                            <IconAiPlan fill={aiIconOn} />
+                            <Text style={[styles.aiPillTxt, styles.aiPillTxtOn]}>AIプラン</Text>
+                          </View>
+                          <PressableScale
+                            style={styles.aiPillBack}
+                            onPress={exitDiscoverMode}
+                            accessibilityLabel="まとめ記事に戻る"
+                          >
+                            <IconBackHook />
+                          </PressableScale>
+                        </View>
+                      ) : (
+                        <PressableScale
+                          style={styles.aiPill}
+                          onPress={() => {
+                            Keyboard.dismiss()
+                            setDiscoverMode('ai_plan')
+                          }}
+                          accessibilityLabel="AIプラン"
+                        >
+                          <IconAiPlan fill={aiIconOff} />
+                          <Text style={styles.aiPillTxt}>AIプラン</Text>
+                        </PressableScale>
+                      )}
                     </View>
-                  ) : (
-                    <PressableScale
-                      style={styles.aiPill}
-                      onPress={() => {
-                        Keyboard.dismiss()
-                        setDiscoverMode('ai_plan')
-                      }}
-                      accessibilityLabel="AIプラン"
-                    >
-                      <IconAiPlan fill={aiIconOff} />
-                      <Text style={styles.aiPillTxt}>AIプラン</Text>
-                    </PressableScale>
-                  )}
-                </View>
-                <View style={styles.aiPillSlot}>
-                  {discoverMode === 'ai' ? (
-                    <View style={[styles.aiPill, styles.aiPillOn]}>
-                      <View style={styles.aiPillMain}>
-                        <IconThumbUp fill={aiIconOn} />
-                        <Text style={[styles.aiPillTxt, styles.aiPillTxtOn]} numberOfLines={1}>
-                          AIレコメンド
-                        </Text>
-                      </View>
-                      <PressableScale
-                        style={styles.aiPillBack}
-                        onPress={exitDiscoverMode}
-                        accessibilityLabel="まとめ記事に戻る"
-                      >
-                        <IconBackHook />
-                      </PressableScale>
+                  ) : null}
+                  {AI_RECOMMEND_ENABLED ? (
+                    <View style={styles.aiPillSlot}>
+                      {discoverMode === 'ai' ? (
+                        <View style={[styles.aiPill, styles.aiPillOn]}>
+                          <View style={styles.aiPillMain}>
+                            <IconThumbUp fill={aiIconOn} />
+                            <Text style={[styles.aiPillTxt, styles.aiPillTxtOn]} numberOfLines={1}>
+                              AIレコメンド
+                            </Text>
+                          </View>
+                          <PressableScale
+                            style={styles.aiPillBack}
+                            onPress={exitDiscoverMode}
+                            accessibilityLabel="まとめ記事に戻る"
+                          >
+                            <IconBackHook />
+                          </PressableScale>
+                        </View>
+                      ) : (
+                        <PressableScale
+                          style={styles.aiPill}
+                          onPress={() => {
+                            Keyboard.dismiss()
+                            setDiscoverMode('ai')
+                          }}
+                          accessibilityLabel="AIレコメンド"
+                        >
+                          <IconThumbUp fill={aiIconOff} />
+                          <Text style={styles.aiPillTxt} numberOfLines={1}>
+                            AIレコメンド
+                          </Text>
+                        </PressableScale>
+                      )}
                     </View>
-                  ) : (
-                    <PressableScale
-                      style={styles.aiPill}
-                      onPress={() => {
-                        Keyboard.dismiss()
-                        setDiscoverMode('ai')
-                      }}
-                      accessibilityLabel="AIレコメンド"
-                    >
-                      <IconThumbUp fill={aiIconOff} />
-                      <Text style={styles.aiPillTxt} numberOfLines={1}>
-                        AIレコメンド
-                      </Text>
-                    </PressableScale>
-                  )}
+                  ) : null}
                 </View>
-              </View>
+              ) : null}
             </>
           ) : null}
           </View>
@@ -1110,14 +1176,24 @@ function SearchTab() {
             </>
           ) : null}
           {!loading && searched && results.length === 0 ? <PowState label="見つかりませんでした" /> : null}
+          {/* 店内OK絞り込みで0件: unknown を混ぜず、正直に空を伝えて解除導線を出す */}
+          {!loading && searched && indoorOnly && results.length > 0 && sortedResults.length === 0 ? (
+            <View style={styles.indoorEmpty}>
+              <PowState label="店内OK確認済みのスポットが見つかりませんでした" />
+              <Pressable style={styles.indoorEmptyBtn} onPress={() => setIndoorOnly(false)}>
+                <Text style={styles.indoorEmptyBtnTxt}>店内OKフィルタを解除</Text>
+              </Pressable>
+            </View>
+          ) : null}
           {!loading &&
             searched &&
             sortedResults.slice(0, searchVisibleCount).map((spot, index) => (
               <ListEnterItem key={spot.place_id} index={index} animate={searchListEnter}>
                 <View>
+                  {/* 距離ラベルは検索中心（駅・エリア解決時はその座標）起点で表示する */}
                   <SearchDiscoverResultCard
                     spot={spot}
-                    userLocation={location}
+                    userLocation={searchDistanceBase}
                     userWalkTags={userWalkTags}
                     onOpen={openSpot}
                     onLikesChange={refreshSpotLikesCount}
@@ -1196,7 +1272,8 @@ function SearchTab() {
                 </>
               ) : null}
 
-              {discoverMode !== 'articles' ? (
+              {/* AIレコメンド結果・いいねN件ゲートはフラグ off 中はどの経路でも描画しない */}
+              {AI_RECOMMEND_ENABLED && discoverMode !== 'articles' ? (
                 <>
                   {!discoverLoading && discoverMode === 'ai' && spotLikesCount === null ? (
                     <RunningDog label="読み込み中..." />
@@ -1356,6 +1433,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   kbDismissTxt: { fontSize: 13, fontWeight: '600', color: GOOGLE_HOME.textSecondary },
+  resultHeaderBtns: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  indoorBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: GOOGLE_HOME.radiusSearch,
+    backgroundColor: GOOGLE_HOME.pillBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.pillBorder,
+  },
+  /** 選択中はブランド色で「絞り込み中」を明示する */
+  indoorBtnOn: { borderWidth: 1, borderColor: colors.brand },
+  indoorBtnTxt: { fontSize: 12, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
+  indoorBtnTxtOn: { color: colors.brand, fontWeight: '700' },
+  indoorEmpty: { alignItems: 'center', gap: 4 },
+  indoorEmptyBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: GOOGLE_HOME.radiusPill,
+    backgroundColor: GOOGLE_HOME.pillBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: GOOGLE_HOME.pillBorder,
+  },
+  indoorEmptyBtnTxt: { fontSize: 13, fontWeight: '600', color: GOOGLE_HOME.textPrimary },
   sortWrap: { position: 'relative' },
   sortBtn: {
     flexDirection: 'row',
