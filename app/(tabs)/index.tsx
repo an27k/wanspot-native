@@ -16,12 +16,14 @@ import { colors } from '@/constants/colors'
 import { NearbyMapView } from '@/components/map/NearbyMapView'
 import { MapFilterBar } from '@/components/map/MapFilterBar'
 import { GenreIcon } from '@/components/nearby/GenreIcon'
+import { NearbySpotCarousel } from '@/components/nearby/NearbySpotCarousel'
 import { RunningDog } from '@/components/DogStates'
 import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import {
   DEFAULT_MAP_GENRE,
   MAP_GENRE_COLOR,
   MAP_LIKE_COLOR,
+  NEARBY_INDOOR_ONLY_STORAGE_KEY,
   NEARBY_MAP_GENRE_STORAGE_KEY,
   NEARBY_RADIUS_M,
   type MapGenreKey,
@@ -38,7 +40,7 @@ import {
 import { resolveSessionLocation } from '@/lib/location-session'
 import { fetchNearbySpotsForGenreWithExpansion } from '@/lib/nearby/fetch-nearby-spots'
 import { calcDistanceMeters, isWithinRadiusM } from '@/lib/nearby/geo'
-import { isSameMapFilter, mapFilterLabel, type MapFilter } from '@/lib/nearby/map-filter'
+import { applyIndoorOnlyFilter, isSameMapFilter, mapFilterLabel, type MapFilter } from '@/lib/nearby/map-filter'
 import { sortPlacesByScore } from '@/lib/nearby/place-score'
 import { sheetSpotFromPlace, sheetSpotFromUserRow, type SheetSpot } from '@/lib/nearby/sheet-spot'
 import { fetchLikedSpotsForUser } from '@/lib/fetch-user-spot-lists'
@@ -81,6 +83,8 @@ function NearbyPage() {
   const [genre, setGenre] = useState<MapGenreKey>(DEFAULT_MAP_GENRE)
   const [genreReady, setGenreReady] = useState(false)
   const [activeFilter, setActiveFilter] = useState<MapFilter | null>({ kind: 'like' })
+  /** 店内OK（確認済みのみ）フィルタ。ジャンル選択と直交する常設トグル */
+  const [indoorOnly, setIndoorOnly] = useState(false)
   const [nearbyPlaces, setNearbyPlaces] = useState<PlaceResult[]>([])
   const [spotsLoading, setSpotsLoading] = useState(false)
   const [spotsFetchError, setSpotsFetchError] = useState('')
@@ -105,12 +109,27 @@ function NearbyPage() {
       try {
         const saved = await AsyncStorage.getItem(NEARBY_MAP_GENRE_STORAGE_KEY)
         if (saved && isMapGenreKey(saved)) setGenre(saved)
+        // 店内OKは夏冬の常用条件のため選択状態を復元する
+        const savedIndoor = await AsyncStorage.getItem(NEARBY_INDOOR_ONLY_STORAGE_KEY)
+        if (savedIndoor === '1') setIndoorOnly(true)
       } catch {
         /* ignore */
       } finally {
         setGenreReady(true)
       }
     })()
+  }, [])
+
+  const handleToggleIndoorOnly = useCallback(() => {
+    setIndoorOnly((prev) => {
+      const next = !prev
+      void AsyncStorage.setItem(NEARBY_INDOOR_ONLY_STORAGE_KEY, next ? '1' : '0')
+      // ON にした瞬間、絞り込みで消えるスポットの選択（ポップアップ・センタリング）が残らないようにする
+      if (next) {
+        setSelectedSpot((s) => (s && applyIndoorOnlyFilter([s], true).length > 0 ? s : null))
+      }
+      return next
+    })
   }, [])
 
   const clearFilter = useCallback(() => {
@@ -305,18 +324,30 @@ function NearbyPage() {
   }, [nearbyPlaces, location, activeFilter])
 
   const sheetItems = useMemo(() => {
-    if (!activeFilter) return []
-    if (activeFilter.kind === 'like') return likedRows
-    return scoreSheetSpots
-  }, [activeFilter, likedRows, scoreSheetSpots])
+    // フィルタ未選択でもいいねスポットのピンは地図に出し続ける
+    const base = !activeFilter || activeFilter.kind === 'like' ? likedRows : scoreSheetSpots
+    // 店内OKは確認済み（pet_indoor_allowed === true）だけを母集団にする。unknown は含めない
+    return applyIndoorOnlyFilter(base, indoorOnly)
+  }, [activeFilter, likedRows, scoreSheetSpots, indoorOnly])
 
-  const mapMarkers = activeFilter ? sheetItems : []
+  // ピンは常時表示（フィルタ選択の有無でゲートしない）
+  const mapMarkers = sheetItems
 
   const handleOpenDetail = useCallback(
     (spot: SheetSpot) => {
       openSpotDetail(router, spot)
     },
     [router]
+  )
+
+  // ピンタップ / カルーセルスワイプ共通の選択ハンドラ
+  const handleSelectSpot = useCallback(
+    (spot: SheetSpot) => {
+      setSelectedSpot(spot)
+      // ピーク時は縦リストも該当スポットへ合わせておく（引き上げたときにそのまま続きが見える）
+      if (sheetIndex === 0) sheetControl.current?.scrollToSpot(spot.key)
+    },
+    [sheetIndex]
   )
 
   const likedPlaceIds = useMemo(() => {
@@ -368,13 +399,20 @@ function NearbyPage() {
     [likedPlaceIds, router, loadUserLists]
   )
 
-  const emptyCopy =
-    sheetTab === 'like'
+  const emptyCopy = indoorOnly
+    ? {
+        title: 'この範囲に店内OK確認済みのスポットが見つかりませんでした',
+        hint: '「店内OK」フィルタを外すと、ほかのスポットも表示されます。',
+      }
+    : sheetTab === 'like'
       ? { title: '近くのいいねはまだありません', hint: '気になるスポットにいいねしてみましょう。' }
       : { title: '近くにスポットが見つかりませんでした', hint: '別のジャンルを試すか、位置情報をご確認ください。' }
 
   const sheetListExpanded = activeFilter !== null && sheetIndex >= 1
   const showRecenter = activeFilter === null
+
+  // カルーセルはシートがピーク位置(index 0)のときだけ表示（引き上げたら縦リストに役割を渡す）
+  const carouselVisible = activeFilter !== null && sheetIndex === 0 && sheetItems.length > 0
 
   const headerIcon = useMemo(() => {
     if (!activeFilter) return null
@@ -401,7 +439,7 @@ function NearbyPage() {
               visitedPlaceIds={new Set<string>()}
               selectedSpot={selectedSpot}
               userLocation={location}
-              onSelectSpot={setSelectedSpot}
+              onSelectSpot={handleSelectSpot}
               onClearSelection={() => setSelectedSpot(null)}
               onOpenDetail={handleOpenDetail}
               sheetOpen={sheetListExpanded}
@@ -410,6 +448,7 @@ function NearbyPage() {
               bottomInset={sheetBottomInset}
               topInset={overlayTop}
               pinGenre={activeFilter?.kind === 'genre' ? activeFilter.genre : undefined}
+              hidePinPopup={carouselVisible}
             />
 
             {locationPermissionDenied ? (
@@ -444,8 +483,28 @@ function NearbyPage() {
 
           {/* 地図UI（ジャンルフィルタ）— リストより下のレイヤー。お散歩アラートは検索タブ上部カードへ移設 */}
           <View style={styles.mapOverlays} pointerEvents="box-none">
-            <MapFilterBar active={activeFilter} onSelect={handleFilterSelect} topInset={filterBarTop} />
+            <MapFilterBar
+              active={activeFilter}
+              indoorOnly={indoorOnly}
+              onSelect={handleFilterSelect}
+              onToggleIndoor={handleToggleIndoorOnly}
+              topInset={filterBarTop}
+            />
           </View>
+
+          {/* 地図下の横スワイプカルーセル — シートがピークのときだけ表示 */}
+          {carouselVisible ? (
+            <NearbySpotCarousel
+              items={sheetItems}
+              selectedKey={selectedSpot?.key ?? null}
+              userLocation={location}
+              likedPlaceIds={likedPlaceIds}
+              onToggleLike={(s) => void handleToggleLike(s)}
+              onPressSpot={handleOpenDetail}
+              onSelectSpot={handleSelectSpot}
+              bottomOffset={sheetBottomInset + 12}
+            />
+          ) : null}
 
           {/* リストは最前面 — 上げたときに地図UIの裏へ隠れる */}
           <View style={styles.sheetHost} pointerEvents="box-none">
@@ -459,6 +518,8 @@ function NearbyPage() {
               loading={listLoading}
               emptyTitle={emptyCopy.title}
               emptyHint={emptyCopy.hint}
+              emptyActionLabel={indoorOnly ? '店内OKフィルタを解除' : undefined}
+              onEmptyAction={indoorOnly ? handleToggleIndoorOnly : undefined}
               onDiscover={() => router.push('/(tabs)/search')}
               onPressSpot={handleOpenDetail}
               likedPlaceIds={likedPlaceIds}

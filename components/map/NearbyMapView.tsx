@@ -142,6 +142,7 @@ export function NearbyMapView({
   bottomInset,
   topInset,
   pinGenre,
+  hidePinPopup = false,
 }: {
   markers: SheetSpot[]
   likedPlaceIds: Set<string>
@@ -158,6 +159,8 @@ export function NearbyMapView({
   topInset: number
   /** ジャンル絞り込み中はピン色を選択ジャンルに統一 */
   pinGenre?: MapGenreKey
+  /** カルーセル表示中はピン上ポップアップを出さない（カード側が選択スポットを担うため） */
+  hidePinPopup?: boolean
 }) {
   const insets = useSafeAreaInsets()
   const mapRef = useRef<any>(null)
@@ -250,7 +253,7 @@ export function NearbyMapView({
     opacity: interpolate(sheetAnimatedIndex.value, [-1, 0, 0.75, 1, 2], [1, 1, 0, 0, 0], Extrapolation.CLAMP),
   }))
 
-  const showPinPopup = !!selectedSpot && !sheetOpen
+  const showPinPopup = !!selectedSpot && !sheetOpen && !hidePinPopup
   const recenterBottom = TAB_BAR_HEIGHT + insets.bottom + 16
 
   if (!isGoogleMapsConfigured()) {

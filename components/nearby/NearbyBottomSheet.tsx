@@ -50,6 +50,9 @@ type NearbyBottomSheetProps = {
   loading: boolean
   emptyTitle: string
   emptyHint: string
+  /** 空状態に出す任意アクション（例: 店内OKフィルタの解除導線）。未指定なら従来の「スポットを探す」 */
+  emptyActionLabel?: string
+  onEmptyAction?: () => void
   onDiscover: () => void
   onPressSpot: (spot: SheetSpot) => void
   likedPlaceIds: Set<string>
@@ -73,6 +76,8 @@ export const NearbyBottomSheet = forwardRef<NearbySheetHandle, NearbyBottomSheet
       loading,
       emptyTitle,
       emptyHint,
+      emptyActionLabel,
+      onEmptyAction,
       onDiscover,
       onPressSpot,
       likedPlaceIds,
@@ -184,7 +189,11 @@ export const NearbyBottomSheet = forwardRef<NearbySheetHandle, NearbyBottomSheet
     <View style={styles.empty}>
       <Text style={styles.emptyTitle}>{emptyTitle}</Text>
       <Text style={styles.emptyHint}>{emptyHint}</Text>
-      {tab !== 'score' ? (
+      {emptyActionLabel && onEmptyAction ? (
+        <TouchableOpacity style={styles.discoverBtn} onPress={onEmptyAction}>
+          <Text style={styles.discoverBtnTxt}>{emptyActionLabel}</Text>
+        </TouchableOpacity>
+      ) : tab !== 'score' ? (
         <TouchableOpacity style={styles.discoverBtn} onPress={onDiscover}>
           <Text style={styles.discoverBtnTxt}>スポットを探す</Text>
         </TouchableOpacity>

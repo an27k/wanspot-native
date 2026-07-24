@@ -72,8 +72,8 @@ export function NearbySheetSpotCard({
   userLocation: { lat: number; lng: number } | null
   onPress: () => void
   compact?: boolean
-  /** list: 右上にいいね / popup: 右上に×（ピン真上のポップアップ用） */
-  variant?: 'list' | 'popup'
+  /** list: 右上にいいね / popup: 右上に×（ピン真上のポップアップ用） / carousel: 地図下の横スワイプカルーセル用（住所なし・高さ固定寄り） */
+  variant?: 'list' | 'popup' | 'carousel'
   liked?: boolean
   onToggleLike?: () => void
   onClose?: () => void
@@ -86,7 +86,12 @@ export function NearbySheetSpotCard({
 
   return (
     <TouchableOpacity
-      style={[styles.card, compact && styles.cardCompact, variant === 'popup' && styles.cardPopup]}
+      style={[
+        styles.card,
+        compact && styles.cardCompact,
+        variant === 'popup' && styles.cardPopup,
+        variant === 'carousel' && styles.cardCarousel,
+      ]}
       onPress={onPress}
       activeOpacity={0.95}
     >
@@ -119,7 +124,7 @@ export function NearbySheetSpotCard({
       )}
 
       {!compact && uri ? (
-        <View style={styles.cardPhoto}>
+        <View style={[styles.cardPhoto, variant === 'carousel' && styles.cardPhotoCarousel]}>
           <Image source={{ uri }} style={styles.cardImg} contentFit="cover" recyclingKey={uri} {...listImageExpoProps} />
         </View>
       ) : null}
@@ -138,10 +143,12 @@ export function NearbySheetSpotCard({
             {distLabel ? <Text style={styles.distSmall}>{distLabel}</Text> : null}
           </View>
         </View>
-        <Text style={styles.spotName} numberOfLines={compact ? 1 : 2}>
+        <Text style={styles.spotName} numberOfLines={compact || variant === 'carousel' ? 1 : 2}>
           {spot.name}
         </Text>
-        {!compact ? <Text style={styles.spotAddr} numberOfLines={2}>{spot.address}</Text> : null}
+        {!compact && variant !== 'carousel' ? (
+          <Text style={styles.spotAddr} numberOfLines={2}>{spot.address}</Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   )
@@ -160,6 +167,8 @@ const styles = StyleSheet.create({
   },
   cardCompact: { marginBottom: 0 },
   cardPopup: { marginBottom: 0 },
+  cardCarousel: { marginBottom: 0 },
+  cardPhotoCarousel: { height: 96 },
   cornerBtn: {
     position: 'absolute',
     top: 8,
