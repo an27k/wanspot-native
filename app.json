@@ -13,7 +13,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.wanspot.native",
-      "buildNumber": "203",
+      "buildNumber": "204",
       "usesAppleSignIn": true,
       "config": {
         "googleMapsApiKey": "AIzaSyB-uH0kWeDvbOyGVyEkO5zttWg7TE6nBdg"
