@@ -7,6 +7,7 @@ import { colors } from '@/constants/colors'
 import {
   WALK_ALERT_LEVELS,
   walkAlertFromTemp,
+  walkAlertLevel,
   type WalkAlertLevel,
 } from '@/lib/weather/walk-alert'
 import type { WalkDailyAdvice } from '@/lib/weather/walk-daily-advice'
@@ -49,7 +50,12 @@ export function WalkAlertModal({
   adviceLoading?: boolean
 }) {
   const [guideExpanded, setGuideExpanded] = useState(false)
-  const level: WalkAlertLevel | null = tempC == null ? null : walkAlertFromTemp(tempC)
+  // 湿度・体感補正後のレベル（advice側）があれば優先し、本文とバッジのトーンを一致させる
+  const level: WalkAlertLevel | null = dailyAdvice?.levelKey
+    ? walkAlertLevel(dailyAdvice.levelKey)
+    : tempC == null
+      ? null
+      : walkAlertFromTemp(tempC)
 
   const emptyMessage = needsLocation
     ? 'お散歩予報は「位置情報」の許可で現在地の気温を取得します（別の許可項目はありません）。下のボタンで許可を確認してください。'
@@ -139,6 +145,10 @@ export function WalkAlertModal({
                   <Text style={styles.advice}>{adviceText}</Text>
                 )}
               </View>
+
+              <Text style={styles.disclaimer}>
+                気象データにもとづく目安です。うちの子の様子をいちばんに判断してあげてください。
+              </Text>
             </>
           ) : (
             <>
@@ -248,6 +258,14 @@ const styles = StyleSheet.create({
     minHeight: 88,
   },
   advice: { fontSize: 16, lineHeight: 26, fontWeight: '600', color: colors.text },
+  disclaimer: {
+    marginTop: 10,
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: '500',
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
   adviceLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   adviceLoadingTxt: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
   noData: { marginTop: 16, fontSize: 15, lineHeight: 24, fontWeight: '600', color: colors.textLight },

@@ -8,7 +8,7 @@ import { useDogProfile } from '@/components/dog/useDogProfile'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { useWeather } from '@/lib/weather/use-weather'
 import { useWalkDailyAdvice } from '@/lib/weather/use-walk-daily-advice'
-import { walkAlertFromTemp } from '@/lib/weather/walk-alert'
+import { walkAlertFromTemp, walkAlertLevel } from '@/lib/weather/walk-alert'
 import type { WeatherCondition } from '@/lib/weather/fetch-weather'
 
 function weatherAwareLabel(levelLabel: string, condition: WeatherCondition | null | undefined): string {
@@ -42,7 +42,7 @@ export function WalkAlertCard({
   const { dog } = useDogProfile()
   const { data: weather, loading: weatherLoading, needsLocation } = useWeather(location)
   const tempC = weather?.tempC ?? null
-  const level = tempC != null ? walkAlertFromTemp(tempC) : null
+  const baseLevel = tempC != null ? walkAlertFromTemp(tempC) : null
 
   const { advice, loading: adviceLoading } = useWalkDailyAdvice(
     location,
@@ -54,6 +54,8 @@ export function WalkAlertCard({
   )
 
   const metaLine = [advice?.dateLabel, advice?.areaLabel].filter(Boolean).join(' · ')
+  // 湿度・体感補正後のレベル（advice側）があればバッジ表示もそちらに合わせ、本文とトーンを一致させる
+  const level = advice?.levelKey ? walkAlertLevel(advice.levelKey) : baseLevel
   const adviceText = advice?.text ?? level?.advice ?? ''
 
   return (

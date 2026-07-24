@@ -10,6 +10,7 @@ import {
   walkAdviceDateKey,
   weatherConditionJa,
   type WalkEnvironment,
+  type WalkHourlySlot,
 } from '@/lib/weather/walk-environment'
 import type { WeatherCondition } from '@/lib/weather/fetch-weather'
 import { walkAlertFromTemp, type WalkAlertKey, type WalkAlertLevel } from '@/lib/weather/walk-alert'
@@ -23,6 +24,8 @@ export type WalkDailyAdvice = {
   areaLabel: string
   dateKey: string
   source: 'ai' | 'api' | 'local'
+  /** 湿度・体感補正後のレベル。バッジ表示を本文のトーンと一致させるために使う */
+  levelKey?: WalkAlertKey
 }
 
 function adviceCacheKey(
@@ -36,7 +39,8 @@ function adviceCacheKey(
   const dog = dogName?.trim() ? dogName.trim() : '_'
   const size = dogSize ?? '_'
   const tempBucket = tempC == null ? '_' : String(Math.round(tempC / 3) * 3)
-  return `walk-advice:v4:${walkAdviceDateKey()}:${geoBucket(lat, lng)}:${dog}:${size}:${tempBucket}:${condition ?? '_'}`
+  // 本文が現在時刻（過去スロット除外）と湿度に依存するため、時間成分をキーに含めて毎時再生成する
+  return `walk-advice:v5:${walkAdviceDateKey()}:h${currentHourInTokyo()}:${geoBucket(lat, lng)}:${dog}:${size}:${tempBucket}:${condition ?? '_'}`
 }
 
 function dogSubject(dogName: string | null | undefined): string {
@@ -59,12 +63,39 @@ function dogCarePoint(dogSize: DogSize | null | undefined): string {
   }
 }
 
-function bestWalkHour(env: WalkEnvironment) {
-  return env.hourly.reduce<typeof env.hourly[0] | null>((best, slot) => {
+/** 快適域(12〜24℃)からの距離。0なら快適域内 */
+function comfortDistance(tempC: number): number {
+  if (tempC < 12) return 12 - tempC
+  if (tempC > 24) return tempC - 24
+  return 0
+}
+
+/** 現在時刻（Asia/Tokyo）の「時」 */
+function currentHourInTokyo(): number {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tokyo', hour: 'numeric', hour12: false }).format(
+      new Date()
+    )
+  )
+}
+
+/**
+ * 今日の残り時間帯から、ワンちゃんが歩きやすい候補を1つ選ぶ。
+ * 気温25℃超・雨系・降水50%以上・過去の時間帯は候補にせず、適合ゼロなら null（候補時間は表示しない）。
+ * 複数候補は「快適域(12〜24℃)への近さ優先 → 同等なら降水確率が低い方」で選ぶ。
+ */
+function bestWalkHour(env: WalkEnvironment): WalkHourlySlot | null {
+  const nowHour = currentHourInTokyo()
+  return env.hourly.reduce<WalkHourlySlot | null>((best, slot) => {
+    if (slot.hour < nowHour) return best
+    if (slot.tempC > 25) return best
     if (slot.precipProb >= 50) return best
     if (slot.condition === 'rain' || slot.condition === 'thunder' || slot.condition === 'snow') return best
     if (!best) return slot
-    if (slot.tempC >= 12 && slot.tempC <= 24 && slot.precipProb < best.precipProb) return slot
+    const slotDist = comfortDistance(slot.tempC)
+    const bestDist = comfortDistance(best.tempC)
+    if (slotDist < bestDist) return slot
+    if (slotDist === bestDist && slot.precipProb < best.precipProb) return slot
     return best
   }, null)
 }
@@ -102,8 +133,13 @@ export function composeWalkAdviceLocal(
   const subject = dogSubject(dogName)
   const carePoint = dogCarePoint(dogSize)
   const hour = bestWalkHour(env)
+  // 暑さ寄りの日は路面チェック、それ以外は様子見のひとことを添える
+  const timingCare =
+    level.key === 'comfortable' || level.key === 'caution'
+      ? '出発前にアスファルトを手の甲で5秒さわって、熱ければ時間をずらしてあげてください。'
+      : `${subject}の様子を見ながら、短めに調整してあげてください。`
   const timing = hour
-    ? `行くなら${hour.hour}時ごろ（${hour.tempC}℃・降水${hour.precipProb}%）が候補です。${subject}の様子を見ながら、短めに調整してあげてください。`
+    ? `${hour.hour}時ごろ（${hour.tempC}℃・降水${hour.precipProb}%）が比較的歩きやすい目安です。${timingCare}`
     : ''
   const wetOrStormy = isWetOrStormy(env)
   const windy = isWindy(env)
@@ -126,7 +162,21 @@ export function composeWalkAdviceLocal(
 
   lines.push(openers[level.key])
 
-  if (timing && level.key !== 'stop') lines.push(timing)
+  // 「危険」以上では時刻の推奨はせず、定性的な安全側の文言にとどめる
+  if (level.key === 'danger') {
+    lines.push(
+      '日中の散歩は避けて、いちばん涼しい早朝に排泄中心の短時間が安心です。アスファルトの熱にも注意してあげてください。'
+    )
+  } else if (timing && level.key !== 'stop') {
+    lines.push(timing)
+  }
+
+  // caution は timing 行に手の甲5秒チェックが入るため、路面注意の重複を避けて danger/stop のみに出す
+  if (level.key === 'danger' || level.key === 'stop') {
+    lines.push(
+      `気温${env.current.tempC}℃のとき、日なたのアスファルトは50℃を超えることがあります。肉球のやけどに気をつけてあげてください。`
+    )
+  }
 
   if (wetOrStormy) {
     lines.push(`雨の時間帯は無理せず、行くなら小雨の合間に短く。帰宅後は${subject}の足先とお腹をしっかり拭いてあげてください。`)
@@ -266,7 +316,11 @@ export async function fetchWalkDailyAdvice(
 
   const env = await fetchWalkEnvironment(lat, lng)
   const t = tempC ?? env?.current.tempC ?? 20
-  const level = walkAlertFromTemp(t)
+  // 取得済みの湿度・体感温度も使い、蒸し暑い日は安全側の段階で文言を組む
+  const level = walkAlertFromTemp(t, {
+    humidityPct: env?.current.humidityPct ?? null,
+    feelsLikeC: env?.current.feelsLikeC ?? null,
+  })
 
   if (!env) {
     const dateLabel = new Intl.DateTimeFormat('ja-JP', {
@@ -282,12 +336,14 @@ export async function fetchWalkDailyAdvice(
       areaLabel: 'お住まいのエリア',
       dateKey: walkAdviceDateKey(),
       source: 'local',
+      levelKey: level.key,
     }
     writeCache(cacheKey, fallback)
     return fallback
   }
 
-  const shouldUseLocalSafetyCopy = isWetOrStormy(env) || isWindy(env) || level.key === 'danger' || level.key === 'stop'
+  // AI/API経路はサーバー側が未実装・常時エラーで機能していないため、当面ローカル安全文言に一本化する
+  const shouldUseLocalSafetyCopy = true as boolean
   const fromApi = shouldUseLocalSafetyCopy ? null : await fetchWalkAdviceFromApi(env, level, dogName, dogSize)
   const fromAi = fromApi || shouldUseLocalSafetyCopy ? null : await fetchWalkAdviceViaAiSummary(env, level, dogName, dogSize)
   const raw = shouldUseLocalSafetyCopy ? null : fromApi ?? fromAi
@@ -299,6 +355,7 @@ export async function fetchWalkDailyAdvice(
     areaLabel: env.areaLabel,
     dateKey: env.dateKey,
     source: raw && fromApi ? 'api' : raw && fromAi ? 'ai' : 'local',
+    levelKey: level.key,
   }
   writeCache(cacheKey, result)
   return result

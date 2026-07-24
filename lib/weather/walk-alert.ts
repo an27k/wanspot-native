@@ -67,14 +67,14 @@ export const WALK_ALERT_LEVELS: WalkAlertLevel[] = [
     key: 'danger',
     label: '危険',
     color: '#FB7E5D',
-    rangeLabel: '32〜39℃',
+    rangeLabel: '32〜34℃',
     advice: '熱中症の危険大。日中は避け、早朝・夜の涼しい時間だけにしましょう。',
   },
   {
     key: 'stop',
     label: '中止',
     color: '#F65A78',
-    rangeLabel: '40℃以上',
+    rangeLabel: '35℃以上 / 体感38℃以上',
     advice: 'お散歩は中止を。室内で涼しく過ごしましょう。',
   },
 ]
@@ -91,13 +91,33 @@ export function walkAlertLevel(key: WalkAlertKey): WalkAlertLevel {
   return BY_KEY[key]
 }
 
-/** 気温(℃)→お散歩アラート段階 */
-export function walkAlertFromTemp(tempC: number): WalkAlertLevel {
-  if (tempC <= 0) return BY_KEY.numb
-  if (tempC <= 7) return BY_KEY.sting
-  if (tempC <= 15) return BY_KEY.chilly
-  if (tempC <= 24) return BY_KEY.comfortable
-  if (tempC <= 31) return BY_KEY.caution
-  if (tempC <= 39) return BY_KEY.danger
-  return BY_KEY.stop
+/**
+ * 気温(℃)→お散歩アラート段階。
+ * 湿度・体感温度が渡された場合は安全側に補正する（未指定なら従来どおり気温のみで判定）。
+ * - 気温35℃以上 または 体感38℃以上は「中止」
+ * - 湿度65%以上かつ気温25℃以上は1段階厳しく判定（暑さ注意→危険、危険→中止）
+ */
+export function walkAlertFromTemp(
+  tempC: number,
+  opts?: { humidityPct?: number | null; feelsLikeC?: number | null }
+): WalkAlertLevel {
+  const feelsLikeC = opts?.feelsLikeC
+  const humidityPct = opts?.humidityPct
+
+  if (tempC >= 35 || (typeof feelsLikeC === 'number' && feelsLikeC >= 38)) return BY_KEY.stop
+
+  let level: WalkAlertLevel
+  if (tempC <= 0) level = BY_KEY.numb
+  else if (tempC <= 7) level = BY_KEY.sting
+  else if (tempC <= 15) level = BY_KEY.chilly
+  else if (tempC <= 24) level = BY_KEY.comfortable
+  else if (tempC <= 31) level = BY_KEY.caution
+  else level = BY_KEY.danger
+
+  // 蒸し暑い日はワンちゃんの体に熱がこもりやすいので、1段階厳しく見る
+  if (typeof humidityPct === 'number' && humidityPct >= 65 && tempC >= 25) {
+    if (level.key === 'caution') return BY_KEY.danger
+    if (level.key === 'danger') return BY_KEY.stop
+  }
+  return level
 }

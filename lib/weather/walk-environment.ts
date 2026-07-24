@@ -95,11 +95,14 @@ function pickHourlySlots(
   temps: number[],
   precip: number[],
   codes: number[],
-  nowHour: number
+  nowHour: number,
+  dateKey: string
 ): WalkHourlySlot[] {
   const slots: WalkHourlySlot[] = []
   for (let i = 0; i < times.length && slots.length < 8; i++) {
     const t = times[i]
+    // 翌日分の予報が「今日の候補」として混ざらないよう、日付部分で今日に限定する
+    if (t.slice(0, 10) !== dateKey) continue
     const hour = Number(t.slice(11, 13))
     if (Number.isNaN(hour) || hour < nowHour) continue
     const temp = temps[i]
@@ -198,7 +201,8 @@ export async function fetchWalkEnvironment(lat: number, lng: number): Promise<Wa
       json.hourly?.temperature_2m ?? [],
       json.hourly?.precipitation_probability ?? [],
       json.hourly?.weather_code ?? [],
-      nowHour
+      nowHour,
+      dateKey
     )
 
     const tempMax = json.daily?.temperature_2m_max?.[idx]
