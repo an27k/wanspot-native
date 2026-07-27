@@ -1,31 +1,31 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  Keyboard,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { useSharedValue } from 'react-native-reanimated'
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Svg, { Path } from 'react-native-svg'
-import {
-  NearbyBottomSheet,
-  type NearbySheetHandle,
-  type NearbySheetTab,
-} from '@/components/nearby/NearbyBottomSheet'
+import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
+import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { NearbyMapView } from '@/components/map/NearbyMapView'
 import { MapFilterBar } from '@/components/map/MapFilterBar'
-import { GenreIcon } from '@/components/nearby/GenreIcon'
 import { NearbySpotCarousel } from '@/components/nearby/NearbySpotCarousel'
 import { RunningDog } from '@/components/DogStates'
 import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import {
-  DEFAULT_MAP_GENRE,
-  MAP_GENRE_COLOR,
-  MAP_LIKE_COLOR,
+  NEARBY_GENRE_ALL,
   NEARBY_INDOOR_ONLY_STORAGE_KEY,
+  NEARBY_MAP_CONDITIONS_STORAGE_KEY,
   NEARBY_MAP_GENRE_STORAGE_KEY,
-  NEARBY_RADIUS_M,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
 import {
@@ -38,19 +38,42 @@ import {
   writeCache,
 } from '@/lib/client-cache'
 import { resolveSessionLocation } from '@/lib/location-session'
-import { fetchNearbySpotsForGenreWithExpansion } from '@/lib/nearby/fetch-nearby-spots'
-import { calcDistanceMeters, isWithinRadiusM } from '@/lib/nearby/geo'
-import { applyIndoorOnlyFilter, isSameMapFilter, mapFilterLabel, type MapFilter } from '@/lib/nearby/map-filter'
+import {
+  fetchAllNearbySpotsWithExpansion,
+  fetchNearbySpotsForGenreWithExpansion,
+} from '@/lib/nearby/fetch-nearby-spots'
+import {
+  activeConditionCount,
+  applyMapConditions,
+  EMPTY_MAP_CONDITIONS,
+  type MapConditionFilter,
+} from '@/lib/nearby/map-filter'
 import { sortPlacesByScore } from '@/lib/nearby/place-score'
 import { sheetSpotFromPlace, sheetSpotFromUserRow, type SheetSpot } from '@/lib/nearby/sheet-spot'
 import { fetchLikedSpotsForUser } from '@/lib/fetch-user-spot-lists'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { openSpotDetail } from '@/lib/open-spot-detail'
 import { supabase } from '@/lib/supabase'
+import { wanspotFetch } from '@/lib/wanspot-api'
 import type { UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import type { PlaceResult } from '@/types/places'
 
 const FILTER_BAR_H = 52
+const SEARCH_BAR_H = 56
+
+/** サーバーが返す検索中心。駅・エリア解決時は現在地ではなくその座標が距離の基準になる */
+type SearchCenter = { lat: number; lng: number; source: 'user' | 'station' | 'area' }
+
+/** 検索バーフォーカス時のサジェスト（全国どこでも意味が通る条件語のみ） */
+const SEARCH_SUGGESTIONS = [
+  'ドッグラン',
+  '室内ドッグラン',
+  '大型犬可',
+  '雨の日OK',
+  '犬と泊まれる',
+  'ドッグビーチ',
+  '犬と温泉',
+]
 
 function isMapGenreKey(v: string): v is MapGenreKey {
   return (
@@ -63,99 +86,126 @@ function isMapGenreKey(v: string): v is MapGenreKey {
   )
 }
 
-const HeartHeaderIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill={MAP_LIKE_COLOR}>
-    <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </Svg>
-)
-
 function NearbyPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const topSafe = insets.top + 8
-  const filterBarTop = topSafe
+  const searchBarTop = topSafe
+  const filterBarTop = searchBarTop + SEARCH_BAR_H
   const overlayTop = filterBarTop + FILTER_BAR_H
 
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false)
   const [locationError, setLocationError] = useState('')
 
-  const [genre, setGenre] = useState<MapGenreKey>(DEFAULT_MAP_GENRE)
-  const [genreReady, setGenreReady] = useState(false)
-  const [activeFilter, setActiveFilter] = useState<MapFilter | null>({ kind: 'like' })
-  /** 店内OK（確認済みのみ）フィルタ。ジャンル選択と直交する常設トグル */
-  const [indoorOnly, setIndoorOnly] = useState(false)
+  /** null = 全ジャンル表示（デフォルト）。チップ再タップで解除して全表示に戻る */
+  const [genre, setGenre] = useState<MapGenreKey | null>(null)
+  const [prefsReady, setPrefsReady] = useState(false)
+  /** 店内OK・テラスOK・いいねの条件フィルタ。ジャンルと直交して重ね掛けできる */
+  const [conditions, setConditions] = useState<MapConditionFilter>(EMPTY_MAP_CONDITIONS)
   const [nearbyPlaces, setNearbyPlaces] = useState<PlaceResult[]>([])
   const [spotsLoading, setSpotsLoading] = useState(false)
   const [spotsFetchError, setSpotsFetchError] = useState('')
 
   const [likedRows, setLikedRows] = useState<SheetSpot[]>([])
-  const [userListsLoading, setUserListsLoading] = useState(false)
-
   const [selectedSpot, setSelectedSpot] = useState<SheetSpot | null>(null)
   const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({})
-  const [sheetBottomInset, setSheetBottomInset] = useState(0)
-  const [sheetIndex, setSheetIndex] = useState(-1)
-  const sheetControl = useRef<NearbySheetHandle>(null)
-  const sheetAnimatedIndex = useSharedValue(-1)
 
-  const sheetTab: NearbySheetTab = useMemo(() => {
-    if (activeFilter?.kind === 'like') return 'like'
-    return 'score'
-  }, [activeFilter])
+  /** テキスト検索（旧検索ホームから統合）。結果はマップのピン＋カルーセルに流す */
+  const [query, setQuery] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchResults, setSearchResults] = useState<PlaceResult[] | null>(null)
+  const [searchCenter, setSearchCenter] = useState<SearchCenter | null>(null)
 
+  const clearSearch = useCallback(() => {
+    setQuery('')
+    setSearchResults(null)
+    setSearchCenter(null)
+    setSelectedSpot(null)
+    Keyboard.dismiss()
+  }, [])
+
+  const executeSearch = useCallback(
+    async (rawQuery: string) => {
+      const trimmed = rawQuery.trim()
+      if (!trimmed) return
+      Keyboard.dismiss()
+      setSearchFocused(false)
+      setSearchLoading(true)
+      try {
+        const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
+        const res = await wanspotFetch(`/api/spots/search?q=${encodeURIComponent(trimmed)}${locationParam}`)
+        const data = (await res.json()) as { spots?: PlaceResult[]; search_center?: SearchCenter | null }
+        const spots = data.spots ?? []
+        setSearchResults(spots)
+        const sc = data.search_center
+        setSearchCenter(sc && typeof sc.lat === 'number' && typeof sc.lng === 'number' ? sc : null)
+        setSelectedSpot(null)
+      } catch {
+        setSearchResults([])
+        setSearchCenter(null)
+      } finally {
+        setSearchLoading(false)
+      }
+    },
+    [location]
+  )
+
+  const searchActive = searchResults !== null
+
+  // 保存済みのジャンル・条件を復元（旧 店内OK 単独キーからのマイグレーション込み）
   useEffect(() => {
     void (async () => {
       try {
-        const saved = await AsyncStorage.getItem(NEARBY_MAP_GENRE_STORAGE_KEY)
-        if (saved && isMapGenreKey(saved)) setGenre(saved)
-        // 店内OKは夏冬の常用条件のため選択状態を復元する
-        const savedIndoor = await AsyncStorage.getItem(NEARBY_INDOOR_ONLY_STORAGE_KEY)
-        if (savedIndoor === '1') setIndoorOnly(true)
+        const savedGenre = await AsyncStorage.getItem(NEARBY_MAP_GENRE_STORAGE_KEY)
+        if (savedGenre && savedGenre !== NEARBY_GENRE_ALL && isMapGenreKey(savedGenre)) {
+          setGenre(savedGenre)
+        }
+        const savedConditions = await AsyncStorage.getItem(NEARBY_MAP_CONDITIONS_STORAGE_KEY)
+        if (savedConditions) {
+          const parsed = JSON.parse(savedConditions) as Partial<MapConditionFilter>
+          setConditions({
+            indoorOnly: parsed.indoorOnly === true,
+            terraceOnly: parsed.terraceOnly === true,
+            likedOnly: parsed.likedOnly === true,
+          })
+        } else {
+          // 旧バージョンの店内OK単独トグルを引き継ぐ
+          const legacyIndoor = await AsyncStorage.getItem(NEARBY_INDOOR_ONLY_STORAGE_KEY)
+          if (legacyIndoor === '1') setConditions((c) => ({ ...c, indoorOnly: true }))
+        }
       } catch {
         /* ignore */
       } finally {
-        setGenreReady(true)
+        setPrefsReady(true)
       }
     })()
   }, [])
 
-  const handleToggleIndoorOnly = useCallback(() => {
-    setIndoorOnly((prev) => {
-      const next = !prev
-      void AsyncStorage.setItem(NEARBY_INDOOR_ONLY_STORAGE_KEY, next ? '1' : '0')
-      // ON にした瞬間、絞り込みで消えるスポットの選択（ポップアップ・センタリング）が残らないようにする
-      if (next) {
-        setSelectedSpot((s) => (s && applyIndoorOnlyFilter([s], true).length > 0 ? s : null))
-      }
+  const handleSelectGenre = useCallback(
+    (next: MapGenreKey | null) => {
+      // 検索結果表示中にジャンルを触ったら「ブラウズに戻る」操作として検索を閉じる
+      if (searchActive) clearSearch()
+      setGenre(next)
+      setSelectedSpot(null)
+      void AsyncStorage.setItem(NEARBY_MAP_GENRE_STORAGE_KEY, next ?? NEARBY_GENRE_ALL)
+    },
+    [searchActive, clearSearch]
+  )
+
+  const handleToggleCondition = useCallback((key: keyof MapConditionFilter) => {
+    setConditions((prev) => {
+      const next = { ...prev, [key]: !prev[key] }
+      void AsyncStorage.setItem(NEARBY_MAP_CONDITIONS_STORAGE_KEY, JSON.stringify(next))
       return next
     })
   }, [])
 
-  const clearFilter = useCallback(() => {
-    setActiveFilter(null)
-    setSelectedSpot(null)
-    setSheetBottomInset(0)
-    setSheetIndex(-1)
-    sheetControl.current?.close()
+  const clearConditions = useCallback(() => {
+    setConditions(EMPTY_MAP_CONDITIONS)
+    void AsyncStorage.setItem(NEARBY_MAP_CONDITIONS_STORAGE_KEY, JSON.stringify(EMPTY_MAP_CONDITIONS))
   }, [])
-
-  const handleFilterSelect = useCallback(
-    (f: MapFilter) => {
-      if (isSameMapFilter(activeFilter, f)) {
-        requestAnimationFrame(() => sheetControl.current?.open())
-        return
-      }
-      if (f.kind === 'genre') {
-        setGenre(f.genre)
-        void AsyncStorage.setItem(NEARBY_MAP_GENRE_STORAGE_KEY, f.genre)
-      }
-      setActiveFilter(f)
-      setSelectedSpot(null)
-      requestAnimationFrame(() => sheetControl.current?.open())
-    },
-    [activeFilter]
-  )
 
   const refreshLocation = useCallback(async () => {
     const result = await resolveSessionLocation(location)
@@ -177,27 +227,16 @@ function NearbyPage() {
 
   useFocusEffect(
     useCallback(() => {
-      let cancelled = false
-      void (async () => {
-        const ok = await refreshLocation()
-        if (cancelled || !ok) return
-      })()
-      return () => {
-        cancelled = true
-      }
+      void refreshLocation()
     }, [refreshLocation])
   )
 
-  const handleSheetIndexChange = useCallback((index: number) => {
-    setSheetIndex(index)
-    if (index >= 0) setSelectedSpot(null)
-  }, [])
-
   const loadNearbySpots = useCallback(
     async (force = false) => {
-      if (!location || !genreReady || activeFilter?.kind !== 'genre') return
+      if (!location || !prefsReady) return
 
-      const cacheKey = `nearby:spots:${genre}:${geoBucket(location.lat, location.lng)}:exp`
+      const genreKey = genre ?? NEARBY_GENRE_ALL
+      const cacheKey = `nearby:spots:${genreKey}:${geoBucket(location.lat, location.lng)}:exp`
       if (!force && isCacheFresh(cacheKey, CACHE_TTL.NEARBY_SPOTS_MS)) {
         const cached = readCache<{ spots: PlaceResult[]; error: string }>(cacheKey)
         if (cached) {
@@ -215,13 +254,16 @@ function NearbyPage() {
         setSpotsLoading(true)
       }
 
-      const { spots, error } = await fetchNearbySpotsForGenreWithExpansion(location, genre)
+      const { spots, error } =
+        genre === null
+          ? await fetchAllNearbySpotsWithExpansion(location)
+          : await fetchNearbySpotsForGenreWithExpansion(location, genre)
       writeCache(cacheKey, { spots, error: error ?? '' })
       setNearbyPlaces(spots)
       setSpotsFetchError(error ?? '')
       setSpotsLoading(false)
     },
-    [location?.lat, location?.lng, genre, genreReady, activeFilter?.kind]
+    [location?.lat, location?.lng, genre, prefsReady]
   )
 
   useEffect(() => {
@@ -235,120 +277,63 @@ function NearbyPage() {
       } = await supabase.auth.getUser()
       if (!user) {
         setLikedRows([])
-        setUserListsLoading(false)
         return
       }
 
       const locKey = location ? geoBucket(location.lat, location.lng) : 'none'
-      const cacheKey = `nearby:user-lists:v4:${user.id}:${locKey}`
-
-      const needsPhotoRefresh = (rows: SheetSpot[]) =>
-        rows.some((s) => s.placeId.length > 0 && !s.photoRef)
+      const cacheKey = `nearby:user-lists:v5:${user.id}:${locKey}`
 
       if (!force && isCacheFresh(cacheKey, CACHE_TTL.USER_LISTS_MS)) {
         const cached = readCache<{ liked: SheetSpot[] }>(cacheKey)
-        if (cached && !needsPhotoRefresh(cached.liked)) {
+        if (cached) {
           setLikedRows(cached.liked)
-          setUserListsLoading(false)
           return
         }
       }
 
       const stale = readCache<{ liked: SheetSpot[] }>(cacheKey)
-      if (stale) {
+      if (stale && !force && getCacheEntry(cacheKey)) {
         setLikedRows(stale.liked)
-      } else if (force || !getCacheEntry(cacheKey)) {
-        setUserListsLoading(true)
       }
 
       const likedRes = await fetchLikedSpotsForUser(supabase, user.id)
       if (!likedRes.ok) {
         console.warn('[nearby] fetchLikedSpotsForUser', likedRes.code ?? '', likedRes.error)
         if (!stale) setLikedRows([])
-        setUserListsLoading(false)
         return
       }
 
-      const origin = location
-      const filterRow = (rows: UserSpotRow[]) => {
-        if (!origin) return []
-        return rows
-          .map(sheetSpotFromUserRow)
-          .filter((s): s is SheetSpot => s != null)
-          .filter((s) => isWithinRadiusM(origin, s, NEARBY_RADIUS_M))
-          .sort(
-            (a, b) =>
-              calcDistanceMeters(origin.lat, origin.lng, a.lat, a.lng) -
-              calcDistanceMeters(origin.lat, origin.lng, b.lat, b.lng)
-          )
-      }
-
-      const liked = filterRow(likedRes.spots)
+      const liked = (likedRes.spots as UserSpotRow[])
+        .map(sheetSpotFromUserRow)
+        .filter((s): s is SheetSpot => s != null)
       writeCache(cacheKey, { liked })
       setLikedRows(liked)
-      setUserListsLoading(false)
     },
     [location?.lat, location?.lng]
   )
 
+  // いいねは常時ロード（ハート表示・いいね条件フィルタ・全ジャンル表示への合流に使う）
   useEffect(() => {
-    if (activeFilter?.kind !== 'like') return
-    if (!location) return
     void loadUserLists(false)
-  }, [activeFilter?.kind, location?.lat, location?.lng, loadUserLists])
+  }, [loadUserLists])
 
+  // 朝のお散歩予報通知は初期タブ（ここ）からも予約する（設定タブを開かなくても翌朝から届く）。
+  // 予報から本文を事前計算するため位置と散歩時間設定を渡す。犬名は設定タブ側の同期が上書きで貼り直す。
+  // 起動直後の負荷を避けて少し遅らせる
   useEffect(() => {
-    if (activeFilter?.kind !== 'like') return
-    if (userListsLoading) return
-    requestAnimationFrame(() => sheetControl.current?.open())
-  }, [activeFilter?.kind, userListsLoading, likedRows.length])
-
-  useFocusEffect(
-    useCallback(() => {
-      setActiveFilter({ kind: 'like' })
-      if (location) {
-        void loadUserLists(false)
-      }
-      requestAnimationFrame(() => sheetControl.current?.open())
-    }, [location?.lat, location?.lng, loadUserLists])
-  )
-
-  const scoreSheetSpots = useMemo(() => {
-    const sorted = sortPlacesByScore(nearbyPlaces, location)
-    const genreLabel =
-      activeFilter?.kind === 'genre' ? mapFilterLabel(activeFilter) : null
-    return sorted.map((p) => {
-      const row = sheetSpotFromPlace(p)
-      return genreLabel ? { ...row, category: genreLabel } : row
-    })
-  }, [nearbyPlaces, location, activeFilter])
-
-  const sheetItems = useMemo(() => {
-    // フィルタ未選択でもいいねスポットのピンは地図に出し続ける
-    const base = !activeFilter || activeFilter.kind === 'like' ? likedRows : scoreSheetSpots
-    // 店内OKは確認済み（pet_indoor_allowed === true）だけを母集団にする。unknown は含めない
-    return applyIndoorOnlyFilter(base, indoorOnly)
-  }, [activeFilter, likedRows, scoreSheetSpots, indoorOnly])
-
-  // ピンは常時表示（フィルタ選択の有無でゲートしない）
-  const mapMarkers = sheetItems
-
-  const handleOpenDetail = useCallback(
-    (spot: SheetSpot) => {
-      openSpotDetail(router, spot)
-    },
-    [router]
-  )
-
-  // ピンタップ / カルーセルスワイプ共通の選択ハンドラ
-  const handleSelectSpot = useCallback(
-    (spot: SheetSpot) => {
-      setSelectedSpot(spot)
-      // ピーク時は縦リストも該当スポットへ合わせておく（引き上げたときにそのまま続きが見える）
-      if (sheetIndex === 0) sheetControl.current?.scrollToSpot(spot.key)
-    },
-    [sheetIndex]
-  )
+    if (!location) return
+    const t = setTimeout(() => {
+      void (async () => {
+        const [{ syncWalkAdviceMorningNotification }, { getWalkTimeHour }] = await Promise.all([
+          import('@/lib/notifications/walk-advice-morning'),
+          import('@/lib/weather/walk-time-pref'),
+        ])
+        const walkHour = await getWalkTimeHour()
+        void syncWalkAdviceMorningNotification(null, { location, walkHour })
+      })()
+    }, 4000)
+    return () => clearTimeout(t)
+  }, [location?.lat, location?.lng])
 
   const likedPlaceIds = useMemo(() => {
     const set = new Set(likedRows.map((r) => r.placeId).filter(Boolean))
@@ -358,6 +343,50 @@ function NearbyPage() {
     }
     return set
   }, [likedRows, likedOverrides])
+
+  const items = useMemo(() => {
+    // 検索結果表示中: 結果を検索中心（駅・エリア解決があればそちら）からの距離順で表示。条件フィルタは重ね掛け
+    if (searchResults !== null) {
+      const base = searchCenter ?? location
+      const sorted = base ? sortPlacesByScore(searchResults, base) : searchResults
+      return applyMapConditions(
+        sorted.map(sheetSpotFromPlace),
+        conditions,
+        (s) => likedPlaceIds.has(s.placeId)
+      )
+    }
+
+    const scored = sortPlacesByScore(nearbyPlaces, location).map(sheetSpotFromPlace)
+    // 全ジャンル表示のときは、取得半径の外にあるいいねスポットも棚に合流させる
+    let base = scored
+    if (genre === null && likedRows.length > 0) {
+      const seen = new Set(scored.map((s) => s.placeId).filter(Boolean))
+      base = [...scored, ...likedRows.filter((s) => s.placeId && !seen.has(s.placeId))]
+    }
+    return applyMapConditions(base, conditions, (s) => likedPlaceIds.has(s.placeId))
+  }, [searchResults, searchCenter, nearbyPlaces, location, genre, likedRows, conditions, likedPlaceIds])
+
+  // 検索直後は先頭の結果を選択してマップを検索エリアへ寄せる（カルーセルとピンが即同期する）
+  useEffect(() => {
+    if (!searchActive) return
+    if (selectedSpot) return
+    if (items.length > 0) setSelectedSpot(items[0])
+    // items は検索結果確定後に同期的に決まるため、この effect は検索完了ごとに一度だけ効く
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchActive, searchResults])
+
+  // 絞り込みで選択中スポットが消えたら、選択も静かに外す
+  useEffect(() => {
+    if (!selectedSpot) return
+    if (!items.some((s) => s.key === selectedSpot.key)) setSelectedSpot(null)
+  }, [items, selectedSpot])
+
+  const handleOpenDetail = useCallback(
+    (spot: SheetSpot) => {
+      openSpotDetail(router, spot)
+    },
+    [router]
+  )
 
   const handleToggleLike = useCallback(
     async (spot: SheetSpot) => {
@@ -399,142 +428,173 @@ function NearbyPage() {
     [likedPlaceIds, router, loadUserLists]
   )
 
-  const emptyCopy = indoorOnly
-    ? {
-        title: 'この範囲に店内OK確認済みのスポットが見つかりませんでした',
-        hint: '「店内OK」フィルタを外すと、ほかのスポットも表示されます。',
-      }
-    : sheetTab === 'like'
-      ? { title: '近くのいいねはまだありません', hint: '気になるスポットにいいねしてみましょう。' }
-      : { title: '近くにスポットが見つかりませんでした', hint: '別のジャンルを試すか、位置情報をご確認ください。' }
+  const conditionCount = activeConditionCount(conditions)
+  const carouselBottom = TAB_BAR_HEIGHT + insets.bottom + 12
+  const showEmpty =
+    !spotsLoading && !searchLoading && items.length === 0 && (searchActive || !!location)
 
-  const sheetListExpanded = activeFilter !== null && sheetIndex >= 1
-  const showRecenter = activeFilter === null
-
-  // カルーセルはシートがピーク位置(index 0)のときだけ表示（引き上げたら縦リストに役割を渡す）
-  const carouselVisible = activeFilter !== null && sheetIndex === 0 && sheetItems.length > 0
-
-  const headerIcon = useMemo(() => {
-    if (!activeFilter) return null
-    if (activeFilter.kind === 'genre') {
-      return <GenreIcon genre={activeFilter.genre} size={22} color={MAP_GENRE_COLOR[activeFilter.genre]} />
-    }
-    if (activeFilter.kind === 'like') return <HeartHeaderIcon />
-    return null
-  }, [activeFilter])
-
-  const headerTitle = activeFilter ? mapFilterLabel(activeFilter) : ''
-
-  const listLoading =
-    (spotsLoading && sheetTab === 'score') || (userListsLoading && sheetTab !== 'score')
+  const emptyCopy = searchActive
+    ? conditionCount > 0
+      ? {
+          title: '条件に合う検索結果がありませんでした',
+          hint: '店内OK・テラスOKは確認済みのお店だけを表示しています。',
+          action: '条件をすべて解除',
+        }
+      : {
+          title: '検索結果が見つかりませんでした',
+          hint: '駅名・エリア名や、別のことばで試してみてください。',
+          action: null,
+        }
+    : conditionCount > 0
+      ? {
+          title: '条件に合うスポットがこの範囲に見つかりませんでした',
+          hint: '店内OK・テラスOKは確認済みのお店だけを表示しています。',
+          action: '条件をすべて解除',
+        }
+      : {
+          title: '近くにスポットが見つかりませんでした',
+          hint: '別のジャンルを試すか、位置情報をご確認ください。',
+          action: null,
+        }
 
   return (
     <GestureHandlerRootView style={styles.flex}>
-      <BottomSheetModalProvider>
-        <View style={styles.flex}>
-          <View style={styles.mapArea}>
-            <NearbyMapView
-              markers={mapMarkers}
-              likedPlaceIds={likedPlaceIds}
-              visitedPlaceIds={new Set<string>()}
-              selectedSpot={selectedSpot}
-              userLocation={location}
-              onSelectSpot={handleSelectSpot}
-              onClearSelection={() => setSelectedSpot(null)}
-              onOpenDetail={handleOpenDetail}
-              sheetOpen={sheetListExpanded}
-              showRecenter={showRecenter}
-              sheetAnimatedIndex={sheetAnimatedIndex}
-              bottomInset={sheetBottomInset}
-              topInset={overlayTop}
-              pinGenre={activeFilter?.kind === 'genre' ? activeFilter.genre : undefined}
-              hidePinPopup={carouselVisible}
-            />
+      <View style={styles.flex}>
+        <View style={styles.mapArea}>
+          <NearbyMapView
+            markers={items}
+            selectedSpot={selectedSpot}
+            userLocation={location}
+            onSelectSpot={setSelectedSpot}
+            onClearSelection={() => setSelectedSpot(null)}
+            topInset={overlayTop}
+            bottomInset={carouselBottom + 150}
+          />
 
-            {locationPermissionDenied ? (
-              <View style={[styles.permissionBanner, { top: overlayTop + 8 }]}>
-                <Text style={styles.permissionBannerTxt}>
-                  近くのスポットとお散歩予報には位置情報の許可が必要です（別の許可項目ではありません）。
-                </Text>
-                <View style={styles.permissionBtnRow}>
-                  <TouchableOpacity style={styles.permissionBtn} onPress={() => void refreshLocation()}>
-                    <Text style={styles.permissionBtnTxt}>許可を確認</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.permissionBtnGhost} onPress={() => void Linking.openSettings()}>
-                    <Text style={styles.permissionBtnGhostTxt}>設定を開く</Text>
-                  </TouchableOpacity>
-                </View>
+          {locationPermissionDenied ? (
+            <View style={[styles.permissionBanner, { top: overlayTop + 8 }]}>
+              <Text style={styles.permissionBannerTxt}>
+                近くのスポットとお散歩予報には位置情報の許可が必要です（別の許可項目ではありません）。
+              </Text>
+              <View style={styles.permissionBtnRow}>
+                <TouchableOpacity style={styles.permissionBtn} onPress={() => void refreshLocation()}>
+                  <Text style={styles.permissionBtnTxt}>許可を確認</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.permissionBtnGhost} onPress={() => void Linking.openSettings()}>
+                  <Text style={styles.permissionBtnGhostTxt}>設定を開く</Text>
+                </TouchableOpacity>
               </View>
-            ) : null}
-
-            {locationError ? (
-              <Text style={[styles.errOverlay, { top: overlayTop + 8 }]}>{locationError}</Text>
-            ) : null}
-            {spotsFetchError ? (
-              <Text style={[styles.errOverlay, { top: overlayTop + 8 }]}>{spotsFetchError}</Text>
-            ) : null}
-
-            {spotsLoading && activeFilter?.kind === 'genre' ? (
-              <View style={styles.loadingOverlay} pointerEvents="none">
-                <RunningDog label="近くのスポットを探し中..." />
-              </View>
-            ) : null}
-          </View>
-
-          {/* 地図UI（ジャンルフィルタ）— リストより下のレイヤー。お散歩アラートは検索タブ上部カードへ移設 */}
-          <View style={styles.mapOverlays} pointerEvents="box-none">
-            <MapFilterBar
-              active={activeFilter}
-              indoorOnly={indoorOnly}
-              onSelect={handleFilterSelect}
-              onToggleIndoor={handleToggleIndoorOnly}
-              topInset={filterBarTop}
-            />
-          </View>
-
-          {/* 地図下の横スワイプカルーセル — シートがピークのときだけ表示 */}
-          {carouselVisible ? (
-            <NearbySpotCarousel
-              items={sheetItems}
-              selectedKey={selectedSpot?.key ?? null}
-              userLocation={location}
-              likedPlaceIds={likedPlaceIds}
-              onToggleLike={(s) => void handleToggleLike(s)}
-              onPressSpot={handleOpenDetail}
-              onSelectSpot={handleSelectSpot}
-              bottomOffset={sheetBottomInset + 12}
-            />
+            </View>
           ) : null}
 
-          {/* リストは最前面 — 上げたときに地図UIの裏へ隠れる */}
-          <View style={styles.sheetHost} pointerEvents="box-none">
-            <NearbyBottomSheet
-              ref={sheetControl}
-              open={activeFilter !== null}
-              animatedIndex={sheetAnimatedIndex}
-              tab={sheetTab}
-              items={sheetItems}
-              userLocation={location}
-              loading={listLoading}
-              emptyTitle={emptyCopy.title}
-              emptyHint={emptyCopy.hint}
-              emptyActionLabel={indoorOnly ? '店内OKフィルタを解除' : undefined}
-              onEmptyAction={indoorOnly ? handleToggleIndoorOnly : undefined}
-              onDiscover={() => router.push('/(tabs)/search')}
-              onPressSpot={handleOpenDetail}
-              likedPlaceIds={likedPlaceIds}
-              onToggleLike={(s) => void handleToggleLike(s)}
-              onClose={clearFilter}
-              headerIcon={headerIcon}
-              headerTitle={headerTitle}
-              headerCount={sheetItems.length}
-              onSheetPositionChange={setSheetBottomInset}
-              onSheetIndexChange={handleSheetIndexChange}
-            />
-          </View>
-        </View>
-      </BottomSheetModalProvider>
+          {locationError ? (
+            <Text style={[styles.errOverlay, { top: overlayTop + 8 }]}>{locationError}</Text>
+          ) : null}
+          {spotsFetchError ? (
+            <Text style={[styles.errOverlay, { top: overlayTop + 8 }]}>{spotsFetchError}</Text>
+          ) : null}
 
+          {spotsLoading || searchLoading ? (
+            <View style={styles.loadingOverlay} pointerEvents="none">
+              <RunningDog label={searchLoading ? 'スポットを検索中...' : '近くのスポットを探し中...'} />
+            </View>
+          ) : null}
+        </View>
+
+        {/* 地図上部: 検索バー（旧検索ホームから統合）＋フィルタバー */}
+        <View style={styles.mapOverlays} pointerEvents="box-none">
+          <View style={[styles.searchBarWrap, { top: searchBarTop }]}>
+            <View style={styles.searchPill}>
+              <Ionicons name="search" size={18} color={colors.textSecondary} />
+              <TextInput
+                style={styles.searchInput}
+                value={query}
+                onChangeText={setQuery}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                onSubmitEditing={() => void executeSearch(query)}
+                placeholder="スポット・駅・エリアを検索"
+                placeholderTextColor={colors.textSecondary}
+                returnKeyType="search"
+                autoCorrect={false}
+              />
+              {query.length > 0 || searchActive ? (
+                <TouchableOpacity onPress={clearSearch} hitSlop={8} accessibilityLabel="検索をクリア">
+                  <Ionicons name="close-circle" size={18} color="#BBB" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+
+          {searchActive ? (
+            <View style={[styles.resultBar, { top: filterBarTop + 8 }]}>
+              <Text style={styles.resultBarTxt} numberOfLines={1}>
+                「{query.trim()}」の検索結果 {items.length}件
+              </Text>
+              <TouchableOpacity onPress={clearSearch} hitSlop={8} accessibilityLabel="検索結果を閉じる">
+                <Text style={styles.resultBarClose}>閉じる</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <MapFilterBar
+              genre={genre}
+              conditions={conditions}
+              onSelectGenre={handleSelectGenre}
+              onToggleCondition={handleToggleCondition}
+              topInset={filterBarTop}
+            />
+          )}
+
+          {searchFocused && !searchActive ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              style={[styles.sugRow, { top: overlayTop + 4 }]}
+              contentContainerStyle={styles.sugRowContent}
+            >
+              {SEARCH_SUGGESTIONS.map((tag) => (
+                <TouchableOpacity
+                  key={tag}
+                  style={styles.sugChip}
+                  onPress={() => {
+                    setQuery(tag)
+                    void executeSearch(tag)
+                  }}
+                >
+                  <Text style={styles.sugChipTxt}>{tag}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : null}
+        </View>
+
+        {/* 地図下の横スワイプカルーセル（常設・シートは廃止） */}
+        {items.length > 0 ? (
+          <NearbySpotCarousel
+            items={items}
+            selectedKey={selectedSpot?.key ?? null}
+            userLocation={location}
+            likedPlaceIds={likedPlaceIds}
+            onToggleLike={(s) => void handleToggleLike(s)}
+            onPressSpot={handleOpenDetail}
+            onSelectSpot={setSelectedSpot}
+            bottomOffset={carouselBottom}
+          />
+        ) : null}
+
+        {showEmpty ? (
+          <View style={[styles.emptyCard, { bottom: carouselBottom }]}>
+            <Text style={styles.emptyTitle}>{emptyCopy.title}</Text>
+            <Text style={styles.emptyHint}>{emptyCopy.hint}</Text>
+            {emptyCopy.action ? (
+              <TouchableOpacity style={styles.emptyActionBtn} onPress={clearConditions}>
+                <Text style={styles.emptyActionTxt}>{emptyCopy.action}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
     </GestureHandlerRootView>
   )
 }
@@ -549,11 +609,6 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 2,
     elevation: 2,
-  },
-  sheetHost: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 10,
-    elevation: 10,
   },
   permissionBanner: {
     position: 'absolute',
@@ -603,6 +658,91 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(247,246,243,0.96)',
     zIndex: 7,
   },
+  emptyCard: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    gap: 6,
+    zIndex: 9,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+  },
+  searchBarWrap: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 5,
+  },
+  searchPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 48,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+  },
+  searchInput: { flex: 1, fontSize: 15, color: colors.textPrimary, paddingVertical: 0 },
+  resultBar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  resultBarTxt: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  resultBarClose: { fontSize: 13, fontWeight: '800', color: colors.brandDark },
+  sugRow: { position: 'absolute', left: 0, right: 0 },
+  sugRowContent: { paddingHorizontal: 16, gap: 8, flexDirection: 'row' },
+  sugChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sugChipTxt: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  emptyTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  emptyHint: { fontSize: 12, color: '#888', lineHeight: 18 },
+  emptyActionBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: colors.brandButton,
+    borderWidth: 1,
+    borderColor: colors.brandDark,
+  },
+  emptyActionTxt: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
 })
 
 export default function NearbyPageScreen() {
