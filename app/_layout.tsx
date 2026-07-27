@@ -14,6 +14,7 @@ import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import { AuthProvider } from '@/context/AuthContext'
 import { initAnalytics } from '@/lib/analytics'
 import { useNotificationDeeplink } from '@/lib/notifications/use-notification-deeplink'
+import { logUserEvent } from '@/lib/user-events'
 import { perfMark } from '@/lib/perf/marks'
 
 perfMark('app:root-layout')
@@ -47,6 +48,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     initAnalytics()
+    // セッションの起点を記録（ログイン済みのときのみ記録される）
+    logUserEvent({ eventType: 'app_open' })
   }, [])
 
   useEffect(() => {

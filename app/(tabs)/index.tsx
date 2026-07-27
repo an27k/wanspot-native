@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Keyboard,
   Linking,
@@ -36,6 +36,8 @@ import {
   writeCache,
 } from '@/lib/client-cache'
 import { resolveSessionLocation } from '@/lib/location-session'
+import { setAnalyticsLocation } from '@/lib/analytics-context'
+import { logUserEvent } from '@/lib/user-events'
 import {
   fetchAllNearbySpotsWithExpansion,
   fetchNearbySpotsForGenreWithExpansion,
@@ -147,6 +149,8 @@ function NearbyPage() {
       if (typeof json.lat === 'number' && typeof json.lng === 'number') {
         setSelectedSpot(null)
         setSearchAnchor({ lat: json.lat, lng: json.lng, label: p.main_text })
+        // どのエリアに関心があるか（おでかけ先の需要分析）
+        logUserEvent({ eventType: 'area_search', props: { label: p.main_text, lat: json.lat, lng: json.lng } })
       }
     } catch {
       /* 解決失敗時は現状維持（現在地表示のまま） */
@@ -216,6 +220,8 @@ function NearbyPage() {
     }
     setLocationPermissionDenied(false)
     setLocationError('')
+    // 分析文脈へ供給（許可済みの位置のみ。以降のイベントに自動で添えられる）
+    setAnalyticsLocation(result.location)
     if (result.changed) setLocation(result.location)
     return true
   }, [location])
@@ -225,6 +231,14 @@ function NearbyPage() {
       void refreshLocation()
     }, [refreshLocation])
   )
+
+  // 地図の初回表示を記録（現在地周辺のブラウズ行動。位置が取れていれば一緒に残る）
+  const mapViewLoggedRef = useRef(false)
+  useEffect(() => {
+    if (!location || mapViewLoggedRef.current) return
+    mapViewLoggedRef.current = true
+    logUserEvent({ eventType: 'map_view' })
+  }, [location?.lat, location?.lng])
 
   const loadNearbySpots = useCallback(
     async (force = false) => {

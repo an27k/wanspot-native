@@ -1,3 +1,4 @@
+import { getAnalyticsContext } from '@/lib/analytics-context'
 import { supabase } from '@/lib/supabase'
 
 /** user_events.event_type 初期セット */
@@ -12,6 +13,12 @@ export type UserEventType =
   | 'ai_plan_adopted'
   | 'vlog_generate'
   | 'share'
+  /** アプリ起動（セッションの起点。位置・犬属性のカバレッジを確保する） */
+  | 'app_open'
+  /** 地図の表示（現在地周辺のブラウズ行動） */
+  | 'map_view'
+  /** 地図検索での地点確定（どのエリアに関心があるか） */
+  | 'area_search'
 
 type LogUserEventParams = {
   eventType: UserEventType
@@ -37,10 +44,19 @@ export function logUserEvent(params: LogUserEventParams): void {
       }
       if (!userId) return
 
+      // 位置・犬属性・端末は毎回同じ文脈を自動付与する（呼び出し側は意識しなくてよい）
+      const ctx = getAnalyticsContext()
       const row: Record<string, unknown> = {
         user_id: userId,
         event_type: params.eventType,
         props: params.props ?? {},
+        lat: ctx.lat,
+        lng: ctx.lng,
+        dog_breed: ctx.dog_breed,
+        dog_size: ctx.dog_size,
+        platform: ctx.platform,
+        app_version: ctx.app_version,
+        session_id: ctx.session_id,
       }
       if (params.spotId) row.spot_id = params.spotId
 

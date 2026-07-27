@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
 import type { DogProfile } from '@/lib/dog-display'
 import { CACHE_TTL, fetchWithCache } from '@/lib/client-cache'
+import { setAnalyticsDogProfile } from '@/lib/analytics-context'
 import { supabase } from '@/lib/supabase'
 
 function toDogProfile(dogData: Record<string, unknown>): DogProfile {
@@ -45,6 +46,8 @@ export function useDogProfile() {
     )
 
     setDog(cachedDog)
+    // 分析文脈へ供給（イベント時点の犬種・サイズのスナップショットになる）
+    setAnalyticsDogProfile(cachedDog?.breed ?? null, cachedDog?.size ?? null)
     setLoading(false)
     return cachedDog
   }, [])
