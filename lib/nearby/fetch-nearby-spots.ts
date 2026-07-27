@@ -53,10 +53,12 @@ async function fetchDogRunSpotsForQuery(
 async function fetchDogRunSpots(lat: number, lng: number, radiusM: number): Promise<PlaceResult[]> {
   // テキスト検索（Google 20件上限）と、収集済みDB併合ルート（/api/spots/nearby type=dog_run）を並列で引く。
   // 後者はサーバーがDBのドッグランを半径内で返すため、テキスト検索の取りこぼしを補える
-  const [primary, fromDb] = await Promise.all([
+  const [primary, fromDbRaw] = await Promise.all([
     fetchDogRunSpotsForQuery(DOG_RUN_SEARCH_QUERY, lat, lng, radiusM),
     fetchNearbyByType(lat, lng, radiusM, 'dog_run'),
   ])
+  // 併合ルートには Google のキーワード検索ノイズ（サロン・病院等）が混ざるため、必ずジャンル述語を通す
+  const fromDb = fromDbRaw.filter((spot) => placeMatchesGenreFilter(spot, 'dog_run'))
   const merged = new Map<string, PlaceResult>()
   for (const spot of [...primary, ...fromDb]) {
     if (spot.place_id) merged.set(spot.place_id, spot)
