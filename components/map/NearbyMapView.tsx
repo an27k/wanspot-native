@@ -74,6 +74,7 @@ function NormalMapPin({ genreColor, selected }: { genreColor: string; selected: 
 export function NearbyMapView({
   markers,
   selectedSpot,
+  focusCenter = null,
   userLocation,
   onSelectSpot,
   onClearSelection,
@@ -82,6 +83,8 @@ export function NearbyMapView({
 }: {
   markers: SheetSpot[]
   selectedSpot: SheetSpot | null
+  /** 検索で確定した地点。設定されたらそこへ移動し、解除されたら現在地へ戻る */
+  focusCenter?: { lat: number; lng: number } | null
   userLocation: { lat: number; lng: number } | null
   onSelectSpot: (spot: SheetSpot) => void
   onClearSelection: () => void
@@ -122,6 +125,24 @@ export function NearbyMapView({
     setRegion(next)
     mapRef.current?.animateToRegion(next, 400)
   }, [userLocation?.lat, userLocation?.lng])
+
+  // 検索地点の確定/解除に追従（確定→その地点へ・解除→現在地へ）
+  const focusInitRef = useRef(false)
+  useEffect(() => {
+    if (!focusInitRef.current) {
+      // 初回マウント時は initialRegion に任せる（null での不要な現在地アニメを避ける）
+      focusInitRef.current = true
+      if (!focusCenter) return
+    }
+    if (focusCenter) {
+      mapRef.current?.animateToRegion(
+        { latitude: focusCenter.lat, longitude: focusCenter.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 },
+        450
+      )
+    } else if (userLocation) {
+      mapRef.current?.animateToRegion(regionForLocation(userLocation.lat, userLocation.lng), 450)
+    }
+  }, [focusCenter?.lat, focusCenter?.lng])
 
   // カルーセルのスワイプ／ピンタップに追従して、選択スポットへ滑らかに寄せる
   useEffect(() => {

@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Keyboard,
   Linking,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -60,19 +59,11 @@ import type { PlaceResult } from '@/types/places'
 const FILTER_BAR_H = 52
 const SEARCH_BAR_H = 56
 
-/** サーバーが返す検索中心。駅・エリア解決時は現在地ではなくその座標が距離の基準になる */
-type SearchCenter = { lat: number; lng: number; source: 'user' | 'station' | 'area' }
+/** 検索窓の予測候補（Google Places Autocomplete。地名・駅・施設） */
+type PlacePrediction = { place_id: string; main_text: string; secondary_text: string }
 
-/** 検索バーフォーカス時のサジェスト（全国どこでも意味が通る条件語のみ） */
-const SEARCH_SUGGESTIONS = [
-  'ドッグラン',
-  '室内ドッグラン',
-  '大型犬可',
-  '雨の日OK',
-  '犬と泊まれる',
-  'ドッグビーチ',
-  '犬と温泉',
-]
+/** 確定した検索地点。この地点を中心に周辺スポットを取得・表示する */
+type SearchAnchor = { lat: number; lng: number; label: string }
 
 function NearbyPage() {
   const router = useRouter()
@@ -99,48 +90,71 @@ function NearbyPage() {
   const [selectedSpot, setSelectedSpot] = useState<SheetSpot | null>(null)
   const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({})
 
-  /** テキスト検索（旧検索ホームから統合）。結果はマップのピン＋カルーセルに流す */
+  /** 地図検索窓（Googleマップ型）: 地名・駅・施設名を予測 → 確定地点の周辺スポットを全表示 */
   const [query, setQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
-  const [searchLoading, setSearchLoading] = useState(false)
-  const [searchResults, setSearchResults] = useState<PlaceResult[] | null>(null)
-  const [searchCenter, setSearchCenter] = useState<SearchCenter | null>(null)
+  const [predictions, setPredictions] = useState<PlacePrediction[]>([])
+  const [resolving, setResolving] = useState(false)
+  const [searchAnchor, setSearchAnchor] = useState<SearchAnchor | null>(null)
+
+  // 入力に追従して予測候補を取得（350msデバウンス・2文字以上）
+  useEffect(() => {
+    const trimmed = query.trim()
+    if (!searchFocused || trimmed.length < 2) {
+      setPredictions([])
+      return
+    }
+    const t = setTimeout(() => {
+      void (async () => {
+        try {
+          const bias = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
+          const res = await wanspotFetch(
+            `/api/places/autocomplete?q=${encodeURIComponent(trimmed)}${bias}`,
+            { auth: false }
+          )
+          const json = (await res.json()) as { predictions?: PlacePrediction[] }
+          setPredictions(json.predictions ?? [])
+        } catch {
+          setPredictions([])
+        }
+      })()
+    }, 350)
+    return () => clearTimeout(t)
+  }, [query, searchFocused, location?.lat, location?.lng])
 
   const clearSearch = useCallback(() => {
     setQuery('')
-    setSearchResults(null)
-    setSearchCenter(null)
+    setPredictions([])
+    setSearchAnchor(null) // 地点を外したら現在地表示に戻る
     setSelectedSpot(null)
     Keyboard.dismiss()
   }, [])
 
-  const executeSearch = useCallback(
-    async (rawQuery: string) => {
-      const trimmed = rawQuery.trim()
-      if (!trimmed) return
-      Keyboard.dismiss()
-      setSearchFocused(false)
-      setSearchLoading(true)
-      try {
-        const locationParam = location ? `&lat=${location.lat}&lng=${location.lng}` : ''
-        const res = await wanspotFetch(`/api/spots/search?q=${encodeURIComponent(trimmed)}${locationParam}`)
-        const data = (await res.json()) as { spots?: PlaceResult[]; search_center?: SearchCenter | null }
-        const spots = data.spots ?? []
-        setSearchResults(spots)
-        const sc = data.search_center
-        setSearchCenter(sc && typeof sc.lat === 'number' && typeof sc.lng === 'number' ? sc : null)
+  /** 予測候補を確定 → 座標解決してその地点を検索アンカーにする */
+  const selectPrediction = useCallback(async (p: PlacePrediction) => {
+    Keyboard.dismiss()
+    setSearchFocused(false)
+    setPredictions([])
+    setQuery(p.main_text)
+    setResolving(true)
+    try {
+      const res = await wanspotFetch(`/api/places/resolve?place_id=${encodeURIComponent(p.place_id)}`, {
+        auth: false,
+      })
+      if (!res.ok) return
+      const json = (await res.json()) as { lat?: number; lng?: number; name?: string }
+      if (typeof json.lat === 'number' && typeof json.lng === 'number') {
         setSelectedSpot(null)
-      } catch {
-        setSearchResults([])
-        setSearchCenter(null)
-      } finally {
-        setSearchLoading(false)
+        setSearchAnchor({ lat: json.lat, lng: json.lng, label: p.main_text })
       }
-    },
-    [location]
-  )
+    } catch {
+      /* 解決失敗時は現状維持（現在地表示のまま） */
+    } finally {
+      setResolving(false)
+    }
+  }, [])
 
-  const searchActive = searchResults !== null
+  const searchActive = searchAnchor !== null
 
   // 保存済みの条件を復元（旧 店内OK 単独キーからのマイグレーション込み）。
   // ジャンルは復元しない — デフォルト表示は常に「現在地の全ジャンル」（ジャンル絞りはセッション内のみ）
@@ -168,15 +182,11 @@ function NearbyPage() {
     })()
   }, [])
 
-  const handleSelectGenre = useCallback(
-    (next: MapGenreKey | null) => {
-      // 検索結果表示中にジャンルを触ったら「ブラウズに戻る」操作として検索を閉じる
-      if (searchActive) clearSearch()
-      setGenre(next)
-      setSelectedSpot(null)
-    },
-    [searchActive, clearSearch]
-  )
+  const handleSelectGenre = useCallback((next: MapGenreKey | null) => {
+    // 検索地点を選んでいる間もアンカーは維持する（ジャンル絞り込みで現在地に戻さない）
+    setGenre(next)
+    setSelectedSpot(null)
+  }, [])
 
   const handleToggleCondition = useCallback((key: keyof MapConditionFilter) => {
     setConditions((prev) => {
@@ -217,10 +227,12 @@ function NearbyPage() {
 
   const loadNearbySpots = useCallback(
     async (force = false) => {
-      if (!location || !prefsReady) return
+      // 検索地点があればそこを中心に、なければ現在地を中心に取得する
+      const center = searchAnchor ?? location
+      if (!center || !prefsReady) return
 
       const genreKey = genre ?? NEARBY_GENRE_ALL
-      const cacheKey = `nearby:spots:${genreKey}:${geoBucket(location.lat, location.lng)}:exp`
+      const cacheKey = `nearby:spots:${genreKey}:${geoBucket(center.lat, center.lng)}:exp`
       if (!force && isCacheFresh(cacheKey, CACHE_TTL.NEARBY_SPOTS_MS)) {
         const cached = readCache<{ spots: PlaceResult[]; error: string }>(cacheKey)
         if (cached) {
@@ -240,14 +252,14 @@ function NearbyPage() {
 
       const { spots, error } =
         genre === null
-          ? await fetchAllNearbySpotsWithExpansion(location)
-          : await fetchNearbySpotsForGenreWithExpansion(location, genre)
+          ? await fetchAllNearbySpotsWithExpansion(center)
+          : await fetchNearbySpotsForGenreWithExpansion(center, genre)
       writeCache(cacheKey, { spots, error: error ?? '' })
       setNearbyPlaces(spots)
       setSpotsFetchError(error ?? '')
       setSpotsLoading(false)
     },
-    [location?.lat, location?.lng, genre, prefsReady]
+    [location?.lat, location?.lng, searchAnchor?.lat, searchAnchor?.lng, genre, prefsReady]
   )
 
   useEffect(() => {
@@ -329,35 +341,16 @@ function NearbyPage() {
   }, [likedRows, likedOverrides])
 
   const items = useMemo(() => {
-    // 検索結果表示中: 結果を検索中心（駅・エリア解決があればそちら）からの距離順で表示。条件フィルタは重ね掛け
-    if (searchResults !== null) {
-      const base = searchCenter ?? location
-      const sorted = base ? sortPlacesByScore(searchResults, base) : searchResults
-      return applyMapConditions(
-        sorted.map(sheetSpotFromPlace),
-        conditions,
-        (s) => likedPlaceIds.has(s.placeId)
-      )
-    }
-
-    const scored = sortPlacesByScore(nearbyPlaces, location).map(sheetSpotFromPlace)
-    // 全ジャンル表示のときは、取得半径の外にあるいいねスポットも棚に合流させる
+    const center = searchAnchor ?? location
+    const scored = sortPlacesByScore(nearbyPlaces, center).map(sheetSpotFromPlace)
+    // 現在地×全ジャンル表示のときだけ、取得半径の外にあるいいねスポットも棚に合流させる
     let base = scored
-    if (genre === null && likedRows.length > 0) {
+    if (!searchAnchor && genre === null && likedRows.length > 0) {
       const seen = new Set(scored.map((s) => s.placeId).filter(Boolean))
       base = [...scored, ...likedRows.filter((s) => s.placeId && !seen.has(s.placeId))]
     }
     return applyMapConditions(base, conditions, (s) => likedPlaceIds.has(s.placeId))
-  }, [searchResults, searchCenter, nearbyPlaces, location, genre, likedRows, conditions, likedPlaceIds])
-
-  // 検索直後は先頭の結果を選択してマップを検索エリアへ寄せる（カルーセルとピンが即同期する）
-  useEffect(() => {
-    if (!searchActive) return
-    if (selectedSpot) return
-    if (items.length > 0) setSelectedSpot(items[0])
-    // items は検索結果確定後に同期的に決まるため、この effect は検索完了ごとに一度だけ効く
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchActive, searchResults])
+  }, [searchAnchor, nearbyPlaces, location, genre, likedRows, conditions, likedPlaceIds])
 
   // 絞り込みで選択中スポットが消えたら、選択も静かに外す
   useEffect(() => {
@@ -415,18 +408,18 @@ function NearbyPage() {
   const conditionCount = activeConditionCount(conditions)
   const carouselBottom = TAB_BAR_HEIGHT + insets.bottom + 12
   const showEmpty =
-    !spotsLoading && !searchLoading && items.length === 0 && (searchActive || !!location)
+    !spotsLoading && !resolving && items.length === 0 && (searchActive || !!location)
 
   const emptyCopy = searchActive
     ? conditionCount > 0
       ? {
-          title: '条件に合う検索結果がありませんでした',
+          title: '条件に合うスポットがこの周辺にありませんでした',
           hint: '店内OK・テラスOKは確認済みのお店だけを表示しています。',
           action: '条件をすべて解除',
         }
       : {
-          title: '検索結果が見つかりませんでした',
-          hint: '駅名・エリア名や、別のことばで試してみてください。',
+          title: 'この周辺のスポットが見つかりませんでした',
+          hint: '少し広いエリア名や近くの駅名で試してみてください。',
           action: null,
         }
     : conditionCount > 0
@@ -448,6 +441,7 @@ function NearbyPage() {
           <NearbyMapView
             markers={items}
             selectedSpot={selectedSpot}
+            focusCenter={searchAnchor}
             userLocation={location}
             onSelectSpot={setSelectedSpot}
             onClearSelection={() => setSelectedSpot(null)}
@@ -478,9 +472,9 @@ function NearbyPage() {
             <Text style={[styles.errOverlay, { top: overlayTop + 8 }]}>{spotsFetchError}</Text>
           ) : null}
 
-          {spotsLoading || searchLoading ? (
+          {spotsLoading || resolving ? (
             <View style={styles.loadingOverlay} pointerEvents="none">
-              <RunningDog label={searchLoading ? 'スポットを検索中...' : '近くのスポットを探し中...'} />
+              <RunningDog label={resolving ? '場所を探しています...' : '周辺のスポットを探し中...'} />
             </View>
           ) : null}
         </View>
@@ -496,8 +490,10 @@ function NearbyPage() {
                 onChangeText={setQuery}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
-                onSubmitEditing={() => void executeSearch(query)}
-                placeholder="スポット・駅・エリアを検索"
+                onSubmitEditing={() => {
+                  if (predictions[0]) void selectPrediction(predictions[0])
+                }}
+                placeholder="場所・駅・スポット名で検索"
                 placeholderTextColor={colors.textSecondary}
                 returnKeyType="search"
                 autoCorrect={false}
@@ -510,46 +506,49 @@ function NearbyPage() {
             </View>
           </View>
 
+          {/* ジャンル・条件バーは検索地点選択中も表示（アンカーを維持したまま絞り込める） */}
+          <MapFilterBar
+            genre={genre}
+            conditions={conditions}
+            onSelectGenre={handleSelectGenre}
+            onToggleCondition={handleToggleCondition}
+            topInset={filterBarTop}
+          />
+
           {searchActive ? (
-            <View style={[styles.resultBar, { top: filterBarTop + 8 }]}>
+            <View style={[styles.resultBar, { top: overlayTop + 4 }]}>
               <Text style={styles.resultBarTxt} numberOfLines={1}>
-                「{query.trim()}」の検索結果 {items.length}件
+                {searchAnchor!.label} 周辺のスポット {items.length}件
               </Text>
-              <TouchableOpacity onPress={clearSearch} hitSlop={8} accessibilityLabel="検索結果を閉じる">
-                <Text style={styles.resultBarClose}>閉じる</Text>
+              <TouchableOpacity onPress={clearSearch} hitSlop={8} accessibilityLabel="検索地点を解除して現在地に戻る">
+                <Text style={styles.resultBarClose}>現在地に戻る</Text>
               </TouchableOpacity>
             </View>
-          ) : (
-            <MapFilterBar
-              genre={genre}
-              conditions={conditions}
-              onSelectGenre={handleSelectGenre}
-              onToggleCondition={handleToggleCondition}
-              topInset={filterBarTop}
-            />
-          )}
+          ) : null}
 
-          {searchFocused && !searchActive ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              style={[styles.sugRow, { top: overlayTop + 4 }]}
-              contentContainerStyle={styles.sugRowContent}
-            >
-              {SEARCH_SUGGESTIONS.map((tag) => (
+          {/* 予測候補ドロップダウン（Googleマップ型: 地名・駅・施設） */}
+          {searchFocused && predictions.length > 0 ? (
+            <View style={[styles.predList, { top: filterBarTop + 4 }]}>
+              {predictions.map((pItem) => (
                 <TouchableOpacity
-                  key={tag}
-                  style={styles.sugChip}
-                  onPress={() => {
-                    setQuery(tag)
-                    void executeSearch(tag)
-                  }}
+                  key={pItem.place_id}
+                  style={styles.predRow}
+                  onPress={() => void selectPrediction(pItem)}
                 >
-                  <Text style={styles.sugChipTxt}>{tag}</Text>
+                  <Ionicons name="location-outline" size={17} color={colors.textSecondary} />
+                  <View style={styles.predTextCol}>
+                    <Text style={styles.predMain} numberOfLines={1}>
+                      {pItem.main_text}
+                    </Text>
+                    {pItem.secondary_text ? (
+                      <Text style={styles.predSub} numberOfLines={1}>
+                        {pItem.secondary_text}
+                      </Text>
+                    ) : null}
+                  </View>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
           ) : null}
         </View>
 
@@ -703,17 +702,34 @@ const styles = StyleSheet.create({
   },
   resultBarTxt: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.textPrimary },
   resultBarClose: { fontSize: 13, fontWeight: '800', color: colors.brandDark },
-  sugRow: { position: 'absolute', left: 0, right: 0 },
-  sugRowContent: { paddingHorizontal: 16, gap: 8, flexDirection: 'row' },
-  sugChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
+  predList: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
     backgroundColor: '#fff',
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    overflow: 'hidden',
+    zIndex: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
-  sugChipTxt: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  predRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  predTextCol: { flex: 1 },
+  predMain: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  predSub: { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
   emptyTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   emptyHint: { fontSize: 12, color: '#888', lineHeight: 18 },
   emptyActionBtn: {
