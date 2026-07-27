@@ -112,6 +112,6 @@ export async function completeOnboarding(params: {
   await AsyncStorage.setItem(POST_ONBOARDING_TUTORIAL_KEY, '1')
   await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, '1')
 
-  params.router.replace('/(tabs)/index')
+  params.router.replace('/(tabs)')
   return { ok: true }
 }

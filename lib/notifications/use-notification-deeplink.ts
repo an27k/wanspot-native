@@ -39,7 +39,7 @@ function navigateFromResponse(
 
   if (data.type !== MEMORY_ANNIVERSARY_TYPE) return
   const pathname =
-    data.url === '/(tabs)/camera' && !REVIEW_ALBUM_TAB_ENABLED ? '/(tabs)/index' : data.url
+    data.url === '/(tabs)/camera' && !REVIEW_ALBUM_TAB_ENABLED ? '/(tabs)' : data.url
   push({
     pathname,
     params: data.visitId ? { focusVisitId: data.visitId } : undefined,

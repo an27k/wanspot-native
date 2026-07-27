@@ -55,5 +55,5 @@ export default function Index() {
   }
   if (gate === 'login') return <Redirect href="/(auth)/login" />
   if (gate === 'onboard') return <Redirect href="/onboarding/location" />
-  return <Redirect href="/(tabs)/search" />
+  return <Redirect href="/(tabs)" />
 }

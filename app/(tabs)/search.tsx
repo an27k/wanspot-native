@@ -6,5 +6,5 @@ import { Redirect } from 'expo-router'
  * 旧実装のコンポーネント群（components/search/ 等）は各タブへ移設済みか、フラグ付きで温存。
  */
 export default function LegacySearchRedirect() {
-  return <Redirect href="/(tabs)/index" />
+  return <Redirect href="/(tabs)" />
 }
