@@ -493,7 +493,7 @@ function NearbyPage() {
                 onSubmitEditing={() => {
                   if (predictions[0]) void selectPrediction(predictions[0])
                 }}
-                placeholder="場所・駅・スポット名で検索"
+                placeholder="現在地以外の場所・駅・スポット名で検索"
                 placeholderTextColor={colors.textSecondary}
                 returnKeyType="search"
                 autoCorrect={false}
