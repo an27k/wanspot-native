@@ -89,7 +89,7 @@ function buildContent(item: MemoryAnniversary, dogName: string): Notifications.N
     sound: false,
     data: {
       type: MEMORY_ANNIVERSARY_TYPE,
-      url: REVIEW_ALBUM_TAB_ENABLED ? '/(tabs)/camera' : '/(tabs)/search',
+      url: REVIEW_ALBUM_TAB_ENABLED ? '/(tabs)/camera' : '/(tabs)/index',
       visitId: item.plate.id,
     },
   }

@@ -26,6 +26,8 @@ import { SOFT_SPRING } from '@/lib/motion/constants'
 import { colors } from '@/constants/colors'
 
 function isTabBarVisible(routeName: string): boolean {
+  // 旧検索ホームはタブから撤去（ルート自体はリダイレクト互換のため残存）
+  if (routeName === 'search') return false
   if (routeName === 'camera' && !REVIEW_ALBUM_TAB_ENABLED) return false
   return true
 }
