@@ -7,7 +7,7 @@ import {
   matchesGenre,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
-import { placeIsIndoorPetOk, type PetPolicySource } from '@/lib/nearby/pet-policy'
+import { placeIsIndoorPetOk, placeIsTerracePetOk, type PetPolicySource } from '@/lib/nearby/pet-policy'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import type { PlaceResult } from '@/types/places'
 
@@ -34,6 +34,40 @@ export type MapFilterState = {
 /** indoorOnly が ON のときだけ「確認済み店内OK」述語で絞る（OFF なら母集団そのまま） */
 export function applyIndoorOnlyFilter<T extends PetPolicySource>(items: T[], indoorOnly: boolean): T[] {
   return indoorOnly ? items.filter(placeIsIndoorPetOk) : items
+}
+
+/**
+ * 条件フィルタ（店内OK・テラスOK・いいね）。ジャンル絞り込みと直交して重ね掛けできる。
+ * フィルタバー最左のじょうごボタンに格納され、複数 ON は AND で合成する。
+ */
+export type MapConditionFilter = {
+  indoorOnly: boolean
+  terraceOnly: boolean
+  likedOnly: boolean
+}
+
+export const EMPTY_MAP_CONDITIONS: MapConditionFilter = {
+  indoorOnly: false,
+  terraceOnly: false,
+  likedOnly: false,
+}
+
+/** ON になっている条件の数（じょうごボタンのバッジ表示用） */
+export function activeConditionCount(cond: MapConditionFilter): number {
+  return Number(cond.indoorOnly) + Number(cond.terraceOnly) + Number(cond.likedOnly)
+}
+
+/** 条件フィルタを AND で適用する。isLiked はいいね判定（likedPlaceIds ＋ 楽観更新の合成を呼び出し側が渡す） */
+export function applyMapConditions<T extends PetPolicySource>(
+  items: T[],
+  cond: MapConditionFilter,
+  isLiked: (item: T) => boolean
+): T[] {
+  let out = items
+  if (cond.indoorOnly) out = out.filter(placeIsIndoorPetOk)
+  if (cond.terraceOnly) out = out.filter(placeIsTerracePetOk)
+  if (cond.likedOnly) out = out.filter(isLiked)
+  return out
 }
 
 export function isSameMapFilter(a: MapFilter | null, b: MapFilter): boolean {

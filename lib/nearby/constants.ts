@@ -15,8 +15,15 @@ export const NEARBY_DEFAULT_SHEET_INDEX = 1
 
 export const NEARBY_MAP_GENRE_STORAGE_KEY = 'nearby_map_genre_v1'
 
-/** 「店内OK」常設フィルタの永続化キー（夏冬の常用条件になるため選択状態を保存する） */
+/** 「店内OK」常設フィルタの永続化キー（夏冬の常用条件になるため選択状態を保存する）
+ *  @deprecated v96 で NEARBY_MAP_CONDITIONS_STORAGE_KEY へ移行（読み取りマイグレーションのみ残置） */
 export const NEARBY_INDOOR_ONLY_STORAGE_KEY = 'nearby_indoor_only_v1'
+
+/** 条件フィルタ（店内OK・テラスOK・いいね）の永続化キー（MapConditionFilter を JSON 保存） */
+export const NEARBY_MAP_CONDITIONS_STORAGE_KEY = 'nearby_map_conditions_v1'
+
+/** ジャンル永続化で「全ジャンル表示」を表す番兵値 */
+export const NEARBY_GENRE_ALL = 'all'
 
 /** 地図上ジャンル（6種）。icon は Ionicons 名、match は category 文字列照合用キーワード。 */
 export const MAP_GENRE_CHIPS = [

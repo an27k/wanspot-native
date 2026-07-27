@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Dimensions,
-  type LayoutChangeEvent,
+  Animated,
   Platform,
   StyleSheet,
   Text,
@@ -12,60 +11,20 @@ import { colors } from '@/constants/colors'
 import ClusteredMapView from 'react-native-map-clustering'
 import { Marker, PROVIDER_GOOGLE, type Region } from 'react-native-maps'
 import { Ionicons } from '@expo/vector-icons'
-import Animated, {
-  Extrapolation,
-  interpolate,
-  useAnimatedStyle,
-  type SharedValue,
-} from 'react-native-reanimated'
-import Svg, {
-  Circle,
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  RadialGradient,
-  Rect,
-  Stop,
-} from 'react-native-svg'
+import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { WANSPOT_GOOGLE_MAP_STYLE } from '@/constants/google-map-style'
 import { isGoogleMapsConfigured } from '@/lib/google-maps-config'
 import { inferSpotGenre } from '@/lib/nearby/map-filter'
-import type { MapGenreKey } from '@/lib/nearby/constants'
+import { MAP_GENRE_COLOR } from '@/lib/nearby/constants'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
-import { NearbySheetSpotCard } from '@/components/nearby/NearbySheetSpotCard'
-import { MapPinPopupKeyed } from '@/components/map/MapPinPopupEnter'
-import { PhotoMapPin } from '@/components/map/PhotoMapPin'
 
 const FALLBACK_REGION: Region = {
   latitude: 35.6812,
   longitude: 139.7671,
   latitudeDelta: 0.08,
   longitudeDelta: 0.08,
-}
-
-const POPUP_W = 290
-const VEIL_H = Math.round(Dimensions.get('window').height * 0.5)
-
-function SheetVeil({ animatedIndex }: { animatedIndex: SharedValue<number> }) {
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(animatedIndex.value, [-1, 0, 1, 2], [0, 0, 1, 0], Extrapolation.CLAMP),
-  }))
-  return (
-    <Animated.View style={[styles.veil, style]} pointerEvents="none">
-      <Svg width="100%" height="100%">
-        <Defs>
-          <SvgLinearGradient id="sheetVeil" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={colors.textPrimary} stopOpacity={0} />
-            <Stop offset="0.45" stopColor="#3a3936" stopOpacity={0.1} />
-            <Stop offset="0.78" stopColor={colors.paper} stopOpacity={0.55} />
-            <Stop offset="1" stopColor={colors.paper} stopOpacity={0.92} />
-          </SvgLinearGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#sheetVeil)" />
-      </Svg>
-    </Animated.View>
-  )
 }
 
 function regionForLocation(lat: number, lng: number): Region {
@@ -75,10 +34,6 @@ function regionForLocation(lat: number, lng: number): Region {
     latitudeDelta: 0.06,
     longitudeDelta: 0.06,
   }
-}
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, v))
 }
 
 /** 数字バッジ：透過を強め、数字だけ読めればよい */
@@ -127,47 +82,65 @@ function ClusterBlob({ count, gradId }: { count: number; gradId: string }) {
   )
 }
 
+/**
+ * ノーマルピン（ティアドロップ型）。選択中はブランド色＋拡大し、ポップのマウントアニメを付ける。
+ * 非選択ピンは tracksViewChanges を切って静止画として描画する（パフォーマンス優先）。
+ */
+function NormalMapPin({ genreColor, selected }: { genreColor: string; selected: boolean }) {
+  const scale = useRef(new Animated.Value(selected ? 0.6 : 1)).current
+
+  useEffect(() => {
+    if (!selected) return
+    scale.setValue(0.6)
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 5,
+      tension: 140,
+      useNativeDriver: true,
+    }).start()
+  }, [selected, scale])
+
+  const size = selected ? 40 : 26
+  return (
+    <Animated.View
+      style={[
+        styles.pinWrap,
+        { width: size + 8, height: size + 8 },
+        selected && { transform: [{ scale }] },
+      ]}
+    >
+      <Ionicons
+        name="location-sharp"
+        size={size}
+        color={selected ? colors.brandDark : genreColor}
+        style={styles.pinIcon}
+      />
+    </Animated.View>
+  )
+}
+
 export function NearbyMapView({
   markers,
-  likedPlaceIds,
-  visitedPlaceIds,
   selectedSpot,
   userLocation,
   onSelectSpot,
   onClearSelection,
-  onOpenDetail,
-  sheetOpen,
-  showRecenter,
-  sheetAnimatedIndex,
-  bottomInset,
   topInset,
-  pinGenre,
-  hidePinPopup = false,
+  bottomInset = 0,
 }: {
   markers: SheetSpot[]
-  likedPlaceIds: Set<string>
-  visitedPlaceIds: Set<string>
   selectedSpot: SheetSpot | null
   userLocation: { lat: number; lng: number } | null
   onSelectSpot: (spot: SheetSpot) => void
   onClearSelection: () => void
-  onOpenDetail: (spot: SheetSpot) => void
-  sheetOpen: boolean
-  showRecenter: boolean
-  sheetAnimatedIndex: SharedValue<number>
-  bottomInset: number
   topInset: number
-  /** ジャンル絞り込み中はピン色を選択ジャンルに統一 */
-  pinGenre?: MapGenreKey
-  /** カルーセル表示中はピン上ポップアップを出さない（カード側が選択スポットを担うため） */
-  hidePinPopup?: boolean
+  /** 下部カルーセルの高さぶん。現在地ボタンの位置に使う */
+  bottomInset?: number
 }) {
   const insets = useSafeAreaInsets()
   const mapRef = useRef<any>(null)
   const [mapReady, setMapReady] = useState(false)
   const [mapLoadTimedOut, setMapLoadTimedOut] = useState(false)
-  const [layout, setLayout] = useState({ width: 0, height: 0 })
-  const [pinPoint, setPinPoint] = useState<{ x: number; y: number } | null>(null)
 
   const initialRegion = useMemo(
     () => (userLocation ? regionForLocation(userLocation.lat, userLocation.lng) : FALLBACK_REGION),
@@ -198,27 +171,9 @@ export function NearbyMapView({
     mapRef.current?.animateToRegion(next, 400)
   }, [userLocation?.lat, userLocation?.lng])
 
-  const recomputePinPoint = useCallback(async () => {
-    if (!selectedSpot || !mapRef.current?.pointForCoordinate) {
-      setPinPoint(null)
-      return
-    }
-    try {
-      const p = await mapRef.current.pointForCoordinate({
-        latitude: selectedSpot.lat,
-        longitude: selectedSpot.lng,
-      })
-      if (p && typeof p.x === 'number' && typeof p.y === 'number') setPinPoint(p)
-    } catch {
-      setPinPoint(null)
-    }
-  }, [selectedSpot?.key, selectedSpot?.lat, selectedSpot?.lng])
-
+  // カルーセルのスワイプ／ピンタップに追従して、選択スポットへ滑らかに寄せる
   useEffect(() => {
-    if (!selectedSpot) {
-      setPinPoint(null)
-      return
-    }
+    if (!selectedSpot) return
     mapRef.current?.animateToRegion(
       {
         latitude: selectedSpot.lat,
@@ -228,9 +183,7 @@ export function NearbyMapView({
       },
       350
     )
-    const t = setTimeout(() => void recomputePinPoint(), 380)
-    return () => clearTimeout(t)
-  }, [selectedSpot?.key, selectedSpot?.lat, selectedSpot?.lng, recomputePinPoint])
+  }, [selectedSpot?.key, selectedSpot?.lat, selectedSpot?.lng])
 
   const handleRecenter = useCallback(() => {
     if (!userLocation) return
@@ -244,17 +197,7 @@ export function NearbyMapView({
     [onSelectSpot]
   )
 
-  const onWrapLayout = useCallback((e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout
-    setLayout({ width, height })
-  }, [])
-
-  const popupAnimStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(sheetAnimatedIndex.value, [-1, 0, 0.75, 1, 2], [1, 1, 0, 0, 0], Extrapolation.CLAMP),
-  }))
-
-  const showPinPopup = !!selectedSpot && !sheetOpen && !hidePinPopup
-  const recenterBottom = TAB_BAR_HEIGHT + insets.bottom + 16
+  const recenterBottom = Math.max(TAB_BAR_HEIGHT + insets.bottom + 16, bottomInset + 16)
 
   if (!isGoogleMapsConfigured()) {
     return (
@@ -269,17 +212,8 @@ export function NearbyMapView({
     )
   }
 
-  const popupStyle =
-    pinPoint && layout.height > 0
-      ? {
-          left: clamp(pinPoint.x - POPUP_W / 2, 8, Math.max(8, layout.width - POPUP_W - 8)),
-          bottom: clamp(layout.height - pinPoint.y + 14, bottomInset + 8, layout.height - topInset - 80),
-          width: POPUP_W,
-        }
-      : { left: 16, right: 16, bottom: bottomInset + 72 }
-
   return (
-    <View style={styles.wrap} onLayout={onWrapLayout}>
+    <View style={styles.wrap}>
       <ClusteredMapView
         ref={mapRef}
         style={styles.map}
@@ -314,30 +248,29 @@ export function NearbyMapView({
         }}
         animationEnabled={Platform.OS === 'ios'}
         onMapReady={() => setMapReady(true)}
-        onRegionChangeComplete={() => void recomputePinPoint()}
         onPress={() => onClearSelection()}
       >
         {markers.map((spot) => {
-          const liked = likedPlaceIds.has(spot.placeId)
-          const visited = visitedPlaceIds.has(spot.placeId)
-          const spotPinGenre = pinGenre ?? inferSpotGenre(spot)
+          const selected = selectedSpot?.key === spot.key
+          const genreColor = MAP_GENRE_COLOR[inferSpotGenre(spot)]
           return (
             <Marker
-              key={`${spot.key}-${liked ? 'l' : ''}-${visited ? 'v' : ''}`}
+              key={`${spot.key}-${selected ? 's' : ''}`}
               coordinate={{ latitude: spot.lat, longitude: spot.lng }}
+              anchor={{ x: 0.5, y: 1 }}
               onPress={(e) => {
                 e.stopPropagation()
                 handleMarkerPress(spot)
               }}
-              tracksViewChanges={Platform.OS === 'android'}
+              zIndex={selected ? 10 : 1}
+              // 選択中だけ描画追跡を有効にしてポップアニメを見せる。非選択は静止画でパフォーマンス優先
+              tracksViewChanges={Platform.OS === 'android' || selected}
             >
-              <PhotoMapPin spot={spot} genre={spotPinGenre} liked={liked} visited={visited} />
+              <NormalMapPin genreColor={genreColor} selected={selected} />
             </Marker>
           )
         })}
       </ClusteredMapView>
-
-      <SheetVeil animatedIndex={sheetAnimatedIndex} />
 
       {mapLoadTimedOut && !mapReady ? (
         <View style={[styles.mapHint, { top: topInset + 56 }]} pointerEvents="none">
@@ -347,34 +280,15 @@ export function NearbyMapView({
         </View>
       ) : null}
 
-      {showPinPopup ? (
-        <Animated.View
-          style={[styles.pinCard, popupStyle, popupAnimStyle]}
-          pointerEvents={sheetOpen ? 'none' : 'auto'}
-        >
-          <MapPinPopupKeyed spotKey={selectedSpot!.key}>
-            <NearbySheetSpotCard
-              spot={selectedSpot!}
-              userLocation={userLocation}
-              variant="popup"
-              onPress={() => onOpenDetail(selectedSpot!)}
-              onClose={onClearSelection}
-            />
-          </MapPinPopupKeyed>
-        </Animated.View>
-      ) : null}
-
-      {showRecenter ? (
-        <TouchableOpacity
-          style={[styles.recenterBtn, { bottom: recenterBottom }]}
-          onPress={handleRecenter}
-          disabled={!userLocation}
-          accessibilityRole="button"
-          accessibilityLabel="現在地に戻る"
-        >
-          <Ionicons name="navigate" size={22} color={userLocation ? colors.textPrimary : '#aaa'} />
-        </TouchableOpacity>
-      ) : null}
+      <TouchableOpacity
+        style={[styles.recenterBtn, { bottom: recenterBottom }]}
+        onPress={handleRecenter}
+        disabled={!userLocation}
+        accessibilityRole="button"
+        accessibilityLabel="現在地に戻る"
+      >
+        <Ionicons name="navigate" size={22} color={userLocation ? colors.textPrimary : '#aaa'} />
+      </TouchableOpacity>
     </View>
   )
 }
@@ -386,6 +300,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '900',
     color: colors.brandDark,
+  },
+  pinWrap: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  pinIcon: {
+    textShadowColor: 'rgba(255,255,255,0.9)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
   },
   recenterBtn: {
     position: 'absolute',
@@ -404,23 +327,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 7,
     zIndex: 8,
-  },
-  veil: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: VEIL_H,
-    zIndex: 5,
-  },
-  pinCard: {
-    position: 'absolute',
-    zIndex: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.16,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
   },
   configBanner: {
     position: 'absolute',

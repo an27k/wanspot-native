@@ -1,6 +1,7 @@
 import {
   DOG_RUN_SEARCH_QUERY,
   DOG_RUN_SUPPLEMENTARY_SEARCH_QUERY,
+  MAP_GENRE_CHIPS,
   NEARBY_MIN_SPOTS_THRESHOLD,
   NEARBY_RADIUS_EXPANSION_STEPS_M,
   type MapGenreKey,
@@ -95,10 +96,49 @@ export async function fetchNearbySpotsForGenre(
   } catch {
     return {
       spots: [],
-      error:
-        'ネットワークエラーです。API の URL（EXPO_PUBLIC_WANSPOT_API_URL / https://www.wanspot.app）を確認してください',
+      error: 'うまく読み込めませんでした。通信環境を確認して、もう一度お試しください。',
     }
   }
+}
+
+/**
+ * 全ジャンル取得（デフォルト表示用）: 6ジャンルを並列取得して place_id で重複排除する。
+ * サーバー側は約1kmセル×24hの共有キャッシュを持つため、同一エリアの2回目以降は実コストが掛からない。
+ * 初回セルのみ Places 実コール（ジャンル数ぶん）が発生する点は許容する（プロダクト判断）。
+ */
+export async function fetchAllNearbySpots(
+  location: { lat: number; lng: number },
+  radiusM: number
+): Promise<{ spots: PlaceResult[]; error: string | null }> {
+  const results = await Promise.all(
+    MAP_GENRE_CHIPS.map((g) => fetchNearbySpotsForGenre(location, radiusM, g.key as MapGenreKey))
+  )
+  const merged = new Map<string, PlaceResult>()
+  for (const r of results) {
+    for (const spot of r.spots) {
+      if (spot.place_id && !merged.has(spot.place_id)) merged.set(spot.place_id, spot)
+    }
+  }
+  // 全ジャンル失敗のときだけエラー扱い（一部失敗は出せた分を表示する）
+  const allFailed = results.every((r) => r.error != null)
+  return { spots: [...merged.values()], error: allFailed ? (results[0]?.error ?? null) : null }
+}
+
+/** 全ジャンル版の段階拡張（件数不足なら半径を広げる） */
+export async function fetchAllNearbySpotsWithExpansion(
+  location: { lat: number; lng: number },
+  minSpots = NEARBY_MIN_SPOTS_THRESHOLD
+): Promise<{ spots: PlaceResult[]; error: string | null; radiusM: number }> {
+  const steps = NEARBY_RADIUS_EXPANSION_STEPS_M
+  let lastResult: { spots: PlaceResult[]; error: string | null; radiusM: number } | null = null
+
+  for (const radiusM of steps) {
+    const result = await fetchAllNearbySpots(location, radiusM)
+    lastResult = { spots: result.spots, error: result.error, radiusM }
+    if (result.error || result.spots.length >= minSpots) return lastResult
+  }
+
+  return lastResult ?? { spots: [], error: null, radiusM: steps[steps.length - 1] }
 }
 
 /**

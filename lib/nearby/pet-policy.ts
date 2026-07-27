@@ -15,13 +15,21 @@ export type PetPolicySource = {
   pet_friendly_verified?: boolean | null
 }
 
-/** 「店内OK」フィルタの表示語（地図チップ・検索タブトグルで共通）。
- *  「確認済みだけを表示する」ことが飼い主に伝わるよう、確認済みを明記する */
-export const INDOOR_OK_FILTER_LABEL = '店内OK・確認済み'
+/** 「店内OK」フィルタの表示語（地図・検索タブで共通）。
+ *  ラベルは短く保ち、「確認済みのみ」であることはスポット詳細バッジと空状態文言で担保する */
+export const INDOOR_OK_FILTER_LABEL = '店内OK'
+
+/** 「テラスOK」フィルタの表示語 */
+export const TERRACE_OK_FILTER_LABEL = 'テラスOK'
 
 /** 確認済みで店内OKのスポットか（unknown は必ず false） */
 export function placeIsIndoorPetOk(p: PetPolicySource): boolean {
   return p.pet_indoor_allowed === true
+}
+
+/** テラス席で同伴できる確認があるスポットか（テラスのみ可 or 屋外のみ可の確認済み。unknown は false） */
+export function placeIsTerracePetOk(p: PetPolicySource): boolean {
+  return p.pet_terrace_only === true || p.pet_friendly_status === 'outdoor_only'
 }
 
 /** スポット詳細の同伴可否バッジ。tone は表示色の使い分け用 */
