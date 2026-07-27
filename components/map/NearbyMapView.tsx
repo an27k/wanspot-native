@@ -71,6 +71,47 @@ function NormalMapPin({ genreColor, selected }: { genreColor: string; selected: 
   )
 }
 
+/**
+ * スポットマーカー。key を安定させたまま選択状態の見た目を切り替えるため、
+ * selected の変化直後だけ tracksViewChanges を有効化して再描画し、すぐ静止画に戻す。
+ * （key に選択状態を含める方式は再マウント＝重なったピンのチカつきの原因になる）
+ */
+function SpotMarker({
+  spot,
+  selected,
+  genreColor,
+  onPress,
+}: {
+  spot: SheetSpot
+  selected: boolean
+  genreColor: string
+  onPress: (spot: SheetSpot) => void
+}) {
+  const [track, setTrack] = useState(Platform.OS === 'android')
+
+  useEffect(() => {
+    if (Platform.OS === 'android') return // Android は常時追跡でも安定している既存挙動を維持
+    setTrack(true)
+    const t = setTimeout(() => setTrack(false), selected ? 700 : 350) // 選択時はポップアニメ完了まで
+    return () => clearTimeout(t)
+  }, [selected])
+
+  return (
+    <Marker
+      coordinate={{ latitude: spot.lat, longitude: spot.lng }}
+      anchor={{ x: 0.5, y: 1 }}
+      onPress={(e) => {
+        e.stopPropagation()
+        onPress(spot)
+      }}
+      zIndex={selected ? 10 : 1}
+      tracksViewChanges={track}
+    >
+      <NormalMapPin genreColor={genreColor} selected={selected} />
+    </Marker>
+  )
+}
+
 export function NearbyMapView({
   markers,
   selectedSpot,
@@ -203,26 +244,15 @@ export function NearbyMapView({
         onMapReady={() => setMapReady(true)}
         onPress={() => onClearSelection()}
       >
-        {markers.map((spot) => {
-          const selected = selectedSpot?.key === spot.key
-          const genreColor = MAP_GENRE_COLOR[inferSpotGenre(spot)]
-          return (
-            <Marker
-              key={`${spot.key}-${selected ? 's' : ''}`}
-              coordinate={{ latitude: spot.lat, longitude: spot.lng }}
-              anchor={{ x: 0.5, y: 1 }}
-              onPress={(e) => {
-                e.stopPropagation()
-                handleMarkerPress(spot)
-              }}
-              zIndex={selected ? 10 : 1}
-              // 選択中だけ描画追跡を有効にしてポップアニメを見せる。非選択は静止画でパフォーマンス優先
-              tracksViewChanges={Platform.OS === 'android' || selected}
-            >
-              <NormalMapPin genreColor={genreColor} selected={selected} />
-            </Marker>
-          )
-        })}
+        {markers.map((spot) => (
+          <SpotMarker
+            key={spot.key}
+            spot={spot}
+            selected={selectedSpot?.key === spot.key}
+            genreColor={MAP_GENRE_COLOR[inferSpotGenre(spot)]}
+            onPress={handleMarkerPress}
+          />
+        ))}
       </MapView>
 
       {mapLoadTimedOut && !mapReady ? (
