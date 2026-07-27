@@ -91,6 +91,8 @@ export function mapFilterLabel(f: MapFilter): string {
 }
 
 export function inferSpotGenre(spot: SheetSpot): MapGenreKey {
+  // 検証済みのドッグラン（併設カフェ等を含む）はピン色もドッグランに揃える
+  if (spot.extended_category === 'dog_run') return 'dog_run'
   for (const g of MAP_GENRE_CHIPS) {
     if (matchesGenre(spot.category, g.key)) return g.key
   }
@@ -99,6 +101,10 @@ export function inferSpotGenre(spot: SheetSpot): MapGenreKey {
 
 /** 選択ジャンルに合致するスポットだけ残す（カフェ選択時にレストランが混ざるのを防ぐ） */
 export function placeMatchesGenreFilter(spot: PlaceResult, genre: MapGenreKey): boolean {
+  // サーバーで検証済みの拡張カテゴリがあれば、名称パターンより優先して信頼する
+  // （「ドックラン エム 恵比寿」のような表記ゆれ・カフェ併設のドッグランを取りこぼさない）
+  if (genre === 'dog_run' && spot.extended_category === 'dog_run') return true
+
   if (genre === 'dog_run') {
     // Google types に dog_park が付いていれば、施設名に「ドッグラン」等の文言がなくても通す
     // （民営・屋内ドッグランは名前だけでは判定できないケースが多いため）。

@@ -91,8 +91,13 @@ export const DOG_RUN_SUPPLEMENTARY_SEARCH_QUERY = '屋内ドッグラン'
  * name/address からも拾えるよう、犬の運動施設を示唆する語を広めに列挙する
  * （汎用的すぎる単語は誤ヒットを避けるため入れない）。
  */
+/**
+ * ドッグラン判定の名称パターン。
+ * 「ドッグ」は実データ上「ドック」（濁点なし）表記が一定数あり（例: ドックラン エム 恵比寿）、
+ * 中黒・スペース区切りや半角カナも混在するため、まとめて吸収する。
+ */
 export const DOG_RUN_RELEVANT_PATTERN =
-  /(ドッグラン|ドッグパーク|ドッグガーデン|ドッグヴィレッジ|ドッグフィールド|ドッグエリア|わんこの広場|犬の遊び場|犬の広場|ノーリード広場|ペットラン|dog ?run|dog ?park|dog ?garden|dog ?village|dog ?field|off.?leash)/i
+  /(ドッ[グク][ 　・]?(ラン|パーク|ガーデン|ヴィレッジ|フィールド|エリア)|ﾄﾞｯｸﾞ?[ ･]?ﾗﾝ|わんこの広場|犬の遊び場|犬の広場|ノーリード広場|ペットラン|dog ?run|dog ?park|dog ?garden|dog ?village|dog ?field|off.?leash)/i
 
 /**
  * Google Places に `pet_hotel`/`grooming` type は存在しない（実在するのは

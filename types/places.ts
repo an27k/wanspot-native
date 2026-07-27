@@ -19,6 +19,8 @@ export type PlaceResult = {
   vicinity?: string
   /** 店内へのペット同伴可否（共通コントラクト。サーバー未対応時は undefined、未確認は null） */
   pet_indoor_allowed?: boolean | null
+  /** サーバー検証済みの拡張カテゴリ（dog_run / onsen）。名前の表記ゆれより優先する分類 */
+  extended_category?: string | null
   /** テラス席のみ同伴可か（共通コントラクト） */
   pet_terrace_only?: boolean | null
   /** ペット同伴ステータス文字列（例: 'not_allowed'。共通コントラクト） */

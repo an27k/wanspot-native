@@ -18,6 +18,8 @@ export type SheetSpot = {
   userRatingsTotal: number | null
   /** 店内ペット同伴可否。コントラクト名のまま持ち、pet-policy の述語を3面で共用する */
   pet_indoor_allowed?: boolean | null
+  /** サーバー検証済みの拡張カテゴリ（dog_run / onsen）。ジャンル推定で名称より優先する */
+  extended_category?: string | null
 }
 
 export function sheetSpotFromPlace(p: PlaceResult): SheetSpot {
@@ -36,6 +38,7 @@ export function sheetSpotFromPlace(p: PlaceResult): SheetSpot {
     priceLabel: p.price_label ?? null,
     userRatingsTotal: p.user_ratings_total ?? null,
     pet_indoor_allowed: p.pet_indoor_allowed ?? null,
+    extended_category: p.extended_category ?? null,
   }
 }
 
