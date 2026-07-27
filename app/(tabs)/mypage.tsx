@@ -62,11 +62,12 @@ function SettingsTab() {
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: padBottom, gap: 8 }}
       >
-        <AppHeader />
+        <AppHeader variant="centered" />
 
         {/* お散歩予報 — 毎朝7:00の通知タップの着地。旧検索ホームから移設 */}
         <View style={styles.section}>
           <WalkAlertCard
+            surface="light"
             location={walkLocation}
             onRequestLocation={() => {
               void (async () => {
@@ -78,7 +79,6 @@ function SettingsTab() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionCaption}>愛犬</Text>
           <View style={styles.card}>
             <PressableScale
               style={styles.row}

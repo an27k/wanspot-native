@@ -6,7 +6,7 @@ import { Logo } from '@/components/Logo'
 import { colors } from '@/constants/colors'
 
 type AppHeaderProps = {
-  variant?: 'default' | 'back'
+  variant?: 'default' | 'back' | 'centered'
   title?: string
   onBack?: () => void
   rightSlot?: ReactNode
@@ -28,6 +28,11 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
           </Text>
           <View style={[styles.side, styles.sideRight]}>{rightSlot}</View>
         </View>
+      ) : variant === 'centered' ? (
+        <View style={styles.centeredRow}>
+          <Logo size={26} />
+          <Text style={styles.brandText}>wanspot</Text>
+        </View>
       ) : (
         <View style={styles.row}>
           <View style={styles.brand}>
@@ -42,6 +47,12 @@ export function AppHeader({ variant = 'default', title, onBack, rightSlot }: App
 }
 
 const styles = StyleSheet.create({
+  centeredRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
   bar: {
     paddingHorizontal: 12,
     paddingBottom: 10,

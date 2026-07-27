@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { DogAlertFace } from '@/components/map/DogAlertFace'
 import { WalkAlertModal } from '@/components/map/WalkAlertModal'
 import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { colors } from '@/constants/colors'
 import { useWeather } from '@/lib/weather/use-weather'
 import { useWalkDailyAdvice } from '@/lib/weather/use-walk-daily-advice'
 import { syncWalkAdviceMorningNotification } from '@/lib/notifications/walk-advice-morning'
@@ -36,9 +37,12 @@ function weatherAwareLabel(levelLabel: string, condition: WeatherCondition | nul
 export function WalkAlertCard({
   location,
   onRequestLocation,
+  surface = 'glass',
 }: {
   location: { lat: number; lng: number } | null
   onRequestLocation?: () => void
+  /** glass = グラデ背景用のダークガラス（検索/記事系）、light = 白背景カード（設定タブ） */
+  surface?: 'glass' | 'light'
 }) {
   const [open, setOpen] = useState(false)
   const { dog } = useDogProfile()
@@ -82,19 +86,17 @@ export function WalkAlertCard({
   const level = advice?.levelKey ? walkAlertLevel(advice.levelKey) : baseLevel
   const adviceText = advice?.text ?? level?.advice ?? ''
 
-  return (
-    <>
-      <GoogleGlassPanel
-        onPress={() => {
-          if (needsLocation) onRequestLocation?.()
-          setOpen(true)
-        }}
-        style={styles.shell}
-      >
-        <View style={styles.inner}>
+  const isLight = surface === 'light'
+  const openCard = () => {
+    if (needsLocation) onRequestLocation?.()
+    setOpen(true)
+  }
+
+  const body = (
+    <View style={styles.inner}>
           <View style={styles.headRow}>
-            <Text style={styles.kicker}>お散歩アラート</Text>
-            {metaLine ? <Text style={styles.meta}>{metaLine}</Text> : null}
+            <Text style={[styles.kicker, isLight && styles.kickerLight]}>お散歩アラート</Text>
+            {metaLine ? <Text style={[styles.meta, isLight && styles.metaLight]}>{metaLine}</Text> : null}
           </View>
 
           {level ? (
@@ -102,20 +104,20 @@ export function WalkAlertCard({
               <DogAlertFace size={42} level={level.key} ringColor={level.color} tempC={tempC} />
               <View style={styles.bodyCol}>
                 <Text style={styles.statusLine}>
-                  <Text style={styles.levelTxt}>{weatherAwareLabel(level.label, weather?.condition)}</Text>
-                  {tempC != null ? <Text style={styles.tempTxt}> · 現在{tempC}℃</Text> : null}
+                  <Text style={[styles.levelTxt, isLight && styles.levelTxtLight]}>{weatherAwareLabel(level.label, weather?.condition)}</Text>
+                  {tempC != null ? <Text style={[styles.tempTxt, isLight && styles.tempTxtLight]}> · 現在{tempC}℃</Text> : null}
                 </Text>
-                <Text style={styles.advice} numberOfLines={2}>
+                <Text style={[styles.advice, isLight && styles.adviceLight]} numberOfLines={2}>
                   {adviceLoading && !advice ? '今日のお散歩アドバイスを作成中…' : adviceText}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={GOOGLE_HOME.textMuted} />
+              <Ionicons name="chevron-forward" size={16} color={isLight ? '#CCC' : GOOGLE_HOME.textMuted} />
             </View>
           ) : (
             <View style={styles.bodyRow}>
-              <DogAlertFace size={42} level="comfortable" ringColor="rgba(255,255,255,0.35)" />
+              <DogAlertFace size={42} level="comfortable" ringColor={isLight ? colors.border : 'rgba(255,255,255,0.35)'} />
               <View style={styles.bodyCol}>
-                <Text style={styles.advice} numberOfLines={2}>
+                <Text style={[styles.advice, isLight && styles.adviceLight]} numberOfLines={2}>
                   {needsLocation
                     ? '位置情報を許可すると、今日のお散歩予報がここに表示されます'
                     : weatherLoading
@@ -123,11 +125,27 @@ export function WalkAlertCard({
                       : '気温を取得できませんでした'}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={GOOGLE_HOME.textMuted} />
+              <Ionicons name="chevron-forward" size={16} color={isLight ? '#CCC' : GOOGLE_HOME.textMuted} />
             </View>
-          )}
-        </View>
-      </GoogleGlassPanel>
+      )}
+    </View>
+  )
+
+  return (
+    <>
+      {isLight ? (
+        <Pressable
+          onPress={openCard}
+          style={({ pressed }) => [styles.lightShell, pressed && styles.pressedLight]}
+          accessibilityRole="button"
+        >
+          {body}
+        </Pressable>
+      ) : (
+        <GoogleGlassPanel onPress={openCard} style={styles.shell}>
+          {body}
+        </GoogleGlassPanel>
+      )}
 
       <WalkAlertModal
         visible={open}
@@ -148,6 +166,20 @@ export function WalkAlertCard({
 
 const styles = StyleSheet.create({
   shell: { marginBottom: 0 },
+  /** 設定タブ用の白背景カード（他タブのリストカードと同じ質感に揃える） */
+  lightShell: {
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  pressedLight: { opacity: 0.85 },
+  kickerLight: { color: colors.textMuted },
+  metaLight: { color: colors.textMuted },
+  levelTxtLight: { color: colors.text },
+  tempTxtLight: { color: colors.textSecondary },
+  adviceLight: { color: colors.textSecondary },
   inner: { padding: 16, gap: 12 },
   headRow: {
     flexDirection: 'row',
