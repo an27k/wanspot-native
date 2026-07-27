@@ -1,5 +1,5 @@
 import * as Linking from 'expo-linking'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
@@ -7,7 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { AppHeader } from '@/components/AppHeader'
 import { RunningDog } from '@/components/DogStates'
+import { WalkAlertCard } from '@/components/search/WalkAlertCard'
 import { PressableScale } from '@/components/common/PressableScale'
+import { resolveSessionLocation } from '@/lib/location-session'
 import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
 import { useDogProfile } from '@/components/dog/useDogProfile'
@@ -24,6 +26,15 @@ function SettingsTab() {
   const { signOut } = useAuth()
   const { dog, loading } = useDogProfile()
   const apiBase = useMemo(() => getWanspotApiBase(), [])
+  /** お散歩予報カード用の現在地（許可済みセッション位置。毎朝の通知タップの着地でもある） */
+  const [walkLocation, setWalkLocation] = useState<{ lat: number; lng: number } | null>(null)
+
+  useEffect(() => {
+    void (async () => {
+      const result = await resolveSessionLocation(null)
+      if (result.ok) setWalkLocation(result.location)
+    })()
+  }, [])
 
   const openWeb = useCallback(
     (path: string) => {
@@ -53,6 +64,19 @@ function SettingsTab() {
       >
         <AppHeader />
 
+        {/* お散歩予報 — 毎朝7:00の通知タップの着地。旧検索ホームから移設 */}
+        <View style={styles.section}>
+          <WalkAlertCard
+            location={walkLocation}
+            onRequestLocation={() => {
+              void (async () => {
+                const result = await resolveSessionLocation(null)
+                if (result.ok) setWalkLocation(result.location)
+              })()
+            }}
+          />
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionCaption}>愛犬</Text>
           <View style={styles.card}>
@@ -68,6 +92,16 @@ function SettingsTab() {
                   {dog ? `${dog.name} · ` : ''}プロフィール・散歩エリア・ワクチン記録
                 </Text>
               </View>
+              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+            </PressableScale>
+            <View style={styles.rowDivider} />
+            <PressableScale
+              style={styles.row}
+              onPress={() => router.push('/likes')}
+              accessibilityLabel="いいねしたスポット"
+            >
+              <Ionicons name="heart" size={20} color="#FF5E8A" />
+              <Text style={styles.rowTxt}>いいねしたスポット</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </PressableScale>
           </View>
