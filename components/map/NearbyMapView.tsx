@@ -17,6 +17,7 @@ import { isGoogleMapsConfigured } from '@/lib/google-maps-config'
 import { inferSpotGenre } from '@/lib/nearby/map-filter'
 import { MAP_GENRE_COLOR } from '@/lib/nearby/constants'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
+import { spreadOverlappingSpots, type SpreadSpot } from '@/lib/nearby/spread-overlapping'
 
 const FALLBACK_REGION: Region = {
   latitude: 35.6812,
@@ -80,11 +81,14 @@ function SpotMarker({
   spot,
   selected,
   genreColor,
+  stackIndex,
   onPress,
 }: {
-  spot: SheetSpot
+  spot: SpreadSpot
   selected: boolean
   genreColor: string
+  /** 描画順を固定するための安定インデックス（重なり時の z-order 入れ替わり防止） */
+  stackIndex: number
   onPress: (spot: SheetSpot) => void
 }) {
   const [track, setTrack] = useState(Platform.OS === 'android')
@@ -98,13 +102,15 @@ function SpotMarker({
 
   return (
     <Marker
-      coordinate={{ latitude: spot.lat, longitude: spot.lng }}
+      // 同一座標のピンは表示用に微小オフセットした座標を使う（重なりによる明滅を防ぐ）
+      coordinate={{ latitude: spot.displayLat, longitude: spot.displayLng }}
       anchor={{ x: 0.5, y: 1 }}
       onPress={(e) => {
         e.stopPropagation()
         onPress(spot)
       }}
-      zIndex={selected ? 10 : 1}
+      // 非選択ピンにも一意で不変の zIndex を与え、描画順の入れ替わりを止める
+      zIndex={selected ? 10_000 : stackIndex}
       tracksViewChanges={track}
     >
       <NormalMapPin genreColor={genreColor} selected={selected} />
@@ -211,6 +217,10 @@ export function NearbyMapView({
     [onSelectSpot]
   )
 
+  // 同一建物に複数スポットがあるケース（動物病院＋併設ペットホテル等）で座標が完全一致し、
+  // マーカーの描画順が入れ替わってチカつくため、表示用座標を微小にずらして重なりを解く
+  const displayMarkers = useMemo(() => spreadOverlappingSpots(markers), [markers])
+
   const recenterBottom = Math.max(TAB_BAR_HEIGHT + insets.bottom + 16, bottomInset + 16)
 
   if (!isGoogleMapsConfigured()) {
@@ -244,12 +254,13 @@ export function NearbyMapView({
         onMapReady={() => setMapReady(true)}
         onPress={() => onClearSelection()}
       >
-        {markers.map((spot) => (
+        {displayMarkers.map((spot, index) => (
           <SpotMarker
             key={spot.key}
             spot={spot}
             selected={selectedSpot?.key === spot.key}
             genreColor={MAP_GENRE_COLOR[inferSpotGenre(spot)]}
+            stackIndex={index + 1}
             onPress={handleMarkerPress}
           />
         ))}

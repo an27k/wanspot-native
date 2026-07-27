@@ -48,6 +48,7 @@ import {
 } from '@/lib/nearby/map-filter'
 import { sortPlacesByScore } from '@/lib/nearby/place-score'
 import { sheetSpotFromPlace, sheetSpotFromUserRow, type SheetSpot } from '@/lib/nearby/sheet-spot'
+import { dedupeSameSpots } from '@/lib/nearby/spread-overlapping'
 import { fetchLikedSpotsForUser } from '@/lib/fetch-user-spot-lists'
 import { ensureSpotId } from '@/lib/ensureSpot'
 import { openSpotDetail } from '@/lib/open-spot-detail'
@@ -349,7 +350,8 @@ function NearbyPage() {
       const seen = new Set(scored.map((s) => s.placeId).filter(Boolean))
       base = [...scored, ...likedRows.filter((s) => s.placeId && !seen.has(s.placeId))]
     }
-    return applyMapConditions(base, conditions, (s) => likedPlaceIds.has(s.placeId))
+    // 同一施設が別スポットとして二重登録されているケースを1件に畳む
+    return applyMapConditions(dedupeSameSpots(base), conditions, (s) => likedPlaceIds.has(s.placeId))
   }, [searchAnchor, nearbyPlaces, location, genre, likedRows, conditions, likedPlaceIds])
 
   // 絞り込みで選択中スポットが消えたら、選択も静かに外す
