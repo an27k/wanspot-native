@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
+  Dimensions,
+  type LayoutChangeEvent,
   Platform,
   StyleSheet,
   Text,
@@ -24,6 +26,32 @@ const FALLBACK_REGION: Region = {
   longitude: 139.7671,
   latitudeDelta: 0.08,
   longitudeDelta: 0.08,
+}
+
+/**
+ * 指定座標が「見えている範囲」の中心に来る Region を作る。
+ *
+ * 地図の上下は検索バー・フィルタバー（上）と横スワイプカルーセル（下）に覆われており、
+ * 覆われ方が非対称なため、ビュー全体の幾何中心に座標を置くと見た目では下寄りにズレる。
+ * カメラ中心を可視領域の中心とのズレぶんだけ移動させて補正する（ズーム倍率は変えない）。
+ */
+function regionCenteredInVisibleArea(
+  lat: number,
+  lng: number,
+  delta: number,
+  visible: { topInset: number; bottomInset: number; height: number }
+): Region {
+  const { topInset, bottomInset, height } = visible
+  // 可視領域の中心は幾何中心より (bottomInset - topInset) / 2 だけ上にある。
+  // その分カメラ中心を南へずらすと、対象は可視領域の中心に表示される
+  const shiftPx = (bottomInset - topInset) / 2
+  const latShift = height > 0 ? delta * (shiftPx / height) : 0
+  return {
+    latitude: lat - latShift,
+    longitude: lng,
+    latitudeDelta: delta,
+    longitudeDelta: delta,
+  }
 }
 
 function regionForLocation(lat: number, lng: number): Region {
@@ -143,17 +171,37 @@ export function NearbyMapView({
   const mapRef = useRef<any>(null)
   const [mapReady, setMapReady] = useState(false)
   const [mapLoadTimedOut, setMapLoadTimedOut] = useState(false)
+  /** 中心補正に使う地図ビューの実高さ */
+  const [mapHeight, setMapHeight] = useState(0)
 
-  const initialRegion = useMemo(
-    () => (userLocation ? regionForLocation(userLocation.lat, userLocation.lng) : FALLBACK_REGION),
-    [userLocation]
+  const onMapLayout = useCallback((e: LayoutChangeEvent) => {
+    setMapHeight(e.nativeEvent.layout.height)
+  }, [])
+
+  /** 対象座標を「見えている範囲」の中心に置いてアニメーションする */
+  const animateToVisibleCenter = useCallback(
+    (lat: number, lng: number, delta: number, duration: number) => {
+      mapRef.current?.animateToRegion(
+        regionCenteredInVisibleArea(lat, lng, delta, { topInset, bottomInset, height: mapHeight }),
+        duration
+      )
+    },
+    [topInset, bottomInset, mapHeight]
   )
 
-  const [region, setRegion] = useState<Region>(initialRegion)
-
-  useEffect(() => {
-    setRegion(initialRegion)
-  }, [initialRegion.latitude, initialRegion.longitude])
+  // 初期表示は onLayout 前で実高さが未確定のため、画面高で近似して中心を補正する
+  const initialRegion = useMemo(
+    () =>
+      userLocation
+        ? regionCenteredInVisibleArea(userLocation.lat, userLocation.lng, 0.06, {
+            topInset,
+            bottomInset,
+            height: Dimensions.get('window').height,
+          })
+        : FALLBACK_REGION,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userLocation?.lat, userLocation?.lng]
+  )
 
   const mapStyle = useMemo(() => [...WANSPOT_GOOGLE_MAP_STYLE] as any, [])
 
@@ -166,11 +214,10 @@ export function NearbyMapView({
     return () => clearTimeout(t)
   }, [mapReady])
 
+  // 現在地の確定・更新に追従。ただし検索地点を選んでいる間は引き戻さない
   useEffect(() => {
-    if (!userLocation) return
-    const next = regionForLocation(userLocation.lat, userLocation.lng)
-    setRegion(next)
-    mapRef.current?.animateToRegion(next, 400)
+    if (!userLocation || focusCenter) return
+    animateToVisibleCenter(userLocation.lat, userLocation.lng, 0.06, 400)
   }, [userLocation?.lat, userLocation?.lng])
 
   // 検索地点の確定/解除に追従（確定→その地点へ・解除→現在地へ）
@@ -182,33 +229,22 @@ export function NearbyMapView({
       if (!focusCenter) return
     }
     if (focusCenter) {
-      mapRef.current?.animateToRegion(
-        { latitude: focusCenter.lat, longitude: focusCenter.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 },
-        450
-      )
+      animateToVisibleCenter(focusCenter.lat, focusCenter.lng, 0.05, 450)
     } else if (userLocation) {
-      mapRef.current?.animateToRegion(regionForLocation(userLocation.lat, userLocation.lng), 450)
+      animateToVisibleCenter(userLocation.lat, userLocation.lng, 0.06, 450)
     }
   }, [focusCenter?.lat, focusCenter?.lng])
 
   // カルーセルのスワイプ／ピンタップに追従して、選択スポットへ滑らかに寄せる
   useEffect(() => {
     if (!selectedSpot) return
-    mapRef.current?.animateToRegion(
-      {
-        latitude: selectedSpot.lat,
-        longitude: selectedSpot.lng,
-        latitudeDelta: 0.025,
-        longitudeDelta: 0.025,
-      },
-      350
-    )
+    animateToVisibleCenter(selectedSpot.lat, selectedSpot.lng, 0.025, 350)
   }, [selectedSpot?.key, selectedSpot?.lat, selectedSpot?.lng])
 
   const handleRecenter = useCallback(() => {
     if (!userLocation) return
-    mapRef.current?.animateToRegion(regionForLocation(userLocation.lat, userLocation.lng), 450)
-  }, [userLocation])
+    animateToVisibleCenter(userLocation.lat, userLocation.lng, 0.06, 450)
+  }, [userLocation, animateToVisibleCenter])
 
   const handleMarkerPress = useCallback(
     (spot: SheetSpot) => {
@@ -245,7 +281,7 @@ export function NearbyMapView({
         provider={PROVIDER_GOOGLE}
         customMapStyle={mapStyle}
         initialRegion={initialRegion}
-        region={region}
+        onLayout={onMapLayout}
         showsUserLocation={!!userLocation}
         showsMyLocationButton={false}
         rotateEnabled={false}
