@@ -8,10 +8,8 @@ import {
   View,
 } from 'react-native'
 import { colors } from '@/constants/colors'
-import ClusteredMapView from 'react-native-map-clustering'
-import { Marker, PROVIDER_GOOGLE, type Region } from 'react-native-maps'
+import MapView, { Marker, PROVIDER_GOOGLE, type Region } from 'react-native-maps'
 import { Ionicons } from '@expo/vector-icons'
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { WANSPOT_GOOGLE_MAP_STYLE } from '@/constants/google-map-style'
@@ -34,52 +32,6 @@ function regionForLocation(lat: number, lng: number): Region {
     latitudeDelta: 0.06,
     longitudeDelta: 0.06,
   }
-}
-
-/** 数字バッジ：透過を強め、数字だけ読めればよい */
-function ClusterBadge({ count, size, gradId }: { count: number; size: number; gradId: string }) {
-  const feather = 12
-  const total = size + feather * 2
-  const cx = total / 2
-  const badgeGradId = `${gradId}-badge`
-  return (
-    <View style={{ width: total, height: total, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={total} height={total} style={StyleSheet.absoluteFill}>
-        <Defs>
-          <RadialGradient id={badgeGradId} cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor="#FFFFFF" stopOpacity={0.72} />
-            <Stop offset="48%" stopColor="#FFFFFF" stopOpacity={0.55} />
-            <Stop offset="68%" stopColor="#FFFFFF" stopOpacity={0.32} />
-            <Stop offset="84%" stopColor="#FFF5E8" stopOpacity={0.14} />
-            <Stop offset="96%" stopColor="#FFE0B8" stopOpacity={0.05} />
-            <Stop offset="100%" stopColor={colors.primary} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-        <Circle cx={cx} cy={cx} r={size / 2 + feather - 1} fill={`url(#${badgeGradId})`} />
-      </Svg>
-      <Text style={styles.clusterTxt}>{count}</Text>
-    </View>
-  )
-}
-
-function ClusterBlob({ count, gradId }: { count: number; gradId: string }) {
-  const glow = Math.round(54 + Math.min(count, 40) * 1.6)
-  const badge = count >= 100 ? 36 : count >= 10 ? 32 : 28
-  return (
-    <View style={{ width: glow, height: glow, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={glow} height={glow} style={StyleSheet.absoluteFill}>
-        <Defs>
-          <RadialGradient id={gradId} cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor="#FF9E2C" stopOpacity={0.28} />
-            <Stop offset="40%" stopColor="#FFC06A" stopOpacity={0.14} />
-            <Stop offset="100%" stopColor={colors.primary} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-        <Circle cx={glow / 2} cy={glow / 2} r={glow / 2} fill={`url(#${gradId})`} />
-      </Svg>
-      <ClusterBadge count={count} size={badge} gradId={gradId} />
-    </View>
-  )
 }
 
 /**
@@ -214,7 +166,8 @@ export function NearbyMapView({
 
   return (
     <View style={styles.wrap}>
-      <ClusteredMapView
+      {/* クラスタリング（スポット集約）は廃止 — 全ピンを常に個別表示する */}
+      <MapView
         ref={mapRef}
         style={styles.map}
         provider={PROVIDER_GOOGLE}
@@ -226,27 +179,6 @@ export function NearbyMapView({
         rotateEnabled={false}
         pitchEnabled={false}
         loadingEnabled
-        clusterColor={colors.primary}
-        clusterTextColor={colors.textPrimary}
-        radius={48}
-        maxZoom={18}
-        minZoom={1}
-        spiralEnabled
-        renderCluster={(cluster: any) => {
-          const { id, geometry, onPress, properties } = cluster
-          const [lng, lat] = geometry.coordinates
-          return (
-            <Marker
-              key={`cluster-${id}`}
-              coordinate={{ latitude: lat, longitude: lng }}
-              onPress={onPress}
-              tracksViewChanges={Platform.OS === 'android'}
-            >
-              <ClusterBlob count={properties.point_count} gradId={`cg-${id}`} />
-            </Marker>
-          )
-        }}
-        animationEnabled={Platform.OS === 'ios'}
         onMapReady={() => setMapReady(true)}
         onPress={() => onClearSelection()}
       >
@@ -270,7 +202,7 @@ export function NearbyMapView({
             </Marker>
           )
         })}
-      </ClusteredMapView>
+      </MapView>
 
       {mapLoadTimedOut && !mapReady ? (
         <View style={[styles.mapHint, { top: topInset + 56 }]} pointerEvents="none">
@@ -296,11 +228,6 @@ export function NearbyMapView({
 const styles = StyleSheet.create({
   wrap: { flex: 1 },
   map: { ...StyleSheet.absoluteFillObject },
-  clusterTxt: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: colors.brandDark,
-  },
   pinWrap: {
     alignItems: 'center',
     justifyContent: 'flex-end',

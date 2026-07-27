@@ -25,7 +25,6 @@ import {
   NEARBY_GENRE_ALL,
   NEARBY_INDOOR_ONLY_STORAGE_KEY,
   NEARBY_MAP_CONDITIONS_STORAGE_KEY,
-  NEARBY_MAP_GENRE_STORAGE_KEY,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
 import {
@@ -74,17 +73,6 @@ const SEARCH_SUGGESTIONS = [
   'ドッグビーチ',
   '犬と温泉',
 ]
-
-function isMapGenreKey(v: string): v is MapGenreKey {
-  return (
-    v === 'cafe' ||
-    v === 'park' ||
-    v === 'restaurant' ||
-    v === 'dog_run' ||
-    v === 'veterinary_care' ||
-    v === 'pet_hotel'
-  )
-}
 
 function NearbyPage() {
   const router = useRouter()
@@ -154,14 +142,11 @@ function NearbyPage() {
 
   const searchActive = searchResults !== null
 
-  // 保存済みのジャンル・条件を復元（旧 店内OK 単独キーからのマイグレーション込み）
+  // 保存済みの条件を復元（旧 店内OK 単独キーからのマイグレーション込み）。
+  // ジャンルは復元しない — デフォルト表示は常に「現在地の全ジャンル」（ジャンル絞りはセッション内のみ）
   useEffect(() => {
     void (async () => {
       try {
-        const savedGenre = await AsyncStorage.getItem(NEARBY_MAP_GENRE_STORAGE_KEY)
-        if (savedGenre && savedGenre !== NEARBY_GENRE_ALL && isMapGenreKey(savedGenre)) {
-          setGenre(savedGenre)
-        }
         const savedConditions = await AsyncStorage.getItem(NEARBY_MAP_CONDITIONS_STORAGE_KEY)
         if (savedConditions) {
           const parsed = JSON.parse(savedConditions) as Partial<MapConditionFilter>
@@ -189,7 +174,6 @@ function NearbyPage() {
       if (searchActive) clearSearch()
       setGenre(next)
       setSelectedSpot(null)
-      void AsyncStorage.setItem(NEARBY_MAP_GENRE_STORAGE_KEY, next ?? NEARBY_GENRE_ALL)
     },
     [searchActive, clearSearch]
   )
