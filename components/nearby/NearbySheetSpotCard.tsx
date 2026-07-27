@@ -7,6 +7,7 @@ import { HEART_ICON } from '@/lib/constants'
 import { formatDistanceLabel, calcDistanceMeters } from '@/lib/nearby/geo'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
+import { IconPaw } from '@/components/IconPaw'
 import { colors } from '@/constants/colors'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 
@@ -48,7 +49,8 @@ const IconMoney = ({ filled }: { filled: boolean }) => (
 )
 
 const PriceLevel = ({ level }: { level: number | null }) => {
-  if (level === null || level === undefined) return <Text style={styles.qMark}>?</Text>
+  // 価格帯が不明なスポットは大半のため、記号は出さずに詰める（旧実装の「?」は意味が伝わらない）
+  if (level === null || level === undefined) return null
   return (
     <View style={styles.priceRow}>
       {[1, 2, 3, 4].map((i) => (
@@ -123,9 +125,16 @@ export function NearbySheetSpotCard({
         </TouchableOpacity>
       )}
 
-      {!compact && uri ? (
+      {!compact ? (
         <View style={[styles.cardPhoto, variant === 'carousel' && styles.cardPhotoCarousel]}>
-          <Image source={{ uri }} style={styles.cardImg} contentFit="cover" recyclingKey={uri} {...listImageExpoProps} />
+          {uri ? (
+            <Image source={{ uri }} style={styles.cardImg} contentFit="cover" recyclingKey={uri} {...listImageExpoProps} />
+          ) : (
+            // 写真が無いスポットでも画像枠は残し、カード高さを一定に保つ
+            <View style={styles.cardPhotoEmpty}>
+              <IconPaw size={26} color={colors.dogPhotoPlaceholderPaw} />
+            </View>
+          )}
         </View>
       ) : null}
       <View style={styles.cardBody}>
@@ -196,6 +205,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardImg: { width: '100%', height: '100%' },
+  cardPhotoEmpty: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
   cardBody: { padding: 12, gap: 2 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   spotCat: {
@@ -216,5 +226,4 @@ const styles = StyleSheet.create({
   spotName: { fontWeight: '700', fontSize: 14, color: colors.textPrimary },
   spotAddr: { fontSize: 12, color: '#aaa' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  qMark: { fontSize: 12, color: '#ccc' },
 })
