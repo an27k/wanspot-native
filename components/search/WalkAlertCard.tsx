@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { DogAlertFace } from '@/components/map/DogAlertFace'
@@ -8,6 +8,8 @@ import { useDogProfile } from '@/components/dog/useDogProfile'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { useWeather } from '@/lib/weather/use-weather'
 import { useWalkDailyAdvice } from '@/lib/weather/use-walk-daily-advice'
+import { syncWalkAdviceMorningNotification } from '@/lib/notifications/walk-advice-morning'
+import { getWalkTimeHour, setWalkTimeHour as persistWalkTimeHour } from '@/lib/weather/walk-time-pref'
 import { walkAlertFromTemp, walkAlertLevel } from '@/lib/weather/walk-alert'
 import type { WeatherCondition } from '@/lib/weather/fetch-weather'
 
@@ -40,6 +42,28 @@ export function WalkAlertCard({
 }) {
   const [open, setOpen] = useState(false)
   const { dog } = useDogProfile()
+
+  /** いつものお散歩時間（null=未設定→朝5:00にきょうのおすすめ、設定あり→2時間前に予定時刻の予測を通知） */
+  const [walkTimeHour, setWalkTimeHour] = useState<number | null>(null)
+  const [walkTimeLoaded, setWalkTimeLoaded] = useState(false)
+
+  useEffect(() => {
+    void getWalkTimeHour().then((h) => {
+      setWalkTimeHour(h)
+      setWalkTimeLoaded(true)
+    })
+  }, [])
+
+  // お散歩予報のプッシュ通知を予約する（予報から本文を事前計算・冪等・失敗しても体験は壊さない）
+  useEffect(() => {
+    if (!walkTimeLoaded) return
+    void syncWalkAdviceMorningNotification(dog?.name, { location, walkHour: walkTimeHour })
+  }, [dog?.name, location, walkTimeHour, walkTimeLoaded])
+
+  const handleChangeWalkTime = (h: number | null) => {
+    setWalkTimeHour(h)
+    void persistWalkTimeHour(h)
+  }
   const { data: weather, loading: weatherLoading, needsLocation } = useWeather(location)
   const tempC = weather?.tempC ?? null
   const baseLevel = tempC != null ? walkAlertFromTemp(tempC) : null
@@ -115,6 +139,8 @@ export function WalkAlertCard({
         onClose={() => setOpen(false)}
         dailyAdvice={advice}
         adviceLoading={adviceLoading}
+        walkTimeHour={walkTimeHour}
+        onChangeWalkTimeHour={handleChangeWalkTime}
       />
     </>
   )

@@ -11,6 +11,7 @@ import {
   type WalkAlertLevel,
 } from '@/lib/weather/walk-alert'
 import type { WalkDailyAdvice } from '@/lib/weather/walk-daily-advice'
+import { WALK_TIME_CHOICES } from '@/lib/weather/walk-time-pref'
 import type { WeatherCondition } from '@/lib/weather/fetch-weather'
 
 function weatherAwareLabel(levelLabel: string, condition: WeatherCondition | null | undefined): string {
@@ -38,6 +39,8 @@ export function WalkAlertModal({
   onClose,
   dailyAdvice = null,
   adviceLoading = false,
+  walkTimeHour = null,
+  onChangeWalkTimeHour,
 }: {
   visible: boolean
   tempC: number | null
@@ -48,6 +51,9 @@ export function WalkAlertModal({
   onClose: () => void
   dailyAdvice?: WalkDailyAdvice | null
   adviceLoading?: boolean
+  /** いつものお散歩時間（通知時刻の基準）。onChange を渡すと設定UIを表示する */
+  walkTimeHour?: number | null
+  onChangeWalkTimeHour?: (hour: number | null) => void
 }) {
   const [guideExpanded, setGuideExpanded] = useState(false)
   // 湿度・体感補正後のレベル（advice側）があれば優先し、本文とバッジのトーンを一致させる
@@ -145,6 +151,31 @@ export function WalkAlertModal({
                   <Text style={styles.advice}>{adviceText}</Text>
                 )}
               </View>
+
+              {onChangeWalkTimeHour ? (
+                <View style={styles.walkTimeSection}>
+                  <Text style={styles.walkTimeTitle}>いつものお散歩時間</Text>
+                  <Text style={styles.walkTimeHint}>
+                    設定すると、その2時間前に予定時間の予報と歩きやすい時間の目安をお届けします（未設定は朝5時）。
+                  </Text>
+                  <View style={styles.walkTimeChips}>
+                    {WALK_TIME_CHOICES.map((c) => {
+                      const on = walkTimeHour === c.hour
+                      return (
+                        <Pressable
+                          key={c.label}
+                          style={[styles.walkTimeChip, on && styles.walkTimeChipOn]}
+                          onPress={() => onChangeWalkTimeHour(c.hour)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: on }}
+                        >
+                          <Text style={[styles.walkTimeChipTxt, on && styles.walkTimeChipTxtOn]}>{c.label}</Text>
+                        </Pressable>
+                      )
+                    })}
+                  </View>
+                </View>
+              ) : null}
 
               <Text style={styles.disclaimer}>
                 気象データにもとづく目安です。うちの子の様子をいちばんに判断してあげてください。
@@ -258,6 +289,27 @@ const styles = StyleSheet.create({
     minHeight: 88,
   },
   advice: { fontSize: 16, lineHeight: 26, fontWeight: '600', color: colors.text },
+  walkTimeSection: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 6,
+  },
+  walkTimeTitle: { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
+  walkTimeHint: { fontSize: 11, lineHeight: 16, color: colors.textMuted },
+  walkTimeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  walkTimeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  walkTimeChipOn: { borderColor: colors.brandDark, backgroundColor: colors.tintWeak },
+  walkTimeChipTxt: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+  walkTimeChipTxtOn: { color: colors.brandDark },
   disclaimer: {
     marginTop: 10,
     fontSize: 11,

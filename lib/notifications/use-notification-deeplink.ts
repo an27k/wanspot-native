@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import type * as Notifications from 'expo-notifications'
 import { useRouter } from 'expo-router'
 import { MEMORY_ANNIVERSARY_TYPE } from '@/lib/notifications/memory-anniversary'
+import { WALK_ADVICE_MORNING_TYPE } from '@/lib/notifications/walk-advice-morning'
 import { REVIEW_ALBUM_TAB_ENABLED } from '@/lib/feature-flags'
 import { loadNotificationsModule } from '@/lib/notifications/notifications-module'
 
@@ -28,9 +29,17 @@ function navigateFromResponse(
   const data = response?.notification.request.content.data as
     | { type?: string; url?: string; visitId?: string }
     | undefined
-  if (!data?.url || data.type !== MEMORY_ANNIVERSARY_TYPE) return
+  if (!data?.url) return
+
+  // 朝のお散歩予報 → 検索タブ（上部のお散歩予報カード）へ
+  if (data.type === WALK_ADVICE_MORNING_TYPE) {
+    push({ pathname: data.url })
+    return
+  }
+
+  if (data.type !== MEMORY_ANNIVERSARY_TYPE) return
   const pathname =
-    data.url === '/(tabs)/camera' && !REVIEW_ALBUM_TAB_ENABLED ? '/(tabs)/search' : data.url
+    data.url === '/(tabs)/camera' && !REVIEW_ALBUM_TAB_ENABLED ? '/(tabs)/index' : data.url
   push({
     pathname,
     params: data.visitId ? { focusVisitId: data.visitId } : undefined,

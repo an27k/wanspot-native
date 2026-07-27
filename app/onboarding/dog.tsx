@@ -31,6 +31,7 @@ import { TapSelectRow } from '@/components/onboarding/TapSelectRow'
 import { filterDogBreeds } from '@/lib/dog-breeds'
 import { showImagePickerOptions } from '@/lib/image-picker'
 import { OB_DOG_KEY, OB_LOCATION_GRANTED } from '@/lib/onboarding-constants'
+import { setWalkTimeHour as setWalkTimePref, WALK_TIME_CHOICES } from '@/lib/weather/walk-time-pref'
 import { completeOnboarding } from '@/lib/onboarding-complete'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
@@ -57,6 +58,9 @@ export default function DogPage() {
   const [name, setName] = useState('')
   const [breed, setBreed] = useState('')
   const [size, setSize] = useState<DogSizeKey | null>(null)
+  /** いつものお散歩時間（任意回答）。picked=false のまま送信された場合は保存しない */
+  const [walkTimeHour, setWalkTimeHour] = useState<number | null>(null)
+  const [walkTimePicked, setWalkTimePicked] = useState(false)
   const [dogYear, setDogYear] = useState('')
   const [dogMonth, setDogMonth] = useState('')
   const [dogDay, setDogDay] = useState('')
@@ -147,6 +151,8 @@ export default function DogPage() {
           ...(prevPhotoUrl ? { photo_url: prevPhotoUrl } : {}),
         })
       )
+      // いつものお散歩時間 → お散歩予報の通知時刻に反映（未回答はデフォルトの朝5時運用）
+      if (walkTimePicked) await setWalkTimePref(walkTimeHour)
       const locationGranted = (await AsyncStorage.getItem(OB_LOCATION_GRANTED)) === '1'
       if (locationGranted) {
         const result = await completeOnboarding({ walkAreaTags: [], router })
@@ -230,6 +236,28 @@ export default function DogPage() {
 
         <FormField label="サイズ" required hint="選ぶと体重・体高の目安が表示されます">
           <DogSizeSegments value={size} onChange={setSize} />
+        </FormField>
+
+        <FormField label="いつものお散歩時間" hint="お散歩予報の通知時刻に使います（あとから設定で変更できます）">
+          <View style={styles.walkTimeChips}>
+            {WALK_TIME_CHOICES.map((c) => {
+              const on = walkTimeHour === c.hour && walkTimePicked
+              return (
+                <Pressable
+                  key={c.label}
+                  style={[styles.walkTimeChip, on && styles.walkTimeChipOn]}
+                  onPress={() => {
+                    setWalkTimeHour(c.hour)
+                    setWalkTimePicked(true)
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                >
+                  <Text style={[styles.walkTimeChipTxt, on && styles.walkTimeChipTxtOn]}>{c.label}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
         </FormField>
 
         <FormField label="誕生日" required hint="正確な日付がわからない場合は、推定でOK">
@@ -440,6 +468,18 @@ export default function DogPage() {
 const CTA_HEIGHT = 92
 
 const styles = StyleSheet.create({
+  walkTimeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  walkTimeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  walkTimeChipOn: { borderColor: colors.brandDark, backgroundColor: colors.tintWeak },
+  walkTimeChipTxt: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  walkTimeChipTxtOn: { color: colors.brandDark },
   container: { flex: 1, backgroundColor: '#FAFAF8' },
   scrollContent: { paddingHorizontal: 24 },
   title: {

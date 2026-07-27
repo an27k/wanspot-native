@@ -96,10 +96,11 @@ function pickHourlySlots(
   precip: number[],
   codes: number[],
   nowHour: number,
-  dateKey: string
+  dateKey: string,
+  maxSlots = 8
 ): WalkHourlySlot[] {
   const slots: WalkHourlySlot[] = []
-  for (let i = 0; i < times.length && slots.length < 8; i++) {
+  for (let i = 0; i < times.length && slots.length < maxSlots; i++) {
     const t = times[i]
     // 翌日分の予報が「今日の候補」として混ざらないよう、日付部分で今日に限定する
     if (t.slice(0, 10) !== dateKey) continue
@@ -115,6 +116,43 @@ function pickHourlySlots(
     })
   }
   return slots
+}
+
+/**
+ * 指定日（JST日付キー）の時間帯別スロットだけを軽量取得する。
+ * 朝の通知本文の事前計算用 — 翌朝ぶんの予報（forecast_days=2 の範囲）にも使える。
+ */
+export async function fetchWalkHourlySlotsForDate(
+  lat: number,
+  lng: number,
+  dateKey: string,
+  minHour = 0
+): Promise<WalkHourlySlot[]> {
+  try {
+    const params = new URLSearchParams({
+      latitude: String(lat),
+      longitude: String(lng),
+      timezone: 'Asia/Tokyo',
+      forecast_days: '2',
+      hourly: ['temperature_2m', 'precipitation_probability', 'weather_code'].join(','),
+    })
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`)
+    if (!res.ok) return []
+    const json = (await res.json()) as {
+      hourly?: { time?: string[]; temperature_2m?: number[]; precipitation_probability?: number[]; weather_code?: number[] }
+    }
+    return pickHourlySlots(
+      json.hourly?.time ?? [],
+      json.hourly?.temperature_2m ?? [],
+      json.hourly?.precipitation_probability ?? [],
+      json.hourly?.weather_code ?? [],
+      minHour,
+      dateKey,
+      24
+    )
+  } catch {
+    return []
+  }
 }
 
 /** Open-Meteo（気象庁系グリッド予報）＋逆ジオコードで散歩向け環境データを取得 */
