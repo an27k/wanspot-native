@@ -3,9 +3,9 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native
 import { Image as ExpoImage } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useIsFocused } from '@react-navigation/native'
-import Svg, { Path } from 'react-native-svg'
 import { DiscoverFeedCard } from '@/components/search/DiscoverFeedCard'
 import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
+import { BrandTabHeader } from '@/components/common/BrandTabHeader'
 import { ArticleListSkeleton } from '@/components/common/ShimmerSkeleton'
 import { ListEnterItem } from '@/components/common/ListEnterItem'
 import { PowState } from '@/components/DogStates'
@@ -37,12 +37,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 /** 旧検索ホームの記事フィードを独立タブ化したもの（キャッシュキーは旧版と共有して移行コストゼロに） */
 const ARTICLES_CACHE_KEY = 'search:articles:v5:linked-spot-refs'
 const LIST_VISIBLE_STEP = 8
-
-const IconBulb = ({ fill }: { fill: string }) => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={fill} strokeWidth={2} strokeLinecap="round">
-    <Path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z" />
-  </Svg>
-)
 
 type ArticleRow = {
   id: string
@@ -278,10 +272,7 @@ export function ArticlesTabScreen() {
           <RefreshControl refreshing={pullRefreshing} onRefresh={() => void handleRefresh()} tintColor="#fff" />
         }
       >
-        <View style={styles.feedHeader}>
-          <IconBulb fill={GOOGLE_HOME.textPrimary} />
-          <Text style={styles.feedHeaderTxt}>ワンスポまとめ</Text>
-        </View>
+        <BrandTabHeader />
 
         {articlesLoading && articlesRaw.length === 0 ? (
           <>
@@ -327,17 +318,4 @@ export function ArticlesTabScreen() {
 }
 
 const styles = StyleSheet.create({
-  feedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 14,
-    marginTop: 4,
-  },
-  feedHeaderTxt: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: GOOGLE_HOME.textPrimary,
-    letterSpacing: -0.2,
-  },
 })

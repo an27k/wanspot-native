@@ -1,0 +1,25 @@
+import { StyleSheet, Text, View } from 'react-native'
+import { Logo } from '@/components/Logo'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+
+/** グラデ背景タブ（まとめ記事・カレンダー）共通の中央ブランドヘッダー */
+export function BrandTabHeader() {
+  return (
+    <View style={styles.wrap}>
+      <Logo size={26} />
+      <Text style={styles.txt}>wanspot</Text>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 14,
+    marginTop: 4,
+  },
+  txt: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3, color: GOOGLE_HOME.textPrimary },
+})

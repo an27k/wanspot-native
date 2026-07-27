@@ -2,7 +2,6 @@ import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { GlassTabBar } from '@/components/navigation/GlassTabBar'
-import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton'
 import { AlbumTabIcon } from '@/components/icons/AlbumTabIcon'
 import { TabBarScrollProvider } from '@/context/TabBarScrollContext'
 import { track } from '@/lib/analytics'
@@ -111,7 +110,6 @@ export default function TabsLayout() {
             />
           )}
         </Tabs>
-        <FloatingFeedbackButton />
       </TabBarScrollProvider>
   )
 }

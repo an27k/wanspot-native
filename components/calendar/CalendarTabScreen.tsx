@@ -5,6 +5,9 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { RunningDog, PowState } from '@/components/DogStates'
+import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
+import { BrandTabHeader } from '@/components/common/BrandTabHeader'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useTabBarScroll } from '@/hooks/useTabBarScroll'
@@ -151,7 +154,7 @@ export function CalendarTabScreen() {
   )
 
   return (
-    <View style={styles.root}>
+    <GoogleHomeBackground>
       <Animated.ScrollView
         onScroll={tabBarScrollHandler}
         scrollEventThrottle={16}
@@ -160,7 +163,7 @@ export function CalendarTabScreen() {
           paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24,
         }}
       >
-        <Text style={styles.screenTitle}>ワンスポカレンダー</Text>
+        <BrandTabHeader />
 
         <View style={styles.monthHeader}>
           <Pressable style={styles.monthNavBtn} onPress={() => moveMonth(-1)} accessibilityLabel="前の月">
@@ -285,19 +288,12 @@ export function CalendarTabScreen() {
           </View>
         )}
       </Animated.ScrollView>
-    </View>
+    </GoogleHomeBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.cardBg },
-  screenTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
+
   monthHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -315,7 +311,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  monthTitle: { fontSize: 17, fontWeight: '800', color: colors.textPrimary },
+  monthTitle: { fontSize: 17, fontWeight: '800', color: GOOGLE_HOME.textPrimary },
   gridCard: {
     marginHorizontal: 16,
     backgroundColor: colors.background,
@@ -352,7 +348,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
     fontSize: 13,
-    color: colors.textSecondary,
+    color: GOOGLE_HOME.textSecondary,
   },
   dayList: { marginTop: 12, paddingHorizontal: 16, gap: 10 },
   eventCard: {
