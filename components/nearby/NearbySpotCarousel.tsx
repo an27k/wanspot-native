@@ -40,6 +40,9 @@ export function NearbySpotCarousel({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   /** カルーセル自身が発火した選択キー — ピンタップ由来と区別して再スクロールを抑える */
   const selfEmittedKeyRef = useRef<string | null>(null)
+  /** ユーザーが実際にスワイプしたか。マウント直後の viewability で地図が先頭スポットへ
+   *  飛んでしまい「現在地が中心にならない」状態になるのを防ぐ */
+  const userScrolledRef = useRef(false)
 
   // onViewableItemsChanged は途中差し替え不可のため、可変値は ref 経由で参照する
   const selectedKeyRef = useRef(selectedKey)
@@ -70,6 +73,8 @@ export function NearbySpotCarousel({
   const handleViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length === 0) return
+      // 初期表示時の自動発火では選択しない（地図は現在地のままにする）
+      if (!userScrolledRef.current) return
       // 見えている中の中央アイテムを選択候補にする
       const center = viewableItems[Math.floor(viewableItems.length / 2)]
       const spot = center?.item as SheetSpot | undefined
@@ -121,6 +126,9 @@ export function NearbySpotCarousel({
         keyExtractor={(item) => item.key}
         renderItem={renderItem}
         showsHorizontalScrollIndicator={false}
+        onScrollBeginDrag={() => {
+          userScrolledRef.current = true
+        }}
         snapToInterval={SNAP_INTERVAL}
         decelerationRate="fast"
         getItemLayout={getItemLayout}

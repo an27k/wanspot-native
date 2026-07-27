@@ -37,6 +37,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 /** 旧検索ホームの記事フィードを独立タブ化したもの（キャッシュキーは旧版と共有して移行コストゼロに） */
 const ARTICLES_CACHE_KEY = 'search:articles:v5:linked-spot-refs'
 const LIST_VISIBLE_STEP = 8
+/** 一覧の取得上限。重い JSON 列は取らないため、公開本数に対して余裕を持たせる */
+const ARTICLES_FETCH_LIMIT = 200
 
 type ArticleRow = {
   id: string
@@ -161,7 +163,8 @@ export function ArticlesTabScreen() {
                 )
                 .eq('status', 'published')
                 .order('published_at', { ascending: false, nullsFirst: false })
-                .limit(40)
+                // 公開記事の総数を下回ると新しい記事が永遠に出ないため、余裕を持った上限にする
+                .limit(ARTICLES_FETCH_LIMIT)
               return (data ?? []) as ArticleRow[]
             },
             { force }

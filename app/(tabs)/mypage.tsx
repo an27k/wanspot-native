@@ -5,7 +5,8 @@ import Animated from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { AppHeader } from '@/components/AppHeader'
+import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
+import { BrandTabHeader } from '@/components/common/BrandTabHeader'
 import { RunningDog } from '@/components/DogStates'
 import { WalkAlertCard } from '@/components/search/WalkAlertCard'
 import { PressableScale } from '@/components/common/PressableScale'
@@ -14,6 +15,7 @@ import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { colors } from '@/constants/colors'
+import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
@@ -49,20 +51,22 @@ function SettingsTab() {
 
   if (loading && !dog) {
     return (
-      <View style={styles.loadRoot}>
-        <RunningDog label="設定を読み込み中..." />
-      </View>
+      <GoogleHomeBackground>
+        <View style={styles.loadRoot}>
+          <RunningDog label="設定を読み込み中..." />
+        </View>
+      </GoogleHomeBackground>
     )
   }
 
   return (
-    <View style={styles.root}>
+    <GoogleHomeBackground>
       <Animated.ScrollView
         onScroll={tabBarScrollHandler}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingBottom: padBottom, gap: 8 }}
+        contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: padBottom, gap: 8 }}
       >
-        <AppHeader variant="centered" />
+        <BrandTabHeader />
 
         {/* お散歩予報 — 毎朝7:00の通知タップの着地。旧検索ホームから移設 */}
         <View style={styles.section}>
@@ -161,15 +165,14 @@ function SettingsTab() {
           </View>
         </View>
       </Animated.ScrollView>
-    </View>
+    </GoogleHomeBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.cardBg },
-  loadRoot: { flex: 1, backgroundColor: colors.cardBg, alignItems: 'center', justifyContent: 'center' },
+  loadRoot: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   section: { marginHorizontal: 16, marginTop: 4, gap: 8 },
-  sectionCaption: { fontSize: 12, color: colors.textMuted, fontWeight: '600', marginLeft: 4 },
+  sectionCaption: { fontSize: 12, color: GOOGLE_HOME.textSecondary, fontWeight: '600', marginLeft: 4 },
   card: {
     backgroundColor: colors.background,
     borderRadius: 16,
