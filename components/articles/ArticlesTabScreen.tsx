@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { RefreshControl, StyleSheet, Text, View } from 'react-native'
+import Animated from 'react-native-reanimated'
 import { Image as ExpoImage } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useIsFocused } from '@react-navigation/native'
@@ -36,7 +37,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 /** 旧検索ホームの記事フィードを独立タブ化したもの（キャッシュキーは旧版と共有して移行コストゼロに） */
 const ARTICLES_CACHE_KEY = 'search:articles:v5:linked-spot-refs'
-const LIST_VISIBLE_STEP = 8
+const LIST_VISIBLE_STEP = 12
 /** 一覧の取得上限。重い JSON 列は取らないため、公開本数に対して余裕を持たせる */
 const ARTICLES_FETCH_LIMIT = 200
 
@@ -80,7 +81,21 @@ export function ArticlesTabScreen() {
   const listLenRef = useRef(0)
   listLenRef.current = articlesList.length
 
-  const tabBarScrollHandler = useTabBarScroll()
+  /** 表示件数の追加はスクロール位置から判定する。contentSize / viewport は別途保持する */
+  const contentHeightRef = useRef(0)
+  const viewportHeightRef = useRef(0)
+
+  const handleScrollY = useCallback((y: number) => {
+    const content = contentHeightRef.current
+    const viewport = viewportHeightRef.current
+    if (content <= 0 || viewport <= 0) return
+    if (y + viewport < content - 600) return
+    setVisibleCount((c) => (c >= listLenRef.current ? c : Math.min(c + LIST_VISIBLE_STEP, listLenRef.current)))
+  }, [])
+
+  // reanimated のワークレットハンドラ。Animated.ScrollView の onScroll に直接渡すこと
+  // （プレーンな ScrollView で手動呼び出しすると動作せず、ページングも止まる）
+  const tabBarScrollHandler = useTabBarScroll(handleScrollY)
 
   // 位置情報（並べ替え用・許可済みセッション位置のみ。ここでは新規の許可要求はしない）
   useEffect(() => {
@@ -250,22 +265,17 @@ export function ArticlesTabScreen() {
     }
   }, [loadArticles])
 
-  const handleEndReached = useCallback(() => {
-    setVisibleCount((c) => Math.min(c + LIST_VISIBLE_STEP, Math.max(listLenRef.current, LIST_VISIBLE_STEP)))
-  }, [])
-
   return (
     <GoogleHomeBackground>
-      <ScrollView
-        onScroll={(e) => {
-          tabBarScrollHandler(e)
-          // 下端に近づいたら表示件数を増やす（軽量な無限スクロール）
-          const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
-          if (contentOffset.y + layoutMeasurement.height > contentSize.height - 600) {
-            handleEndReached()
-          }
-        }}
+      <Animated.ScrollView
+        onScroll={tabBarScrollHandler}
         scrollEventThrottle={16}
+        onContentSizeChange={(_w, h) => {
+          contentHeightRef.current = h
+        }}
+        onLayout={(e) => {
+          viewportHeightRef.current = e.nativeEvent.layout.height
+        }}
         contentContainerStyle={{
           paddingTop: insets.top + 12,
           paddingHorizontal: GOOGLE_HOME.padH,
@@ -315,7 +325,7 @@ export function ArticlesTabScreen() {
             </View>
           </ListEnterItem>
         ))}
-      </ScrollView>
+      </Animated.ScrollView>
     </GoogleHomeBackground>
   )
 }
