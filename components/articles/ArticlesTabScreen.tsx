@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { Image as ExpoImage } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useIsFocused } from '@react-navigation/native'
 import { DiscoverFeedCard } from '@/components/search/DiscoverFeedCard'
+import { ArticleListRow } from '@/components/articles/ArticleListRow'
 import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
 import { BrandTabHeader } from '@/components/common/BrandTabHeader'
 import { ArticleListSkeleton } from '@/components/common/ShimmerSkeleton'
@@ -18,6 +19,11 @@ import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { shouldInjectListAd } from '@/lib/ads/list-injection'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import { personalizeArticlesFeed } from '@/lib/article-feed-ranking'
+import {
+  ARTICLE_GENRE_CHIPS,
+  parseArticleTheme,
+  type ArticleGenreKey,
+} from '@/lib/articles/article-theme'
 import {
   CACHE_TTL,
   fetchWithCache,
@@ -72,18 +78,40 @@ export function ArticlesTabScreen() {
   const [articlesFetchError, setArticlesFetchError] = useState(false)
   const [articlesListEnter, setArticlesListEnter] = useState(true)
   const [visibleCount, setVisibleCount] = useState(LIST_VISIBLE_STEP)
+  /** カテゴリチップの選択（null = すべて）。theme から導出したジャンルで絞る */
+  const [selectedGenre, setSelectedGenre] = useState<ArticleGenreKey | null>(null)
   const [pullRefreshing, setPullRefreshing] = useState(false)
   const [recentArticleIds, setRecentArticleIds] = useState<string[]>([])
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [userWalkTags, setUserWalkTags] = useState<string[]>([])
   const [adsRuntimeReady, setAdsRuntimeReady] = useState(false)
   const adsPrimedRef = useRef(false)
+  /** theme 解析つきの表示リスト（並びはパーソナライズ済みの articlesList を維持） */
+  const themedList = useMemo(
+    () => articlesList.map((article) => ({ article, info: parseArticleTheme(article.theme) })),
+    [articlesList]
+  )
+  /** 記事が存在するジャンルだけをチップに出す */
+  const availableChips = useMemo(() => {
+    const present = new Set(themedList.map((t) => t.info.genre).filter(Boolean))
+    return ARTICLE_GENRE_CHIPS.filter((c) => present.has(c.key))
+  }, [themedList])
+  const filteredList = useMemo(
+    () => (selectedGenre ? themedList.filter((t) => t.info.genre === selectedGenre) : themedList),
+    [themedList, selectedGenre]
+  )
+
   const listLenRef = useRef(0)
-  listLenRef.current = articlesList.length
+  listLenRef.current = filteredList.length
 
   /** 表示件数の追加はスクロール位置から判定する。contentSize / viewport は別途保持する */
   const contentHeightRef = useRef(0)
   const viewportHeightRef = useRef(0)
+
+  const handleSelectGenre = useCallback((key: ArticleGenreKey | null) => {
+    setSelectedGenre(key)
+    setVisibleCount(LIST_VISIBLE_STEP)
+  }, [])
 
   const handleScrollY = useCallback((y: number) => {
     const content = contentHeightRef.current
@@ -301,34 +329,98 @@ export function ArticlesTabScreen() {
           <PowState label="公開中の記事がありません" />
         ) : null}
 
-        {articlesList.slice(0, visibleCount).map((article, index) => (
-          <ListEnterItem key={article.id} index={index} animate={articlesListEnter}>
-            <View>
-              <DiscoverFeedCard
-                title={article.title}
-                summary={article.summary}
-                imageUrl={article.image_url}
-                keywords={article.keywords ?? []}
-                recyclingKey={`article-list-${article.id}`}
-                onPress={() => {
-                  track('article_clicked', { article_id: article.id })
-                  setRecentArticleIds((prev) => {
-                    if (prev.includes(article.id)) return prev
-                    return [article.id, ...prev].slice(0, 40)
-                  })
-                  router.push(`/articles/${article.slug}`)
-                }}
-              />
-              {isFocused && shouldInjectListAd(index, articlesList.length) ? (
-                <ListAdSlot adsReady={adsRuntimeReady} />
-              ) : null}
-            </View>
-          </ListEnterItem>
-        ))}
+        {availableChips.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.chipScroll}
+            contentContainerStyle={styles.chipRow}
+          >
+            <Pressable
+              style={[styles.chip, selectedGenre === null && styles.chipOn]}
+              onPress={() => handleSelectGenre(null)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedGenre === null }}
+            >
+              <Text style={[styles.chipTxt, selectedGenre === null && styles.chipTxtOn]}>すべて</Text>
+            </Pressable>
+            {availableChips.map((c) => {
+              const on = selectedGenre === c.key
+              return (
+                <Pressable
+                  key={c.key}
+                  style={[styles.chip, on && styles.chipOn]}
+                  onPress={() => handleSelectGenre(on ? null : c.key)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                >
+                  <Text style={[styles.chipTxt, on && styles.chipTxtOn]}>{c.label}</Text>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+        ) : null}
+
+        {!articlesLoading && filteredList.length === 0 && articlesRaw.length > 0 ? (
+          <PowState label="このカテゴリの記事はまだありません" />
+        ) : null}
+
+        {filteredList.slice(0, visibleCount).map(({ article, info }, index) => {
+          const openArticle = () => {
+            track('article_clicked', { article_id: article.id })
+            setRecentArticleIds((prev) => {
+              if (prev.includes(article.id)) return prev
+              return [article.id, ...prev].slice(0, 40)
+            })
+            router.push(`/articles/${article.slug}`)
+          }
+          return (
+            <ListEnterItem key={article.id} index={index} animate={articlesListEnter}>
+              <View>
+                {index === 0 ? (
+                  // 先頭はヒーローカード（ブロック型）。以降はリスト型で一覧性を上げる
+                  <DiscoverFeedCard
+                    title={article.title}
+                    summary={article.summary}
+                    imageUrl={article.image_url}
+                    keywords={[info.area, info.genreLabel].filter(Boolean) as string[]}
+                    recyclingKey={`article-hero-${article.id}`}
+                    onPress={openArticle}
+                  />
+                ) : (
+                  <ArticleListRow
+                    title={article.title}
+                    area={info.area}
+                    genreLabel={info.genreLabel}
+                    imageUrl={article.image_url}
+                    recyclingKey={`article-list-${article.id}`}
+                    onPress={openArticle}
+                  />
+                )}
+                {isFocused && shouldInjectListAd(index, filteredList.length) ? (
+                  <ListAdSlot adsReady={adsRuntimeReady} />
+                ) : null}
+              </View>
+            </ListEnterItem>
+          )
+        })}
       </Animated.ScrollView>
     </GoogleHomeBackground>
   )
 }
 
 const styles = StyleSheet.create({
+  chipScroll: { marginBottom: 14, flexGrow: 0 },
+  chipRow: { flexDirection: 'row', gap: 8, paddingRight: 16 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  chipOn: { backgroundColor: 'rgba(255,255,255,0.92)', borderColor: 'rgba(255,255,255,0.92)' },
+  chipTxt: { fontSize: 13, fontWeight: '700', color: GOOGLE_HOME.textSecondary },
+  chipTxtOn: { color: '#2A2522', fontWeight: '800' },
 })
