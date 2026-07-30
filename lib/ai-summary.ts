@@ -28,7 +28,8 @@ export type AiSummaryRequest = {
 function aiSummaryCacheKey(req: AiSummaryRequest): string {
   const dogKey = `${req.dogSize ?? 'none'}:${req.dogBreed ?? 'none'}`
   const reviewsKey = req.reviews && req.reviews.length > 0 ? 'withReviews' : 'noReviews'
-  return `ai-summary:${req.place_id}:${dogKey}:${reviewsKey}`
+  // v2: サーバ側プロンプト改訂（飼い主目線・検証済みペット可否の注入）に合わせて旧キャッシュを無効化
+  return `ai-summary:v2:${req.place_id}:${dogKey}:${reviewsKey}`
 }
 
 /**
