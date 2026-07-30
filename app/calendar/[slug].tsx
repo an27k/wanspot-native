@@ -13,6 +13,24 @@ import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 
 const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨']
 
+/** WordPress 等の HTML エンティティを表示用に戻す（&#038; → & など） */
+function decodeHtmlEntities(input: string): string {
+  return input
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h: string) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+}
+
+/** 途中切れマーカーを除去（表示時の全文化） */
+function stripTrailingEllipsis(input: string): string {
+  return input.replace(/\s*\[\.\.\.\]\s*$/u, '').replace(/\s*…\s*$/u, '').trim()
+}
+
 function openExternal(url: string): void {
   if (!/^https?:\/\//.test(url)) return
   void Linking.openURL(url)
@@ -95,15 +113,18 @@ export default function CalendarEventDetailScreen() {
             {event.last_entry_text ? (
               <Text style={styles.sectionSub}>最終入場 {event.last_entry_text}</Text>
             ) : null}
-            {event.hours_text ? <Text style={styles.sectionSub}>{event.hours_text}</Text> : null}
           </View>
 
           {/* 会場 */}
           {event.venue_name || event.address ? (
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>会場</Text>
-              {event.venue_name ? <Text style={styles.sectionLine}>{event.venue_name}</Text> : null}
-              {event.address ? <Text style={styles.sectionSub}>{event.address}</Text> : null}
+              {event.venue_name ? (
+                <Text style={styles.sectionLine}>{decodeHtmlEntities(event.venue_name)}</Text>
+              ) : null}
+              {event.address ? (
+                <Text style={styles.sectionSub}>{decodeHtmlEntities(event.address)}</Text>
+              ) : null}
               {mapsUrl ? (
                 <Pressable style={styles.mapBtn} onPress={() => openExternal(mapsUrl)} accessibilityLabel="地図で見る">
                   <Ionicons name="map-outline" size={16} color={colors.brandDark} />
@@ -113,22 +134,19 @@ export default function CalendarEventDetailScreen() {
             </View>
           ) : null}
 
-          {/* AIまとめ（Web スポット詳細と同一デザインの共通カード） */}
-          {event.ai_summary?.trim() ? (
-            <AiSummaryCard heading="🐾 ワンスポAIまとめ" body={event.ai_summary.trim()} collapsedLines={3} />
+          {/* AIまとめ（全文表示。description と重複するためイベント内容セクションは出さない） */}
+          {(event.ai_summary?.trim() || event.description?.trim()) ? (
+            <AiSummaryCard
+              heading="🐾 ワンスポAIまとめ"
+              body={stripTrailingEllipsis((event.ai_summary?.trim() || event.description?.trim())!)}
+              collapsedLines={0}
+            />
           ) : null}
 
           {event.price_text ? (
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>料金</Text>
               <Text style={styles.sectionLine}>{event.price_text}</Text>
-            </View>
-          ) : null}
-
-          {event.description?.trim() ? (
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>イベント内容</Text>
-              <Text style={styles.descTxt}>{event.description.trim()}</Text>
             </View>
           ) : null}
 
@@ -207,7 +225,6 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, marginBottom: 2 },
   sectionLine: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, lineHeight: 21 },
   sectionSub: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
-  descTxt: { fontSize: 13, color: colors.textPrimary, lineHeight: 21 },
   mapBtn: {
     flexDirection: 'row',
     alignItems: 'center',
