@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { DogAlertFace } from '@/components/map/DogAlertFace'
 import { WalkAlertGauge } from '@/components/map/WalkAlertGauge'
@@ -80,117 +80,124 @@ export function WalkAlertModal({
         <Pressable style={styles.card} onPress={() => {}}>
           <Text style={styles.kicker}>お散歩アラート</Text>
 
-          {level ? (
-            <>
-              <View style={styles.headerRow}>
-                <View style={styles.headerLeft}>
-                  <View style={styles.miniGauge}>
-                    <WalkAlertGauge
-                      size={34}
-                      color={colors.background}
-                      ringColor={level.color}
-                      iconColor={level.color}
-                      tempC={tempC}
-                      filled
-                    />
-                  </View>
-                  <Text style={styles.headerStatus}>
-                    <Text style={[styles.levelInline, { color: level.color }]}>
-                      {weatherAwareLabel(level.label, currentCondition)}
+          {/* 閉じるボタンを常に押せる位置に残すため、本文だけをスクロールさせる */}
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator
+          >
+            {level ? (
+              <>
+                <View style={styles.headerRow}>
+                  <View style={styles.headerLeft}>
+                    <View style={styles.miniGauge}>
+                      <WalkAlertGauge
+                        size={34}
+                        color={colors.background}
+                        ringColor={level.color}
+                        iconColor={level.color}
+                        tempC={tempC}
+                        filled
+                      />
+                    </View>
+                    <Text style={styles.headerStatus}>
+                      <Text style={[styles.levelInline, { color: level.color }]}>
+                        {weatherAwareLabel(level.label, currentCondition)}
+                      </Text>
+                      {tempC != null ? (
+                        <Text style={styles.tempInline}> · 現在{tempC}℃</Text>
+                      ) : null}
                     </Text>
-                    {tempC != null ? (
-                      <Text style={styles.tempInline}> · 現在{tempC}℃</Text>
-                    ) : null}
-                  </Text>
-                </View>
-                <Pressable
-                  style={styles.guideToggle}
-                  onPress={() => setGuideExpanded((v) => !v)}
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: guideExpanded }}
-                >
-                  <Text style={styles.guideToggleTxt}>温度ガイド</Text>
-                  <Ionicons
-                    name={guideExpanded ? 'chevron-up' : 'chevron-down'}
-                    size={14}
-                    color={colors.textMuted}
-                  />
-                </Pressable>
-              </View>
-
-              {metaLine ? <Text style={styles.metaLine}>{metaLine}</Text> : null}
-
-              {guideExpanded ? (
-                <View style={styles.inlineGuide}>
-                  {WALK_ALERT_LEVELS.map((lv) => {
-                    const active = lv.key === level.key
-                    return (
-                      <View
-                        key={lv.key}
-                        style={[styles.scaleRow, active && styles.scaleRowOn, active && { borderColor: lv.color }]}
-                      >
-                        <DogAlertFace size={26} level={lv.key} ringColor={lv.color} />
-                        <View style={styles.scaleTextCol}>
-                          <Text style={[styles.scaleLabel, active && { color: lv.color }]}>{lv.label}</Text>
-                          <Text style={styles.scaleRange}>{lv.rangeLabel}</Text>
-                        </View>
-                        {active ? <View style={[styles.activeDot, { backgroundColor: lv.color }]} /> : null}
-                      </View>
-                    )
-                  })}
-                </View>
-              ) : null}
-
-              <View style={styles.adviceBox}>
-                {adviceLoading && !dailyAdvice ? (
-                  <View style={styles.adviceLoading}>
-                    <ActivityIndicator size="small" color={colors.brandDark} />
-                    <Text style={styles.adviceLoadingTxt}>今日の散歩アドバイスを作成中…</Text>
                   </View>
-                ) : (
-                  <Text style={styles.advice}>{adviceText}</Text>
-                )}
-              </View>
+                  <Pressable
+                    style={styles.guideToggle}
+                    onPress={() => setGuideExpanded((v) => !v)}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: guideExpanded }}
+                  >
+                    <Text style={styles.guideToggleTxt}>温度ガイド</Text>
+                    <Ionicons
+                      name={guideExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      color={colors.textMuted}
+                    />
+                  </Pressable>
+                </View>
 
-              {onChangeWalkTimeHour ? (
-                <View style={styles.walkTimeSection}>
-                  <Text style={styles.walkTimeTitle}>いつものお散歩時間</Text>
-                  <Text style={styles.walkTimeHint}>
-                    設定すると、その2時間前に予定時間の予報と歩きやすい時間の目安をお届けします（未設定は朝5時）。
-                  </Text>
-                  <View style={styles.walkTimeChips}>
-                    {WALK_TIME_CHOICES.map((c) => {
-                      const on = walkTimeHour === c.hour
+                {metaLine ? <Text style={styles.metaLine}>{metaLine}</Text> : null}
+
+                {guideExpanded ? (
+                  <View style={styles.inlineGuide}>
+                    {WALK_ALERT_LEVELS.map((lv) => {
+                      const active = lv.key === level.key
                       return (
-                        <Pressable
-                          key={c.label}
-                          style={[styles.walkTimeChip, on && styles.walkTimeChipOn]}
-                          onPress={() => onChangeWalkTimeHour(c.hour)}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected: on }}
+                        <View
+                          key={lv.key}
+                          style={[styles.scaleRow, active && styles.scaleRowOn, active && { borderColor: lv.color }]}
                         >
-                          <Text style={[styles.walkTimeChipTxt, on && styles.walkTimeChipTxtOn]}>{c.label}</Text>
-                        </Pressable>
+                          <DogAlertFace size={26} level={lv.key} ringColor={lv.color} />
+                          <View style={styles.scaleTextCol}>
+                            <Text style={[styles.scaleLabel, active && { color: lv.color }]}>{lv.label}</Text>
+                            <Text style={styles.scaleRange}>{lv.rangeLabel}</Text>
+                          </View>
+                          {active ? <View style={[styles.activeDot, { backgroundColor: lv.color }]} /> : null}
+                        </View>
                       )
                     })}
                   </View>
-                </View>
-              ) : null}
+                ) : null}
 
-              <Text style={styles.disclaimer}>
-                気象データにもとづく目安です。うちの子の様子をいちばんに判断してあげてください。
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.noData}>{emptyMessage}</Text>
-              {needsLocation && onRequestLocation ? (
-                <Pressable style={styles.locationBtn} onPress={onRequestLocation}>
-                  <Text style={styles.locationBtnTxt}>位置情報を許可する</Text>
-                </Pressable>
-              ) : null}
-            </>
-          )}
+                <View style={styles.adviceBox}>
+                  {adviceLoading && !dailyAdvice ? (
+                    <View style={styles.adviceLoading}>
+                      <ActivityIndicator size="small" color={colors.brandDark} />
+                      <Text style={styles.adviceLoadingTxt}>今日の散歩アドバイスを作成中…</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.advice}>{adviceText}</Text>
+                  )}
+                </View>
+
+                {onChangeWalkTimeHour ? (
+                  <View style={styles.walkTimeSection}>
+                    <Text style={styles.walkTimeTitle}>いつものお散歩時間</Text>
+                    <Text style={styles.walkTimeHint}>
+                      設定すると、その2時間前に予定時間の予報と歩きやすい時間の目安をお届けします（未設定は朝5時）。
+                    </Text>
+                    <View style={styles.walkTimeChips}>
+                      {WALK_TIME_CHOICES.map((c) => {
+                        const on = walkTimeHour === c.hour
+                        return (
+                          <Pressable
+                            key={c.label}
+                            style={[styles.walkTimeChip, on && styles.walkTimeChipOn]}
+                            onPress={() => onChangeWalkTimeHour(c.hour)}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: on }}
+                          >
+                            <Text style={[styles.walkTimeChipTxt, on && styles.walkTimeChipTxtOn]}>{c.label}</Text>
+                          </Pressable>
+                        )
+                      })}
+                    </View>
+                  </View>
+                ) : null}
+
+                <Text style={styles.disclaimer}>
+                  気象データにもとづく目安です。うちの子の様子をいちばんに判断してあげてください。
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.noData}>{emptyMessage}</Text>
+                {needsLocation && onRequestLocation ? (
+                  <Pressable style={styles.locationBtn} onPress={onRequestLocation}>
+                    <Text style={styles.locationBtnTxt}>位置情報を許可する</Text>
+                  </Pressable>
+                ) : null}
+              </>
+            )}
+          </ScrollView>
 
           <Pressable style={styles.closeBtn} onPress={onClose} accessibilityRole="button">
             <Text style={styles.closeTxt}>閉じる</Text>
@@ -212,6 +219,8 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 380,
+    // 警告文が長い日や温度ガイド展開時に画面を超えても、閉じるボタンを画面内に残す
+    maxHeight: '85%',
     backgroundColor: colors.cardBg,
     borderRadius: 24,
     borderWidth: 1,
@@ -230,6 +239,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
+  // RN の flexShrink 既定値は 0。明示しないと本文が縮まず閉じるボタンを押し出す
+  scrollArea: { flexShrink: 1, flexGrow: 0 },
+  scrollContent: { paddingBottom: 4 },
   headerRow: {
     marginTop: 14,
     flexDirection: 'row',
