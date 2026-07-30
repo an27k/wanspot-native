@@ -1,14 +1,34 @@
 import holidayJp from '@holiday-jp/holiday_jp'
 
-type HolidayEntry = { name: string }
+type HolidayEntry = { name: string; name_en?: string }
 
 function holidaysTable(): Record<string, HolidayEntry> {
   return holidayJp.holidays as unknown as Record<string, HolidayEntry>
 }
 
+/**
+ * holiday_jp の表記を法令上の通称に揃える。
+ * 例: 「休日」(Citizen's Holiday) → 「国民の休日」
+ */
+export function formatJapanHolidayName(entry: HolidayEntry): string {
+  const name = entry.name.trim()
+  const nameEn = entry.name_en?.trim() ?? ''
+
+  // 祝日に挟まれた「国民の休日」（holiday_jp では単に「休日」）
+  if (name === '休日' || nameEn === "Citizen's Holiday") {
+    return '国民の休日'
+  }
+  // 単独の「振替休日」のみ（「こどもの日 振替休日」などは元の表記を維持）
+  if (name === '振替休日') {
+    return '振替休日'
+  }
+  return name
+}
+
 /** `YYYY-MM-DD` → 祝日名（なければ null） */
 export function japanHolidayName(dateKey: string): string | null {
-  return holidaysTable()[dateKey]?.name ?? null
+  const entry = holidaysTable()[dateKey]
+  return entry ? formatJapanHolidayName(entry) : null
 }
 
 /** 指定月の祝日マップ（キーは YYYY-MM-DD） */
@@ -16,7 +36,7 @@ export function japanHolidaysInMonth(year: number, month: number): Record<string
   const prefix = `${year}-${String(month).padStart(2, '0')}-`
   const out: Record<string, string> = {}
   for (const [key, h] of Object.entries(holidaysTable())) {
-    if (key.startsWith(prefix)) out[key] = h.name
+    if (key.startsWith(prefix)) out[key] = formatJapanHolidayName(h)
   }
   return out
 }
