@@ -116,6 +116,12 @@ export type UserSpotRow = {
   priceLabel: string | null
   /** 店内ペット同伴可否（spots テーブルのコントラクトカラム。未確認は null） */
   pet_indoor_allowed?: boolean | null
+  /** テラス席・屋外席のみ同伴可か */
+  pet_terrace_only?: boolean | null
+  /** ペット同伴ステータス（outdoor_only 等） */
+  pet_friendly_status?: string | null
+  /** ペット同伴情報が確認済みか */
+  pet_friendly_verified?: boolean | null
 }
 
 type FetchResult =
@@ -187,6 +193,12 @@ export async function fetchLikedSpotsForUser(
           priceLevel: normalizePriceLevel(raw.price_level),
           priceLabel: normalizePriceLabel(raw.price_label),
           pet_indoor_allowed: normalizePetFlag(raw.pet_indoor_allowed),
+          pet_terrace_only: normalizePetFlag(raw.pet_terrace_only),
+          pet_friendly_status:
+            typeof raw.pet_friendly_status === 'string' && raw.pet_friendly_status.trim().length > 0
+              ? raw.pet_friendly_status.trim()
+              : null,
+          pet_friendly_verified: normalizePetFlag(raw.pet_friendly_verified),
         } satisfies UserSpotRow,
       ]
     })
@@ -266,6 +278,12 @@ export async function fetchCheckedInSpotsForUser(
           priceLevel: normalizePriceLevel(raw.price_level),
           priceLabel: normalizePriceLabel(raw.price_label),
           pet_indoor_allowed: normalizePetFlag(raw.pet_indoor_allowed),
+          pet_terrace_only: normalizePetFlag(raw.pet_terrace_only),
+          pet_friendly_status:
+            typeof raw.pet_friendly_status === 'string' && raw.pet_friendly_status.trim().length > 0
+              ? raw.pet_friendly_status.trim()
+              : null,
+          pet_friendly_verified: normalizePetFlag(raw.pet_friendly_verified),
         } satisfies UserSpotRow,
       ]
     })
