@@ -15,6 +15,11 @@ import Animated from 'react-native-reanimated'
 import { fetchWithCache } from '@/lib/client-cache'
 import { stashCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
 import {
+  CALENDAR_DATE_COLORS,
+  calendarDateTone,
+  japanHolidaysInMonth,
+} from '@/lib/calendar/japan-holidays'
+import {
   jstDateKey,
   jstTimeLabel,
   priceRankLabel,
@@ -133,7 +138,14 @@ export function CalendarTabScreen() {
   }, [events])
 
   const weeks = useMemo(() => buildMonthGrid(year, month), [year, month])
+  const holidays = useMemo(() => japanHolidaysInMonth(year, month), [year, month])
   const dayEvents = eventsByDay.get(selectedKey) ?? []
+  const selectedHoliday = holidays[selectedKey] ?? null
+  const selectedTone = calendarDateTone(selectedKey, {
+    todayKey: today.dateKey,
+    holidayName: selectedHoliday,
+  })
+  const selectedIsPast = selectedTone === 'past'
 
   const openDetail = useCallback(
     (ev: CalendarEventWithRelations) => {
@@ -196,10 +208,22 @@ export function CalendarTabScreen() {
                 const dots = (eventsByDay.get(key) ?? []).slice(0, 3)
                 const isSelected = key === selectedKey
                 const isToday = key === today.dateKey
+                const holidayName = holidays[key] ?? null
+                const tone = calendarDateTone(key, { todayKey: today.dateKey, holidayName })
+                const dateColor =
+                  isSelected && !isToday
+                    ? colors.textPrimary
+                    : isToday
+                      ? colors.brandDark
+                      : CALENDAR_DATE_COLORS[tone]
                 return (
                   <Pressable
                     key={di}
-                    style={[styles.dayCell, isSelected && styles.dayCellSelected]}
+                    style={[
+                      styles.dayCell,
+                      isSelected && styles.dayCellSelected,
+                      tone === 'past' && styles.dayCellPast,
+                    ]}
                     onPress={() => setSelectedKey(key)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isSelected }}
@@ -207,17 +231,35 @@ export function CalendarTabScreen() {
                     <Text
                       style={[
                         styles.dayNum,
+                        { color: dateColor },
                         isToday && styles.dayNumToday,
                         isSelected && styles.dayNumSelected,
                       ]}
                     >
                       {day}
                     </Text>
+                    {holidayName ? (
+                      <Text
+                        style={[
+                          styles.holidayMark,
+                          { color: tone === 'past' ? CALENDAR_DATE_COLORS.past : CALENDAR_DATE_COLORS.sunday_or_holiday },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {holidayName}
+                      </Text>
+                    ) : null}
                     <View style={styles.dotRow}>
                       {dots.map((ev, i) => (
                         <View
                           key={`${ev.id}-${i}`}
-                          style={[styles.dot, { backgroundColor: ev.tags?.[0]?.color || colors.primary }]}
+                          style={[
+                            styles.dot,
+                            {
+                              backgroundColor: ev.tags?.[0]?.color || colors.primary,
+                              opacity: tone === 'past' ? 0.45 : 1,
+                            },
+                          ]}
                         />
                       ))}
                     </View>
@@ -236,14 +278,42 @@ export function CalendarTabScreen() {
           <View style={styles.stateWrap}>
             <PowState label="うまく読み込めませんでした。通信環境を確認して、もう一度お試しください。" />
           </View>
-        ) : dayEvents.length === 0 ? (
+        ) : dayEvents.length === 0 && !selectedHoliday ? (
           <Text style={styles.emptyDayTxt}>この日のイベントはありません</Text>
         ) : (
           <View style={styles.dayList}>
+            {selectedHoliday ? (
+              <View
+                style={[
+                  styles.holidayBanner,
+                  selectedIsPast && { opacity: 0.65, backgroundColor: '#F1EFEC' },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.holidayBannerTxt,
+                    {
+                      color: selectedIsPast
+                        ? CALENDAR_DATE_COLORS.past
+                        : CALENDAR_DATE_COLORS.sunday_or_holiday,
+                    },
+                  ]}
+                >
+                  {selectedHoliday}
+                </Text>
+              </View>
+            ) : null}
+            {dayEvents.length === 0 ? (
+              <Text style={styles.emptyDayTxt}>この日のイベントはありません</Text>
+            ) : null}
             {dayEvents.map((ev) => {
               const price = priceRankLabel(ev.price_level)
               return (
-                <Pressable key={ev.id} style={styles.eventCard} onPress={() => openDetail(ev)}>
+                <Pressable
+                  key={ev.id}
+                  style={[styles.eventCard, selectedIsPast && { opacity: 0.55 }]}
+                  onPress={() => openDetail(ev)}
+                >
                   {ev.thumbnail_url ? (
                     <Image
                       source={{ uri: ev.thumbnail_url }}
@@ -338,9 +408,24 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   dayCellSelected: { backgroundColor: colors.tintStrong },
+  dayCellPast: { opacity: 0.72 },
   dayNum: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
-  dayNumToday: { color: colors.brandDark, fontWeight: '900' },
+  dayNumToday: { fontWeight: '900' },
   dayNumSelected: { fontWeight: '900' },
+  holidayMark: {
+    marginTop: 2,
+    fontSize: 8,
+    fontWeight: '700',
+    maxWidth: '100%',
+    textAlign: 'center',
+  },
+  holidayBanner: {
+    borderRadius: 12,
+    backgroundColor: '#FFF1F2',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  holidayBannerTxt: { fontSize: 14, fontWeight: '800' },
   dotRow: { flexDirection: 'row', gap: 3, marginTop: 3, minHeight: 5 },
   dot: { width: 5, height: 5, borderRadius: 3 },
   stateWrap: { marginTop: 24, alignItems: 'center' },

@@ -53,6 +53,10 @@ export type CalendarEventWithRelations = CalendarEvent & {
 /** 月別APIの応答 */
 export type CalendarMonthResponse = {
   events?: CalendarEventWithRelations[]
+  meta?: {
+    holidays?: Record<string, string>
+    inHorizon?: boolean
+  }
   error?: string
 }
 
