@@ -92,6 +92,8 @@ function NearbyPage() {
   const [likedRows, setLikedRows] = useState<SheetSpot[]>([])
   const [selectedSpot, setSelectedSpot] = useState<SheetSpot | null>(null)
   const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({})
+  /** いいね処理中のスポット。連打による二重 INSERT を防ぐ */
+  const likeInFlightRef = useRef<Set<string>>(new Set())
 
   /** 地図検索窓（Googleマップ型）: 地名・駅・施設名を予測 → 確定地点の周辺スポットを全表示 */
   const [query, setQuery] = useState('')
@@ -383,12 +385,21 @@ function NearbyPage() {
 
   const handleToggleLike = useCallback(
     async (spot: SheetSpot) => {
+      // 連打すると再レンダー前の同じ状態から2回とも「いいね追加」と判定され、二重 INSERT になる
+      if (likeInFlightRef.current.has(spot.placeId)) return
+      likeInFlightRef.current.add(spot.placeId)
       const next = !likedPlaceIds.has(spot.placeId)
       setLikedOverrides((prev) => ({ ...prev, [spot.placeId]: next }))
+      /** 保存に失敗したらハートの見た目を元に戻す（赤いのに未保存、を防ぐ） */
+      const rollback = () => {
+        setLikedOverrides((prev) => ({ ...prev, [spot.placeId]: !next }))
+      }
+      try {
       const {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
+        rollback()
         router.push('/(auth)/login')
         return
       }
@@ -409,14 +420,24 @@ function NearbyPage() {
         }
         spotId = await ensureSpotId(place)
       }
-      if (!spotId) return
-      if (next) {
-        await supabase.from('spot_likes').insert({ user_id: user.id, spot_id: spotId })
-      } else {
-        await supabase.from('spot_likes').delete().eq('user_id', user.id).eq('spot_id', spotId)
+      if (!spotId) {
+        rollback()
+        return
+      }
+      const { error } = next
+        ? await supabase.from('spot_likes').insert({ user_id: user.id, spot_id: spotId })
+        : await supabase.from('spot_likes').delete().eq('user_id', user.id).eq('spot_id', spotId)
+      if (error) {
+        rollback()
+        return
       }
       invalidateCachePrefix('nearby:user-lists:')
       void loadUserLists(true)
+      } catch {
+        rollback()
+      } finally {
+        likeInFlightRef.current.delete(spot.placeId)
+      }
     },
     [likedPlaceIds, router, loadUserLists]
   )

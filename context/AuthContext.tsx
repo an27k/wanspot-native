@@ -28,13 +28,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (mounted) {
-        setWanspotSessionCache(s)
-        setSession(s)
-        setLoading(false)
-      }
-    })
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: s } }) => {
+        if (mounted) {
+          setWanspotSessionCache(s)
+          setSession(s)
+          setLoading(false)
+        }
+      })
+      // catch が無いと取得失敗時に loading が true のままになり、起動画面から進めなくなる
+      .catch(() => {
+        if (mounted) setLoading(false)
+      })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setWanspotSessionCache(s)
       setSession(s)

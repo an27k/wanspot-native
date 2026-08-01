@@ -51,8 +51,8 @@ export default function LoginScreen() {
       setLoading(false)
       return
     }
-    setLoading(false)
     await completeLoginNavigation(router)
+    setLoading(false)
   }
 
   const handleGoogleOAuth = async () => {

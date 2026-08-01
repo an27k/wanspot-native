@@ -59,7 +59,6 @@ function SettingsTab() {
   return (
     <GoogleHomeBackground>
       <ScrollView
-        scrollEventThrottle={16}
         contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: padBottom, gap: 8 }}
       >
         <BrandTabHeader />

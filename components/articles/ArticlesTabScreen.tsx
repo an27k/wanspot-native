@@ -197,7 +197,7 @@ export function ArticlesTabScreen() {
             ARTICLES_CACHE_KEY,
             CACHE_TTL.ARTICLES_MS,
             async () => {
-              const { data } = await supabase
+              const { data, error } = await supabase
                 .from('articles')
                 .select(
                   // blocks/spot_links の重い JSON は一覧では取得しない。並べ替え用のスポット参照は
@@ -208,6 +208,9 @@ export function ArticlesTabScreen() {
                 .order('published_at', { ascending: false, nullsFirst: false })
                 // 公開記事の総数を下回ると新しい記事が永遠に出ないため、余裕を持った上限にする
                 .limit(ARTICLES_FETCH_LIMIT)
+              // error を握り潰すと「取得失敗＝記事0件」が10分キャッシュされ、
+              // 圏外で一度開いただけで復帰後も空表示のままになる
+              if (error) throw error
               return (data ?? []) as ArticleRow[]
             },
             { force }

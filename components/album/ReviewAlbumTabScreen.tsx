@@ -87,8 +87,7 @@ export function ReviewAlbumTabScreen() {
       <GoogleHomeBackground key={boundaryKey}>
         <ScrollView
           style={styles.root}
-            scrollEventThrottle={16}
-          contentContainerStyle={{ paddingBottom: padBottom }}
+              contentContainerStyle={{ paddingBottom: padBottom }}
           showsVerticalScrollIndicator={false}
         >
           {dogLoading ? (

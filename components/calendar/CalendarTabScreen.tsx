@@ -165,7 +165,6 @@ export function CalendarTabScreen() {
   return (
     <GoogleHomeBackground>
       <ScrollView
-        scrollEventThrottle={16}
         contentContainerStyle={{
           paddingTop: insets.top + 12,
           paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24,

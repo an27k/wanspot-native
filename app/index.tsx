@@ -30,8 +30,18 @@ export default function Index() {
         return
       }
 
-      const { data } = await supabase.from('dogs').select('id').eq('user_id', session.user.id).maybeSingle()
+      const { data, error } = await supabase
+        .from('dogs')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
       if (cancelled) return
+      // 通信失敗は「犬が未登録」と区別する。取り違えるとオンボーディングに戻され、
+      // 既存の愛犬情報（写真含む）が入力し直しで上書きされてしまう
+      if (error) {
+        setGate('tabs')
+        return
+      }
       if (!data) {
         await AsyncStorage.removeItem(ONBOARDING_COMPLETE_KEY)
         if (!cancelled) setGate('onboard')

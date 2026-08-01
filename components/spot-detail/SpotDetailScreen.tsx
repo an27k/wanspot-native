@@ -414,7 +414,6 @@ export default function SpotDetailScreen({
     if (aiRequestKeyRef.current === requestKey) return
     aiRequestKeyRef.current = requestKey
 
-    let cancelled = false
     setAiLoading(true)
     ;(async () => {
       const [walkTags, posCtx] = await Promise.all([
@@ -448,14 +447,14 @@ export default function SpotDetailScreen({
           lng: posCtx?.lng ?? null,
         },
       })
-      if (!cancelled && result) setAiSummary(result)
+      // cancelled で捨てると、同じ requestKey の再実行が早期 return して要約が永久に出ない。
+      // 「最新のリクエストか」で判定すれば、重複した再実行があっても結果は活きる
+      if (aiRequestKeyRef.current === requestKey && result) setAiSummary(result)
     })().finally(() => {
-      if (!cancelled) setAiLoading(false)
+      // 自分が最新リクエストのときだけローディングを下ろす（新しい取得が始まっていれば触らない）。
+      // ここを cancelled で判定すると、再実行が早期 return したときに「生成中...」が固まる
+      if (aiRequestKeyRef.current === requestKey) setAiLoading(false)
     })
-
-    return () => {
-      cancelled = true
-    }
   }, [spot, loading, dogLoading, dog?.size, dog?.breed, userId, reviewsForAi])
 
   useEffect(() => {

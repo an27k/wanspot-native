@@ -61,12 +61,15 @@ export default function CheckinsPage() {
   const [enrichment, setEnrichment] = useState<Record<string, PlaceCardEnrichment>>({})
 
   useEffect(() => {
-    void Location.requestForegroundPermissionsAsync().then(({ status }) => {
-      if (status !== 'granted') return
-      void Location.getCurrentPositionAsync({}).then((pos) =>
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-      )
-    })
+    // 屋内や GPS 不調で reject するため catch 必須（未処理の Promise 拒否になる）
+    void Location.requestForegroundPermissionsAsync()
+      .then(({ status }) => {
+        if (status !== 'granted') return
+        return Location.getCurrentPositionAsync({}).then((pos) =>
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        )
+      })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
