@@ -103,6 +103,16 @@ function SettingsTab() {
               <Text style={styles.rowTxt}>いいねしたスポット</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </PressableScale>
+            <View style={styles.rowDivider} />
+            <PressableScale
+              style={styles.row}
+              onPress={() => router.push('/checkins')}
+              accessibilityLabel="行ったスポット"
+            >
+              <WanspotIconPaw size={20} variant="outline" />
+              <Text style={styles.rowTxt}>行ったスポット</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+            </PressableScale>
           </View>
         </View>
 
