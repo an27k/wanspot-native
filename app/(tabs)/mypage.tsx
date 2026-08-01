@@ -1,7 +1,6 @@
 import * as Linking from 'expo-linking'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
-import Animated from 'react-native-reanimated'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -17,7 +16,6 @@ import { useDogProfile } from '@/components/dog/useDogProfile'
 import { colors } from '@/constants/colors'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
 import { useAuth } from '@/context/AuthContext'
 import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
@@ -47,7 +45,6 @@ function SettingsTab() {
   )
 
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 16
-  const tabBarScrollHandler = useTabBarScroll()
 
   if (loading && !dog) {
     return (
@@ -61,8 +58,7 @@ function SettingsTab() {
 
   return (
     <GoogleHomeBackground>
-      <Animated.ScrollView
-        onScroll={tabBarScrollHandler}
+      <ScrollView
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: padBottom, gap: 8 }}
       >
@@ -89,7 +85,7 @@ function SettingsTab() {
               onPress={() => router.push('/settings/dog-profile')}
               accessibilityLabel="愛犬情報編集"
             >
-              <WanspotIconPaw size={20} />
+              <WanspotIconPaw size={20} variant="outline" />
               <View style={styles.rowTextCol}>
                 <Text style={styles.rowTxt}>愛犬情報編集</Text>
                 <Text style={styles.rowSubTxt} numberOfLines={1}>
@@ -104,7 +100,7 @@ function SettingsTab() {
               onPress={() => router.push('/likes')}
               accessibilityLabel="いいねしたスポット"
             >
-              <Ionicons name="heart" size={20} color="#FF5E8A" />
+              <Ionicons name="heart-outline" size={20} color={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>いいねしたスポット</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </PressableScale>
@@ -164,7 +160,7 @@ function SettingsTab() {
             </PressableScale>
           </View>
         </View>
-      </Animated.ScrollView>
+      </ScrollView>
     </GoogleHomeBackground>
   )
 }

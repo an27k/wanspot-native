@@ -14,7 +14,7 @@ import { PowState } from '@/components/DogStates'
 import { ListAdSlot } from '@/components/ads/ListAdSlot'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { useTabBarScroll } from '@/hooks/useTabBarScroll'
+import { useScrollYReport } from '@/hooks/useScrollYReport'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { shouldInjectListAd } from '@/lib/ads/list-injection'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
@@ -123,7 +123,7 @@ export function ArticlesTabScreen() {
 
   // reanimated のワークレットハンドラ。Animated.ScrollView の onScroll に直接渡すこと
   // （プレーンな ScrollView で手動呼び出しすると動作せず、ページングも止まる）
-  const tabBarScrollHandler = useTabBarScroll(handleScrollY)
+  const scrollHandler = useScrollYReport(handleScrollY)
 
   // 位置情報（並べ替え用・許可済みセッション位置のみ。ここでは新規の許可要求はしない）
   useEffect(() => {
@@ -296,7 +296,7 @@ export function ArticlesTabScreen() {
   return (
     <GoogleHomeBackground>
       <Animated.ScrollView
-        onScroll={tabBarScrollHandler}
+        onScroll={scrollHandler}
         scrollEventThrottle={16}
         onContentSizeChange={(_w, h) => {
           contentHeightRef.current = h

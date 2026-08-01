@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { GlassTabBar } from '@/components/navigation/GlassTabBar'
 import { AlbumTabIcon } from '@/components/icons/AlbumTabIcon'
-import { TabBarScrollProvider } from '@/context/TabBarScrollContext'
 import { track } from '@/lib/analytics'
 import { REVIEW_ALBUM_TAB_ENABLED } from '@/lib/feature-flags'
 
@@ -14,7 +13,6 @@ import { REVIEW_ALBUM_TAB_ENABLED } from '@/lib/feature-flags'
  */
 export default function TabsLayout() {
   return (
-    <TabBarScrollProvider>
       <Tabs
         initialRouteName="index"
         /** 非アクティブタブを切り離し、ログイン直後に map/Skia 等が同時マウントされないようにする */
@@ -110,6 +108,5 @@ export default function TabsLayout() {
             />
           )}
         </Tabs>
-      </TabBarScrollProvider>
   )
 }

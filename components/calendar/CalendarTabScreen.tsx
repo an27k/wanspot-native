@@ -10,8 +10,6 @@ import { BrandTabHeader } from '@/components/common/BrandTabHeader'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { useTabBarScroll } from '@/hooks/useTabBarScroll'
-import Animated from 'react-native-reanimated'
 import { fetchWithCache } from '@/lib/client-cache'
 import { stashCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
 import {
@@ -65,8 +63,7 @@ function buildMonthGrid(year: number, month: number): (number | null)[][] {
 export function CalendarTabScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const tabBarScrollHandler = useTabBarScroll()
-  const today = useMemo(todayJst, [])
+  const today = useMemo(() => todayJst(), [])
 
   const [year, setYear] = useState(today.year)
   const [month, setMonth] = useState(today.month)
@@ -167,8 +164,7 @@ export function CalendarTabScreen() {
 
   return (
     <GoogleHomeBackground>
-      <Animated.ScrollView
-        onScroll={tabBarScrollHandler}
+      <ScrollView
         scrollEventThrottle={16}
         contentContainerStyle={{
           paddingTop: insets.top + 12,
@@ -357,7 +353,7 @@ export function CalendarTabScreen() {
             })}
           </View>
         )}
-      </Animated.ScrollView>
+      </ScrollView>
     </GoogleHomeBackground>
   )
 }

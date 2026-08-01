@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { InteractionManager, StyleSheet, Text, View } from 'react-native'
-import Animated from 'react-native-reanimated'
+import { InteractionManager, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ReviewAlbumTimeline } from '@/components/album/ReviewAlbumTimeline'
@@ -11,7 +10,6 @@ import { DogIdentityProfile } from '@/components/dog/DogIdentityProfile'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { useTabBarScroll } from '@/hooks/useTabBarScroll'
 import { track } from '@/lib/analytics'
 import { syncMemoryAnniversaryNotifications } from '@/lib/notifications/memory-anniversary'
 import { hasSeenReviewTutorial } from '@/lib/review/tutorial-storage'
@@ -73,7 +71,6 @@ export function ReviewAlbumTabScreen() {
   }, [tutorialChecked])
 
   const padBottom = insets.bottom + TAB_BAR_HEIGHT + 24
-  const tabBarScrollHandler = useTabBarScroll()
   const vlogUnlocked = useMemo(
     () => computeVlogProgressFromPlates(plates).isUnlocked,
     [plates]
@@ -88,10 +85,9 @@ export function ReviewAlbumTabScreen() {
       }}
     >
       <GoogleHomeBackground key={boundaryKey}>
-        <Animated.ScrollView
+        <ScrollView
           style={styles.root}
-          onScroll={tabBarScrollHandler}
-          scrollEventThrottle={16}
+            scrollEventThrottle={16}
           contentContainerStyle={{ paddingBottom: padBottom }}
           showsVerticalScrollIndicator={false}
         >
@@ -132,7 +128,7 @@ export function ReviewAlbumTabScreen() {
               />
             </>
           )}
-        </Animated.ScrollView>
+        </ScrollView>
         <ReviewTutorialModal visible={tutorialOpen} onClose={() => setTutorialOpen(false)} dogName={dog?.name} />
       </GoogleHomeBackground>
     </ScreenErrorBoundary>

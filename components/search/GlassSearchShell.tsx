@@ -9,7 +9,6 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated'
-import { useTabBarScrollContext } from '@/context/TabBarScrollContext'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { SOFT_SPRING } from '@/lib/motion/constants'
 import { colors } from '@/constants/colors'
@@ -23,7 +22,6 @@ type Props = {
 
 /** 検索バー外枠: ガラス材質 + フォーカス/スクロール連動 spring */
 export function GlassSearchShell({ children, focused, variant = 'light' }: Props) {
-  const { tabBarProgress } = useTabBarScrollContext()
   const focusSv = useSharedValue(focused ? 1 : 0)
   const isGoogle = variant === 'google'
 
@@ -31,15 +29,14 @@ export function GlassSearchShell({ children, focused, variant = 'light' }: Props
     focusSv.value = withSpring(focused ? 1 : 0, SOFT_SPRING)
   }, [focused, focusSv])
 
-  const shellStyle = useAnimatedStyle(() => {
-    const scrollP = tabBarProgress.value
-    const scale = interpolate(scrollP, [0, 1], [1, 0.97], Extrapolation.CLAMP)
-    const shadowOpacity = interpolate(focusSv.value, [0, 1], [isGoogle ? 0.12 : 0.06, isGoogle ? 0.22 : 0.14], Extrapolation.CLAMP)
-    return {
-      transform: [{ scale }],
-      shadowOpacity,
-    }
-  })
+  const shellStyle = useAnimatedStyle(() => ({
+    shadowOpacity: interpolate(
+      focusSv.value,
+      [0, 1],
+      [isGoogle ? 0.12 : 0.06, isGoogle ? 0.22 : 0.14],
+      Extrapolation.CLAMP
+    ),
+  }))
 
   const innerStyle = useAnimatedStyle(() => {
     if (isGoogle) {
