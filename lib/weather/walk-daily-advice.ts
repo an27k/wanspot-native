@@ -40,7 +40,7 @@ function adviceCacheKey(
   const size = dogSize ?? '_'
   const tempBucket = tempC == null ? '_' : String(Math.round(tempC / 3) * 3)
   // 本文が現在時刻（過去スロット除外）と湿度に依存するため、時間成分をキーに含めて毎時再生成する
-  return `walk-advice:v5:${walkAdviceDateKey()}:h${currentHourInTokyo()}:${geoBucket(lat, lng)}:${dog}:${size}:${tempBucket}:${condition ?? '_'}`
+  return `walk-advice:v6:${walkAdviceDateKey()}:h${currentHourInTokyo()}:${geoBucket(lat, lng)}:${dog}:${size}:${tempBucket}:${condition ?? '_'}`
 }
 
 function dogSubject(dogName: string | null | undefined): string {
@@ -119,11 +119,241 @@ function forecastLine(env: WalkEnvironment): string {
   const min = env.today.tempMinC
   const max = env.today.tempMaxC
   const weather = weatherConditionJa(env.today.condition)
-  if (min != null && max != null) return `予想は${min}〜${max}℃・${weather}。`
-  return `${weather}の一日になりそうです。`
+  if (min != null && max != null) return `予想は${min}〜${max}℃・${weather}`
+  return `${weather}の一日`
 }
 
-/** 飼い主が嬉しくなるトーンで、本文のみ（日付・場所はUIヘッダー） */
+type SeasonKey = 'spring' | 'summer' | 'autumn' | 'winter'
+
+function seasonFromDateKey(dateKey: string): SeasonKey {
+  const month = Number(dateKey.slice(5, 7))
+  if (month >= 3 && month <= 5) return 'spring'
+  if (month >= 6 && month <= 8) return 'summer'
+  if (month >= 9 && month <= 11) return 'autumn'
+  return 'winter'
+}
+
+function seasonPhrase(season: SeasonKey): string {
+  switch (season) {
+    case 'spring':
+      return '春の陽気'
+    case 'summer':
+      return '夏本番'
+    case 'autumn':
+      return '秋の空気'
+    case 'winter':
+      return '冬の冷え'
+  }
+}
+
+/** 日付キーなどで安定して候補を選ぶ（同じ日は同じ文面、日が変わると別候補） */
+function pickBySeed<T>(seed: string, items: readonly T[]): T {
+  let h = 2166136261
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return items[Math.abs(h) % items.length]!
+}
+
+/** 前日との気温差から、飼い主が「昨日との違い」を感じる一文 */
+function yesterdayCompareLine(
+  env: WalkEnvironment,
+  subject: string,
+  seed: string
+): string | null {
+  const yMax = env.yesterday?.tempMaxC
+  const tMax = env.today.tempMaxC
+  if (yMax == null || tMax == null) return null
+  const delta = tMax - yMax
+
+  if (delta >= 3) {
+    return pickBySeed(seed + ':hotter', [
+      `昨日より最高気温が${delta}℃ほど上がる見込み。体感の差が出やすいので、いつもよりペースを落としてあげてください。`,
+      `きのうより${delta}℃暑い一日になりそう。同じコースでも${subject}への負担が変わります。`,
+      `昨日より一段と暑さが乗りそうです（最高+${delta}℃）。「昨日大丈夫だったから」は今日は当てにしないで。`,
+    ])
+  }
+  if (delta <= -3) {
+    const cooler = Math.abs(delta)
+    return pickBySeed(seed + ':cooler', [
+      `昨日より最高で${cooler}℃ほど下がる見込み。涼しく感じても油断せず、${subject}の様子を見て調整を。`,
+      `きのうより${cooler}℃涼しくなりそう。気温が下がっても路面の熱や風には注意してあげてください。`,
+      `昨日より少し楽な気温帯に入りそうです（最高−${cooler}℃）。それでも無理は禁物です。`,
+    ])
+  }
+  if (Math.abs(delta) <= 1) {
+    return pickBySeed(seed + ':same', [
+      `最高気温は昨日と同程度（${tMax}℃前後）。似たコンディションでも、時間帯で体感は変わります。`,
+      `きのうと同じくらいの気温帯が続きそう。だからこそ、路面と息づかいで今日の判断をしてあげてください。`,
+    ])
+  }
+  return null
+}
+
+/**
+ * レベル×季節×日付シードでオープナーを選ぶ。
+ * 「〇〇ちゃんには〜の日です」の定型を避け、飼い主が状況を想像できる言い回しにする。
+ */
+function pickOpener(
+  env: WalkEnvironment,
+  level: WalkAlertLevel,
+  subject: string,
+  season: SeasonKey,
+  seed: string,
+  wetOrStormy: boolean,
+  windy: boolean
+): string {
+  const temp = env.current.tempC
+  const forecast = forecastLine(env)
+  const seasonBit = seasonPhrase(season)
+
+  if (wetOrStormy && (level.key === 'comfortable' || level.key === 'chilly' || level.key === 'caution')) {
+    return pickBySeed(seed + ':wet', [
+      `気温だけ見ると${level.label}寄りですが、雨の気配がある一日。${subject}の足先が濡れないよう、合間の短時間が安心です。今${temp}℃、${forecast}。`,
+      `きょうは${seasonBit}でも空模様が気がかり。${subject}との外出は小雨の合間に切り上げるつもりで。今${temp}℃、${forecast}。`,
+      `傘が欲しくなる予報です。${subject}には冷たい雨はねが負担なので、短め・乾いたルート優先で。今${temp}℃。`,
+    ])
+  }
+
+  if (windy && (level.key === 'comfortable' || level.key === 'chilly')) {
+    return pickBySeed(seed + ':wind', [
+      `気温は歩きやすめでも風が強め。${subject}が落ち着いて歩けるルートに寄せてあげてください。今${temp}℃、${forecast}。`,
+      `きょうは風が顔に当たる一日。${subject}が嫌がるようなら早めに切り上げて大丈夫です。今${temp}℃。`,
+    ])
+  }
+
+  const byLevel: Record<WalkAlertKey, readonly string[]> = {
+    comfortable: [
+      `${seasonBit}のなか、${subject}には歩きやすい気温帯。今${temp}℃で${forecast}。飼い主さんがペースを合わせれば、気持ちよく過ごせそうです。`,
+      `きょうの外気は${subject}にとってちょうどよさそう。今${temp}℃・${forecast}。におい嗅ぎの余裕も作ってあげてください。`,
+      `${subject}と出かけやすいコンディションです。今${temp}℃、${forecast}。暑くなり始める前に回るのがおすすめ。`,
+    ],
+    chilly: [
+      `${subject}には少しひんやりする空気。${forecast}。寒がるようなら服や短めコースで調整してあげてください。`,
+      `朝晩は冷えやすい一日。${subject}の足先と震えを見ながら、いつもより短くても十分です。${forecast}。`,
+      `${seasonBit}らしい涼しさ。${subject}が元気でも、風の通り道は避けてあげてください。今${temp}℃。`,
+    ],
+    sting: [
+      `冷え込みが強めの一日。${subject}の足先や震えを見ながら、排泄中心の短時間が安心です。`,
+      `外気は${subject}にはかなり厳しい温度帯。今${temp}℃。長居せず、帰ったら体を温めてあげてください。`,
+      `きょうは寒さが主役。${subject}との外出は必要最低限にして、室内で満足感を補ってあげましょう。`,
+    ],
+    numb: [
+      `凍えるような外気です。${subject}の肉球と体を守るなら、きょうは短時間の排泄だけが正解に近いです。`,
+      `かなり冷たい一日。${subject}を外に長く出さず、帰ったらしっかり温めてあげてください。今${temp}℃。`,
+      `${seasonBit}でも今日は厳しすぎる冷え。${subject}の様子を最優先に、予定を大胆に削って大丈夫です。`,
+    ],
+    caution: [
+      `${seasonBit}の暑さが乗ってきました。${subject}には日なたと路面の熱が負担。早朝か夕方に短く寄せてあげてください。今${temp}℃、${forecast}。`,
+      `きょうは「普通に歩ける」気温を超え始めています。${subject}の息が荒くなったら即帰宅で。今${temp}℃。`,
+      `暑さ注意のライン。${subject}とのお散歩は影の多いルートへ。アスファルトは手の甲で5秒チェックを。今${temp}℃、${forecast}。`,
+    ],
+    danger: [
+      `熱がこもりやすい危険寄りの気温。${subject}には距離を伸ばさず、いちばん涼しい時間の最低限が安心です。今${temp}℃、${forecast}。`,
+      `きょうの外は${subject}にとって厳しすぎる暑さ。日中は避けて、早朝の短時間だけ考えてあげてください。今${temp}℃。`,
+      `${seasonBit}のピーク級。${subject}の熱中症を防ぐなら、「歩かない選択」も立派なケアです。今${temp}℃。`,
+    ],
+    stop: [
+      `外歩きは負担が大きすぎる一日。${subject}には室内遊びやノーズワークで満足感を作ってあげましょう。今${temp}℃、${forecast}。`,
+      `きょうは散歩を休む日、で正解です。${subject}と家のなかでクールダウンしながら過ごしてあげてください。今${temp}℃。`,
+      `${seasonBit}の猛暑日。${subject}を外に連れ出すより、涼しい部屋で頭と鼻を使う遊びを。今${temp}℃。`,
+    ],
+  }
+
+  return pickBySeed(seed + ':' + level.key, byLevel[level.key])
+}
+
+function pickActionLine(
+  env: WalkEnvironment,
+  level: WalkAlertLevel,
+  subject: string,
+  seed: string,
+  hour: WalkHourlySlot | null
+): string | null {
+  if (level.key === 'stop') {
+    return pickBySeed(seed + ':act-stop', [
+      `どうしても外に出るなら、早朝の数分・日陰のみ。肉球のやけどを最優先に考えてあげてください。`,
+      `アスファルトは手で触れないほど熱いことがあります。きょうは外の予定をいったん白紙に。`,
+    ])
+  }
+
+  if (level.key === 'danger') {
+    return pickBySeed(seed + ':act-danger', [
+      `日中の散歩は避けて、いちばん涼しい早朝に排泄中心の短時間が安心です。`,
+      `距離より「涼しいか・短いか」。${subject}の舌が長く出ていたら、その場で切り上げてください。`,
+    ])
+  }
+
+  if (hour && (level.key === 'comfortable' || level.key === 'chilly' || level.key === 'caution')) {
+    const timingCare =
+      level.key === 'caution' || level.key === 'comfortable'
+        ? '出発前にアスファルトを手の甲で5秒さわって、熱ければ時間をずらして。'
+        : `${subject}の様子を見ながら短めに調整を。`
+    return pickBySeed(seed + ':act-hour', [
+      `${hour.hour}時ごろ（${hour.tempC}℃・降水${hour.precipProb}%）が比較的歩きやすい目安です。${timingCare}`,
+      `目安は${hour.hour}時前後（${hour.tempC}℃）。${timingCare}`,
+    ])
+  }
+
+  if (level.key === 'sting' || level.key === 'numb') {
+    return pickBySeed(seed + ':act-cold', [
+      `防寒と短時間をセットで。帰宅後は${subject}の体を乾かして温めてあげてください。`,
+      `長居しないつもりで玄関を出ると、${subject}にも飼い主さんにも楽です。`,
+    ])
+  }
+
+  return null
+}
+
+function pickCareCloser(
+  env: WalkEnvironment,
+  level: WalkAlertLevel,
+  subject: string,
+  dogSize: DogSize | null | undefined,
+  seed: string,
+  wetOrStormy: boolean
+): string | null {
+  if (wetOrStormy) {
+    return pickBySeed(seed + ':care-wet', [
+      `雨の時間帯は無理せず。帰宅後は${subject}の足先とお腹をしっかり拭いてあげてください。`,
+      `濡れたまま放置しないこと。${subject}の肉球まわりを乾かしてあげると安心です。`,
+    ])
+  }
+
+  if (level.key === 'danger' || level.key === 'stop') {
+    return pickBySeed(seed + ':care-hot', [
+      `気温${env.current.tempC}℃のとき、日なたのアスファルトは50℃を超えることがあります。肉球を守ってあげてください。`,
+      `給水は「欲しがってから」では遅いことも。${subject}のそばに水を置きつつ、無理な外出は避けて。`,
+    ])
+  }
+
+  if (env.today.uvMax != null && env.today.uvMax >= 6 && level.key !== 'numb' && level.key !== 'sting') {
+    return pickBySeed(seed + ':care-uv', [
+      `日差しが強い時間は日陰ルートで、のんびり歩くのがおすすめです。`,
+      `紫外線が強め。${subject}と影の多い道を選んであげてください。`,
+    ])
+  }
+
+  if (env.current.humidityPct != null && env.current.humidityPct >= 70) {
+    return pickBySeed(seed + ':care-humid', [
+      `湿度が高めなので、${subject}の息づかいを見ながら、こまめに水分補給を。`,
+      `蒸し暑さは体感を一気に上げます。${subject}がハーハーしたら休憩を長く取ってあげてください。`,
+    ])
+  }
+
+  if (level.key === 'comfortable' || level.key === 'chilly') {
+    return pickBySeed(seed + ':care-good', [
+      `におい嗅ぎの時間を少し多めにすると、${subject}の満足感を作りやすいです。`,
+      `${subject}のペースに合わせて、立ち止まる回数を増やしてあげてください。`,
+      dogCarePoint(dogSize),
+    ])
+  }
+
+  return dogCarePoint(dogSize)
+}
+
+/** 飼い主が状況を想像できるトーンで、本文のみ（日付・場所はUIヘッダー） */
 export function composeWalkAdviceLocal(
   env: WalkEnvironment,
   level: WalkAlertLevel,
@@ -131,70 +361,27 @@ export function composeWalkAdviceLocal(
   dogSize: DogSize | null | undefined
 ): string {
   const subject = dogSubject(dogName)
-  const carePoint = dogCarePoint(dogSize)
   const hour = bestWalkHour(env)
-  // 暑さ寄りの日は路面チェック、それ以外は様子見のひとことを添える
-  const timingCare =
-    level.key === 'comfortable' || level.key === 'caution'
-      ? '出発前にアスファルトを手の甲で5秒さわって、熱ければ時間をずらしてあげてください。'
-      : `${subject}の様子を見ながら、短めに調整してあげてください。`
-  const timing = hour
-    ? `${hour.hour}時ごろ（${hour.tempC}℃・降水${hour.precipProb}%）が比較的歩きやすい目安です。${timingCare}`
-    : ''
   const wetOrStormy = isWetOrStormy(env)
   const windy = isWindy(env)
+  const season = seasonFromDateKey(env.dateKey)
+  // 日付＋レベル＋季節で候補を固定。同じ日は同じ文、翌日は別パターン
+  const seed = `${env.dateKey}:${level.key}:${season}:${env.today.condition}`
 
   const lines: string[] = []
+  lines.push(pickOpener(env, level, subject, season, seed, wetOrStormy, windy))
 
-  const openers: Record<WalkAlertKey, string> = {
-    comfortable: wetOrStormy
-      ? `${subject}には気温だけなら歩きやすめですが、今日は雨に注意したい日です。今${env.current.tempC}℃で${forecastLine(env)}`
-      : windy
-        ? `${subject}には気温だけなら歩きやすめですが、風が強めです。今${env.current.tempC}℃で${forecastLine(env)}`
-        : `${subject}の今日のお散歩は、飼い主さんが様子を見ながら気持ちよく歩けるコンディションです。今${env.current.tempC}℃で${forecastLine(env)}`,
-    chilly: `${subject}には少しひんやりする一日です。${forecastLine(env)}寒がる様子があれば服や短めコースで調整してあげてください。`,
-    sting: `${subject}には冷え込みが強めです。飼い主さんが足先の冷えや震えを見ながら、短めに済ませるのが安心です。`,
-    numb: `${subject}にはかなり冷たい外気です。今日は排泄中心の短時間にして、帰ったら体を温めてあげてください。`,
-    caution: `${subject}には暑さが気になる気温です。飼い主さんが日なたと路面の熱を避けて、早朝や夕方に短く調整してあげてください。`,
-    danger: `${subject}には熱がこもりやすい危険寄りの気温です。今日は距離を伸ばさず、涼しい時間に必要最低限が安心です。`,
-    stop: `${subject}には外歩きの負担が大きい日です。今日は室内遊びやノーズワークで満足感を作ってあげましょう。`,
-  }
+  const compare = yesterdayCompareLine(env, subject, seed)
+  if (compare) lines.push(compare)
 
-  lines.push(openers[level.key])
+  const action = pickActionLine(env, level, subject, seed, hour)
+  if (action) lines.push(action)
 
-  // 「危険」以上では時刻の推奨はせず、定性的な安全側の文言にとどめる
-  if (level.key === 'danger') {
-    lines.push(
-      '日中の散歩は避けて、いちばん涼しい早朝に排泄中心の短時間が安心です。アスファルトの熱にも注意してあげてください。'
-    )
-  } else if (timing && level.key !== 'stop') {
-    lines.push(timing)
-  }
+  const closer = pickCareCloser(env, level, subject, dogSize, seed, wetOrStormy)
+  if (closer) lines.push(closer)
 
-  // caution は timing 行に手の甲5秒チェックが入るため、路面注意の重複を避けて danger/stop のみに出す
-  if (level.key === 'danger' || level.key === 'stop') {
-    lines.push(
-      `気温${env.current.tempC}℃のとき、日なたのアスファルトは50℃を超えることがあります。肉球のやけどに気をつけてあげてください。`
-    )
-  }
-
-  if (wetOrStormy) {
-    lines.push(`雨の時間帯は無理せず、行くなら小雨の合間に短く。帰宅後は${subject}の足先とお腹をしっかり拭いてあげてください。`)
-  } else if (level.key === 'comfortable' || level.key === 'chilly') {
-    lines.push(`におい嗅ぎの時間を少し多めにすると、${subject}の満足感を作りやすいです。`)
-  }
-
-  if (env.today.uvMax != null && env.today.uvMax >= 6) {
-    lines.push('日差しが強い時間は日陰ルートで、のんびり歩くのがおすすめです。')
-  }
-
-  if (env.current.humidityPct != null && env.current.humidityPct >= 70) {
-    lines.push(`湿度が高めなので、${subject}の息づかいを見ながら、こまめに水分補給してあげてください。`)
-  } else if (level.key !== 'stop') {
-    lines.push(carePoint)
-  }
-
-  return lines.join('\n')
+  // 3〜4文程度に収める（読み飛ばされにくさ優先）
+  return lines.slice(0, 4).join('\n')
 }
 
 async function fetchWalkAdviceFromApi(
@@ -220,6 +407,8 @@ async function fetchWalkAdviceFromApi(
         instructions: [
           '日本語で3〜4文。常に飼い主目線で、その子の体調を見ながら判断できる文章にすること。',
           '単なる天気説明ではなく「飼い主さんが何を見て、どう調整するか」を具体的に書くこと。',
+          '毎日同じ定型文にならないよう、季節感・前日との気温差・今日の天気の変化を織り込むこと。',
+          '「〇〇ちゃんには〜の日です」のような機械的な書き出しは避け、状況が目に浮かぶ言い回しにすること。',
           '日付・場所・見出しは書かない（UIに別表示）。',
           dogName?.trim()
             ? `犬の名前「${dogName.trim()}ちゃん」を文中に必ず1回以上入れること。`

@@ -33,6 +33,12 @@ export type WalkEnvironment = {
     windMaxKmh: number | null
     condition: WeatherCondition
   }
+  /** 前日実績（past_days）。前日比較の文言用。取れなければ null */
+  yesterday: {
+    tempMaxC: number | null
+    tempMinC: number | null
+    condition: WeatherCondition | null
+  } | null
   hourly: WalkHourlySlot[]
   /** AI・表示用の環境サマリー（気象庁系予報＋Open-Meteo） */
   summaryLines: string[]
@@ -166,6 +172,7 @@ export async function fetchWalkEnvironment(lat: number, lng: number): Promise<Wa
       longitude: String(lng),
       timezone: 'Asia/Tokyo',
       forecast_days: '2',
+      past_days: '1',
       current: [
         'temperature_2m',
         'relative_humidity_2m',
@@ -249,12 +256,40 @@ export async function fetchWalkEnvironment(lat: number, lng: number): Promise<Wa
     const uv = json.daily?.uv_index_max?.[idx]
     const windMax = json.daily?.wind_speed_10m_max?.[idx]
 
+    // past_days=1 で先頭が前日になる想定。日付キーで引いてズレを防ぐ
+    const yKey = (() => {
+      const [y, m, d] = dateKey.split('-').map(Number)
+      const dt = new Date(Date.UTC(y, m - 1, d - 1, 3))
+      return dt.toISOString().slice(0, 10)
+    })()
+    const yIdx = json.daily?.time?.findIndex((t) => t === yKey) ?? -1
+    const yesterday =
+      yIdx >= 0
+        ? {
+            tempMaxC:
+              typeof json.daily?.temperature_2m_max?.[yIdx] === 'number'
+                ? Math.round(json.daily!.temperature_2m_max![yIdx]!)
+                : null,
+            tempMinC:
+              typeof json.daily?.temperature_2m_min?.[yIdx] === 'number'
+                ? Math.round(json.daily!.temperature_2m_min![yIdx]!)
+                : null,
+            condition:
+              typeof json.daily?.weather_code?.[yIdx] === 'number'
+                ? conditionFromWmo(json.daily!.weather_code![yIdx]!)
+                : null,
+          }
+        : null
+
     const areaLabel = formatWalkAreaLabel(geo.prefecture, geo.municipality)
 
     const summaryLines = [
       `${dateLabel}・${areaLabel}の気象予報（Open-Meteo / 気象庁系グリッド）`,
       `現在 ${tempC}℃（体感 ${typeof cur?.apparent_temperature === 'number' ? Math.round(cur.apparent_temperature) : '—'}℃）・${weatherConditionJa(currentCondition)}`,
       `今日の予想 ${typeof tempMin === 'number' ? Math.round(tempMin) : '—'}〜${typeof tempMax === 'number' ? Math.round(tempMax) : '—'}℃・降水確率最大 ${typeof precipProb === 'number' ? Math.round(precipProb) : '—'}%`,
+      yesterday?.tempMaxC != null
+        ? `昨日の最高 ${yesterday.tempMaxC}℃${yesterday.tempMinC != null ? `（最低${yesterday.tempMinC}℃）` : ''}`
+        : '',
       `湿度 ${typeof cur?.relative_humidity_2m === 'number' ? Math.round(cur.relative_humidity_2m) : '—'}%・風 ${typeof cur?.wind_speed_10m === 'number' ? Math.round(cur.wind_speed_10m) : '—'}km/h・UV最大 ${typeof uv === 'number' ? uv.toFixed(1) : '—'}`,
       hourly.length
         ? `これからの時間帯: ${hourly.map((h) => `${h.hour}時${h.tempC}℃/${weatherConditionJa(h.condition)}/降水${h.precipProb}%`).join('、')}`
@@ -285,6 +320,7 @@ export async function fetchWalkEnvironment(lat: number, lng: number): Promise<Wa
         windMaxKmh: typeof windMax === 'number' ? Math.round(windMax) : null,
         condition: todayCondition,
       },
+      yesterday,
       hourly,
       summaryLines,
     }
