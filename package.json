@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
-    "@gorhom/bottom-sheet": "^5.2.14",
     "@holiday-jp/holiday_jp": "^2.5.1",
     "@react-native-async-storage/async-storage": "^3.0.2",
     "@react-navigation/native": "^7.1.8",
@@ -24,7 +23,6 @@
     "expo-auth-session": "~55.0.10",
     "expo-blur": "~55.0.14",
     "expo-build-properties": "~55.0.12",
-    "expo-camera": "~55.0.20",
     "expo-constants": "~55.0.9",
     "expo-file-system": "~55.0.22",
     "expo-font": "~55.0.4",

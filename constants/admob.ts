@@ -5,7 +5,7 @@
  * - ネイティブ枠: `lib/ads/adUnitIds.ts` + `.env` の `EXPO_PUBLIC_ADMOB_*`
  */
 import { Platform } from 'react-native'
-import { getNativeAdUnitId, getVideoNativeAdUnitId } from '@/lib/ads/adUnitIds'
+import { getNativeAdUnitId } from '@/lib/ads/adUnitIds'
 
 export { getNativeAdUnitId, getVideoNativeAdUnitId } from '@/lib/ads/adUnitIds'
 
@@ -14,11 +14,6 @@ export const GOOGLE_DEMO_IOS_NATIVE_AD_UNIT_ID = 'ca-app-pub-3940256099942544/39
 
 /** `iosAppId` の `~` 以降。本番のネイティブ枠IDを混同したときの検出に使う */
 export const IOS_ADMOB_APP_ID_SUFFIX = '3258937977'
-
-/** 旧コード互換: 現在は常に `getNativeAdUnitId()` と同じ */
-export function getIosReleaseNativeAdUnitId(): string {
-  return getNativeAdUnitId()
-}
 
 export function isUsingIosDemoNativeAdUnit(): boolean {
   if (__DEV__ || Platform.OS !== 'ios') return false
@@ -31,12 +26,4 @@ export function iosNativeAdUnitIdLooksLikeAppIdSuffix(): boolean {
   if (id.length === 0) return false
   const m = id.match(/\/(\d+)\s*$/)
   return m != null && m[1] === IOS_ADMOB_APP_ID_SUFFIX
-}
-
-export function resolveAiPlanResultNativeAdUnitId(): string {
-  return getNativeAdUnitId()
-}
-
-export function resolveAiPlanVideoNativeAdUnitId(): string {
-  return getVideoNativeAdUnitId()
 }
