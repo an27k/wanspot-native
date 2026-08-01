@@ -11,6 +11,7 @@ import { WalkAlertCard } from '@/components/search/WalkAlertCard'
 import { PressableScale } from '@/components/common/PressableScale'
 import { resolveSessionLocation } from '@/lib/location-session'
 import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
+import { WanspotIconPawCheck } from '@/components/icons/WanspotIconPawCheck'
 import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { colors } from '@/constants/colors'
@@ -109,7 +110,7 @@ function SettingsTab() {
               onPress={() => router.push('/checkins')}
               accessibilityLabel="行ったスポット"
             >
-              <WanspotIconPaw size={20} variant="outline" />
+              <WanspotIconPawCheck size={20} variant="outline" />
               <Text style={styles.rowTxt}>行ったスポット</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </PressableScale>
