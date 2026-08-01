@@ -8,6 +8,7 @@ import { RunningDog, PowState } from '@/components/DogStates'
 import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
 import { BrandTabHeader } from '@/components/common/BrandTabHeader'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { fetchWithCache } from '@/lib/client-cache'
@@ -20,7 +21,6 @@ import {
 import {
   jstDateKey,
   jstTimeLabel,
-  priceRankLabel,
   type CalendarEventWithRelations,
   type CalendarMonthResponse,
 } from '@/lib/calendar/types'
@@ -302,7 +302,6 @@ export function CalendarTabScreen() {
               <Text style={styles.emptyDayTxt}>この日のイベントはありません</Text>
             ) : null}
             {dayEvents.map((ev) => {
-              const price = priceRankLabel(ev.price_level)
               return (
                 <Pressable
                   key={ev.id}
@@ -330,13 +329,7 @@ export function CalendarTabScreen() {
                       {[timeLabelFor(ev), ev.venue_name ?? ev.region_name].filter(Boolean).join(' · ')}
                     </Text>
                     <View style={styles.eventTagRow}>
-                      {price ? (
-                        <View style={[styles.pricePill, price === '無料' && styles.pricePillFree]}>
-                          <Text style={[styles.pricePillTxt, price === '無料' && styles.pricePillTxtFree]}>
-                            {price}
-                          </Text>
-                        </View>
-                      ) : null}
+                      <PriceLevelMark level={ev.price_level} />
                       {(ev.tags ?? []).slice(0, 2).map((t) => (
                         <View key={t.id} style={[styles.tagPill, { borderColor: t.color }]}>
                           <Text style={styles.tagPillTxt} numberOfLines={1}>
@@ -451,15 +444,6 @@ const styles = StyleSheet.create({
   eventTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, lineHeight: 19 },
   eventMeta: { fontSize: 12, color: colors.textSecondary },
   eventTagRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  pricePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: colors.tintWeak,
-  },
-  pricePillFree: { backgroundColor: '#F0FDF4' },
-  pricePillTxt: { fontSize: 11, fontWeight: '800', color: colors.pillText },
-  pricePillTxtFree: { color: '#2FA56A' },
   tagPill: {
     paddingHorizontal: 8,
     paddingVertical: 2,

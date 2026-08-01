@@ -102,11 +102,3 @@ export function occurrenceLabel(o: CalendarEventOccurrence): string {
   const end = o.ends_at ? `〜${jstTimeLabel(o.ends_at)}` : ''
   return `${date} ${start}${end}`
 }
-
-/** 料金ランク表示。0=無料、1〜4=¥〜¥¥¥¥、null=非表示 */
-export function priceRankLabel(level: number | null | undefined): string | null {
-  if (level == null) return null
-  if (level === 0) return '無料'
-  if (level >= 1 && level <= 4) return '¥'.repeat(level)
-  return null
-}

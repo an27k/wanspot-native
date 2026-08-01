@@ -6,9 +6,10 @@ import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AiSummaryCard } from '@/components/common/AiSummaryCard'
 import { PowState } from '@/components/DogStates'
+import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
 import { colors } from '@/constants/colors'
 import { takeCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
-import { occurrenceLabel, priceRankLabel } from '@/lib/calendar/types'
+import { occurrenceLabel } from '@/lib/calendar/types'
 import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 
 const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨']
@@ -62,7 +63,6 @@ export default function CalendarEventDetailScreen() {
     )
   }
 
-  const price = priceRankLabel(event.price_level)
   const relatedUrls = (event.related_urls ?? []).filter((u) => /^https?:\/\//.test(u))
   const mapsUrl =
     event.lat != null && event.lng != null
@@ -90,11 +90,7 @@ export default function CalendarEventDetailScreen() {
           <Text style={styles.title}>{event.title}</Text>
 
           <View style={styles.tagRow}>
-            {price ? (
-              <View style={[styles.pricePill, price === '無料' && styles.pricePillFree]}>
-                <Text style={[styles.pricePillTxt, price === '無料' && styles.pricePillTxtFree]}>{price}</Text>
-              </View>
-            ) : null}
+            <PriceLevelMark level={event.price_level} size="md" />
             {(event.tags ?? []).map((t) => (
               <View key={t.id} style={[styles.tagPill, { borderColor: t.color }]}>
                 <Text style={styles.tagPillTxt}>{t.name}</Text>
@@ -197,15 +193,6 @@ const styles = StyleSheet.create({
   body: { padding: 16, gap: 12 },
   title: { fontSize: 19, fontWeight: '800', color: colors.textPrimary, lineHeight: 26 },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
-  pricePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: colors.tintWeak,
-  },
-  pricePillFree: { backgroundColor: '#F0FDF4' },
-  pricePillTxt: { fontSize: 12, fontWeight: '800', color: colors.pillText },
-  pricePillTxtFree: { color: '#2FA56A' },
   tagPill: {
     paddingHorizontal: 10,
     paddingVertical: 3,
