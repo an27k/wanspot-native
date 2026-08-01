@@ -94,47 +94,47 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           {/* インジケーターとタブの座標原点を揃えるため padding は外側に分離 */}
           <View style={styles.rowPad}>
             <View style={styles.row}>
-            <Animated.View pointerEvents="none" style={[styles.indicator, animatedIndicator]} />
-            {state.routes.map((route, index) => {
-              if (!isTabBarVisible(route.name)) return null
-              const { options } = descriptors[route.key]
-              const focused = state.index === index
-              const activeColor = options.tabBarActiveTintColor ?? colors.primary
-              const inactiveColor = options.tabBarInactiveTintColor ?? colors.textSecondary
-              const color = focused ? activeColor : inactiveColor
-              const icon = options.tabBarIcon?.({
-                focused,
-                color,
-                size: focused ? 26 : 24,
-              })
-
-              const onPress = () => {
-                const event = navigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
+              <Animated.View pointerEvents="none" style={[styles.indicator, animatedIndicator]} />
+              {state.routes.map((route, index) => {
+                if (!isTabBarVisible(route.name)) return null
+                const { options } = descriptors[route.key]
+                const focused = state.index === index
+                const activeColor = options.tabBarActiveTintColor ?? colors.primary
+                const inactiveColor = options.tabBarInactiveTintColor ?? colors.textSecondary
+                const color = focused ? activeColor : inactiveColor
+                const icon = options.tabBarIcon?.({
+                  focused,
+                  color,
+                  size: focused ? 26 : 24,
                 })
-                if (!focused && !event.defaultPrevented) {
-                  navigation.navigate(route.name, route.params)
+
+                const onPress = () => {
+                  const event = navigation.emit({
+                    type: 'tabPress',
+                    target: route.key,
+                    canPreventDefault: true,
+                  })
+                  if (!focused && !event.defaultPrevented) {
+                    navigation.navigate(route.name, route.params)
+                  }
                 }
-              }
 
-              const onLongPress = () => {
-                navigation.emit({ type: 'tabLongPress', target: route.key })
-              }
+                const onLongPress = () => {
+                  navigation.emit({ type: 'tabLongPress', target: route.key })
+                }
 
-              return (
-                <TabBarItem
-                  key={route.key}
-                  focused={focused}
-                  onPress={onPress}
-                  onLongPress={onLongPress}
-                  onLayout={onItemLayout(route.key)}
-                  accessibilityLabel={options.tabBarAccessibilityLabel ?? options.title}
-                  icon={icon}
-                />
-              )
-            })}
+                return (
+                  <TabBarItem
+                    key={route.key}
+                    focused={focused}
+                    onPress={onPress}
+                    onLongPress={onLongPress}
+                    onLayout={onItemLayout(route.key)}
+                    accessibilityLabel={options.tabBarAccessibilityLabel ?? options.title}
+                    icon={icon}
+                  />
+                )
+              })}
             </View>
           </View>
         </View>
