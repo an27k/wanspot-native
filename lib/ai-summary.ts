@@ -5,6 +5,8 @@ import { wanspotFetchJson } from '@/lib/wanspot-api'
 export type AiSummaryResult = {
   keywords: string[]
   summary: string
+  /** うちの子向けの一言。サーバ側で毎回算出され、共有キャッシュには載らない */
+  personalNote?: string
   wanspotRating?: { avg: number; count: number }
 }
 
@@ -18,6 +20,7 @@ export type AiSummaryRequest = {
   reviews?: string[]
   dogSize?: string
   dogBreed?: string
+  dogName?: string
   userContext?: {
     walkAreaTags: string[]
     lat: number | null
@@ -49,12 +52,18 @@ export async function fetchAiSummary(
         const json = await wanspotFetchJson<{
           keywords?: string[]
           summary?: string
+          personalNote?: string
           wanspotRating?: { avg: number; count: number }
         }>('/api/ai-summary', { method: 'POST', json: req })
         if (!json.keywords || !json.summary) {
           throw new Error('ai-summary: invalid response')
         }
-        return { keywords: json.keywords, summary: json.summary, wanspotRating: json.wanspotRating }
+        return {
+          keywords: json.keywords,
+          summary: json.summary,
+          personalNote: json.personalNote,
+          wanspotRating: json.wanspotRating,
+        }
       },
       opts
     )

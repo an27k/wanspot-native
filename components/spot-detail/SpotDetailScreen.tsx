@@ -54,6 +54,7 @@ import {
 import { REVIEW_ALBUM_TAB_ENABLED, SPOT_INLINE_REVIEW_ENABLED, VLOG_ENABLED } from '@/lib/feature-flags'
 import { pickSpotReviewMemoPlaceholder } from '@/lib/spot-review-memo'
 import { logUserEvent } from '@/lib/user-events'
+import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { fetchAiSummary } from '@/lib/ai-summary'
 import { withTimeout } from '@/lib/promise-timeout'
@@ -75,6 +76,8 @@ type Spot = SpotDetailRow
 type AISummary = {
   keywords: string[]
   summary: string
+  /** うちの子向けの一言（共有まとめとは別レイヤー。他ユーザーには出ない） */
+  personalNote?: string
   wanspotRating?: { avg: number; count: number }
 }
 
@@ -441,6 +444,7 @@ export default function SpotDetailScreen({
         reviews: reviewsForAi,
         dogSize: dog?.size ?? undefined,
         dogBreed: dog?.breed ?? undefined,
+        dogName: dog?.name ?? undefined,
         userContext: {
           walkAreaTags: walkTags,
           lat: posCtx?.lat ?? null,
@@ -918,6 +922,12 @@ export default function SpotDetailScreen({
                 <Text style={styles.aiBody} numberOfLines={aiExpanded ? undefined : 2}>
                   {aiSummary.summary}
                 </Text>
+                {aiSummary.personalNote ? (
+                  <View style={styles.personalNote}>
+                    <WanspotIconPaw size={13} color="#C24B36" />
+                    <Text style={styles.personalNoteTxt}>{aiSummary.personalNote}</Text>
+                  </View>
+                ) : null}
                 {!aiExpanded ? <Text style={styles.aiExpandHint}>タップで続きを読む</Text> : null}
               </Pressable>
             ) : (
@@ -1256,6 +1266,17 @@ const styles = StyleSheet.create({
   },
   kwTxt: { fontSize: 11, fontWeight: '700', color: '#C24B36' },
   aiBody: { fontSize: 12, lineHeight: 18, color: TOKENS.text.primary },
+  // うちの子向けの一言。共有まとめと視覚的に分けて「自分ごと」だと分かるようにする
+  personalNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(194,75,54,0.18)',
+  },
+  personalNoteTxt: { flex: 1, fontSize: 12, lineHeight: 18, fontWeight: '600', color: '#C24B36' },
   aiExpandHint: { marginTop: 6, fontSize: 11, fontWeight: '700', color: TOKENS.text.secondary },
   mapMini: {
     height: 120,
