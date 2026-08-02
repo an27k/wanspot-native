@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { OB_LOCATION_GRANTED, OB_LOCATION_KEY } from '@/lib/onboarding-constants'
+import { OB_LOCATION_GRANTED, OB_LOCATION_KEY, ONBOARDING_TOTAL_STEPS } from '@/lib/onboarding-constants'
 import { colors } from '@/constants/colors'
 
 export default function OnboardingLocationPage() {
@@ -58,7 +58,12 @@ export default function OnboardingLocationPage() {
       contentContainerStyle={{ paddingHorizontal: 20, paddingTop: padTop, paddingBottom: padBottom, gap: 20 }}
       keyboardShouldPersistTaps="handled"
     >
-      <OnboardingStepHeader step={1} totalSteps={2} />
+      {/*
+        この時点では許可/拒否が未確定なので総ステップ数も決まらない。最大の3で見せておく。
+        許可されれば次の画面で2に減る。進捗が縮むのは歓迎されるが、2で見せて後から3に
+        増えると「終わらない」印象になり、最初の画面での離脱に直結する。
+      */}
+      <OnboardingStepHeader step={1} totalSteps={ONBOARDING_TOTAL_STEPS} />
 
       <Text style={styles.h2}>近くのワンちゃんスポットを表示するために</Text>
       <Text style={styles.hint}>
