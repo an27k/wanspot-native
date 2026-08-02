@@ -3,6 +3,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View
 import { Ionicons } from '@expo/vector-icons'
 import { DogAlertFace } from '@/components/map/DogAlertFace'
 import { WalkAlertGauge } from '@/components/map/WalkAlertGauge'
+import { breedHeatSensitivity } from '@/lib/dog-breeds'
 import { colors } from '@/constants/colors'
 import {
   WALK_ALERT_LEVELS,
@@ -41,6 +42,7 @@ export function WalkAlertModal({
   adviceLoading = false,
   walkTimeHour = null,
   onChangeWalkTimeHour,
+  dogBreed = null,
 }: {
   visible: boolean
   tempC: number | null
@@ -54,6 +56,8 @@ export function WalkAlertModal({
   /** いつものお散歩時間（通知時刻の基準）。onChange を渡すと設定UIを表示する */
   walkTimeHour?: number | null
   onChangeWalkTimeHour?: (hour: number | null) => void
+  /** 短頭種など暑さに弱い犬種は閾値を下げる */
+  dogBreed?: string | null
 }) {
   const [guideExpanded, setGuideExpanded] = useState(false)
   // 湿度・体感補正後のレベル（advice側）があれば優先し、本文とバッジのトーンを一致させる
@@ -61,7 +65,7 @@ export function WalkAlertModal({
     ? walkAlertLevel(dailyAdvice.levelKey)
     : tempC == null
       ? null
-      : walkAlertFromTemp(tempC)
+      : walkAlertFromTemp(tempC, { heatSensitivity: breedHeatSensitivity(dogBreed) })
 
   const emptyMessage = needsLocation
     ? 'お散歩予報は「位置情報」の許可で現在地の気温を取得します（別の許可項目はありません）。下のボタンで許可を確認してください。'

@@ -99,23 +99,41 @@ export function walkAlertLevel(key: WalkAlertKey): WalkAlertLevel {
  */
 export function walkAlertFromTemp(
   tempC: number,
-  opts?: { humidityPct?: number | null; feelsLikeC?: number | null }
+  opts?: {
+    humidityPct?: number | null
+    feelsLikeC?: number | null
+    /**
+     * 犬種の暑さへの弱さ（0〜2）。breedHeatSensitivity() の戻り値をそのまま渡す。
+     * 短頭種は同じ気温でも熱中症リスクが明確に高いため、この分だけ閾値を下げる。
+     * 犬種を聞いておきながら判定に効かせないのは、飼い主に対して不誠実になる。
+     */
+    heatSensitivity?: number | null
+  }
 ): WalkAlertLevel {
   const feelsLikeC = opts?.feelsLikeC
   const humidityPct = opts?.humidityPct
+  /**
+   * 1段階につき 2℃ 早く警戒に入る。短頭種(2)なら 4℃ 手前から。
+   *
+   * ただし「快適→注意」の境目だけは補正を半分にする。ここを 4℃ 下げると
+   * 22℃でも「暑さ注意」になり、空振りの警告で信頼を失う。危険側の取りこぼしと
+   * 空振りは対称ではなく、鳴りすぎたアラートは次から読まれなくなる。
+   */
+  const shift = Math.max(0, Math.min(2, Math.round(opts?.heatSensitivity ?? 0))) * 2
+  const mildShift = Math.round(shift / 2)
 
-  if (tempC >= 35 || (typeof feelsLikeC === 'number' && feelsLikeC >= 38)) return BY_KEY.stop
+  if (tempC >= 35 - shift || (typeof feelsLikeC === 'number' && feelsLikeC >= 38 - shift)) return BY_KEY.stop
 
   let level: WalkAlertLevel
   if (tempC <= 0) level = BY_KEY.numb
   else if (tempC <= 7) level = BY_KEY.sting
   else if (tempC <= 15) level = BY_KEY.chilly
-  else if (tempC <= 24) level = BY_KEY.comfortable
-  else if (tempC <= 31) level = BY_KEY.caution
+  else if (tempC <= 24 - mildShift) level = BY_KEY.comfortable
+  else if (tempC <= 31 - shift) level = BY_KEY.caution
   else level = BY_KEY.danger
 
   // 蒸し暑い日はワンちゃんの体に熱がこもりやすいので、1段階厳しく見る
-  if (typeof humidityPct === 'number' && humidityPct >= 65 && tempC >= 25) {
+  if (typeof humidityPct === 'number' && humidityPct >= 65 && tempC >= 25 - mildShift) {
     if (level.key === 'caution') return BY_KEY.danger
     if (level.key === 'danger') return BY_KEY.stop
   }

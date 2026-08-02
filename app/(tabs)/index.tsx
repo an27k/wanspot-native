@@ -346,7 +346,7 @@ function NearbyPage() {
           import('@/lib/weather/walk-time-pref'),
         ])
         const walkHour = await getWalkTimeHour()
-        void syncWalkAdviceMorningNotification(null, { location, walkHour })
+        void syncWalkAdviceMorningNotification(null, { location, walkHour, dogBreed: dog?.breed ?? null })
       })()
     }, 4000)
     return () => clearTimeout(t)

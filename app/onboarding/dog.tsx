@@ -28,7 +28,7 @@ import { DogSizeSegments, type DogSizeKey } from '@/components/onboarding/DogSiz
 import { FormField } from '@/components/onboarding/FormField'
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
 import { TapSelectRow } from '@/components/onboarding/TapSelectRow'
-import { filterDogBreeds } from '@/lib/dog-breeds'
+import { DOG_BREED_QUICK_PICKS, filterDogBreeds } from '@/lib/dog-breeds'
 import { showImagePickerOptions } from '@/lib/image-picker'
 import { OB_DOG_KEY, OB_LOCATION_GRANTED } from '@/lib/onboarding-constants'
 import { setWalkTimeHour as setWalkTimePref, WALK_TIME_CHOICES } from '@/lib/weather/walk-time-pref'
@@ -376,6 +376,28 @@ export default function DogPage() {
               placeholderTextColor="#BBB"
               autoCorrect={false}
             />
+            {/*
+              112件のリストは検索しないと辿り着けない。登録頭数の上位は少数の犬種に
+              集中しているので、先に見せるだけで大半の飼い主が検索せずに選べる。
+              「わからない」を並べるのも重要で、保護犬や雑種の飼い主がここで
+              詰まって離脱するのを防ぐ。検索中は候補の邪魔になるので隠す。
+            */}
+            {breedQuery.trim() === '' ? (
+              <View style={styles.quickPicks}>
+                {DOG_BREED_QUICK_PICKS.map((b) => (
+                  <Pressable
+                    key={b}
+                    style={[styles.quickChip, breed === b && styles.quickChipOn]}
+                    onPress={() => {
+                      setBreed(b)
+                      setBreedModal(false)
+                    }}
+                  >
+                    <Text style={[styles.quickChipTxt, breed === b && styles.quickChipTxtOn]}>{b}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
             <FlatList
               data={breedHits}
               keyExtractor={(item) => item}
@@ -597,6 +619,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: 8,
   },
+  quickPicks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  quickChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: '#fff',
+  },
+  quickChipOn: { borderColor: colors.primary, backgroundColor: colors.tintWeak },
+  quickChipTxt: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  quickChipTxtOn: { color: colors.brandDark },
   breedList: { maxHeight: 320 },
   breedEmpty: { paddingVertical: 18, fontSize: 13, color: '#888', textAlign: 'center' },
   breedRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },

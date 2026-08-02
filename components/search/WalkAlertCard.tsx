@@ -11,6 +11,7 @@ import { useWeather } from '@/lib/weather/use-weather'
 import { useWalkDailyAdvice } from '@/lib/weather/use-walk-daily-advice'
 import { syncWalkAdviceMorningNotification } from '@/lib/notifications/walk-advice-morning'
 import { getWalkTimeHour, setWalkTimeHour as persistWalkTimeHour } from '@/lib/weather/walk-time-pref'
+import { breedHeatSensitivity } from '@/lib/dog-breeds'
 import { walkAlertFromTemp, walkAlertLevel } from '@/lib/weather/walk-alert'
 import type { WeatherCondition } from '@/lib/weather/fetch-weather'
 
@@ -61,8 +62,12 @@ export function WalkAlertCard({
   // お散歩予報のプッシュ通知を予約する（予報から本文を事前計算・冪等・失敗しても体験は壊さない）
   useEffect(() => {
     if (!walkTimeLoaded) return
-    void syncWalkAdviceMorningNotification(dog?.name, { location, walkHour: walkTimeHour })
-  }, [dog?.name, location, walkTimeHour, walkTimeLoaded])
+    void syncWalkAdviceMorningNotification(dog?.name, {
+      location,
+      walkHour: walkTimeHour,
+      dogBreed: dog?.breed ?? null,
+    })
+  }, [dog?.name, dog?.breed, location, walkTimeHour, walkTimeLoaded])
 
   const handleChangeWalkTime = (h: number | null) => {
     setWalkTimeHour(h)
@@ -70,7 +75,9 @@ export function WalkAlertCard({
   }
   const { data: weather, loading: weatherLoading, needsLocation } = useWeather(location)
   const tempC = weather?.tempC ?? null
-  const baseLevel = tempC != null ? walkAlertFromTemp(tempC) : null
+  // 犬種の暑さ耐性を閾値に効かせる（短頭種は同じ気温でもリスクが高い）
+  const baseLevel =
+    tempC != null ? walkAlertFromTemp(tempC, { heatSensitivity: breedHeatSensitivity(dog?.breed) }) : null
 
   const { advice, loading: adviceLoading } = useWalkDailyAdvice(
     location,
@@ -78,7 +85,8 @@ export function WalkAlertCard({
     weather?.condition,
     dog?.size ?? null,
     dog?.name ?? null,
-    !!location
+    !!location,
+    dog?.breed ?? null
   )
 
   const metaLine = [advice?.dateLabel, advice?.areaLabel].filter(Boolean).join(' · ')
@@ -148,6 +156,7 @@ export function WalkAlertCard({
       )}
 
       <WalkAlertModal
+        dogBreed={dog?.breed ?? null}
         visible={open}
         tempC={tempC}
         currentCondition={weather?.condition}

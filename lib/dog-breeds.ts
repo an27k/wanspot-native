@@ -130,11 +130,54 @@ export const DOG_BREED_AMBIGUOUS = new Set([
   'その他',
 ])
 
+/**
+ * 検索用の正規化。ひらがな→カタカナも寄せる。
+ *
+ * 犬種名は全てカタカナか漢字なのに、日本語入力の変換前は「しばいぬ」のように
+ * ひらがなで確定していない状態が普通にある。この段階でヒットしないと
+ * 「候補が見つかりません」が出て、飼い主は探すのをやめてしまう。
+ */
+/**
+ * 漢字を含む犬種の読み。検索の見つけやすさのためだけに持つ。
+ *
+ * 「しばいぬ」と入力しても「柴犬」には一致しない。日本犬は人気が高く、
+ * ここで詰まると影響が大きいので、漢字を含む12件だけ読みを添える。
+ */
+const BREED_READINGS: Record<string, string> = {
+  秋田犬: 'あきたいぬ あきたけん',
+  甲斐犬: 'かいけん かいいぬ',
+  紀州犬: 'きしゅうけん きしゅういぬ',
+  四国犬: 'しこくけん しこくいぬ',
+  柴犬: 'しばいぬ しばけん しば',
+  狆: 'ちん',
+  土佐犬: 'とさけん とさいぬ',
+  日本スピッツ: 'にほんすぴっつ にっぽんすぴっつ',
+  日本テリア: 'にほんてりあ にっぽんてりあ',
+  北海道犬: 'ほっかいどうけん ほっかいどういぬ',
+  ミックス犬: 'みっくす ざっしゅ 雑種',
+  'その他/不明': 'そのた ふめい わからない',
+}
+
+/**
+ * 検索用の正規化。ひらがな・半角カナをカタカナに寄せる。
+ *
+ * 犬種名は大半がカタカナなのに、日本語入力の変換前は「といぷーどる」のように
+ * ひらがなで確定していない状態が普通にある。この段階でヒットしないと
+ * 「候補が見つかりません」が出て、飼い主は探すのをやめてしまう。
+ */
 function normalizeDogBreedText(value: string): string {
   return value
     .trim()
     .toLowerCase()
+    .normalize('NFKC') // 半角カナ・全角英数を正規化
+    .replace(/[ぁ-ゖ]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0x60))
     .replace(/[・\sー－-]/g, '')
+}
+
+/** 犬種名と読みを合わせた検索キー */
+function breedSearchKey(breed: string): string {
+  const reading = BREED_READINGS[breed]
+  return normalizeDogBreedText(reading ? `${breed}${reading}` : breed)
 }
 
 export function isKnownDogBreed(value: string): value is DogBreed {
@@ -144,5 +187,75 @@ export function isKnownDogBreed(value: string): value is DogBreed {
 export function filterDogBreeds(query: string): DogBreed[] {
   const q = normalizeDogBreedText(query)
   if (!q) return [...DOG_BREEDS]
-  return DOG_BREEDS.filter((b) => normalizeDogBreedText(b).includes(q))
+  return DOG_BREEDS.filter((b) => breedSearchKey(b).includes(q))
+}
+
+/**
+ * 選択肢の先頭に固定する犬種。
+ *
+ * 犬種選択は112件のリストで、検索しないと目当てに辿り着けない。
+ * 日本の登録頭数上位はごく少数の犬種に集中しているため、上位を先に見せるだけで
+ * 大半の飼い主が検索せずに選べる。「わからない」を並べておくのも重要で、
+ * 保護犬や雑種の飼い主がここで詰まって離脱するのを防ぐ。
+ */
+export const DOG_BREED_QUICK_PICKS: readonly DogBreed[] = [
+  'トイプードル',
+  'チワワ',
+  '柴犬',
+  'ミニチュアダックスフンド',
+  'ポメラニアン',
+  'ミニチュアシュナウザー',
+  'ヨークシャーテリア',
+  'シーズー',
+  'マルチーズ',
+  'フレンチブルドッグ',
+  'ミックス犬',
+  'その他/不明',
+] as const
+
+/**
+ * 暑さへの弱さ。0 = 標準、1 = やや弱い、2 = 明確に弱い。
+ * この値の分だけ、お散歩アラートの警戒・危険の閾値を下げる。
+ *
+ * 短頭種（マズルが短い犬種）は気道が狭く、パンティングによる放熱が効きにくい。
+ * 同じ気温でも熱中症のリスクが明確に高いので、標準の犬と同じ基準で
+ * 「快適」と出してしまうのは、飼い主に対して不誠実になる。
+ * 北方原産の厚い被毛の犬種も熱がこもりやすい。
+ *
+ * 犬種を聞く以上、その回答が実際に出力を変えなければ聞く意味がない。
+ */
+const HEAT_SENSITIVE_STRONG: readonly string[] = [
+  'フレンチブルドッグ',
+  'ブルドッグ',
+  'パグ',
+  'ボストンテリア',
+  'ペキニーズ',
+  'シーズー',
+  'ボクサー',
+  '狆',
+]
+
+const HEAT_SENSITIVE_MILD: readonly string[] = [
+  'キャバリアキングチャールズスパニエル',
+  'チワワ',
+  'ヨークシャーテリア',
+  'シベリアンハスキー',
+  'アラスカンマラミュート',
+  'サモエド',
+  'バーニーズマウンテンドッグ',
+  'グレートピレニーズ',
+  'ニューファンドランド',
+  'セントバーナード',
+  'ゴールデンレトリバー',
+  '秋田犬',
+  '北海道犬',
+]
+
+/** 犬種の暑さへの弱さ（0〜2）。未知・未設定は 0（標準）として扱う */
+export function breedHeatSensitivity(breed: string | null | undefined): number {
+  const b = breed?.trim()
+  if (!b) return 0
+  if (HEAT_SENSITIVE_STRONG.includes(b)) return 2
+  if (HEAT_SENSITIVE_MILD.includes(b)) return 1
+  return 0
 }

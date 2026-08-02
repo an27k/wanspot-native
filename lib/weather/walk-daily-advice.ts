@@ -13,6 +13,7 @@ import {
   type WalkHourlySlot,
 } from '@/lib/weather/walk-environment'
 import type { WeatherCondition } from '@/lib/weather/fetch-weather'
+import { breedHeatSensitivity } from '@/lib/dog-breeds'
 import { walkAlertFromTemp, type WalkAlertKey, type WalkAlertLevel } from '@/lib/weather/walk-alert'
 
 const ADVICE_TTL_MS = 2 * 60 * 60_000
@@ -494,10 +495,18 @@ export async function fetchWalkDailyAdvice(
   lng: number,
   tempC: number | null,
   dogName: string | null | undefined,
-  opts?: { force?: boolean; weatherCondition?: WeatherCondition | null; dogSize?: DogSize | null }
+  opts?: {
+    force?: boolean
+    weatherCondition?: WeatherCondition | null
+    dogSize?: DogSize | null
+    /** 短頭種など暑さに弱い犬種はアラートの閾値を下げる */
+    dogBreed?: string | null
+  }
 ): Promise<WalkDailyAdvice> {
   const dogSize = opts?.dogSize ?? null
-  const cacheKey = adviceCacheKey(lat, lng, dogName, dogSize, tempC, opts?.weatherCondition)
+  const heatSensitivity = breedHeatSensitivity(opts?.dogBreed)
+  // 犬種で閾値が変わるので、キャッシュキーにも含めないと別の犬の判定を掴む
+  const cacheKey = `${adviceCacheKey(lat, lng, dogName, dogSize, tempC, opts?.weatherCondition)}:h${heatSensitivity}`
   if (!opts?.force && isCacheFresh(cacheKey, ADVICE_TTL_MS)) {
     const cached = readCache<WalkDailyAdvice>(cacheKey)
     if (cached) return { ...cached, source: cached.source }
@@ -509,6 +518,7 @@ export async function fetchWalkDailyAdvice(
   const level = walkAlertFromTemp(t, {
     humidityPct: env?.current.humidityPct ?? null,
     feelsLikeC: env?.current.feelsLikeC ?? null,
+    heatSensitivity,
   })
 
   if (!env) {

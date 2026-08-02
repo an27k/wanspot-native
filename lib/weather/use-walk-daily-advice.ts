@@ -9,7 +9,9 @@ export function useWalkDailyAdvice(
   weatherCondition: WeatherCondition | null | undefined,
   dogSize: DogProfile['size'] | null | undefined,
   dogName: string | null | undefined,
-  enabled: boolean
+  enabled: boolean,
+  /** 短頭種など暑さに弱い犬種はアラートの閾値が下がる */
+  dogBreed?: string | null
 ) {
   const [advice, setAdvice] = useState<WalkDailyAdvice | null>(null)
   const [loading, setLoading] = useState(false)
@@ -22,12 +24,13 @@ export function useWalkDailyAdvice(
         force: true,
         weatherCondition,
         dogSize,
+        dogBreed,
       })
       setAdvice(next)
     } finally {
       setLoading(false)
     }
-  }, [location?.lat, location?.lng, tempC, weatherCondition, dogSize, dogName])
+  }, [location?.lat, location?.lng, tempC, weatherCondition, dogSize, dogName, dogBreed])
 
   useEffect(() => {
     if (!enabled || !location) {
@@ -37,7 +40,7 @@ export function useWalkDailyAdvice(
     }
     let cancelled = false
     setLoading(true)
-    void fetchWalkDailyAdvice(location.lat, location.lng, tempC, dogName, { weatherCondition, dogSize })
+    void fetchWalkDailyAdvice(location.lat, location.lng, tempC, dogName, { weatherCondition, dogSize, dogBreed })
       .then((next) => {
         if (!cancelled) {
           setAdvice(next)
@@ -50,7 +53,7 @@ export function useWalkDailyAdvice(
     return () => {
       cancelled = true
     }
-  }, [enabled, location?.lat, location?.lng, tempC, weatherCondition, dogSize, dogName])
+  }, [enabled, location?.lat, location?.lng, tempC, weatherCondition, dogSize, dogName, dogBreed])
 
   return { advice, loading, reload }
 }

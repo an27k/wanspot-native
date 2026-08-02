@@ -1,4 +1,5 @@
 import { loadNotificationsModule } from '@/lib/notifications/notifications-module'
+import { breedHeatSensitivity } from '@/lib/dog-breeds'
 import { walkAlertFromTemp } from '@/lib/weather/walk-alert'
 import {
   fetchWalkHourlySlotsForDate,
@@ -79,12 +80,12 @@ function buildDefaultBody(slots: WalkHourlySlot[], name: string): string {
 }
 
 /** カスタム散歩時間あり: 予定時刻の環境予測 + より良い時間があれば変更の助言 */
-function buildCustomBody(slots: WalkHourlySlot[], walkHour: number, name: string): string {
+function buildCustomBody(slots: WalkHourlySlot[], walkHour: number, name: string, heat: number): string {
   const planned = slots.find((s) => s.hour === walkHour) ?? null
   const best = pickBestSlot(slots)
 
   if (planned && isWalkableSlot(planned)) {
-    const level = walkAlertFromTemp(planned.tempC)
+    const level = walkAlertFromTemp(planned.tempC, { heatSensitivity: heat })
     // 予定時刻が歩きやすく、明確により良い時間もなければそのまま背中を押す
     if (!best || best.hour === planned.hour || comfortDistance(best.tempC) >= comfortDistance(planned.tempC)) {
       return `${walkHour}時の予定時間は${planned.tempC}℃・降水${planned.precipProb}%（${level.label}）。予定どおりで良さそうです。`
@@ -110,12 +111,18 @@ function buildCustomBody(slots: WalkHourlySlot[], walkHour: number, name: string
  */
 export async function syncWalkAdviceMorningNotification(
   dogName?: string | null,
-  opts?: { location?: { lat: number; lng: number } | null; walkHour?: number | null }
+  opts?: {
+    location?: { lat: number; lng: number } | null
+    walkHour?: number | null
+    /** 短頭種など暑さに弱い犬種は通知の判定も厳しくする */
+    dogBreed?: string | null
+  }
 ): Promise<void> {
   const nameKey = dogName?.trim() || null
   const walkHour = opts?.walkHour ?? null
+  const heat = breedHeatSensitivity(opts?.dogBreed)
   const now = nowJst()
-  const dedupe = `${nameKey}:${walkHour}:${now.dateKey}:${opts?.location ? 'loc' : 'noloc'}`
+  const dedupe = `${nameKey}:${walkHour}:${now.dateKey}:${opts?.location ? 'loc' : 'noloc'}:h${heat}`
   if (syncedKey === dedupe) return
   syncedKey = dedupe
 
@@ -155,7 +162,7 @@ export async function syncWalkAdviceMorningNotification(
       if (opts?.location) {
         const slots = await fetchWalkHourlySlotsForDate(opts.location.lat, opts.location.lng, dateKey)
         if (slots.length > 0) {
-          body = walkHour != null ? buildCustomBody(slots, walkHour, name) : buildDefaultBody(slots, name)
+          body = walkHour != null ? buildCustomBody(slots, walkHour, name, heat) : buildDefaultBody(slots, name)
         }
       }
 
