@@ -48,7 +48,7 @@ import {
   EMPTY_MAP_CONDITIONS,
   type MapConditionFilter,
 } from '@/lib/nearby/map-filter'
-import { sortPlacesByScore } from '@/lib/nearby/place-score'
+import { sortPlacesByScore, type WalkSituation } from '@/lib/nearby/place-score'
 import { sheetSpotFromPlace, sheetSpotFromUserRow, type SheetSpot } from '@/lib/nearby/sheet-spot'
 import { dedupeSameSpots } from '@/lib/nearby/spread-overlapping'
 import { fetchLikedSpotsForUser } from '@/lib/fetch-user-spot-lists'
@@ -57,6 +57,8 @@ import { openSpotDetail } from '@/lib/open-spot-detail'
 import { supabase } from '@/lib/supabase'
 import { wanspotFetch } from '@/lib/wanspot-api'
 import type { UserSpotRow } from '@/lib/fetch-user-spot-lists'
+import { useWeather } from '@/lib/weather/use-weather'
+import { useDogProfile } from '@/components/dog/useDogProfile'
 import type { PlaceResult } from '@/types/places'
 
 const FILTER_BAR_H = 52
@@ -78,6 +80,8 @@ function NearbyPage() {
 
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false)
+  const weather = useWeather(location)
+  const { dog } = useDogProfile()
   const [locationError, setLocationError] = useState('')
 
   /** null = 全ジャンル表示（デフォルト）。チップ再タップで解除して全表示に戻る */
@@ -357,9 +361,21 @@ function NearbyPage() {
     return set
   }, [likedRows, likedOverrides])
 
+  /**
+   * 並び順に効かせる状況。雨の日に屋外を、大型犬にサイズ制限のある店を
+   * 上位に出さないためのもの。天気も犬情報も取れなければ距離と確実性だけで並ぶ。
+   */
+  const situation = useMemo<WalkSituation>(
+    () => ({
+      rainy: weather.data?.condition === 'rain' || weather.data?.condition === 'snow' || weather.data?.condition === 'thunder',
+      dogSize: dog?.size ?? null,
+    }),
+    [weather.data?.condition, dog?.size]
+  )
+
   const items = useMemo(() => {
     const center = searchAnchor ?? location
-    const scored = sortPlacesByScore(nearbyPlaces, center).map(sheetSpotFromPlace)
+    const scored = sortPlacesByScore(nearbyPlaces, center, situation).map(sheetSpotFromPlace)
     // 現在地×全ジャンル表示のときだけ、取得半径の外にあるいいねスポットも棚に合流させる
     let base = scored
     if (!searchAnchor && genre === null && likedRows.length > 0) {
@@ -368,7 +384,7 @@ function NearbyPage() {
     }
     // 同一施設が別スポットとして二重登録されているケースを1件に畳む
     return applyMapConditions(dedupeSameSpots(base), conditions, (s) => likedPlaceIds.has(s.placeId))
-  }, [searchAnchor, nearbyPlaces, location, genre, likedRows, conditions, likedPlaceIds])
+  }, [searchAnchor, nearbyPlaces, location, genre, likedRows, conditions, likedPlaceIds, situation])
 
   // 絞り込みで選択中スポットが消えたら、選択も静かに外す
   useEffect(() => {

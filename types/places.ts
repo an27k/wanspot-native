@@ -27,4 +27,12 @@ export type PlaceResult = {
   pet_friendly_status?: string | null
   /** ペット同伴情報が確認済みか（共通コントラクト） */
   pet_friendly_verified?: boolean | null
+  /**
+   * 自分の子を連れて行けるか（bring_own）／店の子に会いに行く店か（meet_dogs）。
+   * 「ドッグカフェ」は日本語では両方を指すため名前では判別できない。
+   * meet_dogs を候補から外さないと「連れて行ったら入れなかった」が起きる。
+   */
+  dog_interaction?: string | null
+  /** 例:「大型犬不可」。大型犬の飼い主には可否そのものを決める情報 */
+  pet_size_limit?: string | null
 }
