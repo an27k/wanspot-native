@@ -36,6 +36,8 @@ export type CalendarEvent = {
   official_url?: string | null
   /** 関連サイトURL（①②③…。①は official_url と同値を先頭に持つ） */
   related_urls?: string[] | null
+  /** 収集元。まとめサイトのことが多く、読者には見せない */
+  source_url?: string | null
   /** 最終入場時刻（例 16:30） */
   last_entry_text?: string | null
   ai_summary?: string | null
@@ -91,15 +93,57 @@ export function jstDateLabel(iso: string): string {
   return JST_FMT_DATE.format(new Date(iso))
 }
 
+function hostOf(url: string | null | undefined): string | null {
+  if (!url) return null
+  try {
+    return new URL(url).host.replace(/^www\./, '').toLowerCase()
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 読者に見せるリンクだけを残す。
+ *
+ * イベントは犬向けのまとめサイトから集めており、official_url と related_urls に
+ * 収集元のURLが混ざる。押すとまとめ記事に飛ばされ、読者はそこから改めて
+ * 公式を探すことになる。どのサイトがまとめサイトかを一覧で持つと
+ * 収集元を足すたびに更新が要るので、そのイベント自身の source_url と比べる。
+ */
+export function directLinksOnly(
+  urls: (string | null | undefined)[],
+  listingUrl: string | null | undefined
+): string[] {
+  const listingHost = hostOf(listingUrl)
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const url of urls) {
+    const trimmed = url?.trim()
+    if (!trimmed || !/^https?:\/\//i.test(trimmed)) continue
+    if (listingHost && hostOf(trimmed) === listingHost) continue
+    if (seen.has(trimmed)) continue
+    seen.add(trimmed)
+    out.push(trimmed)
+  }
+  return out
+}
+
 /** 例: 10:00 */
 export function jstTimeLabel(iso: string): string {
   return JST_FMT_TIME.format(new Date(iso))
 }
 
-/** 開催回の表示行（JST固定）。終日は時刻を出さない */
+/**
+ * 開催回の表示行（JST固定）。
+ *
+ * is_all_day は「本当に終日」ではなく「掲載元に時刻が書かれていなかった」を意味する。
+ * 収集元のまとめサイトは日付しか書かないことが多く、実際サーバ側では
+ * 193件のうち65件が時刻不明のまま残っている。「終日」と出すと
+ * 朝から晩までやっているように読めてしまうので、そうは書かない。
+ */
 export function occurrenceLabel(o: CalendarEventOccurrence): string {
   const date = jstDateLabel(o.starts_at)
-  if (o.is_all_day) return `${date} 終日`
+  if (o.is_all_day) return `${date}（時刻の記載なし）`
   const start = jstTimeLabel(o.starts_at)
   const end = o.ends_at ? `〜${jstTimeLabel(o.ends_at)}` : ''
   return `${date} ${start}${end}`

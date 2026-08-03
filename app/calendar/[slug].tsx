@@ -9,7 +9,7 @@ import { PowState } from '@/components/DogStates'
 import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
 import { colors } from '@/constants/colors'
 import { takeCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
-import { occurrenceLabel } from '@/lib/calendar/types'
+import { directLinksOnly, occurrenceLabel } from '@/lib/calendar/types'
 import { remoteImageAcceptHeaders, remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 
@@ -64,7 +64,12 @@ export default function CalendarEventDetailScreen() {
     )
   }
 
-  const relatedUrls = (event.related_urls ?? []).filter((u) => /^https?:\/\//.test(u))
+  // 収集元のまとめサイトは出さない。押しても掲載元の記事に戻るだけで、
+  // 読者はそこから改めて公式を探すことになる
+  const relatedUrls = directLinksOnly(
+    [event.official_url, ...(event.related_urls ?? [])],
+    event.source_url
+  )
   const mapsUrl =
     event.lat != null && event.lng != null
       ? `https://www.google.com/maps/search/?api=1&query=${event.lat},${event.lng}`

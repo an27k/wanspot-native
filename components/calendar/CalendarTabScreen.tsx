@@ -159,7 +159,8 @@ export function CalendarTabScreen() {
     (ev: CalendarEventWithRelations): string => {
       const oc = (ev.occurrences ?? []).find((o) => jstDateKey(o.starts_at) === selectedKey)
       if (!oc) return ''
-      return oc.is_all_day ? '終日' : jstTimeLabel(oc.starts_at)
+      // is_all_day は時刻が分からなかったという意味。カードは幅が無いので短く出す
+      return oc.is_all_day ? '時刻未記載' : jstTimeLabel(oc.starts_at)
     },
     [selectedKey]
   )
