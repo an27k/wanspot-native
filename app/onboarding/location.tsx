@@ -72,7 +72,7 @@ export default function OnboardingLocationPage() {
       <Text style={styles.reassure}>許可すると散歩エリアの質問はスキップできます。あとから設定アプリから変更できます。</Text>
 
       <Pressable style={[styles.next, busy && styles.nextOff]} onPress={() => void requestAndSave()} disabled={busy}>
-        <Text style={styles.nextTxt}>{busy ? '確認中...' : '位置情報を許可して次へ'}</Text>
+        <Text style={styles.nextTxt}>{busy ? '確認中...' : '次へ'}</Text>
       </Pressable>
 
       <Pressable style={styles.skipBtn} onPress={() => void continueWithoutLocation()} disabled={busy}>
