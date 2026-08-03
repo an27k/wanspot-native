@@ -10,7 +10,8 @@ import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
 import { colors } from '@/constants/colors'
 import { takeCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
 import { occurrenceLabel } from '@/lib/calendar/types'
-import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { remoteImageAcceptHeaders, remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 
 const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨']
 
@@ -83,7 +84,16 @@ export default function CalendarEventDetailScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
         {event.thumbnail_url ? (
-          <Image source={{ uri: event.thumbnail_url }} style={styles.hero} contentFit="cover" {...remoteImageExpoProps} />
+          <Image
+            // 原本は約2MBのPNG。ヒーロー表示でも card 幅(800px)で十分
+            source={{
+              uri: resizePlacesImageUrl(event.thumbnail_url, 'card'),
+              headers: remoteImageAcceptHeaders,
+            }}
+            style={styles.hero}
+            contentFit="cover"
+            {...remoteImageExpoProps}
+          />
         ) : null}
 
         <View style={styles.body}>

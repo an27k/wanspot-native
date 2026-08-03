@@ -35,6 +35,7 @@ import {
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
 import { getCachedPrefectureAndMunicipality } from '@/lib/geo-cache'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
+import { remoteImageAcceptHeaders } from '@/lib/images/remoteImageDefaults'
 import { resolveSessionLocation } from '@/lib/location-session'
 import { perfAsync } from '@/lib/perf/marks'
 import { track } from '@/lib/analytics'
@@ -223,7 +224,11 @@ export function ArticlesTabScreen() {
             .map((a) => a.image_url)
             .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
             .map((u) => resizePlacesImageUrl(u.trim(), 'thumbnail'))
-          if (urls.length > 0) void ExpoImage.prefetch(urls.slice(0, 8), 'memory-disk')
+          if (urls.length > 0)
+            void ExpoImage.prefetch(urls.slice(0, 8), {
+              cachePolicy: 'memory-disk',
+              headers: remoteImageAcceptHeaders,
+            })
         }
       } catch {
         setArticlesFetchError(true)

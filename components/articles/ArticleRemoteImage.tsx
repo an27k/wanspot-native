@@ -1,6 +1,6 @@
 import { Image } from 'expo-image'
 import type { ImageStyle, StyleProp } from 'react-native'
-import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { remoteImageAcceptHeaders, remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 
 type Props = {
   uri: string
@@ -17,7 +17,7 @@ type Props = {
 export function ArticleRemoteImage({ uri, style, recyclingKey, priority = 'normal' }: Props) {
   return (
     <Image
-      source={{ uri }}
+      source={{ uri, headers: remoteImageAcceptHeaders }}
       style={style}
       contentFit="cover"
       recyclingKey={recyclingKey ?? uri}

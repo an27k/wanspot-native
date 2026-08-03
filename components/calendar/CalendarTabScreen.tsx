@@ -25,7 +25,8 @@ import {
   type CalendarEventWithRelations,
   type CalendarMonthResponse,
 } from '@/lib/calendar/types'
-import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { remoteImageAcceptHeaders, remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
+import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 import { wanspotFetch } from '@/lib/wanspot-api'
 
 const CALENDAR_MONTH_TTL_MS = 30 * 60_000
@@ -313,7 +314,11 @@ export function CalendarTabScreen() {
                 >
                   {ev.thumbnail_url ? (
                     <Image
-                      source={{ uri: ev.thumbnail_url }}
+                      // 原本は約2MBのPNG。64pxサムネなので変換配信で縮小して読む
+                      source={{
+                        uri: resizePlacesImageUrl(ev.thumbnail_url, 'thumbnail'),
+                        headers: remoteImageAcceptHeaders,
+                      }}
                       style={styles.eventThumb}
                       contentFit="cover"
                       recyclingKey={`cal-${ev.id}`}

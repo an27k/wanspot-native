@@ -20,3 +20,12 @@ export const listImageExpoProps = {
   transition: 80,
   backgroundColor: LIST_IMAGE_BG,
 }
+
+/**
+ * リモート画像の source.headers 用。
+ * Supabase の画像変換（render/image）は Accept に image/webp が明示されていないと
+ * リサイズ済みPNGを返す（実測: 240px で 339KB vs WebP 29KB）。expo-image の
+ * ネットワーク層（SDWebImage / Glide）は既定で image/webp を送らないため明示する。
+ * Google Places 等の他ホストはこのヘッダを無視するだけなので常時付けてよい。
+ */
+export const remoteImageAcceptHeaders = { Accept: 'image/webp,image/*;q=0.8' } as const

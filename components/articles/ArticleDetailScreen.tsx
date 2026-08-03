@@ -11,6 +11,7 @@ import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { supabase } from '@/lib/supabase'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
+import { remoteImageAcceptHeaders } from '@/lib/images/remoteImageDefaults'
 import { openSpotDetailFromPlace } from '@/lib/open-spot-detail'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 import { CACHE_TTL, fetchWithCache, readCache } from '@/lib/client-cache'
@@ -392,7 +393,10 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
    *  幅に合わせた 'card' サイズで十分なため、hero(1600px) では先読みしない（帯域節約）。 */
   useEffect(() => {
     if (!article?.image_url?.trim()) return
-    void Image.prefetch([resizePlacesImageUrl(article.image_url.trim(), 'hero')], 'memory-disk')
+    void Image.prefetch([resizePlacesImageUrl(article.image_url.trim(), 'hero')], {
+      cachePolicy: 'memory-disk',
+      headers: remoteImageAcceptHeaders,
+    })
   }, [article])
 
   const blocks: Block[] = useMemo(() => {
@@ -536,7 +540,9 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
       .map((e) => spotPhotoUrl(e.photo_ref ?? null))
       .filter((u): u is string => !!u)
     if (urls.length === 0) return
-    void Image.prefetch(urls, 'memory-disk')
+    // 描画側（ArticleRemoteImage）と同じヘッダで先読みする。Android の Glide は
+    // ヘッダ込みでキャッシュキーが決まるため、ここが素のままだと先読みが空振りする
+    void Image.prefetch(urls, { cachePolicy: 'memory-disk', headers: remoteImageAcceptHeaders })
   }, [enrichmentByPlaceId])
 
   const onOpenSpot = useCallback(
@@ -626,7 +632,9 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
         </View>
         {article.image_url ? (
           <ArticleRemoteImage
-            uri={resizePlacesImageUrl(article.image_url, 'hero')}
+            // .trim() は先読み（396行）と URL を一致させるため必須。前後空白があると
+            // render URL が壊れる上、先読みキャッシュにも当たらない
+            uri={resizePlacesImageUrl(article.image_url.trim(), 'hero')}
             style={styles.hero}
             recyclingKey={`${article.id}-hero`}
             priority="high"
