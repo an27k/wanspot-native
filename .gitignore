@@ -48,3 +48,4 @@ yarn-error.*
 
 # Local env (never commit)
 .env
+store-assets/.screenshot-login.json
