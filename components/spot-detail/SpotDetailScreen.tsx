@@ -25,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { TOKENS } from '@/constants/color-tokens'
 import { RunningDog, PowState } from '@/components/DogStates'
+import { IconGoogleMaps } from '@/components/IconGoogleMaps'
 import { IconInstagram } from '@/components/IconInstagram'
 import { IconPaw } from '@/components/IconPaw'
 import { HEART_ICON } from '@/lib/constants'
@@ -870,10 +871,10 @@ export default function SpotDetailScreen({
             </View>
             <View style={styles.linkRow}>
               <Pressable style={styles.igBtn} onPress={() => Linking.openURL(igUrl)} accessibilityLabel="Instagram">
-                <IconInstagram size={18} style={{ opacity: 1 }} />
+                <IconInstagram size={18} />
               </Pressable>
               <Pressable style={styles.mapsBtn} onPress={() => Linking.openURL(mapsUrl)} accessibilityLabel="Google Maps">
-                <Image source={require('@/assets/icon-google-maps.png')} style={{ width: 20, height: 20 }} contentFit="contain" cachePolicy="memory-disk" />
+                <IconGoogleMaps size={20} />
               </Pressable>
             </View>
           </View>
