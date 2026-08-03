@@ -9,6 +9,7 @@ import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
 import { BrandTabHeader } from '@/components/common/BrandTabHeader'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
+import { resolveEventPrefecture } from '@/lib/calendar/resolve-prefecture'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { fetchWithCache } from '@/lib/client-cache'
@@ -302,6 +303,8 @@ export function CalendarTabScreen() {
               <Text style={styles.emptyDayTxt}>この日のイベントはありません</Text>
             ) : null}
             {dayEvents.map((ev) => {
+              // 都道府県マスタを優先し、無いものは住所から読む（シート同期分は prefecture_id が空）
+              const prefecture = ev.prefecture?.name ?? resolveEventPrefecture(ev)
               return (
                 <Pressable
                   key={ev.id}
@@ -329,6 +332,13 @@ export function CalendarTabScreen() {
                       {[timeLabelFor(ev), ev.venue_name ?? ev.region_name].filter(Boolean).join(' · ')}
                     </Text>
                     <View style={styles.eventTagRow}>
+                      {prefecture ? (
+                        <View style={styles.prefPill}>
+                          <Text style={styles.prefPillTxt} numberOfLines={1}>
+                            {prefecture}
+                          </Text>
+                        </View>
+                      ) : null}
                       <PriceLevelMark level={ev.price_level} />
                       {(ev.tags ?? []).slice(0, 2).map((t) => (
                         <View key={t.id} style={[styles.tagPill, { borderColor: t.color }]}>
@@ -452,4 +462,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   tagPillTxt: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
+  /** 都道府県。ジャンルタグと並ぶが「どこでやるか」は性質が違うので塗りで区別する */
+  prefPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: colors.tintWeak,
+  },
+  prefPillTxt: { fontSize: 11, fontWeight: '800', color: colors.primary },
 })

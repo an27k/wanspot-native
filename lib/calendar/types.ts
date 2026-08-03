@@ -43,6 +43,8 @@ export type CalendarEvent = {
   thumbnail_url: string | null
   region_name: string | null
   station_name: string | null
+  /** 都道府県マスタ。住所が無いイベントでもここは埋まっていることが多い */
+  prefecture?: { id: string; name: string; slug: string; sort_order: number } | null
 }
 
 export type CalendarEventWithRelations = CalendarEvent & {
