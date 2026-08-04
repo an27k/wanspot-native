@@ -20,6 +20,7 @@ import type { PlaceResult } from '@/types/places'
 
 type Block =
   | { type: 'text'; content: string }
+  | { type: 'heading'; content: string }
   | { type: 'image'; url: string; caption?: string }
   | { type: 'spot'; spot_id: string; spot_name: string; description: string }
 
@@ -133,7 +134,16 @@ function normalizeArticleBlocks(raw: unknown): Block[] {
       })
       continue
     }
-    if (typeRaw === 'text') {
+    // 見出しは見出しとして出す。イベントまとめ記事はイベント名が見出しになり、
+    // ここを落とすとどのイベントの話か分からなくなる
+    if (typeRaw === 'heading') {
+      const content =
+        (typeof o.content === 'string' && o.content) || (typeof o.text === 'string' && o.text) || ''
+      if (content) out.push({ type: 'heading', content })
+      continue
+    }
+    // paragraph は保存形式が text と同じ。サーバ側の記事は両方を使う
+    if (typeRaw === 'text' || typeRaw === 'paragraph') {
       const content = typeof o.content === 'string' ? o.content : ''
       if (content) out.push({ type: 'text', content })
     }
@@ -331,6 +341,13 @@ const BlockRenderer = memo(function BlockRenderer({
         onOpen={() => onOpenSpot(spotRow)}
         photoRecyclingKey={`${articleId}-spot-${spotRow.place_id}`}
       />
+    )
+  }
+  if (block.type === 'heading') {
+    return (
+      <Text style={[styles.sectionTitle, blockIndex > 0 && styles.sectionTitleMt]}>
+        {block.content.trim()}
+      </Text>
     )
   }
   if (block.type === 'text') {
