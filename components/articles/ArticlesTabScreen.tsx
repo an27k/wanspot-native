@@ -21,6 +21,7 @@ import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepar
 import { personalizeArticlesFeed } from '@/lib/article-feed-ranking'
 import {
   ARTICLE_GENRE_CHIPS,
+  eventRoundupMonthKey,
   parseArticleTheme,
   type ArticleGenreKey,
 } from '@/lib/articles/article-theme'
@@ -97,10 +98,17 @@ export function ArticlesTabScreen() {
     const present = new Set(themedList.map((t) => t.info.genre).filter(Boolean))
     return ARTICLE_GENRE_CHIPS.filter((c) => present.has(c.key))
   }, [themedList])
-  const filteredList = useMemo(
-    () => (selectedGenre ? themedList.filter((t) => t.info.genre === selectedGenre) : themedList),
-    [themedList, selectedGenre]
-  )
+  const filteredList = useMemo(() => {
+    const list = selectedGenre ? themedList.filter((t) => t.info.genre === selectedGenre) : themedList
+    // イベントまとめは位置より「何月分か」。早い月を先に出す
+    if (selectedGenre !== 'event') return list
+    return [...list].sort((a, b) => {
+      const am = eventRoundupMonthKey(a.article) ?? '9999-99'
+      const bm = eventRoundupMonthKey(b.article) ?? '9999-99'
+      if (am !== bm) return am.localeCompare(bm)
+      return a.article.title.localeCompare(b.article.title, 'ja')
+    })
+  }, [themedList, selectedGenre])
 
   const listLenRef = useRef(0)
   listLenRef.current = filteredList.length

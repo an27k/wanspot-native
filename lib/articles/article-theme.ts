@@ -52,3 +52,24 @@ export function parseArticleTheme(theme: string | null | undefined): ArticleThem
   }
   return { area, genre: null, genreLabel: null }
 }
+
+/**
+ * イベントまとめの対象月（YYYY-MM）。
+ * 「イベント」チップでは位置より月が早い順に並べる。
+ */
+export function eventRoundupMonthKey(article: {
+  title?: string | null
+  slug?: string | null
+  theme?: string | null
+}): string | null {
+  const fromSlug = article.slug?.match(/^events-(\d{4}-\d{2})(?:-|$)/)
+  if (fromSlug) return fromSlug[1]
+  // Web側 job が書く theme: "2026-08 関東 イベント"
+  const fromTheme = article.theme?.match(/^(\d{4}-\d{2})\b/)
+  if (fromTheme) return fromTheme[1]
+  const fromTitle = article.title?.match(/【(\d{4})年(\d{1,2})月/)
+  if (fromTitle) {
+    return `${fromTitle[1]}-${String(Number(fromTitle[2])).padStart(2, '0')}`
+  }
+  return null
+}
