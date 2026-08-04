@@ -8,6 +8,13 @@ import { wanspotFetchJson } from '@/lib/wanspot-api'
  * イベント一覧APIには含めない。1か月ぶんを毎回運ぶことになるため、
  * 詳細を開いたときだけ取りに行く。
  */
+/**
+ * 周辺スポットの種別。
+ *
+ * 'play' は使わなくなった（サーバ側で枠ごと廃止）。中身の78%が
+ * ドッグラン単体とただの公園で、イベント帰りの行き先になっていなかった。
+ * 古い端末が古いデータを持っている場合に備えて型には残す。
+ */
 export type NearbyKind = 'food' | 'play' | 'stay'
 
 export type NearbySpot = {

@@ -214,8 +214,9 @@ export default function CalendarEventDetailScreen() {
           ) : null}
 
           {/* あわせて行ける周辺スポット。イベント単体で行き止まりにしない。
-              役割（ごはん・遊ぶ・泊まる）を分けて出す。近い順だけだと
-              同じジャンルで埋まって予定が立たない */}
+              サーバ側で「イベント帰りにその日そのまま寄れるか」で選んでいる
+              （予約制・保護犬施設・閉店済みを外し、冬はテラス席のみも外す）。
+              「遊ぶ」枠は廃止した。会場でもう走らせた帰りに行く先ではない */}
           {nearby.length > 0 ? (
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>

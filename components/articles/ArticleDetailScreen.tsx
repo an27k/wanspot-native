@@ -344,8 +344,17 @@ const BlockRenderer = memo(function BlockRenderer({
     )
   }
   if (block.type === 'heading') {
+    // 【1】施設名 のような「項目の見出し」と、その上の節見出しを見分ける。
+    // イベントまとめ記事はイベント名→「○○の前後に寄るなら」→施設名 の
+    // 3階層になり、全部同じ大きさだと構造が読めない
+    const isItem = block.content.trimStart().startsWith('【')
     return (
-      <Text style={[styles.sectionTitle, blockIndex > 0 && styles.sectionTitleMt]}>
+      <Text
+        style={[
+          isItem ? styles.itemTitle : styles.sectionTitle,
+          blockIndex > 0 && (isItem ? styles.itemTitleMt : styles.sectionTitleMt),
+        ]}
+      >
         {block.content.trim()}
       </Text>
     )
@@ -849,6 +858,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 19, fontWeight: '900', color: '#201B24', marginBottom: 10, lineHeight: 27 },
   sectionTitleMt: { marginTop: 24 },
+  itemTitle: { fontSize: 16, fontWeight: '800', color: '#201B24', marginBottom: 8, lineHeight: 23 },
+  itemTitleMt: { marginTop: 16 },
   textBlock: { fontSize: 15, color: 'rgba(32,27,36,0.78)', lineHeight: 25, marginBottom: 20, fontWeight: '500' },
   imgBlock: { marginVertical: 24 },
   imgBlockImg: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12 },
