@@ -9,7 +9,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>wanspot-native</string>
+	<string>Wanspot</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -17,7 +17,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>Wanspot</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
@@ -61,13 +61,13 @@
 	<key>NSCameraUsageDescription</key>
 	<string>ワンちゃんやプロフィールの写真を撮影するため、カメラへのアクセスを許可してください。</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Allow $(PRODUCT_NAME) to access your location</string>
+	<string>近くの散歩エリアの候補を表示するために位置情報を使います。</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Allow $(PRODUCT_NAME) to access your location</string>
+	<string>近くの散歩エリアの候補を表示するために位置情報を使います。</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>近くの散歩エリアの候補を表示するために位置情報を使います。</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Allow $(PRODUCT_NAME) to access your microphone</string>
+	<string>動画で思い出を残すときに、音声の録音に使います。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>作ったVlogをカメラロールに保存するため、写真への追加を許可してください。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
