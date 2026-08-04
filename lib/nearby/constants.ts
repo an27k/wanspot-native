@@ -57,6 +57,15 @@ export const MAP_GENRE_CHIPS = [
 
 export type MapGenreKey = (typeof MAP_GENRE_CHIPS)[number]['key']
 
+/**
+ * ドッグランかどうか。extended_category には屋内ドッグラン用の 'dog_run_indoor' もあり、
+ * `=== 'dog_run'` の完全一致だと屋内ドッグランが全経路から漏れていた
+ * （専用の収集予算まで取って集めているのにアプリから1件も見えない状態だった）。
+ */
+export function isDogRunCategory(extendedCategory: string | null | undefined): boolean {
+  return extendedCategory === 'dog_run' || extendedCategory === 'dog_run_indoor'
+}
+
 /** Snapchat 風マップピンのジャンル別アクセントカラー（フラットで鮮やか） */
 export const MAP_GENRE_COLOR: Record<MapGenreKey, string> = {
   cafe: '#F2A33C', // アンバー

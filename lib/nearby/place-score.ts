@@ -1,4 +1,5 @@
 import { calcDistanceMeters } from '@/lib/nearby/geo'
+import { isDogRunCategory } from '@/lib/nearby/constants'
 import type { PlaceResult } from '@/types/places'
 
 const PRIOR_MEAN = 4.0
@@ -51,7 +52,7 @@ export function petCertaintyScore(spot: PlaceResult): number {
   if (spot.pet_friendly_verified !== true) return 0
 
   // 囲われたノーリード区画は、犬連れの目的地として最も確実
-  if (spot.extended_category === 'dog_run') return 1
+  if (isDogRunCategory(spot.extended_category)) return 1
   if (spot.pet_indoor_allowed === true) return 1
   if (spot.pet_terrace_only === true) return 0.7
   if (spot.pet_friendly_status === 'leashed_only') return 0.6
