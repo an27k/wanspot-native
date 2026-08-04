@@ -16,7 +16,7 @@ export async function completeLoginNavigation(router: ReplaceRouter): Promise<vo
   track('login_completed')
   if (!dog) {
     await AsyncStorage.removeItem(ONBOARDING_COMPLETE_KEY)
-    router.replace('/onboarding/location')
+    router.replace('/onboarding/dog')
   } else {
     await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, '1')
     router.replace('/(tabs)')

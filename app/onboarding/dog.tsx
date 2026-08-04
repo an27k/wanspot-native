@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Image } from 'expo-image'
 import {
   Alert,
@@ -30,9 +30,8 @@ import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHead
 import { TapSelectRow } from '@/components/onboarding/TapSelectRow'
 import { DOG_BREED_QUICK_PICKS, filterDogBreeds } from '@/lib/dog-breeds'
 import { showImagePickerOptions } from '@/lib/image-picker'
-import { OB_DOG_KEY, OB_LOCATION_GRANTED } from '@/lib/onboarding-constants'
+import { OB_DOG_KEY } from '@/lib/onboarding-constants'
 import { setWalkTimeHour as setWalkTimePref, WALK_TIME_CHOICES } from '@/lib/weather/walk-time-pref'
-import { completeOnboarding } from '@/lib/onboarding-complete'
 import { supabase } from '@/lib/supabase'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 
@@ -47,13 +46,6 @@ export default function DogPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
 
-  useEffect(() => {
-    void (async () => {
-      const granted = await AsyncStorage.getItem(OB_LOCATION_GRANTED)
-      if (granted === null) router.replace('/onboarding/location')
-      else setOnboardingTotalSteps(granted === '1' ? 2 : 3)
-    })()
-  }, [router])
 
   const [name, setName] = useState('')
   const [breed, setBreed] = useState('')
@@ -79,7 +71,6 @@ export default function DogPage() {
   const [vaccineDateModal, setVaccineDateModal] = useState<'combo' | 'rabies' | null>(null)
   const [vaccineExpanded, setVaccineExpanded] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [onboardingTotalSteps, setOnboardingTotalSteps] = useState(3)
 
   const dogBirthdayYmd = ownerBirthdayToYmd(dogYear, dogMonth, dogDay)
   const dogYBounds = dogBirthdayYearBounds()
@@ -100,7 +91,9 @@ export default function DogPage() {
           Alert.alert('エラー', 'ログインが必要です')
           return
         }
-        const filePath = `dogs/${userId}-${Date.now()}.jpg`
+        // 退会時のストレージ削除は avatars/{userId}/ 配下しか列挙しない。
+        // dogs/ に置くと写真が消し残るため、per-user フォルダに揃える
+        const filePath = `${userId}/dog-${Date.now()}.jpg`
         const response = await fetch(image.uri)
         const arrayBuffer = await response.arrayBuffer()
         const { error: uploadError } = await supabase.storage
@@ -153,13 +146,9 @@ export default function DogPage() {
       )
       // いつものお散歩時間 → お散歩予報の通知時刻に反映（未回答はデフォルトの朝5時運用）
       if (walkTimePicked) await setWalkTimePref(walkTimeHour)
-      const locationGranted = (await AsyncStorage.getItem(OB_LOCATION_GRANTED)) === '1'
-      if (locationGranted) {
-        const result = await completeOnboarding({ walkAreaTags: [], router })
-        if (!result.ok) Alert.alert('保存に失敗しました', result.message)
-        return
-      }
-      router.push('/onboarding/area')
+      // 位置情報はオンボの最後に聞く。入力が終わった直後にアプリ本体へ落とすと
+      // 「これで終わり？」と不安になるため、あの画面をクッションとして挟む
+      router.push('/onboarding/location')
     } finally {
       setSubmitting(false)
     }
@@ -181,7 +170,7 @@ export default function DogPage() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <OnboardingStepHeader step={2} totalSteps={onboardingTotalSteps} />
+        <OnboardingStepHeader step={1} />
 
         <Text style={styles.title}>愛犬のことを{'\n'}教えてください</Text>
         <Text style={styles.sub}>

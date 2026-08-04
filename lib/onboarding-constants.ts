@@ -13,5 +13,17 @@ export const OB_LOCATION_GRANTED = 'ob_location_granted'
 /** オンボーディング AsyncStorage: 愛犬入力（サイズ・ワクチン含む） */
 export const OB_DOG_KEY = 'ob_dog'
 
-/** オンボーディング ステップ数（位置 → 愛犬 → [散歩エリア]）。位置許可時は3段目スキップ */
-export const ONBOARDING_TOTAL_STEPS = 3
+/**
+ * オンボーディング AsyncStorage: 選んだ散歩エリア。
+ * エリア選択と完了処理のあいだに締めの画面を挟むので、選択結果を一度置いておく。
+ */
+export const OB_WALK_AREA_TAGS_KEY = 'ob_walk_area_tags'
+
+/**
+ * オンボーディング ステップ数（愛犬 → どこで探すか）。
+ *
+ * 2段目の「どこで探すか」は、位置情報を許可すれば location 画面で、
+ * 断れば area 画面（散歩エリア選択）で満たされる。どちらも 2/2 として見せるので、
+ * 断ったときに進捗が増えて「終わらない」印象になることがない。
+ */
+export const ONBOARDING_TOTAL_STEPS = 2

@@ -15,8 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
 import { WalkAreaTagPicker } from '@/components/walk-area/WalkAreaTagPicker'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { OB_DOG_KEY, OB_LOCATION_GRANTED, OB_LOCATION_KEY } from '@/lib/onboarding-constants'
-import { completeOnboarding } from '@/lib/onboarding-complete'
+import {
+  OB_DOG_KEY,
+  OB_LOCATION_GRANTED,
+  OB_LOCATION_KEY,
+  OB_WALK_AREA_TAGS_KEY,
+} from '@/lib/onboarding-constants'
 import { walkAreaTagsForUpsert } from '@/lib/walk-area-tags'
 
 export default function WalkAreaOnboardingPage() {
@@ -30,11 +34,8 @@ export default function WalkAreaOnboardingPage() {
 
   useEffect(() => {
     void (async () => {
+      // 位置情報の可否が未確定なら、この画面には来ないはず。先に聞きに戻す
       const granted = await AsyncStorage.getItem(OB_LOCATION_GRANTED)
-      if (granted === '1') {
-        router.replace('/onboarding/dog')
-        return
-      }
       if (granted === null) {
         router.replace('/onboarding/location')
         return
@@ -64,11 +65,10 @@ export default function WalkAreaOnboardingPage() {
       setSubmitting(false)
       return
     }
-    const result = await completeOnboarding({ walkAreaTags: normalized, router })
-    if (!result.ok) {
-      Alert.alert('保存に失敗しました', result.message)
-      setSubmitting(false)
-    }
+    // 完了は次の締め画面で行う。ここで即アプリ本体に落とすと「これで終わり？」になる
+    await AsyncStorage.setItem(OB_WALK_AREA_TAGS_KEY, JSON.stringify(normalized))
+    router.push('/onboarding/ready')
+    setSubmitting(false)
   }
 
   return (
@@ -79,7 +79,8 @@ export default function WalkAreaOnboardingPage() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <OnboardingStepHeader step={3} totalSteps={3} />
+        {/* 位置情報の代わりに「どこで探すか」を決める画面なので、location と同じ 2段目 */}
+        <OnboardingStepHeader step={2} />
 
         <Text style={styles.h2}>よく散歩する{'\n'}エリアを選んでください</Text>
         <Text style={styles.hint}>

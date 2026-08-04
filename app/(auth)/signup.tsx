@@ -52,7 +52,7 @@ export default function SignupScreen() {
       return
     }
     track('signup_completed')
-    router.replace('/onboarding/location')
+    router.replace('/onboarding/dog')
   }
 
   const handleGoogleOAuth = async () => {
