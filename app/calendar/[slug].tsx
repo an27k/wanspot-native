@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useMemo, useState } from 'react'
+import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -9,6 +9,13 @@ import { PowState } from '@/components/DogStates'
 import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
 import { colors } from '@/constants/colors'
 import { takeCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
+import {
+  fetchNearbySpots,
+  formatNearbyDistance,
+  NEARBY_ROLE_LABEL,
+  type NearbySpot,
+} from '@/lib/calendar/nearby-spots'
+import { eventShareUrl } from '@/lib/calendar/event-share'
 import { directLinksOnly, occurrenceLabel } from '@/lib/calendar/types'
 import { remoteImageAcceptHeaders, remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
@@ -46,6 +53,20 @@ export default function CalendarEventDetailScreen() {
 
   const padTop = insets.top + 8
 
+  // 周辺スポットは詳細を開いたときだけ取りに行く。
+  // 一覧APIに含めると1か月ぶん（100件超 × 最大6スポット）を毎回運ぶことになる
+  const [nearby, setNearby] = useState<NearbySpot[]>([])
+  useEffect(() => {
+    if (!event?.id) return
+    let alive = true
+    void fetchNearbySpots(event.id).then((spots) => {
+      if (alive) setNearby(spots)
+    })
+    return () => {
+      alive = false
+    }
+  }, [event?.id])
+
   if (!event) {
     // メモリスタッシュ経由でのみ開く画面のため、直リンクやプロセス再起動後は カレンダーへ誘導する
     return (
@@ -75,6 +96,28 @@ export default function CalendarEventDetailScreen() {
       ? `https://www.google.com/maps/search/?api=1&query=${event.lat},${event.lng}`
       : null
 
+  /**
+   * イベントを人に渡す。
+   *
+   * 犬連れは同伴条件を気にするので、条件を調べ終わった状態のページごと渡せると
+   * そのまま予定が決まる。受け取った側が開かなくても行けるか判断できるよう、
+   * 日付と会場を文面に入れる。リンク先はWebのイベント詳細で、
+   * アプリ未導入の相手にもそのまま開ける。
+   */
+  // event の絞り込みは関数の中まで残らないので、確定した値を引数で渡す
+  async function shareEvent(target: typeof event & object): Promise<void> {
+    const first = target.occurrences?.[0]
+    const detail = [first ? occurrenceLabel(first) : null, target.venue_name]
+      .filter(Boolean)
+      .join(' / ')
+    const message = detail ? `${target.title}（${detail}）` : target.title
+    try {
+      await Share.share({ message: `${message}\n${eventShareUrl(target.slug)}` })
+    } catch {
+      // 共有シートを閉じただけ。何もしない
+    }
+  }
+
   return (
     <View style={styles.root}>
       <View style={[styles.header, { paddingTop: padTop }]}>
@@ -84,7 +127,14 @@ export default function CalendarEventDetailScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           イベント
         </Text>
-        <View style={styles.headerSpacer} />
+        <Pressable
+          style={styles.shareBtn}
+          onPress={() => void shareEvent(event)}
+          hitSlop={12}
+          accessibilityLabel="共有"
+        >
+          <Ionicons name="share-outline" size={22} color={colors.textPrimary} />
+        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
@@ -161,6 +211,33 @@ export default function CalendarEventDetailScreen() {
             </View>
           ) : null}
 
+          {/* あわせて行ける周辺スポット。イベント単体で行き止まりにしない。
+              役割（ごはん・遊ぶ・泊まる）を分けて出す。近い順だけだと
+              同じジャンルで埋まって予定が立たない */}
+          {nearby.length > 0 ? (
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>あわせて行ける周辺スポット</Text>
+              <Text style={styles.sectionSub}>イベントの前後に寄れる、ワンちゃんOKの場所です。</Text>
+              {nearby.map((spot) => (
+                <Pressable
+                  key={spot.spot_id}
+                  style={styles.nearbyRow}
+                  onPress={() => router.push(`/spot/${spot.spot_id}`)}
+                >
+                  <View style={styles.nearbyBody}>
+                    <Text style={styles.nearbyName} numberOfLines={1}>
+                      {spot.name}
+                    </Text>
+                    <Text style={styles.nearbyMeta}>
+                      {NEARBY_ROLE_LABEL[spot.role]} · {formatNearbyDistance(spot.distance_m)}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
           {/* 関連URL（①=公式） */}
           {relatedUrls.length > 0 || event.ticket_url ? (
             <View style={styles.sectionCard}>
@@ -203,6 +280,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
   headerSpacer: { width: 44 },
+  shareBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   missWrap: { marginTop: 48, alignItems: 'center', paddingHorizontal: 24 },
   hero: { width: '100%', height: 210, backgroundColor: colors.border },
   body: { padding: 16, gap: 12 },
@@ -225,6 +303,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sectionTitle: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, marginBottom: 2 },
+  nearbyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  nearbyBody: { flex: 1, minWidth: 0 },
+  nearbyName: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  nearbyMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   sectionLine: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, lineHeight: 21 },
   sectionSub: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
   mapBtn: {
