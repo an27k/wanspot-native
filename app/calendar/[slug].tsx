@@ -13,7 +13,6 @@ import {
   fetchNearbySpots,
   formatNearbyDistance,
   NEARBY_KIND_LABEL,
-  nearbyLeadText,
   toPlaceResult,
   type NearbySpot,
 } from '@/lib/calendar/nearby-spots'
@@ -222,7 +221,6 @@ export default function CalendarEventDetailScreen() {
               <Text style={styles.sectionTitle}>
                 {nearby.some((s) => s.kind === 'stay') ? '泊まりで行くなら' : '前後に寄るなら'}
               </Text>
-              <Text style={styles.sectionSub}>{nearbyLeadText(nearby)}</Text>
               {nearby.map((spot) => (
                 <Pressable
                   key={spot.spot_id}

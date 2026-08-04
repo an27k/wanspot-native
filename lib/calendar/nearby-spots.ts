@@ -33,19 +33,6 @@ export const NEARBY_KIND_LABEL: Record<NearbyKind, string> = {
   stay: '泊まる',
 }
 
-/**
- * 何を基準に選んだ並びかを1行で示す。
- *
- * 「近い順」に見えると、遠いものが上にあることが不自然に映る。
- * 実際には評価で選んでおり、首都圏から遠いイベントでは宿を前面に出している。
- */
-export function nearbyLeadText(spots: NearbySpot[]): string {
-  const hasStay = spots.some((s) => s.kind === 'stay')
-  return hasStay
-    ? '日帰りには遠いので、ワンちゃんと泊まれる宿を中心に選んでいます。'
-    : '近い順ではなく、評価の高いワンちゃんOKの店を選んでいます。'
-}
-
 /** 1km未満はm、以遠は小数1桁のkm */
 export function formatNearbyDistance(meters: number): string {
   return meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`
