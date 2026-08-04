@@ -16,6 +16,17 @@ type BatchDetailsPayload = {
   details?: Record<string, BatchDetailEntry>
 }
 
+/**
+ * いいね・行った一覧で実際に使う列だけ。
+ *
+ * 以前は select('*') で全49列を取っており、$0.02/件かけて生成した判定19列
+ * （pet_friendly_notes / dog_run_attrs / pet_size_limit …）が丸ごとクライアントへ
+ * 流れていた。実際に描画で使うのはこの15列で、pet_* は4列しか要らない。
+ * 列を絞ることは、RLS を締めるまでの間の露出を最小化する意味でも効く。
+ */
+const USER_SPOT_COLUMNS =
+  'id, place_id, name, category, address, formatted_address, vicinity, lat, lng, photo_ref, rating, price_level, price_label, pet_indoor_allowed, pet_terrace_only, pet_friendly_status, pet_friendly_verified'
+
 function normalizeSpotAddress(row: Record<string, unknown>): string | null {
   const keys = ['address', 'formatted_address', 'vicinity'] as const
   for (const key of keys) {
@@ -159,7 +170,7 @@ export async function fetchLikedSpotsForUser(
     return { ok: true, spots: [] }
   }
 
-  const { data: spotRows, error: spotsError } = await supabase.from('spots').select('*').in('id', orderedIds)
+  const { data: spotRows, error: spotsError } = await supabase.from('spots').select(USER_SPOT_COLUMNS).in('id', orderedIds)
 
   if (spotsError) {
     return { ok: false, error: spotsError.message, code: spotsError.code }
@@ -244,7 +255,7 @@ export async function fetchCheckedInSpotsForUser(
     return { ok: true, spots: [] }
   }
 
-  const { data: spotRows, error: spotsError } = await supabase.from('spots').select('*').in('id', orderedIds)
+  const { data: spotRows, error: spotsError } = await supabase.from('spots').select(USER_SPOT_COLUMNS).in('id', orderedIds)
 
   if (spotsError) {
     return { ok: false, error: spotsError.message, code: spotsError.code }

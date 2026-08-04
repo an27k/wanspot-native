@@ -41,6 +41,7 @@ import { resolveSessionLocation } from '@/lib/location-session'
 import { perfAsync } from '@/lib/perf/marks'
 import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
+import { wanspotFetch } from '@/lib/wanspot-api'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 /** 旧検索ホームの記事フィードを独立タブ化したもの（キャッシュキーは旧版と共有して移行コストゼロに） */
@@ -206,21 +207,15 @@ export function ArticlesTabScreen() {
             ARTICLES_CACHE_KEY,
             CACHE_TTL.ARTICLES_MS,
             async () => {
-              const { data, error } = await supabase
-                .from('articles')
-                .select(
-                  // blocks/spot_links の重い JSON は一覧では取得しない。並べ替え用のスポット参照は
-                  // DB トリガーで事前計算された軽量カラム linked_spot_refs を使う
-                  'id, title, summary, slug, category, theme, keywords, image_url, created_at, published_at, target_prefectures, target_municipalities, target_walk_area_tags, dog_size_tags, topic_tags, segment_level, linked_spot_refs'
-                )
-                .eq('status', 'published')
-                .order('published_at', { ascending: false, nullsFirst: false })
-                // 公開記事の総数を下回ると新しい記事が永遠に出ないため、余裕を持った上限にする
-                .limit(ARTICLES_FETCH_LIMIT)
+              // articles を直読みしていた。anon キーはバンドルに平文で入っており
+              // 実質公開情報なので、記事メタ110件が全件取得できる状態だった。
+              // blocks / spot_links の重い JSON はAPI側でも返していない
+              const res = await wanspotFetch(`/api/articles?limit=${ARTICLES_FETCH_LIMIT}`, { auth: false })
               // error を握り潰すと「取得失敗＝記事0件」が10分キャッシュされ、
               // 圏外で一度開いただけで復帰後も空表示のままになる
-              if (error) throw error
-              return (data ?? []) as ArticleRow[]
+              if (!res.ok) throw new Error(`articles ${res.status}`)
+              const json = (await res.json()) as { articles?: ArticleRow[] }
+              return (json.articles ?? []) as ArticleRow[]
             },
             { force }
           )

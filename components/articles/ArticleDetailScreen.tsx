@@ -93,13 +93,17 @@ async function ensureSpotRowFromPlaceId(placeId: string, fallbackName: string): 
   }
   const payload = buildSpotUpsertFromDetailJson(json, placeId, fallbackName)
   if (!payload) return null
-  const { data, error } = await supabase
-    .from('spots')
-    .upsert(payload, { onConflict: 'place_id' })
-    .select('id, place_id, name, category, address')
-    .single()
-  if (error || !data) return null
-  return data as SpotRow
+  // クライアントから spots へ直接 upsert していた。書き込み権限をクライアントに
+  // 残すと、判定列（$0.02/件で生成）を第三者に上書きされうる。
+  // 同等のサーバ実装が既にあるのでそちらに寄せ、spots への権限を剥がせるようにする
+  const ensureRes = await wanspotFetch('/api/spots/ensure', { method: 'POST', json: payload })
+  if (!ensureRes.ok) return null
+  try {
+    const ensured = (await ensureRes.json()) as { spot?: SpotRow }
+    return ensured.spot ?? null
+  } catch {
+    return null
+  }
 }
 
 /** CMS 由来の JSON で camelCase や表記ゆれを吸収 */
@@ -395,13 +399,17 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
         cacheKey,
         CACHE_TTL.ARTICLE_DETAIL_MS,
         async () => {
-          const isUuid = /^[0-9a-f-]{36}$/i.test(articleId)
-          const base = supabase
-            .from('articles')
-            .select('id,title,slug,body,summary,keywords,blocks,spot_links,category,image_url,status')
-            .eq('status', 'published')
-          const res = isUuid ? await base.eq('id', articleId).maybeSingle() : await base.eq('slug', articleId).maybeSingle()
-          return (res.data as Article | null) ?? null
+          // articles を直読みしていた。anon キーはバンドルに平文で入っており
+          // 実質公開情報なので、記事本文110件が全件取得できる状態だった。
+          // サーバ経由にして articles のクライアント権限を剥がせるようにする
+          const res = await wanspotFetch(`/api/articles/${encodeURIComponent(articleId)}`, { auth: false })
+          if (!res.ok) return null
+          try {
+            const json = (await res.json()) as { article?: Article }
+            return json.article ?? null
+          } catch {
+            return null
+          }
         },
         { force: opts?.force }
       )
