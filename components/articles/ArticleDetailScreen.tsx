@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 import { remoteImageAcceptHeaders } from '@/lib/images/remoteImageDefaults'
 import { openSpotDetailFromPlace } from '@/lib/open-spot-detail'
+import { fetchSpotsByIds } from '@/lib/fetch-spots-by-ids'
 import { spotPhotoUrl, wanspotFetch, wanspotFetchJson, wanspotPublicUrl } from '@/lib/wanspot-api'
 import { CACHE_TTL, fetchWithCache, readCache } from '@/lib/client-cache'
 import type { PlaceCardEnrichment } from '@/lib/user-spot-list-utils'
@@ -480,20 +481,14 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
       const uuidKeys = spotIds.filter((s) => isUuid(s))
       const placeKeys = spotIds.filter((s) => !isUuid(s) && s.trim().length > 0)
 
-      const [byUuidRes, byPlaceRes] = await Promise.all([
-        uuidKeys.length > 0
-          ? supabase.from('spots').select('id, place_id, name, category, address').in('id', uuidKeys)
-          : Promise.resolve({ data: [] as SpotRow[] }),
-        placeKeys.length > 0
-          ? supabase.from('spots').select('id, place_id, name, category, address').in('place_id', placeKeys)
-          : Promise.resolve({ data: [] as SpotRow[] }),
-      ])
+      // spots はサーバ経由で引く（anon キーでの直読みを塞ぐため）
+      const rows = await fetchSpotsByIds({ ids: uuidKeys, placeIds: placeKeys, columns: 'card' })
 
       if (cancelled) return
 
       const merged = new Map<string, SpotRow>()
-      for (const r of [...(byUuidRes.data ?? []), ...(byPlaceRes.data ?? [])]) {
-        const row = r as SpotRow
+      for (const r of rows) {
+        const row = r as unknown as SpotRow
         merged.set(row.id, row)
         if (row.place_id) merged.set(row.place_id, row)
       }

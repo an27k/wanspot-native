@@ -7,6 +7,7 @@ import {
   scoreArticleSeason,
 } from '@/lib/articles/scoring'
 import { calcDistanceMeters } from '@/lib/user-spot-list-utils'
+import { fetchSpotsByIds } from '@/lib/fetch-spots-by-ids'
 
 export type ArticleForFeed = {
   id: string
@@ -349,15 +350,14 @@ export async function rankArticlesFeed<T extends ArticleForFeed>({
   const spotsByPlaceId = new Map<string, SpotRow>()
   const spotRows: SpotRow[] = []
 
-  const SELECT = 'id, place_id, lat, lng, municipality, prefecture'
-  // id / place_id 双方のチャンクを並列取得
-  const spotQueries = [
-    ...chunkArray(uuidRefs, 200).map((chunk) => supabase.from('spots').select(SELECT).in('id', chunk)),
-    ...chunkArray(placeRefs, 200).map((chunk) => supabase.from('spots').select(SELECT).in('place_id', chunk)),
-  ]
-  const spotResults = await Promise.all(spotQueries)
-  for (const { data } of spotResults) {
-    for (const r of (data ?? []) as SpotRow[]) {
+  // spots はサーバ経由で引く（anon キーでの直読みを塞ぐため）。
+  // 必要なのは地域の並べ替えに使う6列だけで、判定列は要らない
+  const spotResults = await Promise.all([
+    fetchSpotsByIds({ ids: uuidRefs, columns: 'geo' }),
+    fetchSpotsByIds({ placeIds: placeRefs, columns: 'geo' }),
+  ])
+  for (const data of spotResults) {
+    for (const r of data as unknown as SpotRow[]) {
       if (!r?.id || spotsById.has(r.id)) continue
       spotRows.push(r)
       spotsById.set(r.id, r)

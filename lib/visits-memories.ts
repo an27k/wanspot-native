@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { fetchSpotsByIds } from '@/lib/fetch-spots-by-ids'
 import {
   dailyLogSpotMini,
   isDailyLogVisit,
@@ -144,11 +145,11 @@ export async function fetchVisitPlates(userId: string): Promise<VisitPlate[]> {
 
   const visitRows = visits as VisitRow[]
   const spotIds = [...new Set(visitRows.map((v) => v.spot_id).filter((id): id is string => id != null))]
-  const { data: spots } =
-    spotIds.length > 0
-      ? await supabase.from('spots').select('id, name, category').in('id', spotIds)
-      : { data: [] }
-  const spotById = new Map((spots ?? []).map((s) => [s.id as string, s as SpotMini]))
+  // spots はサーバ経由で引く（anon キーでの直読みを塞ぐため）
+  const spots = await fetchSpotsByIds({ ids: spotIds, columns: 'minimal' })
+  const spotById = new Map<string, SpotMini>(
+    spots.map((s: Record<string, unknown>) => [s.id as string, s as unknown as SpotMini])
+  )
 
   const visitIds = visitRows.map((v) => v.id)
   const { data: memRows } = await supabase
