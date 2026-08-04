@@ -14,6 +14,12 @@ export type NearbySpot = {
   spot_id: string
   name: string
   category: string | null
+  /** スポット詳細は place_id を鍵に開く。無いと遷移できない */
+  place_id: string | null
+  address: string | null
+  lat: number | null
+  lng: number | null
+  photo_ref: string | null
   kind: NearbyKind
   distance_m: number
   rating: number | null
@@ -45,13 +51,36 @@ export function formatNearbyDistance(meters: number): string {
   return meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`
 }
 
+/**
+ * スポット詳細へ渡す形に均す。
+ * place_id が無いものは詳細を開けないので、一覧にも出さない
+ * （押しても Unmatched Route になるだけ）。
+ */
+export function toPlaceResult(spot: NearbySpot) {
+  return {
+    place_id: spot.place_id ?? '',
+    name: spot.name,
+    category: spot.category ?? '',
+    address: spot.address ?? '',
+    lat: spot.lat ?? 0,
+    lng: spot.lng ?? 0,
+    photo_ref: spot.photo_ref ?? null,
+    rating: spot.rating ?? null,
+    price_level: null,
+    price_label: null,
+    user_ratings_total: spot.reviews ?? null,
+  }
+}
+
 export async function fetchNearbySpots(eventId: string): Promise<NearbySpot[]> {
   try {
     const json = await wanspotFetchJson<{ spots?: NearbySpot[] }>(
       `/api/calendar/events/${encodeURIComponent(eventId)}/nearby`,
       { auth: false }
     )
-    return Array.isArray(json?.spots) ? json.spots : []
+    const spots = Array.isArray(json?.spots) ? json.spots : []
+    // place_id が無いと詳細を開けない。押せないものを並べない
+    return spots.filter((s) => Boolean(s.place_id))
   } catch {
     // 周辺スポットが出せなくてもイベント詳細は表示できる
     return []

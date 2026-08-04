@@ -14,8 +14,10 @@ import {
   formatNearbyDistance,
   NEARBY_KIND_LABEL,
   nearbyLeadText,
+  toPlaceResult,
   type NearbySpot,
 } from '@/lib/calendar/nearby-spots'
+import { openSpotDetailFromPlace } from '@/lib/open-spot-detail'
 import { eventShareUrl } from '@/lib/calendar/event-share'
 import { directLinksOnly, occurrenceLabel } from '@/lib/calendar/types'
 import { remoteImageAcceptHeaders, remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
@@ -225,7 +227,9 @@ export default function CalendarEventDetailScreen() {
                 <Pressable
                   key={spot.spot_id}
                   style={styles.nearbyRow}
-                  onPress={() => router.push(`/spot/${spot.spot_id}`)}
+                  // ルートは /spots/[id] で、place_id を鍵に開く。
+                  // `/spot/${id}` に push していたため Unmatched Route になっていた
+                  onPress={() => openSpotDetailFromPlace(router, toPlaceResult(spot), spot.spot_id)}
                 >
                   <View style={styles.nearbyBody}>
                     <Text style={styles.nearbyName} numberOfLines={1}>
