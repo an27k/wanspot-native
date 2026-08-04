@@ -24,6 +24,7 @@ import {
 import { filterDogBreeds, isKnownDogBreed } from '@/lib/dog-breeds'
 import { pickFromLibrary } from '@/lib/image-picker'
 import { supabase } from '@/lib/supabase'
+import { invalidateCache } from '@/lib/client-cache'
 
 const IconEditSmall = ({ size = 22, color = colors.textMuted }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
@@ -107,8 +108,18 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
       if (photoUri) {
         const resFetch = await fetch(photoUri)
         const buf = await resFetch.arrayBuffer()
-        const path = `${userId}/dog.jpg`
-        await supabase.storage.from('avatars').upload(path, buf, { upsert: true, contentType: 'image/jpeg' })
+        // 固定パスにすると URL が変わらず、expo-image のディスクキャッシュに残った
+        // 旧画像や読み込み失敗が出続ける。オンボと同じくアップロードごとに別名にする
+        const path = `${userId}/dog-${Date.now()}.jpg`
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(path, buf, { upsert: true, contentType: 'image/jpeg' })
+        // getPublicUrl はファイルの実在を確認せずURLを組み立てるだけ。
+        // 失敗を握り潰すと、存在しない画像のURLがDBに残り肉球のままになる（実際に発生した）
+        if (uploadError) {
+          Alert.alert('写真を保存できませんでした', '通信状況を確認して、もう一度お試しください。')
+          return
+        }
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
         photoUrl = urlData.publicUrl
       } else if (photoRemoved) {
@@ -141,11 +152,19 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
         size: editSize,
         photo_url: photoUrl,
       }
+      // useDogProfile は profile:dog を10分キャッシュし、画面フォーカスのたびに
+      // 非force で読み直す。ここで捨てないと、保存直後は写っても他画面から戻った
+      // 瞬間に古い行（写真なし）で上書きされ、肉球に戻る
+      invalidateCache(`profile:dog:${userId}`)
       onUpdated(next)
       setEditing(false)
       setPhotoPreview(null)
       setPhotoUri(null)
       setPhotoRemoved(false)
+    } catch (e) {
+      // 画像の読み込みや変換で投げられた例外を握り潰すと、何も起きずに
+      // 肉球のままに見える。呼び出し側は void なのでここで拾いきる
+      Alert.alert('保存に失敗しました', e instanceof Error ? e.message : '時間をおいて、もう一度お試しください。')
     } finally {
       setSaving(false)
     }
