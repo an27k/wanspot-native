@@ -5,6 +5,7 @@
  */
 
 export type ArticleGenreKey =
+  | 'event'
   | 'cafe'
   | 'park'
   | 'dog_run'
@@ -24,6 +25,9 @@ export type ArticleThemeInfo = {
 
 /** チップ表示順（飼い主の利用頻度順） */
 export const ARTICLE_GENRE_CHIPS: { key: ArticleGenreKey; label: string; pattern: RegExp }[] = [
+  // イベントまとめは月ごとに増えるのに、絞り込みから辿れなかった。
+  // 日付で探している読者がいちばん先に押すので先頭に置く
+  { key: 'event', label: 'イベント', pattern: /イベント/ },
   { key: 'cafe', label: 'カフェ', pattern: /カフェ/ },
   { key: 'park', label: '公園', pattern: /公園/ },
   { key: 'dog_run', label: 'ドッグラン', pattern: /ドッ[グク]ラン/ },
