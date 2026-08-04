@@ -12,7 +12,8 @@ import { takeCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
 import {
   fetchNearbySpots,
   formatNearbyDistance,
-  NEARBY_ROLE_LABEL,
+  NEARBY_KIND_LABEL,
+  nearbyLeadText,
   type NearbySpot,
 } from '@/lib/calendar/nearby-spots'
 import { eventShareUrl } from '@/lib/calendar/event-share'
@@ -216,8 +217,10 @@ export default function CalendarEventDetailScreen() {
               同じジャンルで埋まって予定が立たない */}
           {nearby.length > 0 ? (
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>あわせて行ける周辺スポット</Text>
-              <Text style={styles.sectionSub}>イベントの前後に寄れる、ワンちゃんOKの場所です。</Text>
+              <Text style={styles.sectionTitle}>
+                {nearby.some((s) => s.kind === 'stay') ? '泊まりで行くなら' : '前後に寄るなら'}
+              </Text>
+              <Text style={styles.sectionSub}>{nearbyLeadText(nearby)}</Text>
               {nearby.map((spot) => (
                 <Pressable
                   key={spot.spot_id}
@@ -229,7 +232,14 @@ export default function CalendarEventDetailScreen() {
                       {spot.name}
                     </Text>
                     <Text style={styles.nearbyMeta}>
-                      {NEARBY_ROLE_LABEL[spot.role]} · {formatNearbyDistance(spot.distance_m)}
+                      {[
+                        NEARBY_KIND_LABEL[spot.kind],
+                        formatNearbyDistance(spot.distance_m),
+                        // 評価は選んだ理由そのもの。出さないと近い順に見える
+                        spot.rating != null ? `★${spot.rating}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
