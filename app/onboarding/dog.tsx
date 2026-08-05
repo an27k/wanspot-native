@@ -72,12 +72,13 @@ export default function DogPage() {
   const [vaccineExpanded, setVaccineExpanded] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  const dogBirthdayYmd = ownerBirthdayToYmd(dogYear, dogMonth, dogDay)
   const dogYBounds = dogBirthdayYearBounds()
   const breedHits = useMemo(() => filterDogBreeds(breedQuery), [breedQuery])
 
-  const canNext =
-    !!name.trim() && !!breed && size !== null && !!dogBirthdayYmd
+  // 誕生日は任意。Apple が 5.1.1(v) で「生年月日を必須にしている」として却下した（2026-08-05・ビルド230）。
+  // アプリの中核機能（近くのスポット検索）は誕生日なしで成立するので、必須にしてはいけない。
+  // 年齢はプロフィールと VLOG の記念日で使うだけなので、あとから入れてもらえば足りる。
+  const canNext = !!name.trim() && !!breed && size !== null
 
   const handlePickDogPhoto = () => {
     showImagePickerOptions(async (image) => {
@@ -249,7 +250,11 @@ export default function DogPage() {
           </View>
         </FormField>
 
-        <FormField label="誕生日" required hint="正確な日付がわからない場合は、推定でOK">
+        {/*
+          必須にしないこと。Apple が 5.1.1(v) で却下した箇所（2026-08-05・ビルド230）。
+          審査員には「アプリが生年月日の入力を要求している」と読まれる。
+        */}
+        <FormField label="誕生日（任意）" hint="お誕生日をお祝いしたいので、わかる範囲で。あとからでも入れられます">
           <TapSelectRow
             label="誕生日"
             value={formatBirthdayLabel(dogYear, dogMonth, dogDay)}

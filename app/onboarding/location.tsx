@@ -45,15 +45,16 @@ export default function OnboardingLocationPage() {
   const requestAndSave = async () => {
     setBusy(true)
     try {
-      const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync()
+      const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
+        // 断った人に聞き直さない。「再試行」は Apple が 5.1.1(iv) で問題にする
+        // 「許可を促す」形そのもの。設定への導線だけ残して、あとは黙って先へ進める。
         Alert.alert(
-          '現在地を取得できませんでした',
-          '位置情報が使えない場合は、次の画面で散歩エリアを選べます。あとから設定アプリから変更できます。',
+          '散歩エリアを選びます',
+          '現在地を使わない場合は、次の画面でよく行くエリアを選べます。あとから設定アプリで変更もできます。',
           [
-            { text: '散歩エリアを選ぶ', onPress: () => void continueWithoutLocation() },
-            ...(canAskAgain !== false ? ([{ text: '再試行', onPress: () => void requestAndSave() }] as const) : []),
             { text: '設定を開く', onPress: () => void Linking.openSettings() },
+            { text: '続ける', style: 'cancel', onPress: () => void continueWithoutLocation() },
           ]
         )
         return
@@ -108,15 +109,17 @@ export default function OnboardingLocationPage() {
       {/* 上の説明と下のボタンを引き離し、画面下部の空白を詰める */}
       <View style={styles.spacer} />
 
+      {/*
+        この画面から出る道は必ずここ1つ。押せば必ずシステムの許可ダイアログが出る。
+        以前あった「あとで設定する」は、説明を読んだあと許可を求められずに
+        先へ進める抜け道になっており、Apple が 5.1.1(iv) で却下した（ビルド230）。
+        断る操作はシステムダイアログの「許可しない」が担当する。ここに用意しない。
+      */}
       <Pressable style={[styles.next, busy && styles.nextOff]} onPress={() => void requestAndSave()} disabled={busy}>
         <Text style={styles.nextTxt} numberOfLines={1}>
           {/* 「許可して〜」は Apple が 5.1.1(iv) で2回却下した文言。中立語を維持すること */}
           {busy ? '準備中...' : 'はじめる'}
         </Text>
-      </Pressable>
-
-      <Pressable style={styles.skipBtn} onPress={() => void continueWithoutLocation()} disabled={busy}>
-        <Text style={styles.skipTxt}>あとで設定する</Text>
       </Pressable>
     </ScrollView>
   )
@@ -146,6 +149,4 @@ const styles = StyleSheet.create({
   },
   nextOff: { opacity: 0.6 },
   nextTxt: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
-  skipBtn: { alignItems: 'center', paddingVertical: 10 },
-  skipTxt: { fontSize: 14, fontWeight: '700', color: colors.textSecondary },
 })
