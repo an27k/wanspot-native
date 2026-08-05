@@ -55,9 +55,18 @@ function comfortDistance(tempC: number): number {
   return 0
 }
 
-function pickBestSlot(slots: WalkHourlySlot[]): WalkHourlySlot | null {
+/**
+ * 歩きやすい時間を選ぶ。
+ *
+ * fromHour を渡すと、その時刻以降のスロットだけを候補にする。
+ * 通知は「これからどうするか」を伝えるものなので、既に過ぎた時間を薦めても
+ * 飼い主にはどうしようもない。実際、20時の散歩の2時間前（18時）に届いた通知が
+ * 「きょうは9時ごろが歩きやすそうです」と言っており、意味をなしていなかった。
+ */
+function pickBestSlot(slots: WalkHourlySlot[], fromHour?: number): WalkHourlySlot | null {
   let best: WalkHourlySlot | null = null
   for (const s of slots) {
+    if (fromHour != null && s.hour < fromHour) continue
     if (!isWalkableSlot(s)) continue
     if (
       !best ||
@@ -71,18 +80,30 @@ function pickBestSlot(slots: WalkHourlySlot[]): WalkHourlySlot | null {
 }
 
 /** デフォルト（散歩時間 未設定）: きょうのおすすめ時間の提言 */
-function buildDefaultBody(slots: WalkHourlySlot[], name: string): string {
-  const best = pickBestSlot(slots)
+function buildDefaultBody(slots: WalkHourlySlot[], name: string, fromHour?: number): string {
+  const best = pickBestSlot(slots, fromHour)
   if (best) {
     return `きょうは${best.hour}時ごろ（${best.tempC}℃・降水${best.precipProb}%）が歩きやすそうです。${name}とのお散歩の目安にどうぞ。`
   }
   return `きょうは暑さや天気が厳しめの予報です。いちばん涼しい時間に短めのお散歩が安心です。`
 }
 
-/** カスタム散歩時間あり: 予定時刻の環境予測 + より良い時間があれば変更の助言 */
-function buildCustomBody(slots: WalkHourlySlot[], walkHour: number, name: string, heat: number): string {
+/**
+ * カスタム散歩時間あり: 予定時刻の環境予測 + より良い時間があれば変更の助言。
+ *
+ * notifyHour（この通知が届く時刻）以降の時間だけを代案にする。
+ * 朝5時の通知なら1日全体が候補になり、散歩2時間前の通知なら
+ * 「これから」の時間だけが候補になる。過ぎた時間を薦めない。
+ */
+function buildCustomBody(
+  slots: WalkHourlySlot[],
+  walkHour: number,
+  name: string,
+  heat: number,
+  notifyHour: number
+): string {
   const planned = slots.find((s) => s.hour === walkHour) ?? null
-  const best = pickBestSlot(slots)
+  const best = pickBestSlot(slots, notifyHour)
 
   if (planned && isWalkableSlot(planned)) {
     const level = walkAlertFromTemp(planned.tempC, { heatSensitivity: heat })
@@ -94,12 +115,13 @@ function buildCustomBody(slots: WalkHourlySlot[], walkHour: number, name: string
   }
 
   if (planned && best) {
-    return `${walkHour}時は${planned.tempC}℃・降水${planned.precipProb}%と少し条件が厳しめ。きょうは${best.hour}時ごろ（${best.tempC}℃・降水${best.precipProb}%）が歩きやすそうです。`
+    return `${walkHour}時は${planned.tempC}℃・降水${planned.precipProb}%と少し条件が厳しめ。${best.hour}時ごろ（${best.tempC}℃・降水${best.precipProb}%）のほうが歩きやすそうです。`
   }
   if (planned) {
+    // 代案が無い＝これ以降に歩きやすい時間が無い。予定を変える提案はせず、歩き方の助言にする
     return `${walkHour}時は${planned.tempC}℃・降水${planned.precipProb}%の見込みです。${name}の様子を見ながら、短めの調整が安心です。`
   }
-  return buildDefaultBody(slots, name)
+  return buildDefaultBody(slots, name, notifyHour)
 }
 
 /**
@@ -146,37 +168,54 @@ export async function syncWalkAdviceMorningNotification(
     )
 
     const name = nameKey ?? 'うちの子'
-    const notifyHour =
-      walkHour != null
-        ? Math.max(walkHour - WALK_ADVICE_NOTIFY_LEAD_HOURS, 0)
-        : WALK_ADVICE_DEFAULT_NOTIFY_HOUR
     const title = `☀️ きょうの${name}のお散歩予報`
+
+    /**
+     * 通知する時刻。
+     *
+     * 朝の1本は「きょうをどう組み立てるか」、散歩直前の1本は「予定どおりでいいか」を
+     * 伝えるもので、役割が違う。以前は散歩時間を設定すると朝の通知が消えて直前だけになり、
+     * その1本が1日全体から代案を選んでいたため「18時に届いて9時を薦める」が起きていた。
+     * 2本に分け、それぞれ自分が届く時刻以降だけを見るようにする。
+     */
+    const notifyHours: number[] = [WALK_ADVICE_DEFAULT_NOTIFY_HOUR]
+    if (walkHour != null) {
+      const lead = walkHour - WALK_ADVICE_NOTIFY_LEAD_HOURS
+      // 朝の通知と近すぎる（＝実質同じ話になる）場合は増やさない
+      if (lead > WALK_ADVICE_DEFAULT_NOTIFY_HOUR + 1) notifyHours.push(lead)
+    }
 
     // 直近2日ぶん（Open-Meteo の forecast_days=2 の範囲内）
     for (const dayOffset of [0, 1]) {
       const dateKey = addDaysToKey(now.dateKey, dayOffset)
-      const fireAt = jstDate(dateKey, notifyHour)
-      if (fireAt.getTime() <= now.epochMs + 5 * 60_000) continue // 過ぎた回・直近すぎる回はスキップ
+      const slots = opts?.location
+        ? await fetchWalkHourlySlotsForDate(opts.location.lat, opts.location.lng, dateKey)
+        : []
 
-      let body = '歩きやすい時間の目安ができています。おでかけ前にチェックしてあげてください。'
-      if (opts?.location) {
-        const slots = await fetchWalkHourlySlotsForDate(opts.location.lat, opts.location.lng, dateKey)
+      for (const notifyHour of notifyHours) {
+        const fireAt = jstDate(dateKey, notifyHour)
+        if (fireAt.getTime() <= now.epochMs + 5 * 60_000) continue // 過ぎた回・直近すぎる回はスキップ
+
+        let body = '歩きやすい時間の目安ができています。おでかけ前にチェックしてあげてください。'
         if (slots.length > 0) {
-          body = walkHour != null ? buildCustomBody(slots, walkHour, name, heat) : buildDefaultBody(slots, name)
+          body =
+            walkHour != null
+              ? buildCustomBody(slots, walkHour, name, heat, notifyHour)
+              : buildDefaultBody(slots, name, notifyHour)
         }
-      }
 
-      await notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body,
-          data: { type: WALK_ADVICE_MORNING_TYPE, url: '/(tabs)/mypage' },
-        },
-        trigger: {
-          type: notifications.SchedulableTriggerInputTypes.DATE,
-          date: fireAt,
-        },
-      })
+        await notifications.scheduleNotificationAsync({
+          content: {
+            title,
+            body,
+            data: { type: WALK_ADVICE_MORNING_TYPE, url: '/(tabs)/mypage' },
+          },
+          trigger: {
+            type: notifications.SchedulableTriggerInputTypes.DATE,
+            date: fireAt,
+          },
+        })
+      }
     }
   } catch (e) {
     // 通知はベストエフォート。失敗しても体験を壊さない
