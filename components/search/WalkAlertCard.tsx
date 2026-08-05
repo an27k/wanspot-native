@@ -9,6 +9,7 @@ import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { colors } from '@/constants/colors'
 import { useWeather } from '@/lib/weather/use-weather'
 import { useWalkDailyAdvice } from '@/lib/weather/use-walk-daily-advice'
+import { useWalkLine } from '@/lib/weather/use-walk-line'
 import { syncWalkAdviceMorningNotification } from '@/lib/notifications/walk-advice-morning'
 import { getWalkTimeHour, setWalkTimeHour as persistWalkTimeHour } from '@/lib/weather/walk-time-pref'
 import { breedHeatSensitivity } from '@/lib/dog-breeds'
@@ -94,6 +95,10 @@ export function WalkAlertCard({
   const level = advice?.levelKey ? walkAlertLevel(advice.levelKey) : baseLevel
   const adviceText = advice?.text ?? level?.advice ?? ''
 
+  // 「今日は何を変えるか」の一言。約9日に1回しか出ない。
+  // 出ない日は下のブロックごと消えて、カードは今までと1ピクセルも変わらない。
+  const walkLine = useWalkLine(location, level?.key)
+
   const isLight = surface === 'light'
   const openCard = () => {
     if (needsLocation) onRequestLocation?.()
@@ -136,6 +141,20 @@ export function WalkAlertCard({
               <Ionicons name="chevron-forward" size={16} color={isLight ? '#CCC' : GOOGLE_HOME.textMuted} />
             </View>
       )}
+
+      {/*
+        今日の一言。出る日だけ現れる（実測で約9日に1回）。
+        上の advice が numberOfLines={2} で詰まっているので、こちらは全幅で独立させる。
+        危険レベル以上では useWalkLine が null を返すので、
+        「散歩を休む日で正解です」の隣に「舗装の短い側を」が並ぶことはない。
+      */}
+      {walkLine ? (
+        <View style={[styles.walkLineBox, isLight && styles.walkLineBoxLight]}>
+          <Text style={[styles.walkLineTxt, isLight && styles.walkLineTxtLight]} numberOfLines={3}>
+            {walkLine}
+          </Text>
+        </View>
+      ) : null}
     </View>
   )
 
@@ -166,6 +185,7 @@ export function WalkAlertCard({
         onClose={() => setOpen(false)}
         dailyAdvice={advice}
         adviceLoading={adviceLoading}
+        walkLine={walkLine}
         walkTimeHour={walkTimeHour}
         onChangeWalkTimeHour={handleChangeWalkTime}
       />
@@ -210,4 +230,14 @@ const styles = StyleSheet.create({
   levelTxt: { fontSize: 17, fontWeight: '700', letterSpacing: -0.3, color: GOOGLE_HOME.textPrimary },
   tempTxt: { fontSize: 14, fontWeight: '500', color: GOOGLE_HOME.textPrimary },
   advice: { fontSize: 13, lineHeight: 19, fontWeight: '400', color: GOOGLE_HOME.textSecondary },
+  /** 上の行と地続きに見えないよう、細い区切りを入れて独立したブロックにする */
+  walkLineBox: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.18)',
+  },
+  walkLineBoxLight: { borderTopColor: colors.border },
+  walkLineTxt: { fontSize: 13, lineHeight: 20, fontWeight: '500', color: GOOGLE_HOME.textSecondary },
+  walkLineTxtLight: { color: colors.textPrimary },
 })

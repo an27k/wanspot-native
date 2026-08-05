@@ -40,6 +40,7 @@ export function WalkAlertModal({
   onClose,
   dailyAdvice = null,
   adviceLoading = false,
+  walkLine = null,
   walkTimeHour = null,
   onChangeWalkTimeHour,
   dogBreed = null,
@@ -53,6 +54,8 @@ export function WalkAlertModal({
   onClose: () => void
   dailyAdvice?: WalkDailyAdvice | null
   adviceLoading?: boolean
+  /** 「今日は何を変えるか」の一言。出ない日が通常なので null が既定 */
+  walkLine?: string | null
   /** いつものお散歩時間（通知時刻の基準）。onChange を渡すと設定UIを表示する */
   walkTimeHour?: number | null
   onChangeWalkTimeHour?: (hour: number | null) => void
@@ -161,6 +164,13 @@ export function WalkAlertModal({
                     <Text style={styles.advice}>{adviceText}</Text>
                   )}
                 </View>
+
+                {/* カードに出ている一言をここでも見せる。開いたら消えるのは不自然なので */}
+                {walkLine ? (
+                  <View style={styles.walkLineBox}>
+                    <Text style={styles.walkLineTxt}>{walkLine}</Text>
+                  </View>
+                ) : null}
 
                 {onChangeWalkTimeHour ? (
                   <View style={styles.walkTimeSection}>
@@ -335,6 +345,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   adviceLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  walkLineBox: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  walkLineTxt: { fontSize: 14, lineHeight: 22, fontWeight: '500', color: colors.textPrimary },
   adviceLoadingTxt: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
   noData: { marginTop: 16, fontSize: 15, lineHeight: 24, fontWeight: '600', color: colors.textLight },
   locationBtn: {
