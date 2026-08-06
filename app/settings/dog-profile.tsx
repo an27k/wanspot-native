@@ -18,6 +18,7 @@ import { useDogProfile } from '@/components/dog/useDogProfile'
 import { RunningDog } from '@/components/DogStates'
 import { WalkAreaTagPicker } from '@/components/walk-area/WalkAreaTagPicker'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { invalidateCache } from '@/lib/client-cache'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { resolveSessionLocation } from '@/lib/location-session'
@@ -145,10 +146,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  headerTitle: { flex: 1, ...type.button, color: colors.text, textAlign: 'center' as const },
   headerSpacer: { width: 44 },
   loadingWrap: { marginTop: 48, alignItems: 'center' },
-  emptyTxt: { marginTop: 24, fontSize: 14, color: colors.textMuted, textAlign: 'center' },
+  emptyTxt: { marginTop: 24, ...type.caption, color: colors.textMuted, textAlign: 'center' as const },
   profileCard: {
     marginTop: 16,
     marginBottom: 20,
@@ -168,8 +169,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     overflow: 'hidden',
   },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
-  sectionHint: { fontSize: 12, fontWeight: '500', lineHeight: 18, color: colors.textMuted },
+  sectionTitle: { ...type.heading, color: colors.text },
+  sectionHint: { ...type.caption, color: colors.textMuted },
   footer: {
     position: 'absolute',
     left: 0,
@@ -189,5 +190,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.brandDark,
   },
-  saveBtnTxt: { fontSize: 15, fontWeight: '800', color: colors.text },
+  saveBtnTxt: { ...type.button, color: colors.text },
 })

@@ -15,7 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
 import { UserSpotsListScreen } from '@/components/lists/UserSpotsListScreen'
 import { RunningDog } from '@/components/DogStates'
-import { IconPaw } from '@/components/IconPaw'
+import { EmptyState } from '@/components/common/EmptyState'
+import { WanspotIconHeart } from '@/components/icons/WanspotIconHeart'
 import { HEART_ICON } from '@/lib/constants'
 import { fetchLikedSpotsForUser, type UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import { supabase } from '@/lib/supabase'
@@ -205,10 +206,13 @@ export default function LikesPage() {
           </View>
         ) : null}
         {loadState === 'success' && spots.length === 0 ? (
-          <View style={styles.empty}>
-            <IconPaw size={40} color="#aaa" />
-            <Text style={styles.emptyTxt}>いいねしたスポットがありません</Text>
-          </View>
+          <EmptyState
+            icon={<WanspotIconHeart size={40} color="#D6CEC3" />}
+            title="いいねしたスポットがありません"
+            body="気になるスポットのハートを押すと、ここにまとまります。"
+            actionLabel="スポットを探す"
+            onAction={() => router.push('/(tabs)/search')}
+          />
         ) : null}
         {loadState === 'success' ? (
           <UserSpotsListScreen
@@ -301,8 +305,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   retryTxt: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  empty: { alignItems: 'center', gap: 12, paddingVertical: 32 },
-  emptyTxt: { fontSize: 14, color: '#aaa' },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', padding: 24 },
   sortSheet: {
     backgroundColor: '#fff',

@@ -16,6 +16,7 @@ import Svg, { Path } from 'react-native-svg'
 import { UserSpotsListScreen } from '@/components/lists/UserSpotsListScreen'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
+import { EmptyState } from '@/components/common/EmptyState'
 import { fetchCheckedInSpotsForUser, type UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import { supabase } from '@/lib/supabase'
 import {
@@ -179,10 +180,13 @@ export default function CheckinsPage() {
           </View>
         ) : null}
         {loadState === 'success' && spots.length === 0 ? (
-          <View style={styles.empty}>
-            <IconPaw size={40} color="#aaa" />
-            <Text style={styles.emptyTxt}>まだ行ったスポットがありません</Text>
-          </View>
+          <EmptyState
+            icon={<IconPaw size={40} color="#D6CEC3" />}
+            title="まだ行ったスポットがありません"
+            body="お散歩で立ち寄ったスポットに足あとをつけると、ここに記録されます。"
+            actionLabel="スポットを探す"
+            onAction={() => router.push('/(tabs)/search')}
+          />
         ) : null}
         {loadState === 'success' ? (
           <UserSpotsListScreen
@@ -270,8 +274,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   retryTxt: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  empty: { alignItems: 'center', gap: 12, paddingVertical: 48 },
-  emptyTxt: { fontSize: 14, fontWeight: '700', color: '#aaa', textAlign: 'center' },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', padding: 24 },
   sortSheet: {
     backgroundColor: '#fff',
