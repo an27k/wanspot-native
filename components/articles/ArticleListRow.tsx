@@ -1,8 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { PressableScale } from '@/components/common/PressableScale'
-import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
-import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { colors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 
@@ -26,7 +25,7 @@ type Props = {
 export function ArticleListRow({ title, area, genreLabel, imageUrl, recyclingKey, onPress }: Props) {
   return (
     <PressableScale onPress={onPress}>
-      <GoogleGlassPanel style={styles.shell} radius={16}>
+      <View style={styles.shell}>
         <View style={styles.row}>
           {imageUrl ? (
             <ArticleRemoteImage
@@ -54,13 +53,25 @@ export function ArticleListRow({ title, area, genreLabel, imageUrl, recyclingKey
             </Text>
           </View>
         </View>
-      </GoogleGlassPanel>
+      </View>
     </PressableScale>
   )
 }
 
 const styles = StyleSheet.create({
-  shell: { marginBottom: 10 },
+  /*
+    半透明ガラスから不透明な白カードへ。グラデーション背景に半透明を重ねると
+    カードの輪郭が地に溶けて、どこからどこまでが1件なのか読めなくなっていた。
+    他タブのカードと同じ質感に揃える
+  */
+  shell: {
+    marginBottom: 10,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -71,20 +82,20 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: colors.dogPhotoPlaceholderBg,
   },
   thumbPh: {},
   textCol: { flex: 1, gap: 5, minWidth: 0 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   areaPill: {
-    backgroundColor: GOOGLE_HOME.listGenreBg,
+    backgroundColor: '#EFEAE3',
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,
     maxWidth: 120,
   },
-  areaTxt: { ...type.label, color: '#2A2522' },
-  genreTxt: { ...type.label, color: GOOGLE_HOME.textSecondary },
+  areaTxt: { ...type.label, color: colors.textSecondary },
+  genreTxt: { ...type.label, color: colors.textMuted },
   // ハンドオフの新着リストは 15/700。17px にすると1行あたり約15字まで落ちて、
   // 長いSEOタイトルが2行クランプで切れる件数が増える
   title: {
@@ -92,6 +103,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     fontWeight: '700' as const,
-    color: GOOGLE_HOME.textPrimary,
+    color: colors.textPrimary,
   },
 })

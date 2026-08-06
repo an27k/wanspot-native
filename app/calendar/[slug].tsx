@@ -198,10 +198,10 @@ export default function CalendarEventDetailScreen() {
             </View>
           ) : null}
 
-          {/* AIまとめ（全文表示。description と重複するためイベント内容セクションは出さない） */}
+          {/* ワンスポAIレビュー（全文表示。description と重複するためイベント内容セクションは出さない） */}
           {(event.ai_summary?.trim() || event.description?.trim()) ? (
             <AiSummaryCard
-              heading="🐾 ワンスポAIまとめ"
+              heading="ワンスポ AIレビュー"
               body={stripTrailingEllipsis((event.ai_summary?.trim() || event.description?.trim())!)}
               collapsedLines={0}
             />

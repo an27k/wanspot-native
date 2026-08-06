@@ -18,7 +18,6 @@ import { UserSpotsListScreen } from '@/components/lists/UserSpotsListScreen'
 import { RunningDog } from '@/components/DogStates'
 import { EmptyState } from '@/components/common/EmptyState'
 import { WanspotIconHeart } from '@/components/icons/WanspotIconHeart'
-import { HEART_ICON } from '@/lib/constants'
 import { fetchLikedSpotsForUser, type UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import { supabase } from '@/lib/supabase'
 import {
@@ -31,11 +30,7 @@ import { wanspotFetch } from '@/lib/wanspot-api'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 
-const IconHeart = () => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill={HEART_ICON.filled} stroke={HEART_ICON.filled} strokeWidth={2}>
-    <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </Svg>
-)
+const IconHeart = () => <WanspotIconHeart size={15} filled />
 
 const IconChevronLeft = () => (
   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.5} strokeLinecap="round">

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { PressableScale } from '@/components/common/PressableScale'
-import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
+import { colors } from '@/constants/colors'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { type } from '@/constants/typography'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
@@ -28,7 +28,7 @@ export function DiscoverFeedCard({
 
   return (
     <PressableScale onPress={onPress}>
-      <GoogleGlassPanel style={styles.shell}>
+      <View style={styles.shell}>
         <View style={styles.row}>
           <View style={styles.textCol}>
             <Text style={styles.kicker} numberOfLines={1}>
@@ -52,13 +52,25 @@ export function DiscoverFeedCard({
             <View style={[styles.thumb, styles.thumbPh]} />
           )}
         </View>
-      </GoogleGlassPanel>
+      </View>
     </PressableScale>
   )
 }
 
 const styles = StyleSheet.create({
-  shell: { marginBottom: GOOGLE_HOME.gapCard },
+  /*
+    半透明ガラスから不透明な白カードへ。グラデーション背景に半透明を重ねると
+    カードの輪郭が地に溶けて、要素の優先順位が読めなくなっていた。
+    まとめ記事の行カードと同じ質感に揃える
+  */
+  shell: {
+    marginBottom: GOOGLE_HOME.gapCard,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -68,23 +80,23 @@ const styles = StyleSheet.create({
   textCol: { flex: 1, gap: 6, minWidth: 0 },
   kicker: {
     ...type.label,
-    color: GOOGLE_HOME.textKicker,
+    color: colors.textMuted,
   },
   // 記事一覧の先頭に置くヒーローカードの見出し。
   // title(26) はテキスト列が約200pxしかなく3行でも見出しが切れるため heading に留める
   title: {
     ...type.heading,
-    color: GOOGLE_HOME.textPrimary,
+    color: colors.textPrimary,
   },
   summary: {
     ...type.caption,
-    color: GOOGLE_HOME.textSecondary,
+    color: colors.textSecondary,
   },
   thumb: {
     width: 92,
     height: 92,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: colors.dogPhotoPlaceholderBg,
   },
   thumbPh: { opacity: 0.5 },
 })

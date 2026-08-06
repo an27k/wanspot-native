@@ -1,9 +1,9 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { WanspotIconHeart } from '@/components/icons/WanspotIconHeart'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { listImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import Svg, { Circle, Path, Polygon, Text as SvgText } from 'react-native-svg'
-import { HEART_ICON } from '@/lib/constants'
 import { formatDistanceLabel, calcDistanceMeters } from '@/lib/nearby/geo'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
@@ -19,16 +19,7 @@ const IconStar = () => (
 )
 
 const IconHeart = ({ filled }: { filled: boolean }) => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-      fill={filled ? HEART_ICON.filled : 'none'}
-      stroke={filled ? HEART_ICON.filled : HEART_ICON.strokeEmpty}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <WanspotIconHeart size={18} filled={filled} />
 )
 
 const IconGoogle = () => (

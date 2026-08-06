@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { TOKENS } from '@/constants/color-tokens'
 import { type } from '@/constants/typography'
 
 /**
- * AIまとめカード（コーラル薄面・タップで展開）。
+ * ワンスポAIレビューのカード（コーラル薄面・タップで展開）。
  * デザインはスポット詳細の「ワンスポAIレビュー」カードと同一仕様（Webのスポット詳細とも共通）。
  * スポット詳細・カレンダーイベント詳細の2箇所から利用する。
  */
@@ -26,7 +27,11 @@ export function AiSummaryCard({
   return (
     <View style={styles.aiCard}>
       <Pressable onPress={collapsible ? () => setExpanded((v) => !v) : undefined}>
-        <Text style={styles.aiHead}>{heading}</Text>
+        {/* 絵文字は iOS の標準UIに出てこない。スポット詳細と同じ肉球アイコンに揃える */}
+        <View style={styles.aiHeadRow}>
+          <WanspotIconPaw size={13} color="#C24B36" />
+          <Text style={styles.aiHead}>{heading}</Text>
+        </View>
         {keywords.length > 0 ? (
           <View style={styles.kwRow}>
             {keywords.map((tag) => (
@@ -53,6 +58,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
   },
+  aiHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   aiHead: { ...type.label, color: '#C24B36', marginBottom: 8 },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kwPill: {

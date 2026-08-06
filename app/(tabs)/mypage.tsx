@@ -14,6 +14,7 @@ import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { WanspotIconPawCheck } from '@/components/icons/WanspotIconPawCheck'
 import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
 import { useDogProfile } from '@/components/dog/useDogProfile'
+import { WanspotIconHeart } from '@/components/icons/WanspotIconHeart'
 import { colors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
@@ -101,7 +102,7 @@ function SettingsTab() {
               onPress={() => router.push('/likes')}
               accessibilityLabel="いいねしたスポット"
             >
-              <Ionicons name="heart-outline" size={20} color={SETTINGS_ICON_COLOR} />
+              <WanspotIconHeart size={20} strokeColor={SETTINGS_ICON_COLOR} />
               <Text style={styles.rowTxt}>いいねしたスポット</Text>
               <Ionicons name="chevron-forward" size={18} color="#CCC" />
             </PressableScale>

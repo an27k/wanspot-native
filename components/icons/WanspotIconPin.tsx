@@ -28,14 +28,8 @@ export function WanspotIconPin({ size = 22, color = colors.primary, dot = true }
 
   return (
     <View style={{ width: size, height, alignItems: 'center', justifyContent: 'center' }}>
-      {/* viewBox に少し余白を取って、白フチが切れないようにする */}
-      <Svg width={size} height={height} viewBox="-1 -1 24 30">
-        {/*
-          白フチ。地図の上では地色とピンの境目が溶けるので、輪郭で分離させる。
-          差し替え前は Ionicons のグリフに textShadow で白いハローを付けていた。
-          同じ役割をベクターの輪郭で持たせている
-        */}
-        <Path d={d} fill={color} stroke="#FFFFFF" strokeWidth={1.4} strokeLinejoin="round" />
+      <Svg width={size} height={height} viewBox="0 0 22 28">
+        <Path d={d} fill={color} />
         {dot ? <Circle cx={11} cy={8.5} r={4} fill="#FFFFFF" /> : null}
       </Svg>
     </View>
