@@ -252,7 +252,9 @@ export async function recordSpotVisit(
 
   const visitId = inserted.id as string
   void syncCheckInBestEffort(userId, spotId)
-  logUserEvent({ eventType: 'visit', spotId, userId, props: { source, created: true } })
+  // visit_id を残すのは、あとから visits の評価・コメントとこのイベントを結ぶため。
+  // 同じ人が同じ日に同じスポットへ複数回記録すると user_id + spot_id + 日付では一意にならない
+  logUserEvent({ eventType: 'visit', spotId, userId, props: { source, created: true, visit_id: visitId } })
 
   return { ok: true, visitId, created: true }
 }

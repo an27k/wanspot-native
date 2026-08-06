@@ -46,8 +46,14 @@ export function useDogProfile() {
     )
 
     setDog(cachedDog)
-    // 分析文脈へ供給（イベント時点の犬種・サイズのスナップショットになる）
-    setAnalyticsDogProfile(cachedDog?.breed ?? null, cachedDog?.size ?? null)
+    // 分析文脈へ供給（イベント時点の犬種・サイズ・月齢のスナップショットになる）。
+    // 誕生日そのものは送らず、月齢に変換してから記録する
+    setAnalyticsDogProfile(
+      cachedDog?.breed ?? null,
+      cachedDog?.size ?? null,
+      cachedDog?.id ?? null,
+      cachedDog?.birthday ?? null
+    )
     setLoading(false)
     return cachedDog
   }, [])

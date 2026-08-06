@@ -54,6 +54,8 @@ export function logUserEvent(params: LogUserEventParams): void {
         lng: ctx.lng,
         dog_breed: ctx.dog_breed,
         dog_size: ctx.dog_size,
+        dog_id: ctx.dog_id,
+        dog_age_months: ctx.dog_age_months,
         platform: ctx.platform,
         app_version: ctx.app_version,
         session_id: ctx.session_id,
