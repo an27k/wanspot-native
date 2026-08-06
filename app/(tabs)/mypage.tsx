@@ -15,6 +15,7 @@ import { WanspotIconPawCheck } from '@/components/icons/WanspotIconPawCheck'
 import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
@@ -178,7 +179,7 @@ function SettingsTab() {
 const styles = StyleSheet.create({
   loadRoot: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   section: { marginHorizontal: 16, marginTop: 4, gap: 8 },
-  sectionCaption: { fontSize: 12, color: GOOGLE_HOME.textSecondary, fontWeight: '600', marginLeft: 4 },
+  sectionCaption: { ...type.label, color: GOOGLE_HOME.textSecondary, marginLeft: 4 },
   card: {
     backgroundColor: colors.background,
     borderRadius: 16,
@@ -193,11 +194,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  rowTxt: { fontSize: 15, fontWeight: '600', color: colors.text },
+  rowTxt: { ...type.row, color: colors.text },
   rowTextCol: { flex: 1, gap: 2 },
-  rowSubTxt: { fontSize: 12, fontWeight: '500', color: colors.textMuted },
+  rowSubTxt: { ...type.caption, color: colors.textMuted },
   rowDivider: { height: 1, backgroundColor: colors.border, marginLeft: 48 },
-  dangerTitle: { fontSize: 15, fontWeight: '600', color: '#E84335' },
+  dangerTitle: { ...type.row, fontWeight: '600' as const, color: '#E84335' },
 })
 
 export default function SettingsTabScreen() {

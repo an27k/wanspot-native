@@ -5,6 +5,7 @@ import { DogAlertFace } from '@/components/map/DogAlertFace'
 import { WalkAlertGauge } from '@/components/map/WalkAlertGauge'
 import { breedHeatSensitivity } from '@/lib/dog-breeds'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import {
   WALK_ALERT_LEVELS,
   walkAlertFromTemp,
@@ -275,8 +276,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   headerStatus: { flex: 1, flexShrink: 1 },
-  levelInline: { fontSize: 17, fontWeight: '900' },
-  tempInline: { fontSize: 15, fontWeight: '700', color: colors.textLight },
+  levelInline: { ...type.title },
+  tempInline: { ...type.button, color: colors.textLight },
   guideToggle: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingLeft: 8 },
   guideToggleTxt: { fontSize: 12, fontWeight: '800', color: colors.textMuted },
   metaLine: {
@@ -314,7 +315,7 @@ const styles = StyleSheet.create({
     padding: 16,
     minHeight: 88,
   },
-  advice: { fontSize: 16, lineHeight: 26, fontWeight: '600', color: colors.text },
+  advice: { ...type.body, color: colors.text },
   walkTimeSection: {
     marginTop: 14,
     paddingTop: 12,
@@ -322,8 +323,8 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     gap: 6,
   },
-  walkTimeTitle: { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
-  walkTimeHint: { fontSize: 11, lineHeight: 16, color: colors.textMuted },
+  walkTimeTitle: { ...type.heading, color: colors.textPrimary },
+  walkTimeHint: { ...type.caption, color: colors.textMuted },
   walkTimeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   walkTimeChip: {
     paddingHorizontal: 12,
@@ -351,7 +352,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },
-  walkLineTxt: { fontSize: 14, lineHeight: 22, fontWeight: '500', color: colors.textPrimary },
+  walkLineTxt: { ...type.body, color: colors.textPrimary },
   adviceLoadingTxt: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
   noData: { marginTop: 16, fontSize: 15, lineHeight: 24, fontWeight: '600', color: colors.textLight },
   locationBtn: {

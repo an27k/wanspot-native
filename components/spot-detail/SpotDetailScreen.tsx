@@ -23,6 +23,7 @@ import Svg, { Circle, Path } from 'react-native-svg'
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { TOKENS } from '@/constants/color-tokens'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { IconGoogleMaps } from '@/components/IconGoogleMaps'
@@ -910,7 +911,11 @@ export default function SpotDetailScreen({
               <RunningDog label="ワンスポAIレビューを生成中..." />
             ) : aiSummary ? (
               <Pressable onPress={() => setAiExpanded((v) => !v)}>
-                <Text style={styles.aiHead}>🐾 ワンスポAIレビュー</Text>
+                {/* 絵文字は iOS の標準UIに出てこない。既存の肉球アイコンに置き換える */}
+                <View style={styles.aiHeadRow}>
+                  <WanspotIconPaw size={13} color="#C24B36" />
+                  <Text style={styles.aiHead}>ワンスポ AIレビュー</Text>
+                </View>
                 <View style={styles.kwRow}>
                   {aiKeywords.map((tag) => (
                     <View key={tag} style={styles.kwPill}>
@@ -920,7 +925,7 @@ export default function SpotDetailScreen({
                     </View>
                   ))}
                 </View>
-                <Text style={styles.aiBody} numberOfLines={aiExpanded ? undefined : 2}>
+                <Text style={styles.aiBody} numberOfLines={aiExpanded ? undefined : 3}>
                   {aiSummary.summary}
                 </Text>
                 {aiSummary.personalNote ? (
@@ -1165,7 +1170,7 @@ const styles = StyleSheet.create({
   noPhoto: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   noPhotoTxt: { fontSize: 12, color: TOKENS.text.meta },
   pad: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
-  h1: { fontSize: 20, fontWeight: '800', color: TOKENS.text.primary, lineHeight: 26 },
+  h1: { ...type.title, color: TOKENS.text.primary },
   petBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -4 },
   petBadge: {
     paddingHorizontal: 10,
@@ -1256,7 +1261,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
   },
-  aiHead: { fontSize: 11, fontWeight: '800', color: '#C24B36', marginBottom: 8 },
+  aiHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  aiHead: { ...type.label, color: '#C24B36' },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kwPill: {
     backgroundColor: TOKENS.surface.primary,
@@ -1266,7 +1272,7 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   kwTxt: { fontSize: 11, fontWeight: '700', color: '#C24B36' },
-  aiBody: { fontSize: 12, lineHeight: 18, color: TOKENS.text.primary },
+  aiBody: { ...type.body, color: TOKENS.text.primary },
   // うちの子向けの一言。共有まとめと視覚的に分けて「自分ごと」だと分かるようにする
   personalNote: {
     flexDirection: 'row',
@@ -1301,7 +1307,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: TOKENS.border.default,
   },
-  detailsRowTxt: { fontSize: 14, fontWeight: '700', color: TOKENS.text.primary },
+  detailsRowTxt: { ...type.row, color: TOKENS.text.primary },
   detailsChevron: { fontSize: 18, fontWeight: '700', color: TOKENS.text.secondary },
   detailsBody: {
     backgroundColor: TOKENS.surface.primary,
@@ -1342,7 +1348,7 @@ const styles = StyleSheet.create({
     borderColor: TOKENS.border.default,
   },
   likePillOn: { backgroundColor: TOKENS.brand.tintWeak, borderColor: TOKENS.brand.tintStrong },
-  likePillTxt: { fontSize: 14, fontWeight: '800', color: TOKENS.text.primary },
+  likePillTxt: { ...type.button, color: TOKENS.text.primary },
   visitPill: {
     flex: 1,
     flexDirection: 'row',
@@ -1354,7 +1360,7 @@ const styles = StyleSheet.create({
   },
   visitPillDone: { opacity: 0.92 },
   visitPillInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  visitPillTxt: { fontSize: 15, fontWeight: '800', color: TOKENS.surface.primary },
+  visitPillTxt: { ...type.button, color: TOKENS.surface.primary },
   shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
   shareBox: { backgroundColor: '#fff', borderRadius: 24, padding: 24, maxWidth: 340, alignSelf: 'center', width: '100%' },
   shareTitle: { fontSize: 14, fontWeight: '700', color: '#aaa', textAlign: 'center', marginBottom: 20, letterSpacing: 0.6 },

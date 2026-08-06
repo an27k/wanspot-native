@@ -7,6 +7,7 @@ import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { useWeather } from '@/lib/weather/use-weather'
 import { useWalkDailyAdvice } from '@/lib/weather/use-walk-daily-advice'
 import { useWalkLine } from '@/lib/weather/use-walk-line'
@@ -223,13 +224,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
-  meta: { fontSize: 11, fontWeight: '500', color: GOOGLE_HOME.textPrimary },
+  meta: { fontSize: 12, fontWeight: '500' as const, color: GOOGLE_HOME.textPrimary },
   bodyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bodyCol: { flex: 1, gap: 4, minWidth: 0 },
   statusLine: { flexDirection: 'row', flexWrap: 'wrap' },
-  levelTxt: { fontSize: 17, fontWeight: '700', letterSpacing: -0.3, color: GOOGLE_HOME.textPrimary },
-  tempTxt: { fontSize: 14, fontWeight: '500', color: GOOGLE_HOME.textPrimary },
-  advice: { fontSize: 13, lineHeight: 19, fontWeight: '400', color: GOOGLE_HOME.textSecondary },
+  levelTxt: { ...type.title, color: GOOGLE_HOME.textPrimary },
+  tempTxt: { fontSize: 15, fontWeight: '600' as const, color: GOOGLE_HOME.textPrimary },
+  advice: { ...type.caption, color: GOOGLE_HOME.textSecondary },
   /** 上の行と地続きに見えないよう、細い区切りを入れて独立したブロックにする */
   walkLineBox: {
     marginTop: 10,
@@ -238,6 +239,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.18)',
   },
   walkLineBoxLight: { borderTopColor: colors.border },
-  walkLineTxt: { fontSize: 13, lineHeight: 20, fontWeight: '500', color: GOOGLE_HOME.textSecondary },
+  walkLineTxt: { ...type.caption, lineHeight: 20, color: GOOGLE_HOME.textSecondary },
   walkLineTxtLight: { color: colors.textPrimary },
 })
