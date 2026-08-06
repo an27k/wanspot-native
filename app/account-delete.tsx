@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { type } from '@/constants/typography'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { wanspotFetch } from '@/lib/wanspot-api'
@@ -139,12 +140,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEE',
   },
-  topTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '700', color: '#1A1A1A' },
+  topTitle: { flex: 1, textAlign: 'center', ...type.button, color: '#1A1A1A' },
   topBarSpacer: { width: 28 },
   scroll: { paddingHorizontal: 24, paddingTop: 24, gap: 16 },
-  warnTitle: { fontSize: 15, fontWeight: '700', color: '#1A1A1A' },
-  warnBody: { fontSize: 14, color: '#555', lineHeight: 22 },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: '#333', marginTop: 8 },
+  warnTitle: { ...type.heading, color: '#1A1A1A' },
+  warnBody: { ...type.body, color: '#555' },
+  inputLabel: { ...type.body, color: '#333', marginTop: 8 },
   input: {
     borderWidth: 1,
     borderColor: '#E5E5E5',
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dangerBtnOff: { opacity: 0.45 },
-  dangerBtnTxt: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  dangerBtnTxt: { ...type.button, color: '#fff' },
   ghostBtn: { paddingVertical: 14, alignItems: 'center' },
-  ghostBtnTxt: { fontSize: 15, fontWeight: '600', color: '#666' },
+  ghostBtnTxt: { ...type.button, color: '#666' },
 })

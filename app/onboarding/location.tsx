@@ -10,6 +10,7 @@ import { OB_DOG_KEY, OB_LOCATION_GRANTED, OB_LOCATION_KEY } from '@/lib/onboardi
 import { completeOnboarding } from '@/lib/onboarding-complete'
 import { dogLabel } from '@/lib/dog-label'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 
 export default function OnboardingLocationPage() {
   const router = useRouter()
@@ -132,12 +133,12 @@ const styles = StyleSheet.create({
   /** 2行ぶんの高さを確保しておく。名前が長くても行数もこの高さも変わらない */
   headingBox: { height: 76, justifyContent: 'center', marginTop: 8 },
   h2: {
-    fontSize: 26,
+    ...type.title,
     fontWeight: '800',
     color: colors.textPrimary,
     textAlign: 'center',
   },
-  hint: { fontSize: 13, color: '#8A8A8A', lineHeight: 22, textAlign: 'left' },
+  hint: { ...type.caption, lineHeight: 22, color: '#8A8A8A', textAlign: 'left' as const },
   spacer: { flex: 1, minHeight: 24 },
   next: {
     height: 52,
@@ -148,5 +149,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   nextOff: { opacity: 0.6 },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
+  nextTxt: { ...type.button, color: colors.textPrimary, textAlign: 'center' as const },
 })

@@ -28,6 +28,7 @@ import { shouldInjectListAd } from '@/lib/ads/list-injection'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import { supabase } from '@/lib/supabase'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
 import { resolveSessionLocation } from '@/lib/location-session'
@@ -567,7 +568,7 @@ const styles = StyleSheet.create({
   },
   genreChipOn: { backgroundColor: colors.tintStrong },
   genreChipOff: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  genreTxt: { fontSize: 12, fontWeight: '800' },
+  genreTxt: { ...type.label },
   genreTxtOn: { color: colors.primary },
   genreTxtOff: { color: colors.textSecondary },
   distRow: {
@@ -604,7 +605,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.textPrimary,
     borderColor: colors.textPrimary,
   },
-  likeFilterTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
+  likeFilterTxt: { ...type.label, color: '#888' },
   likeFilterTxtOn: { color: '#fff' },
   distChip: {
     paddingHorizontal: 12,
@@ -614,7 +615,7 @@ const styles = StyleSheet.create({
   },
   distChipOn: { backgroundColor: colors.textPrimary },
   distChipOff: { backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e8e8e8' },
-  distTxt: { fontSize: 12 },
+  distTxt: { ...type.label },
   distTxtOn: { color: '#fff' },
   distTxtOff: { color: '#888' },
   sortBtn: {
@@ -626,7 +627,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.textPrimary,
   },
-  sortBtnTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  sortBtnTxt: { ...type.label, color: '#fff' },
   list: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
   permissionBanner: {
     backgroundColor: '#fff',
@@ -636,7 +637,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
-  permissionBannerTxt: { fontSize: 14, color: colors.textPrimary, lineHeight: 22 },
+  permissionBannerTxt: { ...type.body, color: colors.textPrimary },
   permissionBtn: {
     alignSelf: 'flex-start',
     backgroundColor: colors.textPrimary,
@@ -644,8 +645,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 999,
   },
-  permissionBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  err: { textAlign: 'center', paddingVertical: 32, color: '#aaa', fontSize: 14 },
+  permissionBtnTxt: { ...type.button, color: '#fff' },
+  err: { ...type.body, textAlign: 'center' as const, paddingVertical: 32, color: '#aaa' },
   sortOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 180, paddingRight: 16 },
   sortMenu: {
     backgroundColor: '#fff',
@@ -657,6 +658,7 @@ const styles = StyleSheet.create({
   },
   sortItem: { paddingVertical: 10, paddingHorizontal: 16 },
   sortItemOn: { backgroundColor: colors.tintStrong },
-  sortItemTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
+  // チップではなく選択メニューの行なのでリスト行の型。指で押す対象を12pxにしない
+  sortItemTxt: { ...type.row, color: '#888' },
   sortItemTxtOn: { color: colors.textPrimary },
 })

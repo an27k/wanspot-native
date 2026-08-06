@@ -7,6 +7,7 @@ import {
   splitYmdToParts,
 } from '@/components/OwnerBirthdayPickers'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import {
   computeVaccineStamp,
   formatDateJaGregorian,
@@ -172,10 +173,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   rowTextCol: { flex: 1 },
-  rowTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  rowSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  // 設定タブのリスト行と同じ組み（mypage の rowTxt / rowSubTxt に合わせる）
+  rowTitle: { ...type.row, color: colors.text },
+  rowSub: { ...type.caption, color: colors.textMuted, marginTop: 2 },
   rowSubMuted: { color: colors.textLight },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 46 },
+  // › は文字ではなくシェブロン。行の文字と一緒に動かさない
   chevron: { fontSize: 20, color: '#CCC', fontWeight: '300' },
   stamp: {
     paddingHorizontal: 8,
@@ -183,7 +186,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.successMutedBg,
   },
-  stampTxt: { fontSize: 10, fontWeight: '800', color: colors.success },
+  stampTxt: { ...type.label, color: colors.success },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 },
   pickerCard: {
     backgroundColor: colors.background,
@@ -192,7 +195,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  pickerTitle: { fontSize: 14, fontWeight: '800', color: colors.text, marginBottom: 10, textAlign: 'center' },
+  pickerTitle: { ...type.heading, color: colors.text, marginBottom: 10, textAlign: 'center' as const },
   birthdayCard: {
     marginTop: 4,
     padding: 16,
@@ -207,7 +210,7 @@ const styles = StyleSheet.create({
   },
   pickerActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
   pickerGhost: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#f5f5f5', alignItems: 'center' },
-  pickerGhostTxt: { fontSize: 14, fontWeight: '800', color: colors.textLight },
+  pickerGhostTxt: { ...type.button, color: colors.textLight },
   pickerPri: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.brandButton, alignItems: 'center' },
-  pickerPriTxt: { fontSize: 14, fontWeight: '800', color: colors.text },
+  pickerPriTxt: { ...type.button, color: colors.text },
 })

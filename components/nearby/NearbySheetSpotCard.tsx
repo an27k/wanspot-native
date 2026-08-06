@@ -9,6 +9,7 @@ import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
 import { IconPaw } from '@/components/IconPaw'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 
 const IconStar = () => (
@@ -209,8 +210,7 @@ const styles = StyleSheet.create({
   cardBody: { padding: 12, gap: 2 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   spotCat: {
-    fontSize: 12,
-    fontWeight: '700',
+    ...type.label,
     backgroundColor: GOOGLE_HOME.listGenreBg,
     borderWidth: 1,
     borderColor: GOOGLE_HOME.listGenreBorder,
@@ -221,9 +221,11 @@ const styles = StyleSheet.create({
   },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rateSmall: { fontSize: 12, color: '#888' },
-  distSmall: { fontSize: 12, color: '#aaa' },
-  spotName: { fontWeight: '700', fontSize: 14, color: colors.textPrimary },
-  spotAddr: { fontSize: 12, color: '#aaa' },
+  rateSmall: { ...type.caption, color: '#888' },
+  // 距離は右端に単独で置く数値。行内の他のメタより太くして目的地までの遠近を拾えるようにする
+  distSmall: { ...type.caption, fontWeight: '700' as const, color: '#aaa' },
+  // 地図と並ぶカードでも店名が起点。carousel / compact は numberOfLines 1 のまま
+  spotName: { ...type.heading, color: colors.textPrimary },
+  spotAddr: { ...type.caption, color: '#aaa' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
 })

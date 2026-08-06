@@ -12,6 +12,7 @@ import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
 import { resolveEventPrefecture } from '@/lib/calendar/resolve-prefecture'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { type } from '@/constants/typography'
 import { fetchWithCache } from '@/lib/client-cache'
 import { stashCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
 import {
@@ -385,7 +386,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  monthTitle: { fontSize: 17, fontWeight: '800', color: GOOGLE_HOME.textPrimary },
+  monthTitle: { ...type.heading, color: GOOGLE_HOME.textPrimary },
   gridCard: {
     marginHorizontal: 16,
     backgroundColor: colors.background,
@@ -399,8 +400,7 @@ const styles = StyleSheet.create({
   weekday: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 11,
-    fontWeight: '700',
+    ...type.label,
     color: colors.textSecondary,
     paddingVertical: 4,
   },
@@ -413,9 +413,12 @@ const styles = StyleSheet.create({
   },
   dayCellSelected: { backgroundColor: colors.tintStrong },
   dayCellPast: { opacity: 0.72 },
-  dayNum: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
-  dayNumToday: { fontWeight: '900' },
-  dayNumSelected: { fontWeight: '900' },
+  // 日付はハンドオフ指定の 17/600。リスト行と同じ大きさで、数字だけ少し締める
+  dayNum: { ...type.row, fontWeight: '600' as const, color: colors.textPrimary },
+  dayNumToday: { fontWeight: '800' },
+  dayNumSelected: { fontWeight: '800' },
+  // 祝日名だけは 8px のまま。セル幅は画面幅の1/7（約47px）しかなく、
+  // label(12) にすると「スポーツの日」のような名前が1文字目で切れる
   holidayMark: {
     marginTop: 2,
     fontSize: 8,
@@ -429,14 +432,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  holidayBannerTxt: { fontSize: 14, fontWeight: '800' },
+  holidayBannerTxt: { ...type.row, fontWeight: '800' as const },
   dotRow: { flexDirection: 'row', gap: 3, marginTop: 3, minHeight: 5 },
   dot: { width: 5, height: 5, borderRadius: 3 },
   stateWrap: { marginTop: 24, alignItems: 'center' },
   emptyDayTxt: {
     marginTop: 20,
     textAlign: 'center',
-    fontSize: 13,
+    ...type.caption,
     color: GOOGLE_HOME.textSecondary,
   },
   dayList: { marginTop: 12, paddingHorizontal: 16, gap: 10 },
@@ -457,8 +460,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   eventBody: { flex: 1, gap: 3 },
-  eventTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, lineHeight: 19 },
-  eventMeta: { fontSize: 12, color: colors.textSecondary },
+  eventTitle: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary },
+  eventMeta: { ...type.caption, color: colors.textSecondary },
   eventTagRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   tagPill: {
     paddingHorizontal: 8,
@@ -467,7 +470,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: colors.background,
   },
-  tagPillTxt: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
+  tagPillTxt: { ...type.label, color: colors.textSecondary },
   /** 都道府県。ジャンルタグと並ぶが「どこでやるか」は性質が違うので塗りで区別する */
   prefPill: {
     paddingHorizontal: 8,
@@ -475,5 +478,5 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.tintWeak,
   },
-  prefPillTxt: { fontSize: 11, fontWeight: '800', color: colors.primary },
+  prefPillTxt: { ...type.label, color: colors.primary },
 })

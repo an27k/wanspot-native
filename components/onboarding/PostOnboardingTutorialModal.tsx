@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react'
 import { Animated, Dimensions, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 
 interface PostOnboardingTutorialModalProps {
   visible: boolean
@@ -223,16 +224,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
+    ...type.title,
     color: '#1A1A1A',
-    textAlign: 'center',
-    lineHeight: 32,
-    letterSpacing: 0.3,
+    textAlign: 'center' as const,
   },
   titleHighlight: {
     color: colors.primary,
-    fontSize: 24,
+    // ♥ は装飾。見出しより一回り大きいという元の関係を保つ
+    fontSize: 28,
   },
   body: {
     fontSize: 14,
@@ -254,8 +253,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   ctaText: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...type.button,
     color: '#1A1A1A',
     letterSpacing: 0.5,
   },

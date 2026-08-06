@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { CenterSnapPicker } from '@/components/CenterSnapPicker'
 
 const currentYear = new Date().getFullYear()
@@ -136,9 +137,9 @@ export function OwnerBirthdayPickers({
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: 12, color: colors.textMuted, marginBottom: 4 },
-  hint: { fontSize: 11, color: colors.textMuted, lineHeight: 16, marginBottom: 8 },
+  label: { ...type.label, color: colors.textMuted, marginBottom: 4 },
+  hint: { ...type.caption, color: colors.textMuted, marginBottom: 8 },
   grid3: { flexDirection: 'row', gap: 10, marginTop: 2 },
   col: { flex: 1 },
-  colLbl: { fontSize: 11, color: colors.textMuted, marginBottom: 8, textAlign: 'center' },
+  colLbl: { ...type.label, color: colors.textMuted, marginBottom: 8, textAlign: 'center' as const },
 })

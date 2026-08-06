@@ -16,6 +16,7 @@ import {
 } from '@/components/OwnerBirthdayPickers'
 import { colors } from '@/constants/colors'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { type } from '@/constants/typography'
 import {
   calcDogAge,
   DOG_SIZE_LABEL,
@@ -696,8 +697,10 @@ const styles = StyleSheet.create({
   },
   compactAlbumName: {
     flexShrink: 1,
+    // チップの幅が maxWidth 168 で決め打ちなので、button のまま17pxに上げると
+    // 3文字を超える名前が省略される。サイズだけ据え置く
+    ...type.button,
     fontSize: 15,
-    fontWeight: '800',
     color: GOOGLE_HOME.textPrimary,
   },
   profileSheetBackdrop: {
@@ -782,8 +785,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.64)',
   },
-  profileSheetName: { fontSize: 29, fontWeight: '900', color: '#211C1A', letterSpacing: -0.4 },
-  profileSheetMeta: { fontSize: 13, fontWeight: '800', color: 'rgba(33,28,26,0.72)', lineHeight: 19, textAlign: 'center' },
+  profileSheetName: { ...type.title, color: '#211C1A' },
+  profileSheetMeta: { ...type.caption, color: 'rgba(33,28,26,0.72)', textAlign: 'center' as const },
   profileStatRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -799,7 +802,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(33,28,26,0.08)',
   },
-  profileStatText: { fontSize: 12, fontWeight: '900', color: 'rgba(33,28,26,0.86)' },
+  profileStatText: { ...type.label, color: 'rgba(33,28,26,0.86)' },
   profileActionRow: { flexDirection: 'row', gap: 10, marginTop: 18 },
   profileEditBtn: {
     flex: 1,
@@ -816,7 +819,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
     elevation: 4,
   },
-  profileEditText: { fontSize: 15, fontWeight: '900', color: '#fff' },
+  profileEditText: { ...type.button, color: '#fff' },
   profileSheetClose: {
     flex: 1,
     minHeight: 46,
@@ -825,7 +828,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(42,37,34,0.88)',
   },
-  profileSheetCloseText: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  profileSheetCloseText: { ...type.button, color: '#fff' },
   profileEditBackdrop: {
     flex: 1,
     justifyContent: 'center',
@@ -853,7 +856,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  profileEditTitle: { fontSize: 18, fontWeight: '900', color: colors.text },
+  profileEditTitle: { ...type.title, color: colors.text },
   profileEditCloseIcon: {
     position: 'absolute',
     right: 0,
@@ -928,24 +931,20 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   settingsName: {
-    fontSize: 20,
-    fontWeight: '800',
+    ...type.title,
     color: colors.text,
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
   settingsMeta: {
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 19,
+    ...type.caption,
     color: colors.textMuted,
-    textAlign: 'center',
+    textAlign: 'center' as const,
     paddingHorizontal: 8,
   },
   settingsMetaMuted: {
-    fontSize: 13,
-    fontWeight: '500',
+    ...type.caption,
     color: colors.textLight,
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
   settingsEditBtn: {
     marginTop: 6,
@@ -960,8 +959,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   settingsEditBtnTxt: {
-    fontSize: 14,
-    fontWeight: '800',
+    ...type.button,
     color: colors.brandDark,
   },
   wrapAlbum: {
@@ -1033,9 +1031,10 @@ const styles = StyleSheet.create({
     }),
   },
   photoRemoveBtn: { marginTop: 8, paddingVertical: 6 },
-  photoRemoveTxt: { fontSize: 13, fontWeight: '700', color: '#E84335' },
-  name: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  nameAlbum: { fontSize: 28, fontWeight: '800', color: GOOGLE_HOME.textPrimary },
+  // 破壊的な副操作。押せる文字だが、ここを17pxにすると保存より目立つ
+  photoRemoveTxt: { ...type.button, fontSize: 13, color: '#E84335' },
+  name: { ...type.title, color: colors.text, textAlign: 'center' as const },
+  nameAlbum: { color: GOOGLE_HOME.textPrimary },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1046,7 +1045,7 @@ const styles = StyleSheet.create({
   nameRowAlbum: { marginTop: 14 },
   nameGender: { fontSize: 20, fontWeight: '800', lineHeight: 24 },
   nameGenderAlbum: { fontSize: 26, lineHeight: 30 },
-  meta: { marginTop: 6, fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  meta: { marginTop: 6, ...type.caption, color: colors.textMuted, textAlign: 'center' as const },
   metaPillRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1064,12 +1063,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  metaPillTxt: { fontSize: 12, lineHeight: 16, fontWeight: '700', color: colors.text, textAlign: 'center', includeFontPadding: false },
+  metaPillTxt: { ...type.label, color: colors.text, textAlign: 'center' as const, includeFontPadding: false },
   metaPillAlbum: {
     backgroundColor: GOOGLE_HOME.panelBg,
     borderColor: GOOGLE_HOME.panelBorder,
   },
-  metaPillTxtAlbum: { color: GOOGLE_HOME.textSecondary, fontWeight: '600' },
+  metaPillTxtAlbum: { color: GOOGLE_HOME.textSecondary },
   editFields: { alignSelf: 'stretch', width: '100%', marginTop: 12 },
   textInput: {
     backgroundColor: colors.background,
@@ -1078,7 +1077,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontSize: 16,
+    ...type.row,
     color: colors.text,
   },
   breedSuggestionList: {
@@ -1096,8 +1095,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   breedSuggestionRowOn: { backgroundColor: colors.tintStrong },
-  breedSuggestionText: { fontSize: 14, color: colors.text },
-  breedValidationText: { marginTop: 6, fontSize: 12, color: colors.textMuted },
+  breedSuggestionText: { ...type.row, color: colors.text },
+  breedValidationText: { marginTop: 6, ...type.caption, color: colors.textMuted },
   birthdayCard: {
     marginTop: 4,
     padding: 16,
@@ -1110,8 +1109,8 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
-  miniLbl: { fontSize: 12, color: colors.textMuted, marginBottom: 4 },
-  miniHint: { fontSize: 11, color: colors.textLight, marginBottom: 6, lineHeight: 15 },
+  miniLbl: { ...type.label, color: colors.textMuted, marginBottom: 4 },
+  miniHint: { ...type.caption, color: colors.textLight, marginBottom: 6 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   chip: {
     flexDirection: 'row',
@@ -1125,13 +1124,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBg,
   },
   chipOn: { borderColor: colors.brandDark, backgroundColor: colors.brandButton },
-  chipLbl: { fontSize: 12, fontWeight: '700', color: colors.text },
-  chipLblMuted: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  chipLbl: { ...type.label, color: colors.text },
+  chipLblMuted: { ...type.label, color: colors.textMuted },
+  // ♂♀ はチップ内のアイコン扱い。行間を持つ型を当てるとチップの高さが変わる
   symMale: { fontSize: 17, fontWeight: '800', color: colors.genderMale },
   symFemale: { fontSize: 17, fontWeight: '800', color: colors.genderFemale },
   btnRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   btnGhost: { flex: 1, paddingVertical: 12, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center' },
-  btnGhostTxt: { fontSize: 14, fontWeight: '800', color: colors.textLight },
+  btnGhostTxt: { ...type.button, color: colors.textLight },
   btnPri: { flex: 1, paddingVertical: 12, borderRadius: 16, backgroundColor: colors.brandButton, alignItems: 'center' },
-  btnPriTxt: { fontSize: 14, fontWeight: '800', color: colors.text },
+  btnPriTxt: { ...type.button, color: colors.text },
 })

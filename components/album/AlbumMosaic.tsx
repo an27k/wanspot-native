@@ -5,6 +5,7 @@ import { useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { BrandLoader } from '@/components/common/BrandLoader'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import {
   CACHE_TTL,
   getCacheEntry,
@@ -267,8 +268,8 @@ export function AlbumMosaic({ userId, todayPhoto, onCaptureToday, onRetakeToday,
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: H_PADDING, marginTop: 8 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
-  retention: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
+  sectionTitle: { ...type.heading, color: colors.text },
+  retention: { ...type.caption, color: colors.textMuted },
   loaderWrap: { alignItems: 'center', paddingVertical: 40 },
   mosaic: { position: 'relative', width: '100%' },
   tile: {
@@ -285,7 +286,8 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 12,
   },
-  todayCtaTxt: { fontSize: 13, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
+  // タイル内だがタップの主目的なのでボタンとして扱う
+  todayCtaTxt: { ...type.button, color: colors.textPrimary, textAlign: 'center' },
   dateLbl: {
     position: 'absolute',
     left: 6,
@@ -295,7 +297,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.85)',
   },
-  dateTxt: { fontSize: 11, fontWeight: '800', color: colors.primary },
+  dateTxt: { ...type.label, color: colors.primary },
   retakeBtn: {
     position: 'absolute',
     right: 6,
@@ -305,7 +307,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(43,42,40,0.72)',
   },
-  retakeBtnTxt: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  retakeBtnTxt: { ...type.label, color: '#fff' },
   todayBadge: {
     position: 'absolute',
     top: 6,
@@ -315,12 +317,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.primary,
   },
-  todayBadgeTxt: { fontSize: 10, fontWeight: '800', color: colors.textPrimary },
+  todayBadgeTxt: { ...type.label, color: colors.textPrimary },
   emptyHint: {
     marginTop: 12,
-    fontSize: 12,
+    ...type.caption,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 18,
   },
 })

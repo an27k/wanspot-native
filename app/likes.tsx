@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import * as Location from 'expo-location'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -276,8 +277,9 @@ const styles = StyleSheet.create({
   backBtn: { marginBottom: 4, alignSelf: 'flex-start' },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   titleLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  h1: { fontSize: 20, fontWeight: '700', color: colors.textPrimary },
-  count: { fontSize: 14, fontWeight: '700', color: '#aaa' },
+  // largeTitle(34) は並びの都合で使わない。ヘッダは1行に アイコン＋見出し＋累計＋並べ替えピル が同居する
+  h1: { ...type.title, color: colors.textPrimary },
+  count: { ...type.caption, color: '#aaa' },
   sortPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -287,7 +289,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.textPrimary,
   },
-  sortPillTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  sortPillTxt: { ...type.label, color: '#fff' },
   errBox: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -295,8 +297,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  errTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
-  errBody: { fontSize: 12, color: '#888', marginBottom: 12 },
+  errTitle: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary, marginBottom: 8 },
+  errBody: { ...type.caption, color: '#888', marginBottom: 12 },
   retry: {
     width: '100%',
     paddingVertical: 10,
@@ -304,7 +306,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
   },
-  retryTxt: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  retryTxt: { ...type.button, color: colors.textPrimary },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', padding: 24 },
   sortSheet: {
     backgroundColor: '#fff',
@@ -315,5 +317,5 @@ const styles = StyleSheet.create({
   },
   sortLine: { paddingVertical: 12, paddingHorizontal: 16 },
   sortLineOn: { backgroundColor: colors.tintStrong },
-  sortLineTxt: { fontSize: 12, fontWeight: '700', color: '#888' },
+  sortLineTxt: { ...type.row, color: '#888' },
 })

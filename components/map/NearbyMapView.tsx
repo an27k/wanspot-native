@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from 'react-native-maps'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -364,8 +365,8 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 8,
   },
-  configTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  configHint: { fontSize: 12, color: '#888', lineHeight: 18 },
+  configTitle: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary },
+  configHint: { ...type.caption, color: '#888' },
   mapHint: {
     position: 'absolute',
     left: 16,
@@ -377,5 +378,5 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     zIndex: 6,
   },
-  mapHintTxt: { fontSize: 11, color: '#888', lineHeight: 16, textAlign: 'center' },
+  mapHintTxt: { ...type.caption, color: '#888', textAlign: 'center' },
 })

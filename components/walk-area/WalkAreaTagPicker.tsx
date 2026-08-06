@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { catalogEntryByLabel, searchWalkAreaCatalog, suggestedWalkAreasNear } from '@/lib/walk-area-catalog'
 import { MAX_WALK_AREA_TAGS } from '@/lib/walk-area-tags'
 
@@ -133,10 +134,11 @@ export function mergeUnknownWalkTags(saved: string[]): string[] {
 
 const styles = StyleSheet.create({
   wrap: { alignSelf: 'stretch' },
-  sectionLbl: { fontSize: 13, fontWeight: '700', color: colors.text },
+  // 画面側の見出し（heading）の下にぶら下がる小見出しなので label
+  sectionLbl: { ...type.label, color: colors.text },
   mt: { marginTop: 14 },
-  hintSub: { fontSize: 12, color: colors.textMuted, marginTop: 6, lineHeight: 17 },
-  emptySel: { fontSize: 13, color: colors.textMuted, marginTop: 8, lineHeight: 19 },
+  hintSub: { ...type.caption, color: colors.textMuted, marginTop: 6 },
+  emptySel: { ...type.caption, color: colors.textMuted, marginTop: 8 },
   searchInp: {
     marginTop: 8,
     borderWidth: 1,
@@ -144,7 +146,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 15,
+    ...type.row,
     color: colors.text,
     backgroundColor: colors.cardBg,
   },
@@ -161,7 +163,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.brandDark,
   },
-  chipOnTxt: { fontSize: 13, fontWeight: '700', color: colors.text },
+  chipOnTxt: { ...type.label, color: colors.text },
+  // × は文字ではなく削除アイコンなので、チップの文字と一緒に縮めない
   chipRemove: { fontSize: 16, fontWeight: '700', color: colors.textMuted, marginLeft: 2 },
   chipOff: {
     paddingHorizontal: 12,
@@ -172,5 +175,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBg,
   },
   chipDis: { opacity: 0.45 },
-  chipOffTxt: { fontSize: 13, fontWeight: '600', color: colors.text },
+  chipOffTxt: { ...type.label, color: colors.text },
 })

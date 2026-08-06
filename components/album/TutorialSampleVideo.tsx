@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { InteractionManager, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useVideoPlayer, VideoView } from 'expo-video'
+import { type } from '@/constants/typography'
 import { REVIEW_TUTORIAL_SAMPLE_VLOG } from '@/lib/review/sample-vlog-video'
 import { DISABLE_TUTORIAL_VIDEO } from '@/lib/debug/review-crash-flags'
 
@@ -100,6 +101,6 @@ export function TutorialVideoFallback() {
 
 const styles = StyleSheet.create({
   fallback: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, padding: 20 },
-  fallbackTxt: { fontSize: 15, fontWeight: '800', color: '#fff', textAlign: 'center' },
-  fallbackSubTxt: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
+  fallbackTxt: { ...type.heading, color: '#fff', textAlign: 'center' },
+  fallbackSubTxt: { ...type.caption, color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
 })

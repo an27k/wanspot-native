@@ -14,6 +14,7 @@ import { PowState } from '@/components/DogStates'
 import { ListAdSlot } from '@/components/ads/ListAdSlot'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { type } from '@/constants/typography'
 import { useScrollYReport } from '@/hooks/useScrollYReport'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { shouldInjectListAd } from '@/lib/ads/list-injection'
@@ -432,6 +433,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.18)',
   },
   chipOn: { backgroundColor: 'rgba(255,255,255,0.92)', borderColor: 'rgba(255,255,255,0.92)' },
-  chipTxt: { fontSize: 13, fontWeight: '700', color: GOOGLE_HOME.textSecondary },
+  // 絞り込みチップ。地図の MapFilterBar と同じ label で揃える
+  chipTxt: { ...type.label, color: GOOGLE_HOME.textSecondary },
   chipTxtOn: { color: '#2A2522', fontWeight: '800' },
 })

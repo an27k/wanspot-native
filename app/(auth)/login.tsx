@@ -15,6 +15,7 @@ import {
 import type { TextInput as RNTextInput } from 'react-native'
 import { Link, useRouter } from 'expo-router'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { useAuth } from '@/context/AuthContext'
 import { isAppleSignInAvailable, signInWithApple } from '@/lib/apple-signin'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
@@ -204,9 +205,11 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, padding: 24, justifyContent: 'center' },
   inner: { width: '100%', flexGrow: 1, justifyContent: 'center' },
   logo: { alignSelf: 'center', marginBottom: 4 },
+  // ワードマークは型スケールの外。ロゴと対で置くブランド資産であって画面タイトルではない。
+  // largeTitle は日本語の見出し用に letterSpacing を詰めてあるので、欧文のロゴには当てない
   title: {
     fontSize: 28,
-    fontWeight: '900',
+    fontWeight: '800',
     textAlign: 'center',
     color: colors.text,
     marginTop: 12,
@@ -221,7 +224,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBg,
     color: colors.text,
   },
-  err: { color: colors.error, textAlign: 'center', marginBottom: 8, fontSize: 13 },
+  err: { ...type.caption, color: colors.error, textAlign: 'center', marginBottom: 8 },
   btn: {
     backgroundColor: colors.brand,
     paddingVertical: 14,
@@ -230,9 +233,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   btnDis: { opacity: 0.4 },
-  btnTxt: { fontWeight: '800', fontSize: 16, color: colors.text },
+  btnTxt: { ...type.button, color: colors.text },
   link: { marginTop: 20, alignItems: 'center' },
-  linkTxt: { color: colors.textMuted, fontSize: 14 },
+  linkTxt: { ...type.body, color: colors.textMuted },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -241,7 +244,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dividerLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
-  dividerTxt: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
+  dividerTxt: { ...type.label, color: colors.textMuted },
   btnGoogle: {
     ...oauthGooglePressableBase,
     marginTop: 14,

@@ -21,5 +21,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     marginTop: 4,
   },
+  // ロゴと組むワードマーク。文章の階層ではなく意匠なので型には寄せない
   txt: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3, color: GOOGLE_HOME.textPrimary },
 })

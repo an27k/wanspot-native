@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 
 const ITEM_H = 40
 const VISIBLE_ROWS = 5
@@ -138,9 +139,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     width: '100%',
   },
+  // 選ぶ値そのものなのでリスト行と同じ組み。行の高さは ITEM_H で固定してあり、
+  // 文字を大きくしてもスナップ位置（highlight 帯）はずれない
   itemTxt: {
-    fontSize: 13,
-    fontWeight: '600',
+    ...type.row,
     color: colors.textMuted,
     width: '100%',
     textAlign: 'center',

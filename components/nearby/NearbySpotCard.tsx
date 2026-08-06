@@ -14,6 +14,7 @@ import { openSpotDetailFromPlace } from '@/lib/open-spot-detail'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 
 function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000
@@ -221,8 +222,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   likeCnt: {
-    fontSize: 12,
-    fontWeight: '700',
+    ...type.label,
     color: HEART_ICON.filled,
     backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: 6,
@@ -233,8 +233,7 @@ const styles = StyleSheet.create({
   cardBody: { padding: 12, gap: 2 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   spotCat: {
-    fontSize: 12,
-    fontWeight: '700',
+    ...type.label,
     backgroundColor: colors.tintStrong,
     color: colors.textPrimary,
     paddingHorizontal: 8,
@@ -243,10 +242,12 @@ const styles = StyleSheet.create({
   },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rateSmall: { fontSize: 12, color: '#888' },
-  distSmall: { fontSize: 12, color: '#aaa' },
-  spotName: { fontWeight: '700', fontSize: 14, color: colors.textPrimary },
-  spotAddr: { fontSize: 12, color: '#aaa' },
+  rateSmall: { ...type.caption, color: '#888' },
+  // 距離は右端に単独で置く数値。行内の他のメタより太くして目的地までの遠近を拾えるようにする
+  distSmall: { ...type.caption, fontWeight: '700' as const, color: '#aaa' },
+  // 一覧の視線の起点。ここが14pxだとカードの中で写真しか目に入らない
+  spotName: { ...type.heading, color: colors.textPrimary },
+  spotAddr: { ...type.caption, color: '#aaa' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  qMark: { fontSize: 12, color: '#ccc' },
+  qMark: { ...type.caption, color: '#ccc' },
 })

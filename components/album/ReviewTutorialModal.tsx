@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TutorialVideoFallback } from '@/components/album/TutorialSampleVideo'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { track } from '@/lib/analytics'
 import { markReviewTutorialSeen } from '@/lib/review/tutorial-storage'
 
@@ -145,7 +146,7 @@ export function ReviewTutorialModal({ visible, onClose, dogName }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.paper, paddingHorizontal: 20 },
   head: { alignItems: 'flex-end', marginBottom: 8 },
-  skip: { fontSize: 14, fontWeight: '700', color: colors.textSecondary },
+  skip: { ...type.button, color: colors.textSecondary },
   body: { flexGrow: 1, justifyContent: 'center', gap: 20, paddingVertical: 12 },
   videoSlot: {
     aspectRatio: 9 / 16,
@@ -157,18 +158,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.vessel,
   },
   lead: {
-    fontSize: 17,
-    fontWeight: '800',
+    ...type.heading,
     color: colors.textPrimary,
-    textAlign: 'center',
-    lineHeight: 26,
+    textAlign: 'center' as const,
   },
   leadSub: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...type.body,
     color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 21,
+    textAlign: 'center' as const,
   },
   steps: { gap: 16 },
   stepRow: {
@@ -190,11 +187,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepText: { flex: 1, gap: 4 },
-  stepTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
-  stepBody: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, lineHeight: 20 },
+  stepTitle: { ...type.heading, color: colors.textPrimary },
+  stepBody: { ...type.body, color: colors.textSecondary },
   final: { alignItems: 'center', gap: 12, paddingHorizontal: 12 },
-  finalTitle: { fontSize: 20, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
-  finalBody: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  finalTitle: { ...type.heading, color: colors.textPrimary, textAlign: 'center' as const },
+  finalBody: { ...type.body, color: colors.textSecondary, textAlign: 'center' as const },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginVertical: 16 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
   dotOn: { backgroundColor: colors.primary, width: 20 },
@@ -204,5 +201,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  ctaTxt: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  ctaTxt: { ...type.button, color: '#fff' },
 })

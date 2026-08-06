@@ -8,6 +8,7 @@ import { AiSummaryCard } from '@/components/common/AiSummaryCard'
 import { PowState } from '@/components/DogStates'
 import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { takeCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
 import {
   fetchNearbySpots,
@@ -291,13 +292,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
+  headerTitle: { flex: 1, ...type.button, color: colors.textPrimary, textAlign: 'center' as const },
   headerSpacer: { width: 44 },
   shareBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   missWrap: { marginTop: 48, alignItems: 'center', paddingHorizontal: 24 },
   hero: { width: '100%', height: 210, backgroundColor: colors.border },
   body: { padding: 16, gap: 12 },
-  title: { fontSize: 19, fontWeight: '800', color: colors.textPrimary, lineHeight: 26 },
+  title: { ...type.title, color: colors.textPrimary },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
   tagPill: {
     paddingHorizontal: 10,
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: colors.background,
   },
-  tagPillTxt: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+  tagPillTxt: { ...type.label, color: colors.textSecondary },
   sectionCard: {
     backgroundColor: colors.background,
     borderRadius: 16,
@@ -315,7 +316,9 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 4,
   },
-  sectionTitle: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, marginBottom: 2 },
+  // カード内の見出しは heading(20) ではなく label。中身より小さい灰色の
+  // マイクロラベルとして置く設計で、大きくすると本文と主従が入れ替わる
+  sectionTitle: { ...type.label, color: colors.textSecondary, marginBottom: 2 },
   nearbyRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -325,10 +328,11 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   nearbyBody: { flex: 1, minWidth: 0 },
-  nearbyName: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  nearbyMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  sectionLine: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, lineHeight: 21 },
-  sectionSub: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
+  // 押せる行なので、同じ 17 でも静的な sectionLine と太さで区別する
+  nearbyName: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary },
+  nearbyMeta: { ...type.caption, color: colors.textSecondary, marginTop: 2 },
+  sectionLine: { ...type.row, color: colors.textPrimary },
+  sectionSub: { ...type.caption, color: colors.textSecondary },
   mapBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -340,13 +344,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.tintWeak,
   },
-  mapBtnTxt: { fontSize: 13, fontWeight: '700', color: colors.brandDark },
+  mapBtnTxt: { ...type.button, color: colors.brandDark },
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingVertical: 8,
   },
-  linkNum: { fontSize: 14, color: colors.textSecondary },
-  linkTxt: { flex: 1, fontSize: 13, color: colors.textPrimary },
+  linkNum: { ...type.row, color: colors.textSecondary },
+  linkTxt: { flex: 1, ...type.row, color: colors.textPrimary },
 })

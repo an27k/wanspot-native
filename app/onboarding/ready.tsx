@@ -8,6 +8,7 @@ import { OB_DOG_KEY, OB_WALK_AREA_TAGS_KEY } from '@/lib/onboarding-constants'
 import { completeOnboarding } from '@/lib/onboarding-complete'
 import { dogLabel } from '@/lib/dog-label'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 
 /**
  * 散歩エリアを選んだ人（＝位置情報を断った人）向けの締めの画面。
@@ -99,8 +100,8 @@ const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#fff' },
   content: { flexGrow: 1, paddingHorizontal: 24, gap: 16 },
   headingBox: { height: 76, justifyContent: 'center', marginTop: 8 },
-  h2: { fontSize: 26, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
-  hint: { fontSize: 13, color: '#8A8A8A', lineHeight: 22, textAlign: 'left' },
+  h2: { ...type.title, color: colors.textPrimary, textAlign: 'center' as const },
+  hint: { ...type.caption, lineHeight: 22, color: '#8A8A8A', textAlign: 'left' as const },
   spacer: { flex: 1, minHeight: 24 },
   next: {
     height: 52,
@@ -111,5 +112,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   nextOff: { opacity: 0.6 },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
+  nextTxt: { ...type.button, color: colors.textPrimary, textAlign: 'center' as const },
 })

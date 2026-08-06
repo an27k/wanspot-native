@@ -35,6 +35,7 @@ import { VlogOneTapOffer } from '@/components/album/VlogOneTapOffer'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { type } from '@/constants/typography'
 import { isDailyLogVisit, moodEmoji, type DailyLogContext } from '@/lib/daily-log'
 import { buildVlogRenderPayloadAsync } from '@/lib/vlog/build-payload'
 import {
@@ -1294,7 +1295,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 4,
   },
-  deckVlogButtonText: { fontSize: 12, fontWeight: '900', color: '#fff' },
+  deckVlogButtonText: { ...type.button, color: '#fff' },
   selectionBar: {
     minHeight: 42,
     borderRadius: 21,
@@ -1306,8 +1307,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.62)',
   },
-  selectionBarText: { fontSize: 14, fontWeight: '900', color: '#2E2825' },
-  selectionBarCancel: { fontSize: 13, fontWeight: '800', color: '#FF765F' },
+  // 選択バーは1行に「◯件選択中」と「キャンセル」が並ぶ。row(17) だと横幅が足りない
+  selectionBarText: { ...type.caption, color: '#2E2825' },
+  selectionBarCancel: { ...type.label, color: '#FF765F' },
   deck: {
     alignItems: 'center',
     gap: -18,
@@ -1449,6 +1451,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
   },
+  // 日付スタンプの数字は AvenirNextCondensed-Heavy／900 の意匠で、7段階の型の外。
+  // 器（54×38・24×24）も固定なので数字だけこのまま置く
   dateBadgeMonth: {
     fontSize: 20,
     lineHeight: 24,
@@ -1548,11 +1552,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.88)',
   },
-  deckSelectText: { fontSize: 11, fontWeight: '800', color: '#5D514C' },
+  deckSelectText: { ...type.label, color: '#5D514C' },
   deckSelectTextOn: { color: '#FF765F' },
   deckInfo: { paddingHorizontal: 18, paddingTop: 2, paddingBottom: 18, gap: 9 },
   deckTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  deckTitle: { flex: 1, fontSize: 21, fontWeight: '900', color: '#2D2522', lineHeight: 27 },
+  deckTitle: { flex: 1, ...type.title, color: '#2D2522' },
   deckEditBtn: {
     width: 34,
     height: 34,
@@ -1562,9 +1566,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.54)',
   },
   deckMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  deckMeta: { fontSize: 13, fontWeight: '700', color: '#725F58' },
-  deckDot: { fontSize: 13, fontWeight: '900', color: '#8B7A73' },
-  deckComment: { fontSize: 14, fontWeight: '700', lineHeight: 21, color: '#4B3B36' },
+  deckMeta: { ...type.caption, color: '#725F58' },
+  deckDot: { ...type.caption, color: '#8B7A73' },
+  // 飼い主が書いたひとこと。読ませる文章なので本文サイズ
+  deckComment: { ...type.body, color: '#4B3B36' },
   deckEmptyInner: {
     minHeight: 236,
     position: 'relative',
@@ -1588,13 +1593,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
   },
   deckEmptyKicker: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.4,
+    ...type.label,
     color: 'rgba(46,40,37,0.44)',
   },
-  deckEmptyTitle: { fontSize: 20, fontWeight: '900', color: '#2A2522', lineHeight: 27 },
-  deckEmptySub: { fontSize: 13, fontWeight: '800', color: '#5E514C', textAlign: 'center' },
+  deckEmptyTitle: { ...type.heading, color: '#2A2522' },
+  deckEmptySub: { ...type.caption, color: '#5E514C', textAlign: 'center' },
   deckEmptyPill: {
     marginTop: 4,
     flexDirection: 'row',
@@ -1607,7 +1610,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(46,40,37,0.08)',
   },
-  deckEmptyPillText: { fontSize: 12, fontWeight: '900', color: '#7F5CFF' },
+  deckEmptyPillText: { ...type.label, color: '#7F5CFF' },
   vlogDockWrap: { gap: 8, paddingTop: 4 },
   vlogDock: {
     minHeight: 64,
@@ -1641,9 +1644,10 @@ const styles = StyleSheet.create({
   },
   vlogThumbImg: { width: '100%', height: '100%' },
   vlogDockCopy: { flex: 1, gap: 2 },
-  vlogDockTitle: { fontSize: 16, fontWeight: '900', color: '#2E2825' },
+  // ドック全体が1つのボタン。heading(20) だと2行になりドックが伸びるので button(17)
+  vlogDockTitle: { ...type.button, color: '#2E2825' },
   vlogDockTitleDisabled: { color: '#786B65' },
-  vlogDockSub: { fontSize: 11, fontWeight: '700', color: '#756861' },
+  vlogDockSub: { ...type.caption, color: '#756861' },
   vlogDockArrow: {
     width: 46,
     height: 46,
@@ -1788,9 +1792,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#7F5CFF',
   },
   emptyKicker: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.4,
+    ...type.label,
     color: 'rgba(46,40,37,0.44)',
   },
   emptyHeroLineWide: { width: '54%', height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.76)' },
@@ -1806,18 +1808,14 @@ const styles = StyleSheet.create({
   emptyParticleTwo: { top: 70, right: 46, backgroundColor: 'rgba(111,240,211,0.8)' },
   emptyParticleThree: { bottom: 18, left: 74, width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,211,111,0.82)' },
   emptyTitle: {
-    fontSize: 21,
-    fontWeight: '900',
+    ...type.heading,
     color: '#2A2522',
     textAlign: 'center',
-    lineHeight: 26,
   },
   emptySub: {
-    fontSize: 13,
-    fontWeight: '800',
+    ...type.caption,
     color: '#5E514C',
     textAlign: 'center',
-    lineHeight: 20,
   },
   addBtn: {
     marginTop: 8,
@@ -1833,7 +1831,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  addBtnTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  addBtnTxt: { ...type.button, color: '#fff' },
   celebration: {
     backgroundColor: colors.primary,
     borderRadius: 16,
@@ -1846,8 +1844,8 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
-  celebrationTitle: { fontSize: 15, fontWeight: '800', color: '#fff' },
-  celebrationSub: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
+  celebrationTitle: { ...type.heading, color: '#fff' },
+  celebrationSub: { ...type.caption, color: 'rgba(255,255,255,0.9)' },
   loaderWrap: { paddingVertical: 40, alignItems: 'center' },
   loadingDeck: {
     alignItems: 'center',
@@ -1868,8 +1866,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.78)',
     marginBottom: 2,
   },
-  loadingTitle: { fontSize: 17, fontWeight: '900', color: GOOGLE_HOME.textPrimary },
-  loadingSub: { fontSize: 12, fontWeight: '700', color: GOOGLE_HOME.textSecondary, marginBottom: 8 },
+  loadingTitle: { ...type.heading, color: GOOGLE_HOME.textPrimary },
+  loadingSub: { ...type.caption, color: GOOGLE_HOME.textSecondary, marginBottom: 8 },
   loadingCard: {
     alignSelf: 'stretch',
     borderRadius: 22,
@@ -1883,7 +1881,7 @@ const styles = StyleSheet.create({
   loadingLineWide: { width: '68%', height: 14, borderRadius: 7, backgroundColor: 'rgba(255,255,255,0.62)' },
   loadingLine: { width: '44%', height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.48)' },
   guest: { padding: 24, alignItems: 'center' },
-  guestTxt: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
+  guestTxt: { ...type.body, color: colors.textSecondary, textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
   tile: {
     width: TILE_W,
@@ -1982,15 +1980,16 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
   },
-  editTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
-  editLbl: { fontSize: 12, fontWeight: '700', color: colors.textMuted },
+  editTitle: { ...type.heading, color: colors.text },
+  editLbl: { ...type.label, color: colors.textMuted },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
     minHeight: 80,
-    fontSize: 15,
+    // 飼い主が日記を書き込む欄なので本文サイズ
+    ...type.body,
     color: colors.text,
     textAlignVertical: 'top',
   },
@@ -2002,7 +2001,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
   },
-  saveBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  saveBtnTxt: { ...type.button, color: '#fff' },
   detailRoot: { flex: 1, backgroundColor: colors.paper },
   detailHead: {
     flexDirection: 'row',
@@ -2012,7 +2011,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  detailTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  // ナビゲーションバーのタイトルは iOS 標準の 17/700
+  detailTitle: { flex: 1, ...type.button, color: colors.text, textAlign: 'center' as const },
   detailHeadActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   detailIconBtn: {
     width: 34,
@@ -2030,9 +2030,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
   },
   detailBody: { padding: 16, gap: 12 },
-  detailMeta: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  detailMeta: { ...type.caption, color: colors.textMuted },
   ratingDisplay: { flexDirection: 'row', gap: 2 },
-  comment: { fontSize: 15, lineHeight: 24, color: colors.text, fontWeight: '600' },
+  // 飼い主が書いた日記。読ませる文章なので本文サイズ
+  comment: { ...type.body, color: colors.text },
   thumbRow: { gap: 8, paddingVertical: 4 },
   detailThumbWrap: { position: 'relative' },
   detailThumb: { width: 120, height: 120, borderRadius: 12, backgroundColor: colors.cardBg },
@@ -2069,8 +2070,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.84)',
   },
   composerHeadCenter: { flex: 1, alignItems: 'center', gap: 1 },
-  composerTitle: { fontSize: 16, fontWeight: '800', color: colors.text },
-  composerMeta: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
+  composerTitle: { ...type.button, color: colors.text },
+  composerMeta: { ...type.caption, color: colors.textMuted },
   composerBody: { padding: 16, gap: 14 },
   composerHero: {
     position: 'relative',
@@ -2101,13 +2102,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
   },
   composerKicker: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.4,
+    ...type.label,
     color: 'rgba(46,40,37,0.44)',
   },
-  composerLead: { fontSize: 20, fontWeight: '900', color: colors.textPrimary, lineHeight: 27, textAlign: 'center' },
-  composerHeroSub: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, lineHeight: 20, textAlign: 'center' },
+  composerLead: { ...type.heading, color: colors.textPrimary, textAlign: 'center' as const },
+  composerHeroSub: { ...type.caption, color: colors.textSecondary, textAlign: 'center' as const },
   composerProgressPill: {
     marginTop: 2,
     flexDirection: 'row',
@@ -2120,7 +2119,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(46,40,37,0.08)',
   },
-  composerHint: { fontSize: 12, fontWeight: '900', color: '#7F5CFF' },
+  composerHint: { ...type.label, color: '#7F5CFF' },
   composerHintDone: { color: colors.success },
   mediaPanel: {
     borderRadius: 24,
@@ -2130,7 +2129,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(46,40,37,0.08)',
   },
   mediaPanelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  mediaCountTxt: { fontSize: 12, fontWeight: '800', color: colors.textMuted },
+  mediaCountTxt: { ...type.label, color: colors.textMuted },
   mediaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   mediaCell: { position: 'relative' },
   mediaThumb: {
@@ -2145,7 +2144,7 @@ const styles = StyleSheet.create({
     gap: 2,
     backgroundColor: '#2A2522',
   },
-  mediaVideoTxt: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
+  mediaVideoTxt: { ...type.label, color: 'rgba(255,255,255,0.85)' },
   mediaRemove: {
     position: 'absolute',
     top: 4,
@@ -2169,7 +2168,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
   },
-  mediaAddTxt: { fontSize: 10, fontWeight: '900', color: '#7F5CFF', textAlign: 'center', paddingHorizontal: 4 },
+  mediaAddTxt: { ...type.label, color: '#7F5CFF', textAlign: 'center' as const, paddingHorizontal: 4 },
   mediaAddLarge: {
     width: '100%',
     minHeight: 150,
@@ -2190,8 +2189,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#7F5CFF',
   },
-  mediaAddLargeTxt: { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
-  mediaAddLargeSub: { fontSize: 12, fontWeight: '700', color: colors.textMuted },
+  mediaAddLargeTxt: { ...type.button, color: colors.textPrimary },
+  mediaAddLargeSub: { ...type.caption, color: colors.textMuted },
   composerSection: {
     gap: 10,
     borderRadius: 22,
@@ -2200,7 +2199,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(46,40,37,0.08)',
   },
-  composerLbl: { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
+  // 入力欄の上に置く項目名。編集シートの editLbl と同じ役割
+  composerLbl: { ...type.label, color: colors.textPrimary },
   composerFooter: {
     padding: 16,
     paddingBottom: 28,
@@ -2220,6 +2220,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   composerSaveDisabled: { backgroundColor: '#E5E5E5', shadowOpacity: 0, elevation: 0 },
-  composerSaveTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  composerSaveTxt: { ...type.button, color: '#fff' },
   composerSaveTxtDisabled: { color: '#999' },
 })

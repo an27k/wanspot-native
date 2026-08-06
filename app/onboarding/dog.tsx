@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -494,22 +495,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   walkTimeChipOn: { borderColor: colors.brandDark, backgroundColor: colors.tintWeak },
-  walkTimeChipTxt: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  walkTimeChipTxt: { ...type.label, color: colors.textSecondary },
   walkTimeChipTxtOn: { color: colors.brandDark },
   container: { flex: 1, backgroundColor: '#FAFAF8' },
   scrollContent: { paddingHorizontal: 24 },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
+    ...type.title,
     color: '#1A1A1A',
-    lineHeight: 36,
     marginTop: 8,
-    letterSpacing: 0.3,
   },
   sub: {
-    fontSize: 13,
+    ...type.caption,
     color: '#888',
-    lineHeight: 20,
     marginTop: 8,
     marginBottom: 24,
   },
@@ -529,7 +526,7 @@ const styles = StyleSheet.create({
   photoCirclePressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   photoPreview: { width: '100%', height: '100%' },
   photoPlaceholder: { justifyContent: 'center', alignItems: 'center' },
-  photoLabel: { fontSize: 13, fontWeight: '600', color: '#888' },
+  photoLabel: { ...type.caption, color: '#888' },
   textInput: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -537,7 +534,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontSize: 16,
+    ...type.row,
     color: '#1A1A1A',
   },
   vaccineWrap: {
@@ -550,11 +547,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   vaccineHead: { padding: 14 },
-  vaccineTitle: { fontSize: 13, fontWeight: '700', color: '#999' },
-  vaccineHint: { fontSize: 11, color: '#bbb', marginTop: 4 },
+  // 任意項目を畳んである節。heading(20) に上げると必須の入力より目立つので label に寄せる
+  vaccineTitle: { ...type.label, color: '#999' },
+  vaccineHint: { ...type.caption, color: '#bbb', marginTop: 4 },
   vaccineChevron: { position: 'absolute', right: 14, top: 16 },
   vaccineBody: { paddingHorizontal: 14, paddingBottom: 14, gap: 8 },
-  vaccineLbl: { fontSize: 12, fontWeight: '600', color: '#aaa' },
+  vaccineLbl: { ...type.label, color: '#aaa' },
   row2: { flexDirection: 'row', gap: 10 },
   optionHalf: {
     flex: 1,
@@ -565,7 +563,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0EFEC',
   },
   optionHalfOn: { backgroundColor: colors.primary },
-  optionHalfTxt: { fontSize: 14, fontWeight: '700', color: '#999' },
+  optionHalfTxt: { ...type.button, color: '#999' },
   optionHalfTxtOn: { color: colors.textPrimary },
   ctaContainer: {
     position: 'absolute',
@@ -586,7 +584,7 @@ const styles = StyleSheet.create({
   },
   ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
   ctaButtonPressed: { backgroundColor: colors.brandDark, transform: [{ scale: 0.98 }] },
-  ctaText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
+  ctaText: { ...type.button, color: '#1A1A1A' },
   ctaTextDisabled: { color: '#999' },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modalRootCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 },
@@ -602,15 +600,15 @@ const styles = StyleSheet.create({
     padding: 20,
     maxHeight: '80%',
   },
-  modalTitle: { fontSize: 16, fontWeight: '800', color: '#1A1A1A', marginBottom: 12 },
-  modalHint: { fontSize: 12, color: '#888', marginBottom: 12 },
+  modalTitle: { ...type.title, color: '#1A1A1A', marginBottom: 12 },
+  modalHint: { ...type.caption, color: '#888', marginBottom: 12 },
   searchInp: {
     borderWidth: 1,
     borderColor: '#E5E5E5',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 15,
+    ...type.row,
     marginBottom: 8,
   },
   quickPicks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
@@ -623,13 +621,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   quickChipOn: { borderColor: colors.primary, backgroundColor: colors.tintWeak },
-  quickChipTxt: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  quickChipTxt: { ...type.label, color: colors.textSecondary },
   quickChipTxtOn: { color: colors.brandDark },
   breedList: { maxHeight: 320 },
-  breedEmpty: { paddingVertical: 18, fontSize: 13, color: '#888', textAlign: 'center' },
+  breedEmpty: { paddingVertical: 18, ...type.caption, color: '#888', textAlign: 'center' as const },
   breedRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   breedRowOn: { backgroundColor: colors.tintStrong },
-  breedRowTxt: { fontSize: 15, color: '#1A1A1A' },
+  breedRowTxt: { ...type.row, color: '#1A1A1A' },
   birthdayCard: {
     backgroundColor: '#FAFAF8',
     borderRadius: 12,
@@ -644,5 +642,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  modalDoneTxt: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  modalDoneTxt: { ...type.button, color: colors.textPrimary },
 })

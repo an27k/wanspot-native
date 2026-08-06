@@ -4,6 +4,7 @@ import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { applyOAuthCallbackUrl } from '@/lib/oauth-supabase'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
 
@@ -65,5 +66,5 @@ export default function AuthOAuthCallbackScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  txt: { fontSize: 14, color: colors.textMuted, paddingHorizontal: 24, textAlign: 'center' },
+  txt: { ...type.caption, color: colors.textMuted, paddingHorizontal: 24, textAlign: 'center' },
 })

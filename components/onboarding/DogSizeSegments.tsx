@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 
 export const DOG_SIZE_OPTIONS = [
   { key: 'XS' as const, label: 'XS', desc: '〜4kg · 〜25cm' },
@@ -50,7 +51,8 @@ const styles = StyleSheet.create({
   },
   segOn: { backgroundColor: colors.primary, borderColor: colors.primary, minWidth: '100%' },
   segPressed: { opacity: 0.85 },
-  segLbl: { fontSize: 15, fontWeight: '800', color: '#999' },
+  // XS〜XL は必須の選択肢そのもの。バッジではなくボタンの文字として扱う
+  segLbl: { ...type.button, color: '#999' },
   segLblOn: { color: colors.textPrimary },
-  segDesc: { marginTop: 4, fontSize: 12, fontWeight: '600', color: colors.textPrimary },
+  segDesc: { ...type.caption, marginTop: 4, color: colors.textPrimary },
 })

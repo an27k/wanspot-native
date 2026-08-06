@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { type } from '@/constants/typography'
 
 type Props = {
   label: string
@@ -49,8 +50,9 @@ const styles = StyleSheet.create({
   rowSubdued: { backgroundColor: '#FAFAF8', borderColor: '#EEE' },
   rowPressed: { opacity: 0.85 },
   textCol: { flex: 1 },
-  lbl: { fontSize: 11, fontWeight: '700', color: '#999', marginBottom: 2 },
+  lbl: { ...type.label, color: '#999', marginBottom: 2 },
   lblSubdued: { color: '#bbb' },
-  val: { fontSize: 16, fontWeight: '600', color: '#1A1A1A' },
-  placeholder: { color: '#BBB', fontWeight: '500' },
+  val: { ...type.row, color: '#1A1A1A' },
+  // 太さは val（row の400）を使う。未入力だけ太いと選択済みより目立つ
+  placeholder: { color: '#BBB' },
 })

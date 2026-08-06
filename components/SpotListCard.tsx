@@ -11,6 +11,7 @@ import { calcDistanceMeters } from '@/lib/user-spot-list-utils'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 
 const IconHeart = ({ filled }: { filled: boolean }) => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -246,8 +247,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   likeBadge: {
-    fontSize: 12,
-    fontWeight: '700',
+    ...type.label,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 999,
@@ -259,20 +259,21 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 12, paddingVertical: 12, gap: 4 },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cat: {
-    fontSize: 12,
+    ...type.label,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
-    fontWeight: '700',
     backgroundColor: colors.tintStrong,
     color: colors.textPrimary,
   },
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rateTxt: { fontSize: 12, color: '#888' },
-  dist: { fontSize: 12, color: '#aaa' },
-  name: { fontWeight: '700', fontSize: 14, color: colors.textPrimary },
-  addr: { fontSize: 12, color: '#aaa' },
+  rateTxt: { ...type.caption, color: '#888' },
+  // 距離は右端に単独で置く数値。行内の他のメタより太くして目的地までの遠近を拾えるようにする
+  dist: { ...type.caption, fontWeight: '700' as const, color: '#aaa' },
+  // 一覧の視線の起点。ここが14pxだとカードの中で写真しか目に入らない
+  name: { ...type.heading, color: colors.textPrimary },
+  addr: { ...type.caption, color: '#aaa' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  q: { fontSize: 12, color: '#ccc' },
+  q: { ...type.caption, color: '#ccc' },
 })

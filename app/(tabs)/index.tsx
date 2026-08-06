@@ -14,6 +14,7 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { NearbyMapView } from '@/components/map/NearbyMapView'
 import { MapFilterBar } from '@/components/map/MapFilterBar'
@@ -658,7 +659,7 @@ const styles = StyleSheet.create({
     gap: 12,
     zIndex: 11,
   },
-  permissionBannerTxt: { fontSize: 14, color: colors.textPrimary, lineHeight: 22 },
+  permissionBannerTxt: { ...type.body, color: colors.textPrimary },
   permissionBtnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   permissionBtn: {
     backgroundColor: colors.textPrimary,
@@ -673,14 +674,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  permissionBtnTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  permissionBtnGhostTxt: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  permissionBtnTxt: { ...type.button, color: '#fff' },
+  permissionBtnGhostTxt: { ...type.button, color: colors.textPrimary },
   errOverlay: {
+    ...type.caption,
     position: 'absolute',
     left: 16,
     right: 16,
     textAlign: 'center',
-    fontSize: 13,
     color: '#c44',
     backgroundColor: 'rgba(255,255,255,0.92)',
     padding: 8,
@@ -733,7 +734,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,
   },
-  searchInput: { flex: 1, fontSize: 15, color: colors.textPrimary, paddingVertical: 0 },
+  // 自分で打つ検索文字。入れ物は height 48 固定なので 17 でも収まる
+  searchInput: { flex: 1, ...type.row, color: colors.textPrimary, paddingVertical: 0 },
   resultBar: {
     position: 'absolute',
     left: 16,
@@ -753,8 +755,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
-  resultBarTxt: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.textPrimary },
-  resultBarClose: { fontSize: 13, fontWeight: '800', color: colors.brandDark },
+  // 左は今どこを見ているかの表示、右は押せる出口。同じ太さで並べると出口が埋もれる
+  resultBarTxt: { ...type.caption, flex: 1, color: colors.textPrimary },
+  resultBarClose: { ...type.button, color: colors.brandDark },
   predList: {
     position: 'absolute',
     left: 16,
@@ -781,10 +784,10 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   predTextCol: { flex: 1 },
-  predMain: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  predSub: { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
-  emptyTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  emptyHint: { fontSize: 12, color: '#888', lineHeight: 18 },
+  predMain: { ...type.row, color: colors.textPrimary },
+  predSub: { ...type.caption, color: colors.textSecondary, marginTop: 1 },
+  emptyTitle: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary },
+  emptyHint: { ...type.caption, color: '#888' },
   emptyActionBtn: {
     alignSelf: 'flex-start',
     marginTop: 4,
@@ -795,7 +798,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.brandDark,
   },
-  emptyActionTxt: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  emptyActionTxt: { ...type.button, color: colors.textPrimary },
 })
 
 export default function NearbyPageScreen() {

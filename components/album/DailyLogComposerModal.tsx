@@ -4,6 +4,7 @@ import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TOKENS } from '@/constants/color-tokens'
+import { type } from '@/constants/typography'
 import {
   DAILY_LOG_CONTEXTS,
   DAILY_LOG_MOODS,
@@ -259,8 +260,8 @@ const styles = StyleSheet.create({
   },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headCopy: { flex: 1, gap: 1 },
-  kicker: { fontSize: 10, fontWeight: '900', letterSpacing: 1.4, color: TOKENS.text.meta },
-  title: { fontSize: 19, fontWeight: '900', color: TOKENS.text.primary },
+  kicker: { ...type.label, color: TOKENS.text.meta },
+  title: { ...type.title, color: TOKENS.text.primary },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     flexDirection: 'row',
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: TOKENS.brand.primary,
     borderColor: TOKENS.brand.primary,
   },
-  chipTxt: { fontSize: 12, fontWeight: '900', color: TOKENS.brand.pillText },
+  chipTxt: { ...type.label, color: TOKENS.brand.pillText },
   chipTxtOn: { color: '#fff' },
   mediaRow: { flexDirection: 'row', gap: 10 },
   mediaBtn: {
@@ -300,8 +301,8 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   mediaBtnOrbAlt: { backgroundColor: TOKENS.brand.tintWeak },
-  mediaBtnTxt: { fontSize: 13, fontWeight: '900', color: TOKENS.text.primary },
-  mediaBtnSub: { fontSize: 10, fontWeight: '700', color: TOKENS.text.secondary },
+  mediaBtnTxt: { ...type.button, color: TOKENS.text.primary },
+  mediaBtnSub: { ...type.caption, color: TOKENS.text.secondary },
   previewWrap: { position: 'relative', alignSelf: 'center' },
   preview: {
     width: 148,
@@ -315,7 +316,7 @@ const styles = StyleSheet.create({
     gap: 2,
     backgroundColor: TOKENS.text.primary,
   },
-  previewVideoTxt: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.85)' },
+  previewVideoTxt: { ...type.label, color: 'rgba(255,255,255,0.85)' },
   previewRemove: {
     position: 'absolute',
     top: 6,
@@ -342,8 +343,9 @@ const styles = StyleSheet.create({
     backgroundColor: TOKENS.brand.tintWeak,
     borderColor: TOKENS.brand.primary,
   },
+  // 絵文字。文字ではなくアイコンなので型には寄せない
   moodEmoji: { fontSize: 18 },
-  moodTxt: { fontSize: 9, fontWeight: '800', color: TOKENS.text.secondary },
+  moodTxt: { ...type.label, color: TOKENS.text.secondary },
   moodTxtOn: { color: TOKENS.brand.pillText },
   saveBtn: {
     borderRadius: 999,
@@ -357,6 +359,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   saveBtnDisabled: { backgroundColor: TOKENS.border.emphasis, shadowOpacity: 0, elevation: 0 },
-  saveBtnTxt: { fontSize: 15, fontWeight: '900', color: '#fff' },
+  saveBtnTxt: { ...type.button, color: '#fff' },
   saveBtnTxtDisabled: { color: TOKENS.text.tertiary },
 })

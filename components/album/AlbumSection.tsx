@@ -4,6 +4,7 @@ import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import {
   CACHE_TTL,
   getCacheEntry,
@@ -133,10 +134,10 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  title: { fontSize: 15, fontWeight: '800', color: colors.text },
-  retention: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
+  title: { ...type.heading, color: colors.text },
+  retention: { ...type.caption, color: colors.textMuted },
   empty: { alignItems: 'center', gap: 8, paddingVertical: 28 },
-  emptyTxt: { fontSize: 13, color: colors.textMuted },
+  emptyTxt: { ...type.caption, color: colors.textMuted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
   tile: { borderRadius: 12, overflow: 'hidden', backgroundColor: colors.cardBg },
   tileImg: { width: '100%', height: '100%' },
@@ -149,7 +150,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  tileDateTxt: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  // 写真タイルの日付。見るだけの情報なのでマイクロラベルのまま上げない
+  tileDateTxt: { ...type.label, color: '#fff' },
   viewerRoot: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.92)',

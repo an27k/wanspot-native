@@ -9,6 +9,7 @@ import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { RunningDog } from '@/components/DogStates'
 import { colors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { type } from '@/constants/typography'
 import { supabase } from '@/lib/supabase'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 import { remoteImageAcceptHeaders } from '@/lib/images/remoteImageDefaults'
@@ -777,7 +778,7 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.paper },
   rootWhite: { flex: 1, backgroundColor: '#F7F4F0' },
-  empty: { textAlign: 'center', marginTop: 40, color: colors.textMuted },
+  empty: { textAlign: 'center', marginTop: 40, ...type.body, color: colors.textMuted },
   backRow: {
     paddingHorizontal: 16,
     paddingBottom: 12,
@@ -786,7 +787,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backTxt: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  backTxt: { ...type.button, color: colors.textPrimary },
   shareBtn: {
     width: 36,
     height: 36,
@@ -814,9 +815,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   articleKicker: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.4,
+    ...type.label,
     color: '#7F5CFF',
     marginBottom: 8,
   },
@@ -841,7 +840,7 @@ const styles = StyleSheet.create({
     opacity: 0.72,
     transform: [{ rotate: '-5deg' }],
   },
-  title: { fontSize: 24, fontWeight: '900', color: '#201B24', lineHeight: 33 },
+  title: { ...type.title, color: '#201B24' },
   kwBox: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -849,8 +848,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   kwTag: {
-    fontSize: 12,
-    fontWeight: '900',
+    ...type.label,
     color: '#7F5CFF',
     backgroundColor: 'rgba(255,255,255,0.66)',
     borderWidth: StyleSheet.hairlineWidth,
@@ -859,14 +857,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 5,
   },
-  sectionTitle: { fontSize: 19, fontWeight: '900', color: '#201B24', marginBottom: 10, lineHeight: 27 },
+  sectionTitle: { ...type.heading, color: '#201B24', marginBottom: 10 },
   sectionTitleMt: { marginTop: 24 },
-  itemTitle: { fontSize: 16, fontWeight: '800', color: '#201B24', marginBottom: 8, lineHeight: 23 },
+  // 節見出し(20) と本文(16) の間の3階層目。サイズは行と同じ17まで落とし、
+  // 見出しであることは heading と同じ太さ(800)で出す
+  itemTitle: { ...type.heading, fontSize: 17, lineHeight: 23, color: '#201B24', marginBottom: 8 },
   itemTitleMt: { marginTop: 16 },
-  textBlock: { fontSize: 15, color: 'rgba(32,27,36,0.78)', lineHeight: 25, marginBottom: 20, fontWeight: '500' },
+  textBlock: { ...type.body, color: 'rgba(32,27,36,0.78)', marginBottom: 20 },
   imgBlock: { marginVertical: 24 },
   imgBlockImg: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12 },
-  imgCap: { fontSize: 12, textAlign: 'center', color: '#aaa', marginTop: 8 },
+  imgCap: { ...type.caption, textAlign: 'center', color: '#aaa', marginTop: 8 },
   spotCard: {
     marginVertical: 24,
     borderRadius: 22,
@@ -885,11 +885,12 @@ const styles = StyleSheet.create({
   spotBody: { padding: 12, gap: 4 },
   spotTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   catPill: { backgroundColor: 'rgba(255,255,255,0.72)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  catPillTxt: { fontSize: 12, fontWeight: '900', color: '#7F5CFF' },
+  catPillTxt: { ...type.label, color: '#7F5CFF' },
   rateMini: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rateMiniTxt: { fontSize: 12, color: '#888' },
-  spotName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
-  spotAddr: { fontSize: 12, color: '#aaa' },
+  // 評価値。11pxの星と10pxの料金マークに挟まれるので label のまま上げない
+  rateMiniTxt: { ...type.label, color: '#888' },
+  spotName: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary },
+  spotAddr: { ...type.caption, color: '#aaa' },
   spotCta: {
     marginTop: 12,
     paddingVertical: 10,
@@ -898,12 +899,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#7F5CFF',
     alignItems: 'center',
   },
-  spotCtaTxt: { fontSize: 14, fontWeight: '900', color: '#fff' },
+  spotCtaTxt: { ...type.button, color: '#fff' },
   related: { marginTop: 40, paddingTop: 24, borderTopWidth: 1, borderTopColor: '#eee' },
-  relatedTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 16 },
+  relatedTitle: { ...type.heading, color: colors.textPrimary, marginBottom: 16 },
   relatedCard: { borderRadius: 12, padding: 16, backgroundColor: '#f9f9f9', marginBottom: 12 },
-  relatedName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 4 },
-  relatedDesc: { fontSize: 12, color: '#888', marginBottom: 12 },
+  relatedName: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary, marginBottom: 4 },
+  relatedDesc: { ...type.caption, color: '#888', marginBottom: 12 },
   relatedBtn: {
     alignSelf: 'flex-start',
     paddingHorizontal: 16,
@@ -911,9 +912,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.primary,
   },
-  relatedBtnTxt: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
-  relatedNone: { fontSize: 12, color: '#bbb' },
-  plQ: { fontSize: 12, color: '#ccc' },
+  relatedBtnTxt: { ...type.button, color: colors.textPrimary },
+  relatedNone: { ...type.caption, color: '#bbb' },
+  // 料金不明の「?」。隣の ¥ マークが10pxの円なので label で揃える
+  plQ: { ...type.label, color: '#ccc' },
   shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
   shareBox: {
     backgroundColor: '#fff',
@@ -923,11 +925,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
-  shareTitle: { fontSize: 14, fontWeight: '700', color: '#aaa', textAlign: 'center', marginBottom: 20, letterSpacing: 0.6 },
+  // 灰色・字間広めのマイクロラベルとして置かれている見出し。title(26) ではなく label
+  shareTitle: { ...type.label, color: '#aaa', textAlign: 'center', marginBottom: 20 },
   shareGrid: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
   shareX: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#000' },
   shareLine: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#06C755' },
   shareCopy: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#f5f5f5' },
-  shareLbl: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
-  shareLblW: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  shareLbl: { ...type.label, color: colors.textPrimary },
+  shareLblW: { ...type.label, color: '#fff' },
 })

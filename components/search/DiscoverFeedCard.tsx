@@ -3,6 +3,7 @@ import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { PressableScale } from '@/components/common/PressableScale'
 import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { type } from '@/constants/typography'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 
 type Props = {
@@ -66,22 +67,17 @@ const styles = StyleSheet.create({
   },
   textCol: { flex: 1, gap: 6, minWidth: 0 },
   kicker: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    ...type.label,
     color: GOOGLE_HOME.textKicker,
   },
+  // 記事一覧の先頭に置くヒーローカードの見出し。
+  // title(26) はテキスト列が約200pxしかなく3行でも見出しが切れるため heading に留める
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    lineHeight: 22,
-    letterSpacing: -0.2,
+    ...type.heading,
     color: GOOGLE_HOME.textPrimary,
   },
   summary: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '400',
+    ...type.caption,
     color: GOOGLE_HOME.textSecondary,
   },
   thumb: {

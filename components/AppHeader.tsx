@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Logo } from '@/components/Logo'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 
 type AppHeaderProps = {
   variant?: 'default' | 'back' | 'centered'
@@ -65,14 +66,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  // ロゴと組むワードマーク。文章の階層ではなく意匠なので型には寄せない
   brandText: { fontWeight: '800', fontSize: 16, color: colors.text },
   side: { width: 40, justifyContent: 'center' },
   sideRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  // 戻る付きヘッダーの画面名。iOS 標準のナビタイトルと同じ 17/700
   titleMid: {
     flex: 1,
     textAlign: 'center',
-    fontWeight: '700',
-    fontSize: 15,
+    ...type.button,
     color: colors.text,
   },
 })

@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { SafeRemoteImage } from '@/components/common/SafeRemoteImage'
 import { TOKENS } from '@/constants/color-tokens'
+import { type } from '@/constants/typography'
 import {
   DAILY_LOG_CONTEXTS,
   contextLabel,
@@ -180,13 +181,11 @@ const styles = StyleSheet.create({
   },
   headCopy: { flex: 1, gap: 2 },
   kicker: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.4,
+    ...type.label,
     color: TOKENS.text.meta,
   },
-  title: { fontSize: 17, fontWeight: '900', color: TOKENS.text.primary, lineHeight: 23 },
-  sub: { fontSize: 12, fontWeight: '700', color: TOKENS.text.secondary, lineHeight: 17 },
+  title: { ...type.heading, color: TOKENS.text.primary },
+  sub: { ...type.caption, color: TOKENS.text.secondary },
   todayRow: { gap: 10, paddingVertical: 2 },
   todayThumbWrap: { position: 'relative' },
   todayThumb: {
@@ -212,6 +211,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: TOKENS.border.default,
   },
+  // 絵文字。26×26 の丸に収めるアイコンなので文字の型は当てない
   todayMoodTxt: { fontSize: 13 },
   todayLabel: {
     position: 'absolute',
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  todayLabelTxt: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  todayLabelTxt: { ...type.label, color: '#fff' },
   todayAdd: {
     width: 76,
     height: 76,
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
-  todayAddTxt: { fontSize: 10, fontWeight: '900', color: TOKENS.brand.pillText },
+  todayAddTxt: { ...type.label, color: TOKENS.brand.pillText },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     flexDirection: 'row',
@@ -249,5 +249,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: TOKENS.brand.tintStrong,
   },
-  chipTxt: { fontSize: 12, fontWeight: '900', color: TOKENS.brand.pillText },
+  chipTxt: { ...type.label, color: TOKENS.brand.pillText },
 })

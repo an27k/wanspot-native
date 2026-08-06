@@ -10,6 +10,7 @@ import { DogIdentityProfile } from '@/components/dog/DogIdentityProfile'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { type } from '@/constants/typography'
 import { track } from '@/lib/analytics'
 import { syncMemoryAnniversaryNotifications } from '@/lib/notifications/memory-anniversary'
 import { hasSeenReviewTutorial } from '@/lib/review/tutorial-storage'
@@ -151,22 +152,18 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   bootKicker: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.9,
+    ...type.label,
     color: 'rgba(255,255,255,0.74)',
     textTransform: 'uppercase',
   },
   bootTitle: {
     marginTop: 6,
-    fontSize: 24,
-    fontWeight: '900',
+    ...type.heading,
     color: GOOGLE_HOME.textPrimary,
   },
   bootSub: {
     marginTop: 4,
-    fontSize: 13,
-    fontWeight: '700',
+    ...type.caption,
     color: GOOGLE_HOME.textSecondary,
   },
   bootSkeleton: {
@@ -183,7 +180,7 @@ const styles = StyleSheet.create({
   bootLine: { width: '44%', height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.52)' },
   noDog: {
     marginTop: 16,
-    fontSize: 13,
+    ...type.caption,
     color: GOOGLE_HOME.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 24,

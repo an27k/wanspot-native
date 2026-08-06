@@ -1,6 +1,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { safeToString } from '@/lib/ios-safe-console'
 
 type Props = {
@@ -62,9 +63,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     gap: 12,
   },
-  title: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
-  body: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' },
-  debug: { fontSize: 12, fontWeight: '600', color: colors.textMuted, textAlign: 'center' },
+  title: { ...type.heading, color: colors.textPrimary, textAlign: 'center' },
+  body: { ...type.body, color: colors.textSecondary, textAlign: 'center' },
+  // 原因のラベルとエラー文字列。読ませるが主役ではないので補足サイズ
+  debug: { ...type.caption, color: colors.textMuted, textAlign: 'center' },
   btn: {
     marginTop: 8,
     backgroundColor: colors.primary,
@@ -72,5 +74,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
-  btnTxt: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  btnTxt: { ...type.button, color: '#fff' },
 })

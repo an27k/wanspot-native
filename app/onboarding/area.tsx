@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
@@ -104,8 +105,8 @@ export default function WalkAreaOnboardingPage() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#fff' },
   main: { flex: 1, backgroundColor: '#fff' },
-  h2: { fontSize: 24, fontWeight: '800', lineHeight: 32, color: colors.textPrimary },
-  hint: { fontSize: 12, color: '#888', lineHeight: 18 },
+  h2: { ...type.title, color: colors.textPrimary },
+  hint: { ...type.caption, color: '#888' },
   next: {
     marginTop: 8,
     height: 48,
@@ -115,5 +116,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nextOff: { opacity: 0.45 },
-  nextTxt: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  nextTxt: { ...type.button, color: colors.textPrimary },
 })

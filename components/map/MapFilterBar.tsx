@@ -10,6 +10,7 @@ import {
   type MapGenreKey,
 } from '@/lib/nearby/constants'
 import { colors } from '@/constants/colors'
+import { type } from '@/constants/typography'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { activeConditionCount, type MapConditionFilter } from '@/lib/nearby/map-filter'
 import { INDOOR_OK_FILTER_LABEL, TERRACE_OK_FILTER_LABEL } from '@/lib/nearby/pet-policy'
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 11,
   },
-  chipTxt: { fontSize: 13, fontWeight: '700', color: GOOGLE_HOME.mapChipText },
+  chipTxt: { ...type.label, color: GOOGLE_HOME.mapChipText },
   chipTxtOn: { fontWeight: '800' },
   funnelBtn: {
     width: 40,
@@ -195,5 +196,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
+  // 17×17 の丸に入る件数。読む文字ではなく点として見るものなので label には上げない
   funnelBadgeTxt: { fontSize: 10, fontWeight: '800', color: '#fff' },
 })

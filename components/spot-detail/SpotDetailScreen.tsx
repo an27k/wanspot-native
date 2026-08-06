@@ -1120,7 +1120,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: TOKENS.brand.primary,
   },
-  loadErrRetryTxt: { fontSize: 15, fontWeight: '800', color: TOKENS.surface.primary },
+  loadErrRetryTxt: { ...type.button, color: TOKENS.surface.primary },
   toast: {
     position: 'absolute',
     left: 16,
@@ -1138,7 +1138,8 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   toastErr: { backgroundColor: '#3a2a28', borderColor: colors.error },
-  toastTxt: { color: colors.textPrimary, fontWeight: '800', textAlign: 'center', fontSize: 14 },
+  // 失敗理由まで読ませるトーストなので本文サイズ。太字をやめても画面に1つしか出ないので埋もれない
+  toastTxt: { ...type.body, color: colors.textPrimary, textAlign: 'center' as const },
   toastTxtErr: { color: '#fff' },
   photoWrap: { backgroundColor: TOKENS.surface.mapMuted, width: '100%', position: 'relative' },
   heroOverlayTop: {
@@ -1166,9 +1167,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 999,
   },
-  photoBadgeTxt: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  photoBadgeTxt: { ...type.label, color: '#fff' },
   noPhoto: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  noPhotoTxt: { fontSize: 12, color: TOKENS.text.meta },
+  noPhotoTxt: { ...type.caption, color: TOKENS.text.meta },
   pad: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
   h1: { ...type.title, color: TOKENS.text.primary },
   petBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -4 },
@@ -1178,7 +1179,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
   },
-  petBadgeTxt: { fontSize: 12, fontWeight: '700' },
+  petBadgeTxt: { ...type.label },
   ratingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   ratingLeft: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 },
   gBadge: {
@@ -1189,9 +1190,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ratingStar: { fontSize: 14, fontWeight: '800', color: TOKENS.brand.primary },
-  ratingMeta: { fontSize: 12, fontWeight: '600', color: TOKENS.text.secondary },
-  openInline: { fontSize: 12, fontWeight: '800' },
+  // 評価・件数・カテゴリ・距離・営業状態は同じ13pxのメタ行に揃え、★と開閉だけ太さと色で立てる
+  ratingStar: { ...type.caption, fontWeight: '800' as const, color: TOKENS.brand.primary },
+  ratingMeta: { ...type.caption, color: TOKENS.text.secondary },
+  openInline: { ...type.caption, fontWeight: '800' as const },
   openInlineOpen: { color: '#2E7D32' },
   openInlineClosed: { color: '#C62828' },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -1230,14 +1232,12 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     gap: 6,
   },
-  userReviewTitle: { fontSize: 12, fontWeight: '800', color: TOKENS.text.secondary },
+  userReviewTitle: { ...type.label, color: TOKENS.text.secondary },
+  // 「公開されない」は読まれて初めて意味がある注記なので、10pxのままにはしない
   userReviewDisclaimer: {
+    ...type.caption,
     flex: 1,
     minWidth: 160,
-    fontSize: 10,
-    fontWeight: '500',
-    lineHeight: 14,
-    letterSpacing: 0.1,
     color: TOKENS.text.meta,
   },
   starRow: { flexDirection: 'row', gap: 4 },
@@ -1249,10 +1249,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  // 自分で書いて後から読み返す欄。入力欄は本文サイズにする
   userReviewInput: {
+    ...type.body,
     minHeight: 72,
-    fontSize: 13,
-    lineHeight: 19,
     color: TOKENS.text.primary,
     padding: 0,
   },
@@ -1271,7 +1271,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     maxWidth: '100%',
   },
-  kwTxt: { fontSize: 11, fontWeight: '700', color: '#C24B36' },
+  kwTxt: { ...type.label, color: '#C24B36' },
   aiBody: { ...type.body, color: TOKENS.text.primary },
   // うちの子向けの一言。共有まとめと視覚的に分けて「自分ごと」だと分かるようにする
   personalNote: {
@@ -1283,8 +1283,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(194,75,54,0.18)',
   },
-  personalNoteTxt: { flex: 1, fontSize: 12, lineHeight: 18, fontWeight: '600', color: '#C24B36' },
-  aiExpandHint: { marginTop: 6, fontSize: 11, fontWeight: '700', color: TOKENS.text.secondary },
+  // うちの子への助言そのもの。まとめ本文と同じ本文サイズで読ませ、色と区切り線で自分ごとだと示す
+  personalNoteTxt: { ...type.body, flex: 1, color: '#C24B36' },
+  aiExpandHint: { ...type.label, marginTop: 6, color: TOKENS.text.secondary },
   mapMini: {
     height: 120,
     borderRadius: 16,
@@ -1308,6 +1309,7 @@ const styles = StyleSheet.create({
     borderColor: TOKENS.border.default,
   },
   detailsRowTxt: { ...type.row, color: TOKENS.text.primary },
+  // ⌄ / › は文字ではなくシェブロン。行の文字と一緒に動かさない
   detailsChevron: { fontSize: 18, fontWeight: '700', color: TOKENS.text.secondary },
   detailsBody: {
     backgroundColor: TOKENS.surface.primary,
@@ -1319,9 +1321,9 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   detailBlock: { gap: 4 },
-  detailLbl: { fontSize: 10, fontWeight: '800', color: TOKENS.text.secondary, letterSpacing: 0.4 },
-  detailVal: { fontSize: 13, lineHeight: 19, color: TOKENS.text.primary },
-  detailValMuted: { fontSize: 13, color: TOKENS.text.secondary },
+  detailLbl: { ...type.label, color: TOKENS.text.secondary },
+  detailVal: { ...type.caption, color: TOKENS.text.primary },
+  detailValMuted: { ...type.caption, color: TOKENS.text.secondary },
   fixedActions: {
     position: 'absolute',
     left: 0,
@@ -1363,15 +1365,17 @@ const styles = StyleSheet.create({
   visitPillTxt: { ...type.button, color: TOKENS.surface.primary },
   shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
   shareBox: { backgroundColor: '#fff', borderRadius: 24, padding: 24, maxWidth: 340, alignSelf: 'center', width: '100%' },
-  shareTitle: { fontSize: 14, fontWeight: '700', color: '#aaa', textAlign: 'center', marginBottom: 20, letterSpacing: 0.6 },
+  // 元から字間を空けたグレーの小見出し。役割どおりマイクロラベルに寄せる
+  shareTitle: { ...type.label, color: '#aaa', textAlign: 'center' as const, marginBottom: 20 },
   shareGrid: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
   shareX: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#000' },
   shareLine: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#06C755' },
   shareCopy: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#f5f5f5' },
-  shareLbl: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
-  shareLblW: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  // アイコンの下に置く名前なのでボタンではなくラベル。サイズは上げない
+  shareLbl: { ...type.label, color: colors.textPrimary },
+  shareLblW: { ...type.label, color: '#fff' },
   cancelShare: { marginTop: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center' },
-  cancelShareTxt: { fontSize: 14, fontWeight: '700', color: '#888' },
+  cancelShareTxt: { ...type.button, color: '#888' },
   confirmOverlay: {
     flex: 1,
     backgroundColor: 'rgba(42,37,34,0.42)',
@@ -1392,18 +1396,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   confirmTitle: {
-    fontSize: 17,
-    fontWeight: '800',
+    ...type.heading,
     color: TOKENS.text.primary,
-    textAlign: 'center',
-    letterSpacing: -0.2,
+    textAlign: 'center' as const,
   },
   confirmBody: {
-    fontSize: 13,
-    fontWeight: '500',
-    lineHeight: 20,
+    ...type.caption,
     color: TOKENS.text.secondary,
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
   confirmActions: {
     flexDirection: 'row',
@@ -1419,10 +1419,8 @@ const styles = StyleSheet.create({
     backgroundColor: TOKENS.surface.alt,
   },
   confirmCancelTxt: {
-    fontSize: 14,
-    fontWeight: '700',
+    ...type.button,
     color: TOKENS.text.secondary,
-    letterSpacing: 0.1,
   },
   confirmDestructiveBtn: {
     flex: 1,
@@ -1435,10 +1433,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(251,107,83,0.28)',
   },
   confirmDestructiveTxt: {
-    fontSize: 14,
-    fontWeight: '800',
+    ...type.button,
     color: TOKENS.brand.pillText,
-    letterSpacing: 0.1,
   },
   visitSheetOverlay: {
     flex: 1,
@@ -1464,8 +1460,9 @@ const styles = StyleSheet.create({
   },
   visitSheetThumb: { width: '100%', height: 140, borderRadius: 16 },
   visitSheetThumbPh: { backgroundColor: TOKENS.surface.mapMuted, alignItems: 'center', justifyContent: 'center' },
-  visitSheetTitle: { fontSize: 18, fontWeight: '800', color: TOKENS.text.primary, textAlign: 'center' },
-  visitSheetSub: { fontSize: 13, fontWeight: '700', color: TOKENS.text.secondary, textAlign: 'center' },
+  // シートの見出し＝スポット名。ヒーローの h1 と同じ型にして「このお店の記録」だと一目で分かるようにする
+  visitSheetTitle: { ...type.title, color: TOKENS.text.primary, textAlign: 'center' as const },
+  visitSheetSub: { ...type.caption, color: TOKENS.text.secondary, textAlign: 'center' as const },
   visitSheetPrimary: {
     minHeight: 50,
     borderRadius: 25,
@@ -1473,7 +1470,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: TOKENS.brand.primary,
   },
-  visitSheetPrimaryTxt: { fontSize: 15, fontWeight: '800', color: TOKENS.surface.primary },
+  visitSheetPrimaryTxt: { ...type.button, color: TOKENS.surface.primary },
   visitSheetSecondary: {
     minHeight: 44,
     borderRadius: 22,
@@ -1481,7 +1478,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: TOKENS.surface.alt,
   },
-  visitSheetSecondaryTxt: { fontSize: 14, fontWeight: '700', color: TOKENS.text.secondary },
+  visitSheetSecondaryTxt: { ...type.button, color: TOKENS.text.secondary },
 })
 
 /** 同伴可否バッジの色分け: 確認済みOK=グリーン / テラスのみ=アンバー / 同伴不可の可能性=グレー */

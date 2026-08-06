@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { TOKENS } from '@/constants/color-tokens'
+import { type } from '@/constants/typography'
 
 /**
  * AIまとめカード（コーラル薄面・タップで展開）。
@@ -52,7 +53,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
   },
-  aiHead: { fontSize: 11, fontWeight: '800', color: '#C24B36', marginBottom: 8 },
+  aiHead: { ...type.label, color: '#C24B36', marginBottom: 8 },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kwPill: {
     backgroundColor: TOKENS.surface.primary,
@@ -61,7 +62,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     maxWidth: '100%',
   },
-  kwTxt: { fontSize: 11, fontWeight: '700', color: '#C24B36' },
-  aiBody: { fontSize: 12, lineHeight: 18, color: TOKENS.text.primary },
-  aiExpandHint: { marginTop: 6, fontSize: 11, fontWeight: '700', color: TOKENS.text.secondary },
+  kwTxt: { ...type.label, color: '#C24B36' },
+  aiBody: { ...type.body, color: TOKENS.text.primary },
+  aiExpandHint: { ...type.label, marginTop: 6, color: TOKENS.text.secondary },
 })

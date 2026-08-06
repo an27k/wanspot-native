@@ -248,10 +248,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   kicker: {
-    fontSize: 11,
-    fontWeight: '800',
+    ...type.label,
     color: colors.textMuted,
-    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   // RN の flexShrink 既定値は 0。明示しないと本文が縮まず閉じるボタンを押し出す
@@ -279,11 +277,10 @@ const styles = StyleSheet.create({
   levelInline: { ...type.title },
   tempInline: { ...type.button, color: colors.textLight },
   guideToggle: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingLeft: 8 },
-  guideToggleTxt: { fontSize: 12, fontWeight: '800', color: colors.textMuted },
+  guideToggleTxt: { ...type.label, color: colors.textMuted },
   metaLine: {
+    ...type.caption,
     marginTop: 6,
-    fontSize: 11,
-    fontWeight: '600',
     color: colors.textMuted,
   },
   inlineGuide: { marginTop: 10, gap: 6 },
@@ -303,8 +300,9 @@ const styles = StyleSheet.create({
     borderColor: colors.brand,
   },
   scaleTextCol: { flex: 1, gap: 1 },
-  scaleLabel: { fontSize: 14, fontWeight: '800', color: colors.textLight },
-  scaleRange: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
+  // 温度ガイドは7段階の一覧。太字を並べると自分の段階を探しにくいので、行はウェイト400に落として色で示す
+  scaleLabel: { ...type.row, color: colors.textLight },
+  scaleRange: { ...type.caption, color: colors.textMuted },
   activeDot: { width: 7, height: 7, borderRadius: 4 },
   adviceBox: {
     marginTop: 12,
@@ -335,13 +333,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   walkTimeChipOn: { borderColor: colors.brandDark, backgroundColor: colors.tintWeak },
-  walkTimeChipTxt: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+  walkTimeChipTxt: { ...type.label, color: colors.textSecondary },
   walkTimeChipTxtOn: { color: colors.brandDark },
   disclaimer: {
+    ...type.caption,
     marginTop: 10,
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: '500',
     color: colors.textMuted,
     textAlign: 'center',
   },
@@ -353,8 +349,9 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   walkLineTxt: { ...type.body, color: colors.textPrimary },
-  adviceLoadingTxt: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
-  noData: { marginTop: 16, fontSize: 15, lineHeight: 24, fontWeight: '600', color: colors.textLight },
+  adviceLoadingTxt: { ...type.caption, color: colors.textMuted },
+  // 位置情報の説明文が入る箇所。読ませる文章なので本文サイズ
+  noData: { ...type.body, marginTop: 16, color: colors.textLight },
   locationBtn: {
     marginTop: 16,
     alignSelf: 'stretch',
@@ -363,7 +360,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand,
     alignItems: 'center',
   },
-  locationBtnTxt: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  locationBtnTxt: { ...type.button, color: colors.textPrimary },
   closeBtn: {
     marginTop: 16,
     alignSelf: 'stretch',
@@ -372,5 +369,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.textPrimary,
     alignItems: 'center',
   },
-  closeTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  closeTxt: { ...type.button, color: '#fff' },
 })

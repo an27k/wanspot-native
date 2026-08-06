@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import { type } from '@/constants/typography'
 
 export function FormField({
   label,
@@ -36,16 +37,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   fieldLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...type.label,
     color: '#1A1A1A',
   },
+  // 入れ子の Text なので太さは親（label の700）を継承させる。ここだけ細いと浮く
   fieldRequired: {
     color: '#FF6B6B',
-    fontWeight: '500',
   },
   fieldHint: {
-    fontSize: 12,
+    ...type.caption,
     color: '#999',
     marginBottom: 8,
   },

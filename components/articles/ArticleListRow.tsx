@@ -3,6 +3,7 @@ import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { PressableScale } from '@/components/common/PressableScale'
 import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { type } from '@/constants/typography'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 
 type Props = {
@@ -19,7 +20,8 @@ type Props = {
 /**
  * まとめ記事のコンパクトなリスト行（キュレーションアプリのリスト型）。
  * 先頭のヒーローカード（DiscoverFeedCard）以降はこの行で情報密度を上げ、一覧性を確保する。
- * タイトルは 14px・行間1.55 程度（女性向けキュレーションメディアの標準域）。
+ * タイトルはリスト行の型（17px）。行のラベルなので大きさは row に合わせ、
+ * 記事の見出しであることは太さで出す。
  */
 export function ArticleListRow({ title, area, genreLabel, imageUrl, recyclingKey, onPress }: Props) {
   return (
@@ -81,12 +83,15 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     maxWidth: 120,
   },
-  areaTxt: { fontSize: 10, fontWeight: '800', color: '#2A2522' },
-  genreTxt: { fontSize: 11, fontWeight: '700', color: GOOGLE_HOME.textSecondary },
+  areaTxt: { ...type.label, color: '#2A2522' },
+  genreTxt: { ...type.label, color: GOOGLE_HOME.textSecondary },
+  // ハンドオフの新着リストは 15/700。17px にすると1行あたり約15字まで落ちて、
+  // 長いSEOタイトルが2行クランプで切れる件数が増える
   title: {
-    fontSize: 14,
-    lineHeight: 22,
-    fontWeight: '700',
+    ...type.row,
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '700' as const,
     color: GOOGLE_HOME.textPrimary,
   },
 })
