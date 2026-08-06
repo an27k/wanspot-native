@@ -33,6 +33,8 @@ export type SpotDetailRow = {
   pet_terrace_only?: boolean | null
   pet_friendly_status?: string | null
   pet_friendly_verified?: boolean | null
+  /** 構造化属性の短いラベル（共有文用。犬情報は含めない） */
+  dog_fact_highlights?: string[]
 }
 
 type ResolveOk = { ok: true; spot: SpotDetailRow; resolvedId: string }
@@ -134,8 +136,16 @@ async function fetchSpotRowFromWanspotApi(opts: {
   const res = await wanspotFetch(`/api/spots/row?${query}`).catch(() => null)
   if (!res?.ok) return null
   try {
-    const json = (await res.json()) as { spot?: SpotDetailRow }
-    return json.spot ?? null
+    const json = (await res.json()) as {
+      spot?: SpotDetailRow & { dog_fact_highlights?: unknown }
+    }
+    const spot = json.spot
+    if (!spot) return null
+    const raw = spot.dog_fact_highlights
+    const dog_fact_highlights = Array.isArray(raw)
+      ? raw.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).slice(0, 3)
+      : []
+    return { ...spot, dog_fact_highlights }
   } catch {
     return null
   }

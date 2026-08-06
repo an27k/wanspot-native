@@ -45,6 +45,7 @@ import {
   resolveSpotForDetail,
   type SpotDetailRow,
 } from '@/lib/spot-detail-load'
+import { buildSpotShareText } from '@/lib/spot-share-text'
 import {
   cancelSpotVisit,
   formatVisitRecordError,
@@ -693,7 +694,35 @@ export default function SpotDetailScreen({
     if (!spot) return
     const shareId = isSpotUuid(spot.id) ? spot.id : isSpotUuid(spotId) ? spotId : spot.id
     const url = wanspotPublicUrl(`/spots/${encodeURIComponent(shareId)}`)
-    const text = `${spot.name}｜ワンちゃんと行けるスポット見つけた🐾 #wanspot`
+    // 属性ベースの共有文。犬の名前・サイズは入れない
+    let highlights = spot.dog_fact_highlights ?? []
+    if (highlights.length === 0) {
+      const q = isSpotUuid(shareId)
+        ? `spot_id=${encodeURIComponent(shareId)}`
+        : spot.place_id
+          ? `place_id=${encodeURIComponent(spot.place_id)}`
+          : null
+      if (q) {
+        const res = await wanspotFetch(`/api/spots/row?${q}`).catch(() => null)
+        if (res?.ok) {
+          try {
+            const json = (await res.json()) as { spot?: { dog_fact_highlights?: unknown } }
+            const raw = json.spot?.dog_fact_highlights
+            if (Array.isArray(raw)) {
+              highlights = raw
+                .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+                .slice(0, 3)
+              if (highlights.length > 0) {
+                setSpot((prev) => (prev ? { ...prev, dog_fact_highlights: highlights } : prev))
+              }
+            }
+          } catch {
+            /* 共有はフォールバック文で続行 */
+          }
+        }
+      }
+    }
+    const text = buildSpotShareText(spot.name, highlights)
     if (platform === 'x') {
       const u = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
       await Linking.openURL(u)
