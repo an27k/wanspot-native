@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { WanspotIconHeart } from '@/components/icons/WanspotIconHeart'
 import { Image } from 'expo-image'
 import {
   Animated,
@@ -29,7 +30,6 @@ import { RunningDog, PowState } from '@/components/DogStates'
 import { IconGoogleMaps } from '@/components/IconGoogleMaps'
 import { IconInstagram } from '@/components/IconInstagram'
 import { IconPaw } from '@/components/IconPaw'
-import { HEART_ICON } from '@/lib/constants'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
 import { CACHE_TTL, fetchWithCache } from '@/lib/client-cache'
@@ -149,9 +149,7 @@ const IconShare = () => (
 )
 
 const IconHeart = ({ filled }: { filled: boolean }) => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill={filled ? HEART_ICON.filled : 'none'} stroke={filled ? HEART_ICON.filled : HEART_ICON.strokeEmpty} strokeWidth={2}>
-    <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </Svg>
+  <WanspotIconHeart size={20} filled={filled} />
 )
 
 const IconGoogle = () => (

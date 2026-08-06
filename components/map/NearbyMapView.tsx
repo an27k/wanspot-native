@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native'
 import { colors } from '@/constants/colors'
+import { WanspotIconPin } from '@/components/icons/WanspotIconPin'
 import { type } from '@/constants/typography'
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from 'react-native-maps'
 import { Ionicons } from '@expo/vector-icons'
@@ -82,21 +83,20 @@ function NormalMapPin({ genreColor, selected }: { genreColor: string; selected: 
     }).start()
   }, [selected, scale])
 
-  const size = selected ? 40 : 26
+  // ハンドオフの寸法。通常 22×28pt、選択中 34×42pt。
+  // 汎用の location-sharp から自作ピンへ替えた。肩が張って先端が細く落ちる形で、
+  // 中央に白丸が入るぶん、重なっても1本1本が分離して見える
+  const width = selected ? 34 : 22
+  const height = (width * 28) / 22
   return (
     <Animated.View
       style={[
         styles.pinWrap,
-        { width: size + 8, height: size + 8 },
+        { width: width + 8, height: height + 8 },
         selected && { transform: [{ scale }] },
       ]}
     >
-      <Ionicons
-        name="location-sharp"
-        size={size}
-        color={selected ? colors.brandDark : genreColor}
-        style={styles.pinIcon}
-      />
+      <WanspotIconPin size={width} color={selected ? colors.brandDark : genreColor} />
     </Animated.View>
   )
 }
@@ -330,11 +330,6 @@ const styles = StyleSheet.create({
   pinWrap: {
     alignItems: 'center',
     justifyContent: 'flex-end',
-  },
-  pinIcon: {
-    textShadowColor: 'rgba(255,255,255,0.9)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 3,
   },
   recenterBtn: {
     position: 'absolute',
