@@ -203,7 +203,7 @@ export default function LikesPage() {
         ) : null}
         {loadState === 'success' && spots.length === 0 ? (
           <EmptyState
-            icon={<WanspotIconHeart size={40} color="#D6CEC3" />}
+            icon={<WanspotIconHeart size={40} filled color="#D6CEC3" />}
             title="いいねしたスポットがありません"
             body="気になるスポットのハートを押すと、ここにまとまります。"
             actionLabel="スポットを探す"
