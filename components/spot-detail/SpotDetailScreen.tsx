@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { WanspotIconHeart } from '@/components/icons/WanspotIconHeart'
 import { Image } from 'expo-image'
 import {
+  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -23,14 +24,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Circle, Path } from 'react-native-svg'
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import { Ionicons } from '@expo/vector-icons'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
-import { TOKENS } from '@/constants/color-tokens'
+import { AppHeader } from '@/components/AppHeader'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { IconGoogleMaps } from '@/components/IconGoogleMaps'
 import { IconInstagram } from '@/components/IconInstagram'
 import { IconPaw } from '@/components/IconPaw'
 import { playLikeHeartAnimation } from '@/lib/playLikeHeartAnimation'
+import { submitSpotInfoTip } from '@/lib/spot-info-tips'
 import { fetchUserWalkAreaTagsByUserId } from '@/lib/fetch-user-walk-area-tags'
 import { CACHE_TTL, fetchWithCache } from '@/lib/client-cache'
 import { track } from '@/lib/analytics'
@@ -67,12 +69,12 @@ import { formatPriceDisplay, getSpotOpenStatus } from '@/lib/business-hours'
 import { getGoogleMapsIosApiKey } from '@/lib/google-maps-config'
 import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
 import type { PlaceResult } from '@/types/places'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 const { width: WIN_W } = Dimensions.get('window')
 const HERO_H = 290
 const FIXED_ACTION_H = 56
-
-type IgStatus = 'unprocessed' | 'registered' | 'verified' | 'fetching' | 'not_found'
 
 type Spot = SpotDetailRow
 
@@ -82,6 +84,8 @@ type AISummary = {
   /** うちの子向けの一言（共有まとめとは別レイヤー。他ユーザーには出ない） */
   personalNote?: string
   wanspotRating?: { avg: number; count: number }
+  /** 'pending' = 浅い版（検索不発・サーバが裏で昇格中）。注釈を添える */
+  searchState?: 'done' | 'pending'
 }
 
 type DetailJson = {
@@ -134,14 +138,8 @@ function priceLabelFromDetail(d: DetailJson | null): string | null {
   return typeof label === 'string' && label.trim().length > 0 ? label.trim() : null
 }
 
-const IconChevronLeft = ({ color = colors.textPrimary }: { color?: string }) => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round">
-    <Path d="M15 18l-6-6 6-6" />
-  </Svg>
-)
-
-const IconShare = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={TOKENS.text.primary} strokeWidth={2} strokeLinecap="round">
+const IconShare = ({ color }: { color: string }) => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
     <Circle cx={18} cy={5} r={3} />
     <Circle cx={6} cy={12} r={3} />
     <Circle cx={18} cy={19} r={3} />
@@ -168,15 +166,19 @@ const IconX = () => (
   </Svg>
 )
 
-const IconCopy = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
+const IconCopy = ({ color }: { color: string }) => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
     <Path d="M9 9h10v10H9zM5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
   </Svg>
 )
 
+const STAR_ROW_STYLE = { flexDirection: 'row', gap: 4 } as const
+
 function StarRow({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const { colors } = useAppTheme()
+
   return (
-    <View style={styles.starRow}>
+    <View style={STAR_ROW_STYLE}>
       {[1, 2, 3, 4, 5].map((n) => (
         <Pressable key={n} onPress={() => onChange(n)} hitSlop={6}>
           <Ionicons name={n <= value ? 'star' : 'star-outline'} size={22} color={colors.gold} />
@@ -193,6 +195,9 @@ export default function SpotDetailScreen({
   spotId: string
   pendingPlace?: PlaceResult | null
 }) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
+  const petBadgeToneStyles = useThemedStyles(createPetBadgeToneStyles)
   const router = useRouter()
   const requireAuth = useRequireAuth()
   const { dog, loading: dogLoading } = useDogProfile()
@@ -236,6 +241,11 @@ export default function SpotDetailScreen({
   const [detailsExpanded, setDetailsExpanded] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [showCancelVisitConfirm, setShowCancelVisitConfirm] = useState(false)
+  /** AIレビューが空だったスポットで、知っている人から情報を教えてもらう枠 */
+  const [showTipModal, setShowTipModal] = useState(false)
+  const [tipBody, setTipBody] = useState('')
+  const [tipSending, setTipSending] = useState(false)
+  const [tipSent, setTipSent] = useState(false)
   const [visitToast, setVisitToast] = useState<{
     message: string
     tone: 'success' | 'error'
@@ -273,9 +283,9 @@ export default function SpotDetailScreen({
       }
 
       if (!spotData || cancelled) return
-      const resolvedSpotId = spotData.id
+      let resolvedSpotId = spotData.id
       if (!isSpotUuid(resolvedSpotId)) {
-        void ensureSpotUuidForPlace(
+        const uuid = await ensureSpotUuidForPlace(
           {
             place_id: spotData.place_id,
             name: spotData.name,
@@ -290,10 +300,13 @@ export default function SpotDetailScreen({
             user_ratings_total: null,
           },
           resolvedSpotId
-        ).then((uuid) => {
-          if (cancelled || !uuid || uuid === resolvedSpotId) return
-          setSpot((prev) => (prev ? { ...prev, id: uuid } : prev))
-        })
+        )
+        if (cancelled) return
+        if (uuid && uuid !== resolvedSpotId) {
+          resolvedSpotId = uuid
+          spotData = { ...spotData, id: uuid }
+          setSpot(spotData)
+        }
       }
 
       const {
@@ -303,21 +316,49 @@ export default function SpotDetailScreen({
       const user = session?.user ?? null
       if (user) setUserId(user.id)
 
+      const canQuerySpotState = isSpotUuid(resolvedSpotId)
+      const publicRowPromise = canQuerySpotState
+        ? wanspotFetch(`/api/spots/row?spot_id=${encodeURIComponent(resolvedSpotId)}`, {
+            auth: false,
+          }).catch(() => null)
+        : Promise.resolve(null)
+      const likeStatePromise = canQuerySpotState
+        ? Promise.all([
+            supabase
+              .from('spot_likes')
+              .select('*', { count: 'exact', head: true })
+              .eq('spot_id', resolvedSpotId),
+            user
+              ? supabase
+                  .from('spot_likes')
+                  .select('id')
+                  .eq('spot_id', resolvedSpotId)
+                  .eq('user_id', user.id)
+                  .maybeSingle()
+              : Promise.resolve({ data: null }),
+          ])
+        : Promise.resolve([{ count: 0 }, { data: null }] as const)
+
       // Places Detail と いいね/チェックイン状態は互いに依存しないため並列化してラウンドトリップを1回減らす
-      const [detailHttp, [{ count: likeC }, myLikeResult]] = await Promise.all([
+      const [detailHttp, publicRowHttp, [likeResult, myLikeResult]] = await Promise.all([
         wanspotFetch(`/api/spots/detail?place_id=${encodeURIComponent(spotData.place_id)}`).catch(() => null),
-        Promise.all([
-          supabase.from('spot_likes').select('*', { count: 'exact', head: true }).eq('spot_id', resolvedSpotId),
-          user
-            ? supabase
-                .from('spot_likes')
-                .select('id')
-                .eq('spot_id', resolvedSpotId)
-                .eq('user_id', user.id)
-                .maybeSingle()
-            : Promise.resolve({ data: null }),
-        ]),
+        publicRowPromise,
+        likeStatePromise,
       ])
+      if (cancelled) return
+
+      if (publicRowHttp?.ok) {
+        try {
+          const json = (await publicRowHttp.json()) as { spot?: Partial<Spot> }
+          if (json.spot?.id === resolvedSpotId) {
+            spotData = { ...spotData, ...json.spot, id: resolvedSpotId }
+            setSpot(spotData)
+          }
+        } catch {
+          // Google Detailの表示は継続し、公開行の補足情報だけ諦める。
+        }
+      }
+
       let detailRes: DetailJson | null = null
       if (detailHttp?.ok) {
         try {
@@ -327,9 +368,9 @@ export default function SpotDetailScreen({
         }
       }
 
-      setLikeCount(likeC ?? 0)
+      setLikeCount(likeResult.count ?? 0)
       setLiked(!!myLikeResult.data)
-      if (user) {
+      if (user && canQuerySpotState) {
         const todayVisit = await fetchTodaySpotVisit(user.id, resolvedSpotId)
         if (cancelled) return
         if (todayVisit) {
@@ -475,26 +516,16 @@ export default function SpotDetailScreen({
     instagramAutoFetchSent.current = null
   }, [spotId])
 
-  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
-
   useEffect(() => {
     if (loading || !spot) return
     const placeId = spot.place_id
     if (instagramAutoFetchSent.current === placeId) return
-
-    const st = (spot.ig_status ?? 'unprocessed') as string
-    const checkedAt = spot.ig_last_checked ? new Date(spot.ig_last_checked).getTime() : NaN
-    const over30 =
-      !spot.ig_last_checked || !Number.isFinite(checkedAt) || Date.now() - checkedAt >= THIRTY_DAYS_MS
-    const shouldRun = st === 'unprocessed' || (st === 'not_found' && over30)
-    if (!shouldRun) return
+    if (spot.instagram_lookup_due !== true) return
 
     instagramAutoFetchSent.current = placeId
     wanspotFetchJson<{
       ok?: boolean
       instagram_id?: string | null
-      ig_status?: string
-      ig_last_checked?: string | null
     }>('/api/spots/instagram', {
       method: 'POST',
       json: {
@@ -511,8 +542,7 @@ export default function SpotDetailScreen({
                 ...prev,
                 instagram_id:
                   json.instagram_id !== undefined && json.instagram_id !== null ? json.instagram_id : prev.instagram_id,
-                ig_status: json.ig_status ?? prev.ig_status,
-                ig_last_checked: json.ig_last_checked ?? prev.ig_last_checked,
+                instagram_lookup_due: false,
               }
             : null
         )
@@ -542,7 +572,7 @@ export default function SpotDetailScreen({
 
   const ensureVisitId = async (): Promise<string | null> => {
     if (visitId) return visitId
-    if (!spot || !userId) return null
+    if (!spot || !userId || !isSpotUuid(spot.id)) return null
     const result = await recordSpotVisit(userId, spot.id, 'review')
     if (!result.ok || !result.visitId) return null
     setVisitId(result.visitId)
@@ -556,8 +586,12 @@ export default function SpotDetailScreen({
     if (!userId) return
     const id = await ensureVisitId()
     if (!id) return
-    setUserRating(rating)
-    await updateVisit(id, { rating })
+    const saved = await updateVisit(id, { rating })
+    if (saved) {
+      setUserRating(rating)
+    } else {
+      setVisitToast({ message: '評価の保存に失敗しました', tone: 'error', retry: true })
+    }
   }
 
   const saveUserMemo = (comment: string) => {
@@ -574,25 +608,66 @@ export default function SpotDetailScreen({
     }, 800)
   }
 
+  const submitTip = async () => {
+    if (!spot || tipSending) return
+    if (!requireAuth('情報を送るにはログインしてください。')) return
+    setTipSending(true)
+    try {
+      const result = await submitSpotInfoTip(spot.id, tipBody)
+      if (result.ok) {
+        setTipSent(true)
+        setTipBody('')
+        // お礼を見せてから静かに閉じる
+        setTimeout(() => {
+          setShowTipModal(false)
+          setTipSent(false)
+        }, 1600)
+      } else {
+        Alert.alert('送信できませんでした', result.message)
+      }
+    } finally {
+      setTipSending(false)
+    }
+  }
+
   const toggleLike = async () => {
     if (!spot || likeLoading) return
     if (!requireAuth('いいねするにはログインしてください。')) return
     if (!userId) return
+    if (!isSpotUuid(spot.id)) {
+      setVisitToast({
+        message: 'スポット情報を準備できませんでした。画面を再読み込みしてください。',
+        tone: 'error',
+        retry: true,
+      })
+      return
+    }
     setLikeLoading(true)
     playLikeHeartAnimation(likeScale)
     try {
       if (liked) {
-        await supabase.from('spot_likes').delete().eq('spot_id', spot.id).eq('user_id', userId)
+        const { error } = await supabase
+          .from('spot_likes')
+          .delete()
+          .eq('spot_id', spot.id)
+          .eq('user_id', userId)
+        if (error) throw error
         setLiked(false)
-        setLikeCount((c) => c - 1)
+        setLikeCount((c) => Math.max(0, c - 1))
         logUserEvent({ eventType: 'unlike', spotId: spot.id, userId })
       } else {
-        await supabase.from('spot_likes').insert({ spot_id: spot.id, user_id: userId })
+        const { error } = await supabase
+          .from('spot_likes')
+          .insert({ spot_id: spot.id, user_id: userId })
+        if (error) throw error
         setLiked(true)
         setLikeCount((c) => c + 1)
         track('spot_liked', { spot_id: spot.id })
         logUserEvent({ eventType: 'like', spotId: spot.id, userId })
       }
+    } catch (error) {
+      console.warn('[toggleLike] failed', error)
+      setVisitToast({ message: 'いいねの更新に失敗しました', tone: 'error', retry: true })
     } finally {
       setLikeLoading(false)
     }
@@ -633,6 +708,14 @@ export default function SpotDetailScreen({
 
   const confirmCancelVisit = () => {
     if (!spot || !userId || visitRecording || visitRecordInFlight.current) return
+    if (!isSpotUuid(spot.id)) {
+      setVisitToast({
+        message: 'スポット情報を準備できませんでした。画面を再読み込みしてください。',
+        tone: 'error',
+        retry: true,
+      })
+      return
+    }
     setShowCancelVisitConfirm(false)
     void (async () => {
       visitRecordInFlight.current = true
@@ -655,6 +738,14 @@ export default function SpotDetailScreen({
     if (!spot || visitRecording || visitRecordInFlight.current) return
     if (!requireAuth('チェックインするにはログインしてください。')) return
     if (!userId) return
+    if (!isSpotUuid(spot.id)) {
+      setVisitToast({
+        message: 'スポット情報を準備できませんでした。画面を再読み込みしてください。',
+        tone: 'error',
+        retry: true,
+      })
+      return
+    }
     visitRecordInFlight.current = true
     setVisitRecording(true)
     try {
@@ -766,18 +857,19 @@ export default function SpotDetailScreen({
 
   if (loading) {
     return (
-      <View style={[styles.screen, { justifyContent: 'center' }]}>
-        <RunningDog label="スポット詳細を読み込み中..." />
+      <View style={styles.screen}>
+        <AppHeader variant="back" onBack={() => router.back()} />
+        <View style={styles.loadErrBody}>
+          <RunningDog label="スポット詳細を読み込み中..." />
+        </View>
       </View>
     )
   }
 
   if (loadError) {
     return (
-      <View style={[styles.screen, { paddingTop: Math.max(12, insets.top) }]}>
-        <Pressable style={styles.loadErrBack} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="戻る">
-          <IconChevronLeft />
-        </Pressable>
+      <View style={styles.screen}>
+        <AppHeader variant="back" onBack={() => router.back()} />
         <View style={styles.loadErrBody}>
           <PowState label={loadError} />
           <Pressable style={styles.loadErrRetry} onPress={() => setReloadNonce((n) => n + 1)}>
@@ -798,6 +890,15 @@ export default function SpotDetailScreen({
 
   return (
     <View style={styles.screen}>
+      <AppHeader
+        variant="back"
+        onBack={() => router.back()}
+        rightSlot={
+          <Pressable style={styles.headerAction} onPress={() => setShowShareSheet(true)} accessibilityLabel="シェア">
+            <IconShare color={colors.text} />
+          </Pressable>
+        }
+      />
       {visitToast ? (
         <Pressable
           style={[styles.toast, { bottom: fixedBottomPad + 8 }, visitToast.tone === 'error' && styles.toastErr]}
@@ -832,14 +933,6 @@ export default function SpotDetailScreen({
                 )}
                 getItemLayout={(_, index) => ({ length: WIN_W, offset: WIN_W * index, index })}
               />
-              <View style={[styles.heroOverlayTop, { top: Math.max(12, insets.top) }]}>
-                <Pressable style={styles.heroFab} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="戻る">
-                  <IconChevronLeft />
-                </Pressable>
-                <Pressable style={styles.heroFab} onPress={() => setShowShareSheet(true)} accessibilityLabel="シェア">
-                  <IconShare />
-                </Pressable>
-              </View>
               <View style={styles.photoBadge}>
                 <Text style={styles.photoBadgeTxt}>
                   {currentPhoto + 1} / {photoUris.length}
@@ -848,15 +941,7 @@ export default function SpotDetailScreen({
             </>
           ) : (
             <View style={styles.noPhoto}>
-              <View style={[styles.heroOverlayTop, { top: Math.max(12, insets.top) }]}>
-                <Pressable style={styles.heroFab} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="戻る">
-                  <IconChevronLeft />
-                </Pressable>
-                <Pressable style={styles.heroFab} onPress={() => setShowShareSheet(true)} accessibilityLabel="シェア">
-                  <IconShare />
-                </Pressable>
-              </View>
-              <IconPaw size={40} color={TOKENS.text.hint} />
+              <IconPaw size={40} color={colors.textHint} />
               <Text style={styles.noPhotoTxt}>写真なし</Text>
             </View>
           )}
@@ -925,7 +1010,7 @@ export default function SpotDetailScreen({
                     saveUserMemo(text)
                   }}
                   placeholder={memoPlaceholder}
-                  placeholderTextColor={TOKENS.text.hint}
+                  placeholderTextColor={colors.textHint}
                   multiline
                   textAlignVertical="top"
                 />
@@ -940,7 +1025,7 @@ export default function SpotDetailScreen({
               <Pressable onPress={() => setAiExpanded((v) => !v)}>
                 {/* 絵文字は iOS の標準UIに出てこない。既存の肉球アイコンに置き換える */}
                 <View style={styles.aiHeadRow}>
-                  <WanspotIconPaw size={13} color="#C24B36" />
+                  <WanspotIconPaw size={13} color={colors.pillText} />
                   <Text style={styles.aiHead}>ワンスポ AIレビュー</Text>
                 </View>
                 <View style={styles.kwRow}>
@@ -957,14 +1042,30 @@ export default function SpotDetailScreen({
                 </Text>
                 {aiSummary.personalNote ? (
                   <View style={styles.personalNote}>
-                    <WanspotIconPaw size={13} color="#C24B36" />
+                    <WanspotIconPaw size={13} color={colors.pillText} />
                     <Text style={styles.personalNoteTxt}>{aiSummary.personalNote}</Text>
                   </View>
+                ) : null}
+                {aiSummary.searchState === 'pending' ? (
+                  <Text style={styles.aiPendingHint}>さらにくわしい情報を調べています</Text>
                 ) : null}
                 {!aiExpanded ? <Text style={styles.aiExpandHint}>タップで続きを読む</Text> : null}
               </Pressable>
             ) : (
-              <PowState label="ワンスポAIレビューを生成できませんでした" />
+              <View style={styles.aiEmptyBox}>
+                {/*
+                  謝らずに事実を言う。ネット上に犬連れ情報が無いスポットは実在し、
+                  それはアプリの失敗ではない。代わりに、知っている飼い主から
+                  教えてもらう枠を出す（検索では埋まらない層の唯一の入口）
+                */}
+                <Text style={styles.aiEmptyTxt}>
+                  このスポットの犬連れ情報は、ネット上に見つかりませんでした。
+                </Text>
+                <Pressable style={styles.aiTipBtn} onPress={() => setShowTipModal(true)}>
+                  <WanspotIconPaw size={14} color={colors.pillText} />
+                  <Text style={styles.aiTipBtnTxt}>ご存じの情報があれば教えてください</Text>
+                </Pressable>
+              </View>
             )}
           </View>
 
@@ -973,7 +1074,7 @@ export default function SpotDetailScreen({
               <Image source={{ uri: mapMiniUrl }} style={styles.mapMiniImg} contentFit="cover" {...remoteImageExpoProps} />
             ) : (
               <View style={styles.mapMiniPh}>
-                <Ionicons name="map-outline" size={22} color={TOKENS.text.secondary} />
+                <Ionicons name="map-outline" size={22} color={colors.textSecondary} />
               </View>
             )}
           </Pressable>
@@ -1035,9 +1136,9 @@ export default function SpotDetailScreen({
         >
           <View style={styles.visitPillInner}>
             {checkedIn ? (
-              <Ionicons name="checkmark" size={18} color={TOKENS.surface.primary} />
+              <Ionicons name="checkmark" size={18} color={colors.onPrimary} />
             ) : (
-              <IconPaw size={16} color={TOKENS.surface.primary} />
+              <IconPaw size={16} color={colors.onPrimary} />
             )}
             <Text style={styles.visitPillTxt}>行った</Text>
           </View>
@@ -1058,7 +1159,7 @@ export default function SpotDetailScreen({
                 <Text style={styles.shareLblW}>LINE</Text>
               </Pressable>
               <Pressable style={styles.shareCopy} onPress={() => void share('copy')}>
-                <IconCopy />
+                <IconCopy color={colors.text} />
                 <Text style={styles.shareLbl}>コピー</Text>
               </Pressable>
             </View>
@@ -1094,6 +1195,49 @@ export default function SpotDetailScreen({
         </Pressable>
       </Modal>
 
+      <Modal visible={showTipModal} transparent animationType="fade" onRequestClose={() => setShowTipModal(false)}>
+        <Pressable style={styles.confirmOverlay} onPress={() => setShowTipModal(false)}>
+          <Pressable style={styles.confirmCard} onPress={(e) => e.stopPropagation()}>
+            {tipSent ? (
+              <>
+                <Text style={styles.confirmTitle}>ありがとうございます！</Text>
+                <Text style={styles.confirmBody}>いただいた情報は、犬連れ情報の充実に使わせていただきます。</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.confirmTitle}>このスポットの犬連れ情報</Text>
+                <Text style={styles.confirmBody}>
+                  行ったことがあれば、わかる範囲で教えてください。{'\n'}
+                  例: 店内OKだった・テラスのみ・大型犬もいた・足洗い場があった
+                </Text>
+                <TextInput
+                  style={styles.tipInput}
+                  value={tipBody}
+                  onChangeText={setTipBody}
+                  placeholder="例: 店内は小型犬のみOKでした。入口に水飲み場あり"
+                  placeholderTextColor={colors.textHint}
+                  multiline
+                  maxLength={1000}
+                  editable={!tipSending}
+                />
+                <View style={styles.confirmActions}>
+                  <Pressable style={styles.confirmCancelBtn} onPress={() => setShowTipModal(false)} disabled={tipSending}>
+                    <Text style={styles.confirmCancelTxt}>閉じる</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.tipSendBtn, (tipSending || !tipBody.trim()) && styles.tipSendBtnOff]}
+                    onPress={() => void submitTip()}
+                    disabled={tipSending || !tipBody.trim()}
+                  >
+                    <Text style={styles.tipSendTxt}>{tipSending ? '送信中…' : '送る'}</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {REVIEW_ALBUM_TAB_ENABLED ? (
         <Modal visible={showVisitSheet} transparent animationType="slide" onRequestClose={() => setShowVisitSheet(false)}>
           <Pressable style={styles.visitSheetOverlay} onPress={() => setShowVisitSheet(false)}>
@@ -1103,7 +1247,7 @@ export default function SpotDetailScreen({
                 <Image source={{ uri: heroThumb }} style={styles.visitSheetThumb} contentFit="cover" {...remoteImageExpoProps} />
               ) : (
                 <View style={[styles.visitSheetThumb, styles.visitSheetThumbPh]}>
-                  <IconPaw size={28} color={TOKENS.text.hint} />
+                  <IconPaw size={28} color={colors.textHint} />
                 </View>
               )}
               <Text style={styles.visitSheetTitle}>{spot.name}</Text>
@@ -1126,65 +1270,39 @@ export default function SpotDetailScreen({
   )
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: TOKENS.surface.paper },
-  loadErrBack: {
-    marginLeft: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: TOKENS.surface.primary,
-    borderWidth: 1,
-    borderColor: TOKENS.border.default,
-  },
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.paper },
   loadErrBody: { flex: 1, justifyContent: 'center', paddingHorizontal: 24, gap: 20 },
   loadErrRetry: {
     alignSelf: 'center',
     paddingHorizontal: 28,
     paddingVertical: 12,
     borderRadius: 999,
-    backgroundColor: TOKENS.brand.primary,
+    backgroundColor: colors.primary,
   },
-  loadErrRetryTxt: { ...type.button, color: TOKENS.surface.primary },
+  loadErrRetryTxt: { ...type.button, color: colors.onPrimary },
   toast: {
     position: 'absolute',
     left: 16,
     right: 16,
     zIndex: 55,
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 18,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.74)',
-    shadowColor: '#000',
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.12,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
     elevation: 5,
   },
-  toastErr: { backgroundColor: '#3a2a28', borderColor: colors.error },
+  toastErr: { backgroundColor: colors.errorMutedBg, borderColor: colors.error },
   // 失敗理由まで読ませるトーストなので本文サイズ。太字をやめても画面に1つしか出ないので埋もれない
   toastTxt: { ...type.body, color: colors.textPrimary, textAlign: 'center' as const },
-  toastTxtErr: { color: '#fff' },
-  photoWrap: { backgroundColor: TOKENS.surface.mapMuted, width: '100%', position: 'relative' },
-  heroOverlayTop: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    zIndex: 10,
-  },
-  heroFab: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  toastTxtErr: { color: colors.error },
+  headerAction: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  photoWrap: { backgroundColor: colors.mapMuted, width: '100%', position: 'relative' },
   photoBadge: {
     position: 'absolute',
     bottom: 12,
@@ -1196,9 +1314,9 @@ const styles = StyleSheet.create({
   },
   photoBadgeTxt: { ...type.label, color: '#fff' },
   noPhoto: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  noPhotoTxt: { ...type.caption, color: TOKENS.text.meta },
-  pad: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
-  h1: { ...type.title, color: TOKENS.text.primary },
+  noPhotoTxt: { ...type.caption, color: colors.textMeta },
+  pad: { paddingHorizontal: 20, paddingTop: 16, gap: 12 },
+  h1: { ...type.title, color: colors.text },
   petBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -4 },
   petBadge: {
     paddingHorizontal: 10,
@@ -1213,16 +1331,16 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   // 評価・件数・カテゴリ・距離・営業状態は同じ13pxのメタ行に揃え、★と開閉だけ太さと色で立てる
-  ratingStar: { ...type.caption, fontWeight: '800' as const, color: TOKENS.brand.primary },
-  ratingMeta: { ...type.caption, color: TOKENS.text.secondary },
+  ratingStar: { ...type.caption, fontWeight: '800' as const, color: colors.primary },
+  ratingMeta: { ...type.caption, color: colors.textSecondary },
   openInline: { ...type.caption, fontWeight: '800' as const },
-  openInlineOpen: { color: '#2E7D32' },
-  openInlineClosed: { color: '#C62828' },
+  openInlineOpen: { color: colors.success },
+  openInlineClosed: { color: colors.error },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   igBtn: {
     width: 32,
@@ -1231,26 +1349,26 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
   },
   mapsBtn: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
   },
   userReviewCard: {
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
     gap: 10,
   },
   userReviewHead: {
@@ -1259,20 +1377,19 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     gap: 6,
   },
-  userReviewTitle: { ...type.label, color: TOKENS.text.secondary },
+  userReviewTitle: { ...type.label, color: colors.textSecondary },
   // 「公開されない」は読まれて初めて意味がある注記なので、10pxのままにはしない
   userReviewDisclaimer: {
     ...type.caption,
     flex: 1,
     minWidth: 160,
-    color: TOKENS.text.meta,
+    color: colors.textMeta,
   },
-  starRow: { flexDirection: 'row', gap: 4 },
   userReviewMemoFrame: {
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.input,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -1280,26 +1397,28 @@ const styles = StyleSheet.create({
   userReviewInput: {
     ...type.body,
     minHeight: 72,
-    color: TOKENS.text.primary,
+    color: colors.text,
     padding: 0,
   },
   aiCard: {
-    backgroundColor: 'rgba(251,107,83,0.07)',
+    backgroundColor: colors.tintWeak,
     borderRadius: 16,
     padding: 14,
+    borderWidth: 1,
+    borderColor: colors.tintStrong,
   },
   aiHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  aiHead: { ...type.label, color: '#C24B36' },
+  aiHead: { ...type.label, color: colors.pillText },
   kwRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   kwPill: {
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
     maxWidth: '100%',
   },
-  kwTxt: { ...type.label, color: '#C24B36' },
-  aiBody: { ...type.body, color: TOKENS.text.primary },
+  kwTxt: { ...type.label, color: colors.pillText },
+  aiBody: { ...type.body, color: colors.text },
   // うちの子向けの一言。共有まとめと視覚的に分けて「自分ごと」だと分かるようにする
   personalNote: {
     flexDirection: 'row',
@@ -1308,49 +1427,49 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(194,75,54,0.18)',
+    borderTopColor: colors.tintStrong,
   },
   // うちの子への助言そのもの。まとめ本文と同じ本文サイズで読ませ、色と区切り線で自分ごとだと示す
-  personalNoteTxt: { ...type.body, flex: 1, color: '#C24B36' },
-  aiExpandHint: { ...type.label, marginTop: 6, color: TOKENS.text.secondary },
+  personalNoteTxt: { ...type.body, flex: 1, color: colors.pillText },
+  aiExpandHint: { ...type.label, marginTop: 6, color: colors.textSecondary },
   mapMini: {
     height: 120,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
     position: 'relative',
   },
   mapMiniImg: { width: '100%', height: '100%' },
-  mapMiniPh: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: TOKENS.surface.mapMuted },
+  mapMiniPh: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.mapMuted },
   detailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
   },
-  detailsRowTxt: { ...type.row, color: TOKENS.text.primary },
+  detailsRowTxt: { ...type.row, color: colors.text },
   // ⌄ / › は文字ではなくシェブロン。行の文字と一緒に動かさない
-  detailsChevron: { fontSize: 18, fontWeight: '700', color: TOKENS.text.secondary },
+  detailsChevron: { fontSize: 18, fontWeight: '700', color: colors.textSecondary },
   detailsBody: {
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 14,
     gap: 12,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
     marginTop: -4,
   },
   detailBlock: { gap: 4 },
-  detailLbl: { ...type.label, color: TOKENS.text.secondary },
-  detailVal: { ...type.caption, color: TOKENS.text.primary },
-  detailValMuted: { ...type.caption, color: TOKENS.text.secondary },
+  detailLbl: { ...type.label, color: colors.textSecondary },
+  detailVal: { ...type.caption, color: colors.text },
+  detailValMuted: { ...type.caption, color: colors.textSecondary },
   fixedActions: {
     position: 'absolute',
     left: 0,
@@ -1358,11 +1477,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     flexDirection: 'row',
     gap: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 10,
-    backgroundColor: TOKENS.surface.paper,
+    backgroundColor: colors.paper,
     borderTopWidth: 1,
-    borderTopColor: TOKENS.border.subtle,
+    borderTopColor: colors.borderSubtle,
   },
   likePill: {
     flex: 1,
@@ -1372,12 +1491,12 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: FIXED_ACTION_H,
     borderRadius: 999,
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
   },
-  likePillOn: { backgroundColor: TOKENS.brand.tintWeak, borderColor: TOKENS.brand.tintStrong },
-  likePillTxt: { ...type.button, color: TOKENS.text.primary },
+  likePillOn: { backgroundColor: colors.tintWeak, borderColor: colors.tintStrong },
+  likePillTxt: { ...type.button, color: colors.text },
   visitPill: {
     flex: 1,
     flexDirection: 'row',
@@ -1385,27 +1504,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: FIXED_ACTION_H,
     borderRadius: 999,
-    backgroundColor: TOKENS.brand.primary,
+    backgroundColor: colors.primary,
   },
   visitPillDone: { opacity: 0.92 },
   visitPillInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  visitPillTxt: { ...type.button, color: TOKENS.surface.primary },
-  shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
-  shareBox: { backgroundColor: '#fff', borderRadius: 24, padding: 24, maxWidth: 340, alignSelf: 'center', width: '100%' },
+  visitPillTxt: { ...type.button, color: colors.onPrimary },
+  shareOverlay: { flex: 1, backgroundColor: colors.overlayScrim, justifyContent: 'center', padding: 20 },
+  shareBox: { backgroundColor: colors.surfaceRaised, borderRadius: 24, padding: 24, maxWidth: 340, alignSelf: 'center', width: '100%' },
   // 元から字間を空けたグレーの小見出し。役割どおりマイクロラベルに寄せる
-  shareTitle: { ...type.label, color: '#aaa', textAlign: 'center' as const, marginBottom: 20 },
+  shareTitle: { ...type.label, color: colors.textMuted, textAlign: 'center' as const, marginBottom: 20 },
   shareGrid: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
   shareX: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#000' },
   shareLine: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#06C755' },
-  shareCopy: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#f5f5f5' },
+  shareCopy: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: colors.surfaceAlt },
   // アイコンの下に置く名前なのでボタンではなくラベル。サイズは上げない
-  shareLbl: { ...type.label, color: colors.textPrimary },
+  shareLbl: { ...type.label, color: colors.text },
   shareLblW: { ...type.label, color: '#fff' },
-  cancelShare: { marginTop: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center' },
-  cancelShareTxt: { ...type.button, color: '#888' },
+  cancelShare: { marginTop: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: colors.surfaceAlt, alignItems: 'center' },
+  cancelShareTxt: { ...type.button, color: colors.textSecondary },
   confirmOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(42,37,34,0.42)',
+    backgroundColor: colors.overlayScrim,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 28,
@@ -1413,23 +1532,58 @@ const styles = StyleSheet.create({
   confirmCard: {
     width: '100%',
     maxWidth: 320,
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 22,
     paddingBottom: 16,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
     gap: 10,
   },
+  /* AIレビューが空のときの案内と情報提供 */
+  aiEmptyBox: { alignItems: 'center', gap: 12, paddingVertical: 12 },
+  aiEmptyTxt: { ...type.caption, fontSize: 14, color: colors.textSecondary, textAlign: 'center' as const },
+  aiTipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    backgroundColor: colors.tintWeak,
+  },
+  aiTipBtnTxt: { ...type.button, fontSize: 14, color: colors.pillText },
+  aiPendingHint: { ...type.label, marginTop: 6, color: colors.textHint },
+  tipInput: {
+    minHeight: 88,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    ...type.row,
+    fontSize: 15,
+    color: colors.text,
+    textAlignVertical: 'top' as const,
+  },
+  tipSendBtn: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipSendBtnOff: { opacity: 0.5 },
+  tipSendTxt: { ...type.button, fontSize: 15, color: '#FFFFFF' },
   confirmTitle: {
     ...type.heading,
-    color: TOKENS.text.primary,
+    color: colors.text,
     textAlign: 'center' as const,
   },
   confirmBody: {
     ...type.caption,
-    color: TOKENS.text.secondary,
+    color: colors.textSecondary,
     textAlign: 'center' as const,
   },
   confirmActions: {
@@ -1443,11 +1597,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 13,
     borderRadius: 14,
-    backgroundColor: TOKENS.surface.alt,
+    backgroundColor: colors.surfaceAlt,
   },
   confirmCancelTxt: {
     ...type.button,
-    color: TOKENS.text.secondary,
+    color: colors.textSecondary,
   },
   confirmDestructiveBtn: {
     flex: 1,
@@ -1455,18 +1609,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 13,
     borderRadius: 14,
-    backgroundColor: 'rgba(251,107,83,0.12)',
+    backgroundColor: colors.errorMutedBg,
     borderWidth: 1,
-    borderColor: 'rgba(251,107,83,0.28)',
+    borderColor: colors.error,
   },
   confirmDestructiveTxt: {
     ...type.button,
-    color: TOKENS.brand.pillText,
+    color: colors.error,
   },
   visitSheetOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(18,12,16,0.44)',
+    backgroundColor: colors.overlayScrim,
   },
   visitSheet: {
     borderTopLeftRadius: 24,
@@ -1475,51 +1629,53 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingTop: 12,
     gap: 12,
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surfaceRaised,
   },
   visitSheetHandle: {
     alignSelf: 'center',
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(46,40,37,0.18)',
+    backgroundColor: colors.borderEmphasis,
     marginBottom: 4,
   },
   visitSheetThumb: { width: '100%', height: 140, borderRadius: 16 },
-  visitSheetThumbPh: { backgroundColor: TOKENS.surface.mapMuted, alignItems: 'center', justifyContent: 'center' },
+  visitSheetThumbPh: { backgroundColor: colors.mapMuted, alignItems: 'center', justifyContent: 'center' },
   // シートの見出し＝スポット名。ヒーローの h1 と同じ型にして「このお店の記録」だと一目で分かるようにする
-  visitSheetTitle: { ...type.title, color: TOKENS.text.primary, textAlign: 'center' as const },
-  visitSheetSub: { ...type.caption, color: TOKENS.text.secondary, textAlign: 'center' as const },
+  visitSheetTitle: { ...type.title, color: colors.text, textAlign: 'center' as const },
+  visitSheetSub: { ...type.caption, color: colors.textSecondary, textAlign: 'center' as const },
   visitSheetPrimary: {
     minHeight: 50,
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: TOKENS.brand.primary,
+    backgroundColor: colors.primary,
   },
-  visitSheetPrimaryTxt: { ...type.button, color: TOKENS.surface.primary },
+  visitSheetPrimaryTxt: { ...type.button, color: colors.onPrimary },
   visitSheetSecondary: {
     minHeight: 44,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: TOKENS.surface.alt,
+    backgroundColor: colors.surfaceAlt,
   },
-  visitSheetSecondaryTxt: { ...type.button, color: TOKENS.text.secondary },
+  visitSheetSecondaryTxt: { ...type.button, color: colors.textSecondary },
 })
 
 /** 同伴可否バッジの色分け: 確認済みOK=グリーン / テラスのみ=アンバー / 同伴不可の可能性=グレー */
-const petBadgeToneStyles: Record<PetPolicyBadge['tone'], { pill: object; txt: object }> = {
+const createPetBadgeToneStyles = (
+  colors: AppColors
+): Record<PetPolicyBadge['tone'], { pill: object; txt: object }> => ({
   ok: {
-    pill: { backgroundColor: 'rgba(47,165,106,0.10)', borderColor: 'rgba(47,165,106,0.45)' },
-    txt: { color: '#1E8A54' },
+    pill: { backgroundColor: colors.successMutedBg, borderColor: colors.success },
+    txt: { color: colors.success },
   },
   terrace: {
-    pill: { backgroundColor: 'rgba(242,163,60,0.12)', borderColor: 'rgba(242,163,60,0.5)' },
-    txt: { color: '#A66A14' },
+    pill: { backgroundColor: colors.surfaceAlt, borderColor: colors.warning },
+    txt: { color: colors.warning },
   },
   caution: {
-    pill: { backgroundColor: 'rgba(46,40,37,0.05)', borderColor: 'rgba(46,40,37,0.2)' },
-    txt: { color: TOKENS.text.secondary },
+    pill: { backgroundColor: colors.surfaceAlt, borderColor: colors.borderEmphasis },
+    txt: { color: colors.textSecondary },
   },
-}
+})

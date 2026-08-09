@@ -8,6 +8,12 @@ export type AiSummaryResult = {
   /** うちの子向けの一言。サーバ側で毎回算出され、共有キャッシュには載らない */
   personalNote?: string
   wanspotRating?: { avg: number; count: number }
+  /**
+   * 'pending' = 浅い版（Web検索が不発のまま表示中。サーバが裏で検索つきに昇格中）。
+   * 表示側は「さらにくわしい情報を調べています」を小さく添える。
+   * 'done' または未定義（旧サーバ）は確定版として扱い、注釈を出さない
+   */
+  searchState?: 'done' | 'pending'
 }
 
 export type AiSummaryRequest = {
@@ -54,6 +60,7 @@ export async function fetchAiSummary(
           summary?: string
           personalNote?: string
           wanspotRating?: { avg: number; count: number }
+          searchState?: 'done' | 'pending'
         }>('/api/ai-summary', { method: 'POST', json: req })
         if (!json.keywords || !json.summary) {
           throw new Error('ai-summary: invalid response')
@@ -63,6 +70,7 @@ export async function fetchAiSummary(
           summary: json.summary,
           personalNote: json.personalNote,
           wanspotRating: json.wanspotRating,
+          searchState: json.searchState,
         }
       },
       opts
