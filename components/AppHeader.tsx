@@ -49,7 +49,7 @@ export function AppHeader({ variant = 'default', onBack, rightSlot }: AppHeaderP
 
         <View style={styles.centeredRow} accessibilityRole="header">
           <Logo size={26} />
-          <Text style={styles.brandText}>wanspot</Text>
+          <Text style={styles.brandText}>WANSPOT</Text>
         </View>
 
         <View style={[styles.side, styles.sideRight]}>
@@ -80,7 +80,8 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingHorizontal: 8,
   },
   // ロゴと組むワードマーク。文章の階層ではなく意匠なので型には寄せない
-  brandText: { fontWeight: '800', fontSize: 20, letterSpacing: -0.5, color: colors.text },
+  // 大文字のワードマーク。小文字前提の詰め(-0.5)のままだと窮屈に見えるので正のトラッキングにする
+  brandText: { fontWeight: '800', fontSize: 20, letterSpacing: 0.5, color: colors.text },
   side: { width: 48, height: APP_HEADER_HEIGHT, alignItems: 'center', justifyContent: 'center' },
   sideButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   sideRight: { flexDirection: 'row', gap: 4 },

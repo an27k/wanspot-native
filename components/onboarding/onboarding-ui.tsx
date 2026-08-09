@@ -17,12 +17,12 @@ export function OnboardingBrandLockup() {
   return (
     <View style={styles.lockup}>
       <OnboardingBrand width={30} height={30} />
-      <Text style={styles.brandText}>wanspot</Text>
+      <Text style={styles.brandText}>WANSPOT</Text>
     </View>
   )
 }
 
 const createStyles = (colors: AppColors) => StyleSheet.create({
   lockup: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  brandText: { ...type.heading, color: colors.textPrimary },
+  brandText: { ...type.heading, letterSpacing: 0.5, color: colors.textPrimary },
 })

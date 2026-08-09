@@ -117,7 +117,7 @@ export default function LoginScreen() {
             <View style={styles.logo}>
               <Logo size={72} />
             </View>
-            <Text style={styles.title}>wanspot</Text>
+            <Text style={styles.title}>WANSPOT</Text>
             <TextInput
               style={styles.input}
               placeholder="メールアドレス"
@@ -216,6 +216,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
+    letterSpacing: 0.7,
     textAlign: 'center',
     color: colors.text,
     marginTop: 12,

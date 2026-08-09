@@ -7,7 +7,7 @@ export function BrandTabHeader() {
   return (
     <View style={styles.wrap}>
       <Logo size={26} />
-      <Text style={styles.txt}>wanspot</Text>
+      <Text style={styles.txt}>WANSPOT</Text>
     </View>
   )
 }
@@ -22,5 +22,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   // ロゴと組むワードマーク。文章の階層ではなく意匠なので型には寄せない
-  txt: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3, color: GOOGLE_HOME.textPrimary },
+  // 大文字ぶん正のトラッキング
+  txt: { fontSize: 18, fontWeight: '800', letterSpacing: 0.4, color: GOOGLE_HOME.textPrimary },
 })
