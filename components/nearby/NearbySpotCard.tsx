@@ -14,8 +14,10 @@ import { ensureSpotId } from '@/lib/ensureSpot'
 import { openSpotDetailFromPlace } from '@/lib/open-spot-detail'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
 import type { PlaceResult } from '@/types/places'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000
@@ -31,27 +33,41 @@ const IconHeart = ({ filled }: { filled: boolean }) => (
   <WanspotIconHeart size={16} filled={filled} />
 )
 
-const IconStar = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
+const IconStar = ({ color }: { color: string }) => (
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
 
-const IconMoney = ({ filled }: { filled: boolean }) => (
-  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? colors.primary : '#e8e8e8'}>
+const IconMoney = ({ filled, colors }: { filled: boolean; colors: AppColors }) => (
+  <Svg
+    width={10}
+    height={10}
+    viewBox="0 0 24 24"
+    fill={filled ? colors.primary : colors.borderEmphasis}
+  >
     <Circle cx="12" cy="12" r="10" />
-    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? colors.textPrimary : '#bbb'} fontWeight="bold">
+    <SvgText
+      x="12"
+      y="16"
+      textAnchor="middle"
+      fontSize="12"
+      fill={filled ? colors.onPrimary : colors.textMuted}
+      fontWeight="bold"
+    >
       ¥
     </SvgText>
   </Svg>
 )
 
-const PriceLevel = ({ level }: { level: number | null }) => {
-  if (level === null || level === undefined) return <Text style={styles.qMark}>?</Text>
+const PriceLevel = ({ level, colors }: { level: number | null; colors: AppColors }) => {
+  if (level === null || level === undefined) {
+    return <Text style={[type.caption, { color: colors.textHint }]}>?</Text>
+  }
   return (
-    <View style={styles.priceRow}>
+    <View style={iconStyles.priceRow}>
       {[1, 2, 3, 4].map((i) => (
-        <IconMoney key={i} filled={i <= level} />
+        <IconMoney key={i} filled={i <= level} colors={colors} />
       ))}
     </View>
   )
@@ -84,6 +100,8 @@ export function NearbySpotCard({
 }) {
   const router = useRouter()
   const requireAuth = useRequireAuth()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const scaleAnim = useRef(new Animated.Value(1)).current
   const [spotId, setSpotId] = useState<string | null>(initialSpotId)
   const [liked, setLiked] = useState(initiallyLiked)
@@ -179,9 +197,9 @@ export function NearbySpotCard({
             {spot.rating ? (
               <View style={styles.rateRow}>
                 <IconGoogle />
-                <IconStar />
+                <IconStar color={colors.primary} />
                 <Text style={styles.rateSmall}>{spot.rating}</Text>
-                <PriceLevel level={spot.price_level} />
+                <PriceLevel level={spot.price_level} colors={colors} />
               </View>
             ) : null}
             {distLabel ? <Text style={styles.distSmall}>{distLabel}</Text> : null}
@@ -194,15 +212,19 @@ export function NearbySpotCard({
   )
 }
 
-const styles = StyleSheet.create({
+const iconStyles = StyleSheet.create({
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+})
+
+const createStyles = (colors: AppColors) => StyleSheet.create({
   card: {
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  cardPhoto: { height: 144, backgroundColor: '#e8e4de', position: 'relative' },
+  cardPhoto: { height: 144, backgroundColor: colors.mapMuted, position: 'relative' },
   cardImg: { width: '100%', height: '100%' },
   heartCol: { position: 'absolute', top: 8, right: 8, alignItems: 'center', gap: 4 },
   heartCircle: {
@@ -234,12 +256,10 @@ const styles = StyleSheet.create({
   },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rateSmall: { ...type.caption, color: '#888' },
+  rateSmall: { ...type.caption, color: colors.textSecondary },
   // 距離は右端に単独で置く数値。行内の他のメタより太くして目的地までの遠近を拾えるようにする
-  distSmall: { ...type.caption, fontWeight: '700' as const, color: '#aaa' },
+  distSmall: { ...type.caption, fontWeight: '700' as const, color: colors.textMuted },
   // 一覧の視線の起点。ここが14pxだとカードの中で写真しか目に入らない
   spotName: { ...type.heading, color: colors.textPrimary },
-  spotAddr: { ...type.caption, color: '#aaa' },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  qMark: { ...type.caption, color: '#ccc' },
+  spotAddr: { ...type.caption, color: colors.textMuted },
 })

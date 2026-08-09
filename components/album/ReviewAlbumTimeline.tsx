@@ -32,10 +32,10 @@ import { DailyLogComposerModal } from '@/components/album/DailyLogComposerModal'
 import { DailyLogEntryCard } from '@/components/album/DailyLogEntryCard'
 import { VlogGeneratingPanel } from '@/components/album/VlogGeneratingPanel'
 import { VlogOneTapOffer } from '@/components/album/VlogOneTapOffer'
-import { RunningDog } from '@/components/DogStates'
-import { colors } from '@/constants/colors'
-import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { isDailyLogVisit, moodEmoji, type DailyLogContext } from '@/lib/daily-log'
 import { buildVlogRenderPayloadAsync } from '@/lib/vlog/build-payload'
 import {
@@ -102,6 +102,9 @@ function friendlyVlogErrorMessage(code: string, message: string): string {
 }
 
 function StarRow({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
+
   return (
     <View style={styles.starRow}>
       {[1, 2, 3, 4, 5].map((n) => (
@@ -114,6 +117,8 @@ function StarRow({ value, onChange }: { value: number; onChange: (n: number) => 
 }
 
 function EmptyAlbumMotion() {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const float = useSharedValue(0)
   const glow = useSharedValue(0)
 
@@ -173,7 +178,7 @@ function EmptyAlbumMotion() {
         <View style={[styles.glassTube, styles.emptyGlassTubeOne]} />
         <View style={[styles.glassTube, styles.emptyGlassTubeTwo]} />
         <View style={styles.emptyHeroIcon}>
-          <Ionicons name="sparkles" size={24} color="#fff" />
+          <Ionicons name="sparkles" size={24} color={colors.onPrimary} />
         </View>
         <View style={styles.emptyGhostLineWide} />
         <View style={styles.emptyGhostLine} />
@@ -183,6 +188,8 @@ function EmptyAlbumMotion() {
 }
 
 function DeckGhostCard({ index }: { index: number }) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const depth = Math.min(index, 4)
   const ghostNo = String(index + 1).padStart(2, '0')
   return (
@@ -206,7 +213,7 @@ function DeckGhostCard({ index }: { index: number }) {
     >
       <LinearGradient
         pointerEvents="none"
-        colors={['rgba(85,224,180,0.18)', 'rgba(182,108,255,0.18)', 'rgba(255,255,255,0.2)']}
+        colors={[colors.tintWeak, colors.surfaceAlt, colors.surfaceRaised]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -225,6 +232,7 @@ function DeckGhostCard({ index }: { index: number }) {
 }
 
 function FloatingDateBadge({ plate, ghostIndex }: { plate?: VisitPlate; ghostIndex?: number }) {
+  const styles = useThemedStyles(createStyles)
   const pulse = useSharedValue(0)
 
   useEffect(() => {
@@ -281,6 +289,8 @@ function PlateDetailModal({
   onAddMedia: () => void
 }) {
   const insets = useSafeAreaInsets()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const [editing, setEditing] = useState(false)
   const [comment, setComment] = useState(plate.comment ?? '')
   const [rating, setRating] = useState(plate.rating ?? 0)
@@ -341,7 +351,7 @@ function PlateDetailModal({
               <Ionicons name="create-outline" size={20} color={colors.textMuted} />
             </Pressable>
             <Pressable style={[styles.detailIconBtn, styles.detailDeleteIconBtn]} onPress={deletePlate} hitSlop={8} accessibilityLabel="レビューを削除">
-              <Ionicons name="trash-outline" size={20} color="#fff" />
+              <Ionicons name="trash-outline" size={20} color={colors.textInverse} />
             </Pressable>
           </View>
         </View>
@@ -404,6 +414,7 @@ function PlateDetailModal({
                 value={comment}
                 onChangeText={setComment}
                 placeholder="今日の思い出..."
+                placeholderTextColor={colors.textMuted}
                 multiline
                 maxLength={500}
               />
@@ -444,6 +455,8 @@ function MemoryComposerModal({
   onSaved: () => void
 }) {
   const insets = useSafeAreaInsets()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const [picked, setPicked] = useState<PickedMedia[]>([])
   const [rating, setRating] = useState(plate.rating ?? 0)
   const [comment, setComment] = useState(plate.comment ?? '')
@@ -545,13 +558,13 @@ function MemoryComposerModal({
           <View style={styles.composerHero}>
             <LinearGradient
               pointerEvents="none"
-              colors={['rgba(85,224,180,0.22)', 'rgba(182,108,255,0.16)', 'rgba(255,255,255,0.94)']}
+              colors={[colors.tintWeak, colors.surfaceAlt, colors.surfaceRaised]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
             <View style={styles.composerHeroIcon}>
-              <Ionicons name="sparkles" size={20} color="#fff" />
+              <Ionicons name="sparkles" size={20} color={colors.onPrimary} />
             </View>
             <Text style={styles.composerKicker}>REVIEW ALBUM</Text>
             <Text style={styles.composerLead}>レビューをアルバムに残す</Text>
@@ -559,7 +572,7 @@ function MemoryComposerModal({
               写真・評価・ひとことを残すと、アルバムに追加されてVlog素材として選べます。
             </Text>
             <View style={styles.composerProgressPill}>
-              <Ionicons name={towardVlog > 0 ? 'images-outline' : 'checkmark-circle'} size={14} color={towardVlog > 0 ? '#7F5CFF' : '#1D9B72'} />
+              <Ionicons name={towardVlog > 0 ? 'images-outline' : 'checkmark-circle'} size={14} color={towardVlog > 0 ? colors.pillText : colors.success} />
               <Text style={[styles.composerHint, towardVlog <= 0 && styles.composerHintDone]}>
                 {towardVlog > 0 ? `写真・動画あと${towardVlog}枚でVlog素材` : 'このスポットはVlog素材ばっちり'}
               </Text>
@@ -575,7 +588,7 @@ function MemoryComposerModal({
               {picked.length === 0 ? (
                 <Pressable style={styles.mediaAddLarge} onPress={() => void addMedia()} disabled={saving}>
                   <View style={styles.mediaAddOrb}>
-                    <Ionicons name="images" size={28} color="#fff" />
+                    <Ionicons name="images" size={28} color={colors.onPrimary} />
                   </View>
                   <Text style={styles.mediaAddLargeTxt}>写真・動画をえらぶ</Text>
                   <Text style={styles.mediaAddLargeSub}>まずは1枚から。あとで追加できます。</Text>
@@ -598,7 +611,7 @@ function MemoryComposerModal({
                     </View>
                   ))}
                   <Pressable style={styles.mediaAdd} onPress={() => void addMedia()} disabled={saving}>
-                    <Ionicons name="add" size={24} color="#7F5CFF" />
+                    <Ionicons name="add" size={24} color={colors.pillText} />
                     <Text style={styles.mediaAddTxt}>追加</Text>
                   </Pressable>
                 </>
@@ -651,6 +664,8 @@ function FeedTile({
   onOpen: () => void
   onAddMedia: () => void
 }) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const cover = plate.memories[0]
   const isEmpty = plate.memories.length === 0
 
@@ -658,7 +673,7 @@ function FeedTile({
     return (
       <Pressable style={[styles.tile, styles.tileEmpty]} onPress={onAddMedia}>
         <View style={styles.tileEmptyIcon}>
-          <Ionicons name="camera" size={22} color="#fff" />
+          <Ionicons name="camera" size={22} color={colors.textInverse} />
         </View>
         <Text style={styles.tileEmptyTxt}>レビューを残す</Text>
         <Text style={styles.tileEmptySub} numberOfLines={2}>
@@ -723,6 +738,8 @@ function ReviewDeckCard({
   onSelect: () => void
   onAddMedia: () => void
 }) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const cover = plate.memories[0]
   const hasReview = plate.memories.length > 0 || !!plate.comment || !!plate.rating
   const depth = Math.min(index, 4)
@@ -750,7 +767,7 @@ function ReviewDeckCard({
         <Pressable style={styles.deckEmptyInner} onPress={onAddMedia}>
           <LinearGradient
             pointerEvents="none"
-            colors={['rgba(85,224,180,0.22)', 'rgba(182,108,255,0.16)', 'rgba(255,255,255,0.94)']}
+            colors={[colors.tintWeak, colors.surfaceAlt, colors.surfaceRaised]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
@@ -760,7 +777,7 @@ function ReviewDeckCard({
           <View style={[styles.glassTube, styles.glassTubeThree]} />
           <FloatingDateBadge plate={plate} />
           <View style={styles.deckEmptyIcon}>
-            <Ionicons name="sparkles" size={22} color="#fff" />
+            <Ionicons name="sparkles" size={22} color={colors.onPrimary} />
           </View>
           <Text style={styles.deckEmptyKicker}>REVIEW ALBUM</Text>
           <Text style={styles.deckEmptyTitle}>レビューをアルバムに残す</Text>
@@ -768,7 +785,7 @@ function ReviewDeckCard({
             {plate.spot.name}
           </Text>
           <View style={styles.deckEmptyPill}>
-            <Ionicons name="images-outline" size={14} color="#7F5CFF" />
+            <Ionicons name="images-outline" size={14} color={colors.pillText} />
             <Text style={styles.deckEmptyPillText}>このレビューからVlog化できます</Text>
           </View>
         </Pressable>
@@ -780,7 +797,7 @@ function ReviewDeckCard({
     <Animated.View entering={FadeInDown.delay(index * 50).duration(260)} style={cardStyle}>
       <LinearGradient
         pointerEvents="none"
-        colors={['rgba(255,255,255,0.28)', 'rgba(255,255,255,0.04)', 'rgba(127,92,255,0.08)']}
+        colors={[colors.overlaySubtle, 'transparent', colors.tintWeak]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -843,11 +860,11 @@ function ReviewDeckCard({
               accessibilityRole="button"
               accessibilityLabel="レビュー詳細と編集を開く"
             >
-              <Ionicons name="ellipsis-horizontal" size={20} color="#5D514C" />
+              <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
             </Pressable>
           </View>
           <View style={styles.deckMetaRow}>
-            <Ionicons name="calendar-outline" size={14} color="#725F58" />
+            <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
             <Text style={styles.deckMeta}>{formatVisitDate(plate.visited_at)}</Text>
             {plate.rating ? (
               <>
@@ -886,6 +903,8 @@ export function ReviewAlbumTimeline({
   focusVisitId,
 }: Props) {
   const router = useRouter()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const [detailPlate, setDetailPlate] = useState<VisitPlate | null>(null)
   const [consumedFocusId, setConsumedFocusId] = useState<string | null>(null)
   const [composerPlate, setComposerPlate] = useState<VisitPlate | null>(null)
@@ -1091,7 +1110,7 @@ export function ReviewAlbumTimeline({
       {loading && plates.length === 0 ? (
         <View style={styles.loadingDeck}>
           <View style={styles.loadingOrb}>
-            <Ionicons name="sparkles" size={22} color="#FF765F" />
+            <Ionicons name="sparkles" size={22} color={colors.primary} />
           </View>
           <Text style={styles.loadingTitle}>レビューアルバムを準備中</Text>
           <Text style={styles.loadingSub}>写真とレビューをカードに並べています</Text>
@@ -1125,7 +1144,7 @@ export function ReviewAlbumTimeline({
         <View style={styles.emptyCard}>
           <LinearGradient
             pointerEvents="none"
-            colors={['rgba(85,224,180,0.22)', 'rgba(182,108,255,0.16)', 'rgba(255,255,255,0.94)']}
+            colors={[colors.tintWeak, colors.surfaceAlt, colors.surfaceRaised]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
@@ -1236,7 +1255,7 @@ export function ReviewAlbumTimeline({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   wrap: { paddingHorizontal: GRID_PAD, gap: 14, marginTop: 4, paddingBottom: 8, position: 'relative' },
   albumAura: {
     position: 'absolute',
@@ -1321,10 +1340,10 @@ const styles = StyleSheet.create({
     width: DECK_CARD_W,
     borderRadius: 28,
     overflow: 'hidden',
-    backgroundColor: 'rgba(246,248,255,0.78)',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.72)',
-    shadowColor: '#22113A',
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.28,
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 18 },
@@ -1348,12 +1367,12 @@ const styles = StyleSheet.create({
   },
   deckCardEmpty: {
     minHeight: 236,
-    backgroundColor: 'rgba(246,248,255,0.92)',
+    backgroundColor: colors.surfaceRaised,
     borderStyle: 'solid',
-    borderColor: 'rgba(255,255,255,0.82)',
+    borderColor: colors.border,
     opacity: 1,
     transform: [{ perspective: 900 }, { scale: 1 }],
-    shadowColor: '#7F5CFF',
+    shadowColor: colors.primary,
     shadowOpacity: 0.22,
     shadowRadius: 28,
   },
@@ -1365,10 +1384,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: 'rgba(218,230,234,0.42)',
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.58)',
-    shadowColor: '#22113A',
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 18 },
@@ -1377,10 +1396,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     height: 24,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.42)',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.7)',
-    shadowColor: '#fff',
+    borderColor: colors.borderEmphasis,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.34,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 3 },
@@ -1426,10 +1445,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(127,92,255,0.24)',
+    backgroundColor: colors.tintStrong,
   },
-  deckGhostLineWide: { width: '46%', height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.54)' },
-  deckGhostLine: { width: '30%', height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.38)' },
+  deckGhostLineWide: { width: '46%', height: 10, borderRadius: 5, backgroundColor: colors.borderEmphasis },
+  deckGhostLine: { width: '30%', height: 8, borderRadius: 4, backgroundColor: colors.border },
   dateBadge: {
     position: 'absolute',
     top: 14,
@@ -1556,20 +1575,20 @@ const styles = StyleSheet.create({
   deckSelectTextOn: { color: '#FF765F' },
   deckInfo: { paddingHorizontal: 18, paddingTop: 2, paddingBottom: 18, gap: 9 },
   deckTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  deckTitle: { flex: 1, ...type.title, color: '#2D2522' },
+  deckTitle: { flex: 1, ...type.title, color: colors.textPrimary },
   deckEditBtn: {
     width: 34,
     height: 34,
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.54)',
+    backgroundColor: colors.surfaceAlt,
   },
   deckMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  deckMeta: { ...type.caption, color: '#725F58' },
-  deckDot: { ...type.caption, color: '#8B7A73' },
+  deckMeta: { ...type.caption, color: colors.textSecondary },
+  deckDot: { ...type.caption, color: colors.textMuted },
   // 飼い主が書いたひとこと。読ませる文章なので本文サイズ
-  deckComment: { ...type.body, color: '#4B3B36' },
+  deckComment: { ...type.body, color: colors.text },
   deckEmptyInner: {
     minHeight: 236,
     position: 'relative',
@@ -1583,21 +1602,21 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#7F5CFF',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
-    shadowColor: '#7F5CFF',
+    shadowColor: colors.primary,
     shadowOpacity: 0.28,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
   },
   deckEmptyKicker: {
     ...type.label,
-    color: 'rgba(46,40,37,0.44)',
+    color: colors.textMeta,
   },
-  deckEmptyTitle: { ...type.heading, color: '#2A2522' },
-  deckEmptySub: { ...type.caption, color: '#5E514C', textAlign: 'center' },
+  deckEmptyTitle: { ...type.heading, color: colors.textPrimary },
+  deckEmptySub: { ...type.caption, color: colors.textSecondary, textAlign: 'center' },
   deckEmptyPill: {
     marginTop: 4,
     flexDirection: 'row',
@@ -1606,11 +1625,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: 'rgba(255,255,255,0.68)',
+    backgroundColor: colors.surfaceAlt,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(46,40,37,0.08)',
+    borderColor: colors.border,
   },
-  deckEmptyPillText: { ...type.label, color: '#7F5CFF' },
+  deckEmptyPillText: { ...type.label, color: colors.pillText },
   vlogDockWrap: { gap: 8, paddingTop: 4 },
   vlogDock: {
     minHeight: 64,
@@ -1661,13 +1680,13 @@ const styles = StyleSheet.create({
   introTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: GOOGLE_HOME.textPrimary,
+    color: colors.textPrimary,
     lineHeight: 26,
   },
   introSub: {
     fontSize: 13,
     fontWeight: '600',
-    color: GOOGLE_HOME.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   emptyCard: {
@@ -1675,13 +1694,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 28,
     paddingVertical: 24,
     paddingHorizontal: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.82)',
-    shadowColor: '#7F5CFF',
+    borderColor: colors.border,
+    shadowColor: colors.primary,
     shadowOpacity: 0.14,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 12 },
@@ -1705,9 +1724,9 @@ const styles = StyleSheet.create({
     width: '72%',
     height: 78,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.34)',
+    backgroundColor: colors.surfaceAlt,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.52)',
+    borderColor: colors.border,
   },
   emptyGhostBack: {
     top: 4,
@@ -1727,10 +1746,10 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.86)',
-    shadowColor: '#7F5CFF',
+    borderColor: colors.border,
+    shadowColor: colors.primary,
     shadowOpacity: 0.16,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
@@ -1756,14 +1775,14 @@ const styles = StyleSheet.create({
     width: '44%',
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(127,92,255,0.18)',
+    backgroundColor: colors.tintStrong,
   },
   emptyGhostLine: {
     marginTop: 6,
     width: '28%',
     height: 7,
     borderRadius: 4,
-    backgroundColor: 'rgba(127,92,255,0.12)',
+    backgroundColor: colors.tintWeak,
   },
   emptyHeroCard: {
     position: 'absolute',
@@ -1776,8 +1795,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 9,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.64)',
-    shadowColor: '#FF765F',
+    borderColor: colors.border,
+    shadowColor: colors.primary,
     shadowOpacity: 0.28,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
@@ -1789,32 +1808,32 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#7F5CFF',
+    backgroundColor: colors.primary,
   },
   emptyKicker: {
     ...type.label,
-    color: 'rgba(46,40,37,0.44)',
+    color: colors.textMeta,
   },
-  emptyHeroLineWide: { width: '54%', height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.76)' },
-  emptyHeroLine: { width: '36%', height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.54)' },
+  emptyHeroLineWide: { width: '54%', height: 8, borderRadius: 4, backgroundColor: colors.borderEmphasis },
+  emptyHeroLine: { width: '36%', height: 7, borderRadius: 4, backgroundColor: colors.border },
   emptyParticle: {
     position: 'absolute',
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.78)',
+    backgroundColor: colors.surfaceRaised,
   },
   emptyParticleOne: { top: 42, left: 50 },
   emptyParticleTwo: { top: 70, right: 46, backgroundColor: 'rgba(111,240,211,0.8)' },
   emptyParticleThree: { bottom: 18, left: 74, width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,211,111,0.82)' },
   emptyTitle: {
     ...type.heading,
-    color: '#2A2522',
+    color: colors.textPrimary,
     textAlign: 'center',
   },
   emptySub: {
     ...type.caption,
-    color: '#5E514C',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   addBtn: {
@@ -1831,7 +1850,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  addBtnTxt: { ...type.button, color: '#fff' },
+  addBtnTxt: { ...type.button, color: colors.onPrimary },
   celebration: {
     backgroundColor: colors.primary,
     borderRadius: 16,
@@ -1844,8 +1863,8 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
-  celebrationTitle: { ...type.heading, color: '#fff' },
-  celebrationSub: { ...type.caption, color: 'rgba(255,255,255,0.9)' },
+  celebrationTitle: { ...type.heading, color: colors.onPrimary },
+  celebrationSub: { ...type.caption, color: colors.onPrimary },
   loaderWrap: { paddingVertical: 40, alignItems: 'center' },
   loadingDeck: {
     alignItems: 'center',
@@ -1853,9 +1872,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     paddingVertical: 24,
     paddingHorizontal: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.34)',
+    borderColor: colors.border,
   },
   loadingOrb: {
     width: 48,
@@ -1863,23 +1882,23 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.78)',
+    backgroundColor: colors.tintWeak,
     marginBottom: 2,
   },
-  loadingTitle: { ...type.heading, color: GOOGLE_HOME.textPrimary },
-  loadingSub: { ...type.caption, color: GOOGLE_HOME.textSecondary, marginBottom: 8 },
+  loadingTitle: { ...type.heading, color: colors.textPrimary },
+  loadingSub: { ...type.caption, color: colors.textSecondary, marginBottom: 8 },
   loadingCard: {
     alignSelf: 'stretch',
     borderRadius: 22,
     padding: 10,
     gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.58)',
+    backgroundColor: colors.surfaceAlt,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.7)',
+    borderColor: colors.border,
   },
-  loadingPhoto: { height: 132, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.48)' },
-  loadingLineWide: { width: '68%', height: 14, borderRadius: 7, backgroundColor: 'rgba(255,255,255,0.62)' },
-  loadingLine: { width: '44%', height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.48)' },
+  loadingPhoto: { height: 132, borderRadius: 16, backgroundColor: colors.surfaceTertiary },
+  loadingLineWide: { width: '68%', height: 14, borderRadius: 7, backgroundColor: colors.borderEmphasis },
+  loadingLine: { width: '44%', height: 12, borderRadius: 6, backgroundColor: colors.border },
   guest: { padding: 24, alignItems: 'center' },
   guestTxt: { ...type.body, color: colors.textSecondary, textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
@@ -1898,39 +1917,39 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: 'rgba(60,60,67,0.24)',
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderColor: colors.borderEmphasis,
+    backgroundColor: colors.surfaceRaised,
     paddingHorizontal: 10,
   },
   tileEmptyIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#8E8E93',
+    backgroundColor: colors.textMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 4,
     elevation: 3,
   },
-  tileEmptyTxt: { fontSize: 13, fontWeight: '800', color: '#2A2522' },
+  tileEmptyTxt: { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
   tileEmptySub: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6E6E73',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   tileEmptyBadge: {
     marginTop: 4,
-    backgroundColor: '#F1F1F3',
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  tileEmptyBadgeTxt: { fontSize: 10, fontWeight: '700', color: '#5A5A5F' },
+  tileEmptyBadgeTxt: { fontSize: 10, fontWeight: '700', color: colors.textSecondary },
   tileImg: { ...StyleSheet.absoluteFillObject },
   tileGrad: {
     position: 'absolute',
@@ -1967,15 +1986,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  thumbPlaceholder: { backgroundColor: '#e8e8e8' },
+  thumbPlaceholder: { backgroundColor: colors.surfaceAlt },
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.overlayScrim,
     justifyContent: 'center',
     padding: 20,
   },
   editSheet: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 16,
     padding: 20,
     gap: 12,
@@ -1985,6 +2004,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.input,
     borderRadius: 12,
     padding: 12,
     minHeight: 80,
@@ -1996,12 +2016,12 @@ const styles = StyleSheet.create({
   starRow: { flexDirection: 'row', gap: 4 },
   saveBtn: {
     marginTop: 8,
-    backgroundColor: colors.textPrimary,
+    backgroundColor: colors.primary,
     borderRadius: 999,
     paddingVertical: 12,
     alignItems: 'center',
   },
-  saveBtnTxt: { ...type.button, color: '#fff' },
+  saveBtnTxt: { ...type.button, color: colors.onPrimary },
   detailRoot: { flex: 1, backgroundColor: colors.paper },
   detailHead: {
     flexDirection: 'row',
@@ -2020,11 +2040,11 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(42,37,34,0.06)',
+    backgroundColor: colors.surfaceAlt,
   },
   detailDeleteIconBtn: {
-    backgroundColor: '#7F5CFF',
-    shadowColor: '#7F5CFF',
+    backgroundColor: colors.error,
+    shadowColor: colors.error,
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -2058,7 +2078,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.cardBg,
   },
-  composerRoot: { flex: 1, backgroundColor: '#F7F3EE' },
+  composerRoot: { flex: 1, backgroundColor: colors.paper },
   composerHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2066,8 +2086,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(46,40,37,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.84)',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
   },
   composerHeadCenter: { flex: 1, alignItems: 'center', gap: 1 },
   composerTitle: { ...type.button, color: colors.text },
@@ -2080,10 +2100,10 @@ const styles = StyleSheet.create({
     padding: 18,
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.82)',
-    shadowColor: '#7F5CFF',
+    borderColor: colors.border,
+    shadowColor: colors.primary,
     shadowOpacity: 0.13,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 12 },
@@ -2095,15 +2115,15 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#7F5CFF',
-    shadowColor: '#7F5CFF',
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
     shadowOpacity: 0.28,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
   },
   composerKicker: {
     ...type.label,
-    color: 'rgba(46,40,37,0.44)',
+    color: colors.textMeta,
   },
   composerLead: { ...type.heading, color: colors.textPrimary, textAlign: 'center' as const },
   composerHeroSub: { ...type.caption, color: colors.textSecondary, textAlign: 'center' as const },
@@ -2115,18 +2135,18 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: 'rgba(255,255,255,0.68)',
+    backgroundColor: colors.surfaceAlt,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(46,40,37,0.08)',
+    borderColor: colors.border,
   },
-  composerHint: { ...type.label, color: '#7F5CFF' },
+  composerHint: { ...type.label, color: colors.pillText },
   composerHintDone: { color: colors.success },
   mediaPanel: {
     borderRadius: 24,
     padding: 14,
-    backgroundColor: 'rgba(255,255,255,0.86)',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(46,40,37,0.08)',
+    borderColor: colors.border,
   },
   mediaPanelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   mediaCountTxt: { ...type.label, color: colors.textMuted },
@@ -2136,7 +2156,7 @@ const styles = StyleSheet.create({
     width: (Dimensions.get('window').width - 32 - 16) / 3,
     height: (Dimensions.get('window').width - 32 - 16) / 3,
     borderRadius: 12,
-    backgroundColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
   },
   mediaVideo: {
     alignItems: 'center',
@@ -2162,21 +2182,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: 'rgba(127,92,255,0.5)',
-    backgroundColor: 'rgba(127,92,255,0.08)',
+    borderColor: colors.tintStrong,
+    backgroundColor: colors.tintWeak,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
   },
-  mediaAddTxt: { ...type.label, color: '#7F5CFF', textAlign: 'center' as const, paddingHorizontal: 4 },
+  mediaAddTxt: { ...type.label, color: colors.pillText, textAlign: 'center' as const, paddingHorizontal: 4 },
   mediaAddLarge: {
     width: '100%',
     minHeight: 150,
     borderRadius: 22,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: 'rgba(127,92,255,0.42)',
-    backgroundColor: 'rgba(127,92,255,0.06)',
+    borderColor: colors.tintStrong,
+    backgroundColor: colors.tintWeak,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
@@ -2187,7 +2207,7 @@ const styles = StyleSheet.create({
     borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#7F5CFF',
+    backgroundColor: colors.primary,
   },
   mediaAddLargeTxt: { ...type.button, color: colors.textPrimary },
   mediaAddLargeSub: { ...type.caption, color: colors.textMuted },
@@ -2195,9 +2215,9 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 22,
     padding: 14,
-    backgroundColor: 'rgba(255,255,255,0.86)',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(46,40,37,0.08)',
+    borderColor: colors.border,
   },
   // 入力欄の上に置く項目名。編集シートの editLbl と同じ役割
   composerLbl: { ...type.label, color: colors.textPrimary },
@@ -2205,21 +2225,21 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 28,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(46,40,37,0.08)',
-    backgroundColor: 'rgba(247,243,238,0.94)',
+    borderTopColor: colors.border,
+    backgroundColor: colors.paper,
   },
   composerSave: {
-    backgroundColor: '#7F5CFF',
+    backgroundColor: colors.primary,
     borderRadius: 999,
     paddingVertical: 16,
     alignItems: 'center',
-    shadowColor: '#7F5CFF',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 4,
   },
-  composerSaveDisabled: { backgroundColor: '#E5E5E5', shadowOpacity: 0, elevation: 0 },
-  composerSaveTxt: { ...type.button, color: '#fff' },
-  composerSaveTxtDisabled: { color: '#999' },
+  composerSaveDisabled: { backgroundColor: colors.borderEmphasis, shadowOpacity: 0, elevation: 0 },
+  composerSaveTxt: { ...type.button, color: colors.onPrimary },
+  composerSaveTxtDisabled: { color: colors.textDisabled },
 })

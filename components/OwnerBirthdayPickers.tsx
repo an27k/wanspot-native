@@ -1,7 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { CenterSnapPicker } from '@/components/CenterSnapPicker'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 const currentYear = new Date().getFullYear()
 
@@ -69,6 +70,7 @@ export function OwnerBirthdayPickers({
   fieldLabel,
   hint,
 }: Props) {
+  const styles = useThemedStyles(createStyles)
   const resolvedLabel = fieldLabel === undefined ? DEFAULT_FIELD_LABEL : fieldLabel
   const resolvedHint = hint === undefined ? DEFAULT_HINT : hint
   const yi = year ? parseInt(year, 10) : NaN
@@ -136,7 +138,7 @@ export function OwnerBirthdayPickers({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   label: { ...type.label, color: colors.textMuted, marginBottom: 4 },
   hint: { ...type.caption, color: colors.textMuted, marginBottom: 8 },
   grid3: { flexDirection: 'row', gap: 10, marginTop: 2 },

@@ -8,9 +8,11 @@ import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
 import { DogIdentityProfile } from '@/components/dog/DogIdentityProfile'
 import { useDogProfile } from '@/components/dog/useDogProfile'
-import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import type { AppColors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { track } from '@/lib/analytics'
 import { syncMemoryAnniversaryNotifications } from '@/lib/notifications/memory-anniversary'
 import { hasSeenReviewTutorial } from '@/lib/review/tutorial-storage'
@@ -20,6 +22,8 @@ import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
 /** アルバムタブ本体（route: camera が有効なときのみ lazy ロード） */
 export function ReviewAlbumTabScreen() {
   const insets = useSafeAreaInsets()
+  const { isDark } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const { dog, setDog, userId, loading: dogLoading } = useDogProfile()
   const params = useLocalSearchParams<{ focusVisitId?: string }>()
   const focusVisitId = typeof params.focusVisitId === 'string' ? params.focusVisitId : null
@@ -86,6 +90,7 @@ export function ReviewAlbumTabScreen() {
       }}
     >
       <GoogleHomeBackground key={boundaryKey}>
+        {isDark ? <View pointerEvents="none" style={styles.darkBackground} /> : null}
         <ScrollView
           style={styles.root}
               contentContainerStyle={{ paddingBottom: padBottom }}
@@ -135,17 +140,22 @@ export function ReviewAlbumTabScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
+  darkBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.paper,
+    opacity: 0.9,
+  },
   bootCard: {
     marginTop: 88,
     marginHorizontal: 16,
     borderRadius: 30,
     padding: 20,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.38)',
-    shadowColor: '#000',
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.12,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
@@ -153,35 +163,35 @@ const styles = StyleSheet.create({
   },
   bootKicker: {
     ...type.label,
-    color: 'rgba(255,255,255,0.74)',
+    color: colors.textMeta,
     textTransform: 'uppercase',
   },
   bootTitle: {
     marginTop: 6,
     ...type.heading,
-    color: GOOGLE_HOME.textPrimary,
+    color: colors.textPrimary,
   },
   bootSub: {
     marginTop: 4,
     ...type.caption,
-    color: GOOGLE_HOME.textSecondary,
+    color: colors.textSecondary,
   },
   bootSkeleton: {
     marginTop: 18,
     borderRadius: 24,
     padding: 10,
     gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: colors.surfaceAlt,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.72)',
+    borderColor: colors.border,
   },
-  bootPhoto: { height: 176, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.48)' },
-  bootLineWide: { width: '70%', height: 15, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.68)' },
-  bootLine: { width: '44%', height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.52)' },
+  bootPhoto: { height: 176, borderRadius: 18, backgroundColor: colors.surfaceTertiary },
+  bootLineWide: { width: '70%', height: 15, borderRadius: 8, backgroundColor: colors.borderEmphasis },
+  bootLine: { width: '44%', height: 12, borderRadius: 6, backgroundColor: colors.border },
   noDog: {
     marginTop: 16,
     ...type.caption,
-    color: GOOGLE_HOME.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 24,
   },

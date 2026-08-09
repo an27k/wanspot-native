@@ -9,7 +9,8 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 type Variant = 'light' | 'dark'
 
@@ -22,6 +23,7 @@ type Props = {
 
 /** スケルトン用 shimmer。active=false でアニメ停止。 */
 export function ShimmerBlock({ style, active = true, variant = 'light' }: Props) {
+  const styles = useThemedStyles(createStyles)
   const progress = useSharedValue(0)
 
   useEffect(() => {
@@ -52,6 +54,7 @@ export function ShimmerBlock({ style, active = true, variant = 'light' }: Props)
 }
 
 export function SearchResultSkeleton({ variant = 'light' }: { variant?: Variant } = {}) {
+  const styles = useThemedStyles(createStyles)
   const isDark = variant === 'dark'
   return (
     <View style={[styles.card, isDark && styles.cardDark]}>
@@ -66,6 +69,7 @@ export function SearchResultSkeleton({ variant = 'light' }: { variant?: Variant 
 }
 
 export function ArticleListSkeleton({ variant = 'light' }: { variant?: Variant } = {}) {
+  const styles = useThemedStyles(createStyles)
   const isDark = variant === 'dark'
   return (
     <View style={[styles.article, isDark && styles.articleDark]}>
@@ -79,9 +83,9 @@ export function ArticleListSkeleton({ variant = 'light' }: { variant?: Variant }
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   block: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 8,
     overflow: 'hidden',
   },
@@ -90,7 +94,7 @@ const styles = StyleSheet.create({
   },
   shimmer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#ece8e2',
+    backgroundColor: colors.borderEmphasis,
   },
   shimmerDark: {
     backgroundColor: 'rgba(255,255,255,0.18)',
@@ -120,7 +124,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },

@@ -9,9 +9,11 @@ import {
   MAP_LIKE_COLOR,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
-import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { GOOGLE_HOME, GOOGLE_HOME_DARK_CHIPS } from '@/constants/google-home-tokens'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { activeConditionCount, type MapConditionFilter } from '@/lib/nearby/map-filter'
 import { INDOOR_OK_FILTER_LABEL, TERRACE_OK_FILTER_LABEL } from '@/lib/nearby/pet-policy'
 
@@ -41,6 +43,11 @@ export function MapFilterBar({
   topInset: number
 }) {
   const [conditionsOpen, setConditionsOpen] = useState(false)
+  const { colors, resolvedScheme } = useAppTheme()
+  const chipTokens = resolvedScheme === 'dark' ? GOOGLE_HOME_DARK_CHIPS : GOOGLE_HOME
+  const styles = useThemedStyles(
+    resolvedScheme === 'dark' ? createDarkStyles : createLightStyles
+  )
   const conditionCount = activeConditionCount(conditions)
 
   const conditionChip = (key: keyof MapConditionFilter, icon: React.ReactNode, label: string) => {
@@ -48,7 +55,7 @@ export function MapFilterBar({
     return (
       <TouchableOpacity
         key={key}
-        style={[styles.chip, on && styles.chipOn, on && { borderColor: colors.brand }]}
+        style={[styles.chip, on && styles.chipOn, on && { borderColor: colors.primary }]}
         onPress={() => onToggleCondition(key)}
         activeOpacity={0.85}
         accessibilityRole="button"
@@ -56,7 +63,7 @@ export function MapFilterBar({
         accessibilityLabel={`${label}で絞り込み`}
       >
         {icon}
-        <Text style={[styles.chipTxt, on && styles.chipTxtOn, on && { color: colors.brand }]}>{label}</Text>
+        <Text style={[styles.chipTxt, on && styles.chipTxtOn, on && { color: colors.primary }]}>{label}</Text>
       </TouchableOpacity>
     )
   }
@@ -81,7 +88,7 @@ export function MapFilterBar({
           <Ionicons
             name="filter"
             size={18}
-            color={conditionCount > 0 ? colors.brand : GOOGLE_HOME.mapChipText}
+            color={conditionCount > 0 ? colors.primary : chipTokens.mapChipText}
           />
           {conditionCount > 0 ? (
             <View style={styles.funnelBadge}>
@@ -116,8 +123,8 @@ export function MapFilterBar({
           contentContainerStyle={styles.row}
           style={styles.scroll}
         >
-          {conditionChip('indoorOnly', <Ionicons name="home" size={15} color={colors.brand} />, INDOOR_OK_FILTER_LABEL)}
-          {conditionChip('terraceOnly', <Ionicons name="sunny" size={15} color={colors.brand} />, TERRACE_OK_FILTER_LABEL)}
+          {conditionChip('indoorOnly', <Ionicons name="home" size={15} color={colors.primary} />, INDOOR_OK_FILTER_LABEL)}
+          {conditionChip('terraceOnly', <Ionicons name="sunny" size={15} color={colors.primary} />, TERRACE_OK_FILTER_LABEL)}
           {conditionChip('likedOnly', <HeartIcon color={MAP_LIKE_COLOR} />, 'いいね')}
         </ScrollView>
       ) : null}
@@ -125,7 +132,13 @@ export function MapFilterBar({
   )
 }
 
-const styles = StyleSheet.create({
+type MapChipTokens = {
+  mapChipBg: string
+  mapChipBorder: string
+  mapChipText: string
+}
+
+const makeStyles = (chipTokens: MapChipTokens) => (colors: AppColors) => StyleSheet.create({
   wrap: {
     position: 'absolute',
     left: 0,
@@ -139,7 +152,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 8,
   },
   chip: {
@@ -149,21 +162,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: GOOGLE_HOME.mapChipBg,
-    borderWidth: 1.5,
-    borderColor: GOOGLE_HOME.mapChipBorder,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 9,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    backgroundColor: chipTokens.mapChipBg,
+    borderWidth: 1,
+    borderColor: chipTokens.mapChipBorder,
   },
   chipOn: {
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    shadowOpacity: 0.18,
-    shadowRadius: 11,
+    backgroundColor: colors.tintWeak,
   },
-  chipTxt: { ...type.label, color: GOOGLE_HOME.mapChipText },
+  chipTxt: { ...type.label, color: chipTokens.mapChipText },
   chipTxtOn: { fontWeight: '800' },
   funnelBtn: {
     width: 40,
@@ -171,18 +177,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: GOOGLE_HOME.mapChipBg,
-    borderWidth: 1.5,
-    borderColor: GOOGLE_HOME.mapChipBorder,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 9,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    backgroundColor: chipTokens.mapChipBg,
+    borderWidth: 1,
+    borderColor: chipTokens.mapChipBorder,
   },
   funnelBtnOn: {
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    borderColor: colors.brand,
+    backgroundColor: colors.tintWeak,
+    borderColor: colors.primary,
   },
   funnelBadge: {
     position: 'absolute',
@@ -191,11 +192,14 @@ const styles = StyleSheet.create({
     minWidth: 17,
     height: 17,
     borderRadius: 9,
-    backgroundColor: colors.brand,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
   // 17×17 の丸に入る件数。読む文字ではなく点として見るものなので label には上げない
-  funnelBadgeTxt: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  funnelBadgeTxt: { fontSize: 10, fontWeight: '800', color: colors.onPrimary },
 })
+
+const createLightStyles = makeStyles(GOOGLE_HOME)
+const createDarkStyles = makeStyles(GOOGLE_HOME_DARK_CHIPS)

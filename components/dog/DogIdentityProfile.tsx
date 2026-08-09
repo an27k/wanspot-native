@@ -14,9 +14,11 @@ import {
   ownerBirthdayToYmd,
   splitYmdToParts,
 } from '@/components/OwnerBirthdayPickers'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import {
   calcDogAge,
   DOG_SIZE_LABEL,
@@ -27,7 +29,7 @@ import { pickFromLibrary } from '@/lib/image-picker'
 import { supabase } from '@/lib/supabase'
 import { invalidateCache } from '@/lib/client-cache'
 
-const IconEditSmall = ({ size = 22, color = colors.textMuted }: { size?: number; color?: string }) => (
+const IconEditSmall = ({ size = 22, color }: { size?: number; color: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
     <Path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
     <Path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -44,6 +46,8 @@ type Props = {
 
 /** 愛犬アイデンティティ表示＋編集（ワクチンは含まない。旧マイページから移設） */
 export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default', ringEnergized }: Props) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const insets = useSafeAreaInsets()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -114,7 +118,9 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
         const path = `${userId}/dog-${Date.now()}.jpg`
         const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(path, buf, { upsert: true, contentType: 'image/jpeg' })
+          // 毎回一意なパスなので上書きは不要。upsert は SELECT 権限も要求し、
+          // avatars の新規アップロード用 RLS（INSERT）だけでは 400 になる。
+          .upload(path, buf, { upsert: false, contentType: 'image/jpeg' })
         // getPublicUrl はファイルの実在を確認せずURLを組み立てるだけ。
         // 失敗を握り潰すと、存在しない画像のURLがDBに残り肉球のままになる（実際に発生した）
         if (uploadError) {
@@ -217,7 +223,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
               accessibilityRole="button"
               accessibilityLabel="プロフィール編集を閉じる"
             >
-              <Ionicons name="close" size={22} color="rgba(42,37,34,0.72)" />
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
             </Pressable>
           </View>
 
@@ -227,14 +233,9 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
             contentContainerStyle={styles.profileEditScroll}
           >
             <View style={[styles.avatarWrap, styles.avatarWrapEditing, styles.profileEditAvatar]}>
-              <LinearGradient
-                colors={['rgba(85,224,180,0.98)', 'rgba(182,108,255,0.94)', 'rgba(242,122,215,0.8)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.profileEditAvatarRing}
-              >
+              <View style={styles.profileEditAvatarRing}>
                 <View style={styles.profileEditAvatarGlass}>{avatarInner}</View>
-              </LinearGradient>
+              </View>
               <Pressable
                 style={styles.camFab}
                 onPress={() => void pickPhoto()}
@@ -242,7 +243,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
                 accessibilityRole="button"
                 accessibilityLabel="愛犬の写真を変更"
               >
-                <Ionicons name="camera" size={15} color="#fff" />
+                <Ionicons name="camera" size={15} color={colors.onPrimary} />
               </Pressable>
             </View>
 
@@ -382,7 +383,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
             <Text style={styles.settingsMetaMuted}>名前・犬種・サイズなどを登録できます</Text>
           )}
           <Pressable style={styles.settingsEditBtn} onPress={startEdit} accessibilityRole="button" accessibilityLabel="プロフィールを編集">
-            <Ionicons name="create-outline" size={17} color={colors.brandDark} />
+            <Ionicons name="create-outline" size={17} color={colors.pillText} />
             <Text style={styles.settingsEditBtnTxt}>プロフィールを編集</Text>
           </Pressable>
         </View>
@@ -413,7 +414,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
             <Pressable style={[styles.profileSheet, { paddingBottom: insets.bottom + 18 }]} onPress={() => {}}>
               <LinearGradient
                 pointerEvents="none"
-                colors={['rgba(255,255,255,0.94)', 'rgba(255,255,255,0.82)', 'rgba(245,255,251,0.72)']}
+                colors={[colors.surfaceRaised, colors.surface, colors.tintWeak]}
                 locations={[0, 0.58, 1]}
                 style={StyleSheet.absoluteFill}
               />
@@ -458,7 +459,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
                     startEdit()
                   }}
                 >
-                  <Ionicons name="create-outline" size={18} color="#fff" />
+                  <Ionicons name="create-outline" size={18} color={colors.onPrimary} />
                   <Text style={styles.profileEditText}>編集</Text>
                 </Pressable>
                 <Pressable style={styles.profileSheetClose} onPress={() => setProfileOpen(false)}>
@@ -509,7 +510,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
               accessibilityRole="button"
               accessibilityLabel="愛犬の写真を変更"
             >
-              <Ionicons name="camera" size={15} color="#fff" />
+              <Ionicons name="camera" size={15} color={colors.onPrimary} />
             </Pressable>
           ) : null}
         </View>
@@ -667,7 +668,7 @@ export function DogIdentityProfile({ dog, userId, onUpdated, variant = 'default'
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   wrap: { position: 'relative', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
   compactAlbumWrap: {
     paddingHorizontal: 16,
@@ -706,17 +707,17 @@ const styles = StyleSheet.create({
   profileSheetBackdrop: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: 'rgba(18,12,16,0.48)',
+    backgroundColor: colors.overlayScrim,
     paddingHorizontal: 16,
   },
   profileSheet: {
     borderRadius: 36,
     paddingTop: 12,
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(255,255,255,0.78)',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.74)',
-    shadowColor: '#4A1E1D',
+    borderColor: colors.borderEmphasis,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.28,
     shadowRadius: 30,
     shadowOffset: { width: 0, height: 20 },
@@ -746,7 +747,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(60,60,67,0.26)',
+    backgroundColor: colors.borderEmphasis,
     marginBottom: 16,
   },
   profileSheetHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -770,9 +771,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.62)',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.86)',
+    borderColor: colors.borderEmphasis,
   },
   profileSheetCopy: {
     alignItems: 'center',
@@ -781,12 +782,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.42)',
+    backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.64)',
+    borderColor: colors.border,
   },
-  profileSheetName: { ...type.title, color: '#211C1A' },
-  profileSheetMeta: { ...type.caption, color: 'rgba(33,28,26,0.72)', textAlign: 'center' as const },
+  profileSheetName: { ...type.title, color: colors.text },
+  profileSheetMeta: { ...type.caption, color: colors.textSecondary, textAlign: 'center' as const },
   profileStatRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -798,11 +799,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: 'rgba(255,255,255,0.66)',
+    backgroundColor: colors.surfaceAlt,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(33,28,26,0.08)',
+    borderColor: colors.border,
   },
-  profileStatText: { ...type.label, color: 'rgba(33,28,26,0.86)' },
+  profileStatText: { ...type.label, color: colors.text },
   profileActionRow: { flexDirection: 'row', gap: 10, marginTop: 18 },
   profileEditBtn: {
     flex: 1,
@@ -812,42 +813,42 @@ const styles = StyleSheet.create({
     gap: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(122,92,255,0.92)',
-    shadowColor: '#7F5CFF',
+    backgroundColor: colors.primary,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.26,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
     elevation: 4,
   },
-  profileEditText: { ...type.button, color: '#fff' },
+  profileEditText: { ...type.button, color: colors.onPrimary },
   profileSheetClose: {
     flex: 1,
     minHeight: 46,
     borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(42,37,34,0.88)',
+    backgroundColor: colors.surfaceAlt,
   },
-  profileSheetCloseText: { ...type.button, color: '#fff' },
+  profileSheetCloseText: { ...type.button, color: colors.text },
   profileEditBackdrop: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 14,
-    backgroundColor: 'rgba(18,12,14,0.72)',
+    backgroundColor: colors.overlayScrim,
   },
   profileEditSheet: {
     maxHeight: '88%',
-    borderRadius: 32,
+    borderRadius: 24,
     paddingTop: 12,
     paddingHorizontal: 18,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.7)',
-    shadowColor: '#000',
-    shadowOpacity: 0.22,
-    shadowRadius: 26,
-    shadowOffset: { width: 0, height: 18 },
-    elevation: 12,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
   },
   profileEditHead: {
     minHeight: 42,
@@ -865,7 +866,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(42,37,34,0.06)',
+    backgroundColor: colors.overlaySubtle,
   },
   profileEditScroll: { paddingBottom: 14, alignItems: 'center' },
   profileEditAvatar: {
@@ -880,11 +881,9 @@ const styles = StyleSheet.create({
     borderRadius: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#7F5CFF',
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
+    backgroundColor: colors.tintStrong,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   profileEditAvatarGlass: {
     width: 98,
@@ -893,32 +892,27 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.76)',
+    backgroundColor: colors.surface,
     borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: colors.borderEmphasis,
   },
   profileEditFooter: {
     flexDirection: 'row',
     gap: 8,
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(42,37,34,0.1)',
+    borderTopColor: colors.borderSubtle,
   },
   profileEditCancelBtn: {
-    backgroundColor: 'rgba(33,28,26,0.06)',
+    backgroundColor: colors.surfaceAlt,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(33,28,26,0.08)',
+    borderColor: colors.border,
   },
-  profileEditCancelText: { color: 'rgba(33,28,26,0.7)' },
+  profileEditCancelText: { color: colors.textSecondary },
   profileEditSaveBtn: {
-    backgroundColor: 'rgba(122,92,255,0.92)',
-    shadowColor: '#7F5CFF',
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    backgroundColor: colors.primary,
   },
-  profileEditSaveText: { color: '#fff' },
+  profileEditSaveText: { color: colors.onPrimary },
   settingsWrap: {
     alignItems: 'center',
     paddingVertical: 8,
@@ -960,7 +954,7 @@ const styles = StyleSheet.create({
   },
   settingsEditBtnTxt: {
     ...type.button,
-    color: colors.brandDark,
+    color: colors.pillText,
   },
   wrapAlbum: {
     paddingTop: 0,
@@ -996,7 +990,7 @@ const styles = StyleSheet.create({
     height: 112,
     borderRadius: 56,
     borderWidth: 4,
-    borderColor: '#fff',
+    borderColor: colors.surface,
   },
   avatarImg: { width: '100%', height: '100%' },
   avatarPlaceholder: {
@@ -1013,16 +1007,16 @@ const styles = StyleSheet.create({
     minWidth: 32,
     minHeight: 32,
     borderRadius: 16,
-    backgroundColor: colors.text,
+    backgroundColor: colors.primary,
     borderWidth: 2,
-    borderColor: colors.background,
+    borderColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
     zIndex: 2,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.18,
         shadowRadius: 2.5,
@@ -1032,7 +1026,7 @@ const styles = StyleSheet.create({
   },
   photoRemoveBtn: { marginTop: 8, paddingVertical: 6 },
   // 破壊的な副操作。押せる文字だが、ここを17pxにすると保存より目立つ
-  photoRemoveTxt: { ...type.button, fontSize: 13, color: '#E84335' },
+  photoRemoveTxt: { ...type.button, fontSize: 13, color: colors.error },
   name: { ...type.title, color: colors.text, textAlign: 'center' as const },
   nameAlbum: { color: GOOGLE_HOME.textPrimary },
   nameRow: {
@@ -1054,7 +1048,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   metaPill: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1071,7 +1065,7 @@ const styles = StyleSheet.create({
   metaPillTxtAlbum: { color: GOOGLE_HOME.textSecondary },
   editFields: { alignSelf: 'stretch', width: '100%', marginTop: 12 },
   textInput: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
@@ -1086,7 +1080,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.cardBg,
+    backgroundColor: colors.surfaceRaised,
   },
   breedSuggestionRow: {
     paddingHorizontal: 14,
@@ -1100,12 +1094,12 @@ const styles = StyleSheet.create({
   birthdayCard: {
     marginTop: 4,
     padding: 16,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10 },
+      ios: { shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10 },
       android: { elevation: 4 },
     }),
   },
@@ -1121,17 +1115,17 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.cardBg,
+    backgroundColor: colors.surface,
   },
-  chipOn: { borderColor: colors.brandDark, backgroundColor: colors.brandButton },
+  chipOn: { borderColor: colors.primary, backgroundColor: colors.tintStrong },
   chipLbl: { ...type.label, color: colors.text },
   chipLblMuted: { ...type.label, color: colors.textMuted },
   // ♂♀ はチップ内のアイコン扱い。行間を持つ型を当てるとチップの高さが変わる
   symMale: { fontSize: 17, fontWeight: '800', color: colors.genderMale },
   symFemale: { fontSize: 17, fontWeight: '800', color: colors.genderFemale },
   btnRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  btnGhost: { flex: 1, paddingVertical: 12, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center' },
+  btnGhost: { flex: 1, paddingVertical: 12, borderRadius: 16, backgroundColor: colors.surfaceAlt, alignItems: 'center' },
   btnGhostTxt: { ...type.button, color: colors.textLight },
-  btnPri: { flex: 1, paddingVertical: 12, borderRadius: 16, backgroundColor: colors.brandButton, alignItems: 'center' },
-  btnPriTxt: { ...type.button, color: colors.text },
+  btnPri: { flex: 1, paddingVertical: 12, borderRadius: 16, backgroundColor: colors.primary, alignItems: 'center' },
+  btnPriTxt: { ...type.button, color: colors.onPrimary },
 })

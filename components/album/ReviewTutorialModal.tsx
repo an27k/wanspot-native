@@ -11,8 +11,10 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TutorialVideoFallback } from '@/components/album/TutorialSampleVideo'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { track } from '@/lib/analytics'
 import { markReviewTutorialSeen } from '@/lib/review/tutorial-storage'
 
@@ -43,6 +45,8 @@ const STEPS = [
 export function ReviewTutorialModal({ visible, onClose, dogName }: Props) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const [page, setPage] = useState(0)
 
   const displayDogName = dogName?.trim() || '愛犬'
@@ -143,7 +147,7 @@ export function ReviewTutorialModal({ visible, onClose, dogName }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.paper, paddingHorizontal: 20 },
   head: { alignItems: 'flex-end', marginBottom: 8 },
   skip: { ...type.button, color: colors.textSecondary },
@@ -201,5 +205,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  ctaTxt: { ...type.button, color: '#fff' },
+  ctaTxt: { ...type.button, color: colors.onPrimary },
 })

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 export const DOG_SIZE_OPTIONS = [
   { key: 'XS' as const, label: 'XS', desc: '〜4kg · 〜25cm' },
@@ -18,6 +19,8 @@ type Props = {
 }
 
 export function DogSizeSegments({ value, onChange }: Props) {
+  const styles = useThemedStyles(createStyles)
+
   return (
     <View style={styles.row}>
       {DOG_SIZE_OPTIONS.map(({ key, label, desc }) => {
@@ -37,7 +40,7 @@ export function DogSizeSegments({ value, onChange }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   seg: {
     minWidth: 56,
@@ -45,14 +48,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
     alignItems: 'center',
-    backgroundColor: '#F5F4F0',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  segOn: { backgroundColor: colors.primary, borderColor: colors.primary, minWidth: '100%' },
+  segOn: { backgroundColor: colors.tintWeak, borderColor: colors.primary, minWidth: '100%' },
   segPressed: { opacity: 0.85 },
   // XS〜XL は必須の選択肢そのもの。バッジではなくボタンの文字として扱う
-  segLbl: { ...type.button, color: '#999' },
-  segLblOn: { color: colors.textPrimary },
-  segDesc: { ...type.caption, marginTop: 4, color: colors.textPrimary },
+  segLbl: { ...type.button, color: colors.textSecondary },
+  segLblOn: { color: colors.primary },
+  segDesc: { ...type.caption, marginTop: 4, color: colors.textSecondary },
 })

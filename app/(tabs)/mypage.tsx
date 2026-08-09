@@ -4,28 +4,30 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
-import { BrandTabHeader } from '@/components/common/BrandTabHeader'
+import { AppHeader } from '@/components/AppHeader'
+import { SafeDogAvatar } from '@/components/dog/SafeDogAvatar'
 import { RunningDog } from '@/components/DogStates'
 import { WalkAlertCard } from '@/components/search/WalkAlertCard'
 import { PressableScale } from '@/components/common/PressableScale'
+import { ThemePreferenceSegments } from '@/components/settings/ThemePreferenceSegments'
 import { resolveSessionLocation } from '@/lib/location-session'
-import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { WanspotIconPawCheck } from '@/components/icons/WanspotIconPawCheck'
-import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
 import { useDogProfile } from '@/components/dog/useDogProfile'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
-import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { getWanspotApiBase } from '@/lib/wanspot-api'
 import { useAuth } from '@/context/AuthContext'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 
 function SettingsTab() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { signOut } = useAuth()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const { dog, loading } = useDogProfile()
   const apiBase = useMemo(() => getWanspotApiBase(), [])
   /** お散歩予報カード用の現在地（許可済みセッション位置。毎朝の通知タップの着地でもある） */
@@ -50,23 +52,48 @@ function SettingsTab() {
 
   if (loading && !dog) {
     return (
-      <GoogleHomeBackground>
+      <View style={styles.root}>
+        <AppHeader />
         <View style={styles.loadRoot}>
           <RunningDog label="設定を読み込み中..." />
         </View>
-      </GoogleHomeBackground>
+      </View>
     )
   }
 
   return (
-    <GoogleHomeBackground>
+    <View style={styles.root}>
+      <AppHeader />
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: padBottom, gap: 8 }}
+        contentContainerStyle={{ paddingTop: 12, paddingBottom: padBottom, gap: 8 }}
       >
-        <BrandTabHeader />
+        <View style={styles.section}>
+          <PressableScale
+            style={styles.profileCard}
+            onPress={() => router.push('/settings/dog-profile')}
+            accessibilityLabel="愛犬プロフィールを開く"
+          >
+            <View style={styles.profileAvatar}>
+              <SafeDogAvatar uri={dog?.photo_url} size={28} />
+            </View>
+            <View style={styles.profileCopy}>
+              <Text style={styles.profileName}>{dog?.name || '愛犬プロフィール'}</Text>
+              <Text style={styles.profileMeta} numberOfLines={1}>
+                {dog?.breed || 'プロフィールを設定してください'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </PressableScale>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionCaption}>表示</Text>
+          <ThemePreferenceSegments />
+        </View>
 
         {/* お散歩予報 — 毎朝7:00の通知タップの着地。旧検索ホームから移設 */}
         <View style={styles.section}>
+          <Text style={styles.sectionCaption}>今日のお散歩</Text>
           <WalkAlertCard
             surface="light"
             location={walkLocation}
@@ -80,30 +107,16 @@ function SettingsTab() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionCaption}>履歴</Text>
           <View style={styles.card}>
-            <PressableScale
-              style={styles.row}
-              onPress={() => router.push('/settings/dog-profile')}
-              accessibilityLabel="愛犬情報編集"
-            >
-              <WanspotIconPaw size={20} variant="outline" />
-              <View style={styles.rowTextCol}>
-                <Text style={styles.rowTxt}>愛犬情報編集</Text>
-                <Text style={styles.rowSubTxt} numberOfLines={1}>
-                  {dog ? `${dog.name} · ` : ''}プロフィール・散歩エリア・ワクチン記録
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#CCC" />
-            </PressableScale>
-            <View style={styles.rowDivider} />
             <PressableScale
               style={styles.row}
               onPress={() => router.push('/likes')}
               accessibilityLabel="いいねしたスポット"
             >
-              <Ionicons name="heart-outline" size={20} color={SETTINGS_ICON_COLOR} />
+              <Ionicons name="heart-outline" size={20} color={colors.text} />
               <Text style={styles.rowTxt}>いいねしたスポット</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textHint} />
             </PressableScale>
             <View style={styles.rowDivider} />
             <PressableScale
@@ -113,7 +126,7 @@ function SettingsTab() {
             >
               <WanspotIconPawCheck size={20} variant="outline" />
               <Text style={styles.rowTxt}>行ったスポット</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textHint} />
             </PressableScale>
           </View>
         </View>
@@ -122,21 +135,21 @@ function SettingsTab() {
           <Text style={styles.sectionCaption}>サポート</Text>
           <View style={styles.card}>
             <PressableScale style={styles.row} onPress={() => openWeb('/contact')} accessibilityLabel="お問い合わせ">
-              <Ionicons name="mail-outline" size={20} color={SETTINGS_ICON_COLOR} />
+              <Ionicons name="mail-outline" size={20} color={colors.text} />
               <Text style={styles.rowTxt}>お問い合わせ</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textHint} />
             </PressableScale>
             <View style={styles.rowDivider} />
             <PressableScale style={styles.row} onPress={() => openWeb('/privacy')} accessibilityLabel="プライバシーポリシー">
-              <Ionicons name="shield-checkmark-outline" size={20} color={SETTINGS_ICON_COLOR} />
+              <Ionicons name="shield-checkmark-outline" size={20} color={colors.text} />
               <Text style={styles.rowTxt}>プライバシーポリシー</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textHint} />
             </PressableScale>
             <View style={styles.rowDivider} />
             <PressableScale style={styles.row} onPress={() => openWeb('/terms')} accessibilityLabel="利用規約">
-              <Ionicons name="document-text-outline" size={20} color={SETTINGS_ICON_COLOR} />
+              <Ionicons name="document-text-outline" size={20} color={colors.text} />
               <Text style={styles.rowTxt}>利用規約</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textHint} />
             </PressableScale>
           </View>
         </View>
@@ -152,9 +165,9 @@ function SettingsTab() {
               }}
               accessibilityLabel="ログアウト"
             >
-              <Ionicons name="log-out-outline" size={20} color={SETTINGS_ICON_COLOR} />
+              <Ionicons name="log-out-outline" size={20} color={colors.text} />
               <Text style={styles.rowTxt}>ログアウト</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textHint} />
             </PressableScale>
             <View style={styles.rowDivider} />
             <PressableScale
@@ -162,26 +175,49 @@ function SettingsTab() {
               onPress={() => router.push('/account-delete')}
               accessibilityLabel="アカウントを削除"
             >
-              <Ionicons name="trash-outline" size={20} color="#E84335" />
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
               <View style={styles.rowTextCol}>
                 <Text style={styles.dangerTitle}>アカウントを削除</Text>
                 <Text style={styles.rowSubTxt}>取り消しできません</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#CCC" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textHint} />
             </PressableScale>
           </View>
         </View>
       </ScrollView>
-    </GoogleHomeBackground>
+    </View>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.paper },
   loadRoot: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  section: { marginHorizontal: 16, marginTop: 4, gap: 8 },
-  sectionCaption: { ...type.label, color: GOOGLE_HOME.textSecondary, marginLeft: 4 },
+  section: { marginHorizontal: 20, marginTop: 4, gap: 8 },
+  sectionCaption: { ...type.label, color: colors.textSecondary, marginLeft: 2 },
+  profileCard: {
+    minHeight: 88,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  profileAvatar: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    overflow: 'hidden',
+    backgroundColor: colors.dogPhotoPlaceholderBg,
+  },
+  profileCopy: { flex: 1, gap: 3, minWidth: 0 },
+  profileName: { ...type.heading, color: colors.textPrimary },
+  profileMeta: { ...type.caption, color: colors.textSecondary },
   card: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
@@ -198,7 +234,7 @@ const styles = StyleSheet.create({
   rowTextCol: { flex: 1, gap: 2 },
   rowSubTxt: { ...type.caption, color: colors.textMuted },
   rowDivider: { height: 1, backgroundColor: colors.border, marginLeft: 48 },
-  dangerTitle: { ...type.row, fontWeight: '600' as const, color: '#E84335' },
+  dangerTitle: { ...type.row, fontWeight: '600' as const, color: colors.error },
 })
 
 export default function SettingsTabScreen() {

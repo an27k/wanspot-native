@@ -14,9 +14,11 @@ import {
 } from 'react-native'
 import type { TextInput as RNTextInput } from 'react-native'
 import { Link, useRouter } from 'expo-router'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { useAuth } from '@/context/AuthContext'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { isAppleSignInAvailable, signInWithApple } from '@/lib/apple-signin'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
 import { isSupabaseOAuthReady, signInWithGoogleOAuth } from '@/lib/oauth-supabase'
@@ -29,6 +31,8 @@ import { oauthApplePressableBase, oauthGooglePressableBase } from '@/components/
 export default function LoginScreen() {
   const router = useRouter()
   const { signIn } = useAuth()
+  const { colors, isDark } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const passwordRef = useRef<RNTextInput | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -118,6 +122,7 @@ export default function LoginScreen() {
               style={styles.input}
               placeholder="メールアドレス"
               placeholderTextColor={colors.textMuted}
+              keyboardAppearance={isDark ? 'dark' : 'light'}
               autoCapitalize="none"
               keyboardType="email-address"
               value={email}
@@ -131,6 +136,7 @@ export default function LoginScreen() {
               style={styles.input}
               placeholder="パスワード"
               placeholderTextColor={colors.textMuted}
+              keyboardAppearance={isDark ? 'dark' : 'light'}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -200,7 +206,7 @@ export default function LoginScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   scrollContent: { flexGrow: 1, padding: 24, justifyContent: 'center' },
   inner: { width: '100%', flexGrow: 1, justifyContent: 'center' },
@@ -221,19 +227,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
-    backgroundColor: colors.cardBg,
+    backgroundColor: colors.input,
     color: colors.text,
   },
   err: { ...type.caption, color: colors.error, textAlign: 'center', marginBottom: 8 },
   btn: {
-    backgroundColor: colors.brand,
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: 'center',
     marginTop: 8,
   },
   btnDis: { opacity: 0.4 },
-  btnTxt: { ...type.button, color: colors.text },
+  btnTxt: { ...type.button, color: colors.onPrimary },
   link: { marginTop: 20, alignItems: 'center' },
   linkTxt: { ...type.body, color: colors.textMuted },
   dividerRow: {
@@ -247,11 +253,13 @@ const styles = StyleSheet.create({
   dividerTxt: { ...type.label, color: colors.textMuted },
   btnGoogle: {
     ...oauthGooglePressableBase,
+    borderColor: colors.borderEmphasis,
     marginTop: 14,
   },
   btnGoogleTxt: { fontWeight: '800', fontSize: 16, color: '#fff' },
   btnApple: {
     ...oauthApplePressableBase,
+    borderColor: colors.borderEmphasis,
     marginTop: 10,
   },
   btnAppleTxt: { fontWeight: '800', fontSize: 16, color: '#fff' },

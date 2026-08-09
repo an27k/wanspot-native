@@ -8,12 +8,16 @@ import { formatDistanceLabel, calcDistanceMeters } from '@/lib/nearby/geo'
 import type { SheetSpot } from '@/lib/nearby/sheet-spot'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
 import { IconPaw } from '@/components/IconPaw'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
-import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { GOOGLE_HOME, GOOGLE_HOME_DARK_CHIPS } from '@/constants/google-home-tokens'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
-const IconStar = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
+const PHOTO_CONTROL_ICON = '#242220'
+
+const IconStar = ({ color }: { color: string }) => (
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
@@ -31,22 +35,34 @@ const IconGoogle = () => (
   </Svg>
 )
 
-const IconMoney = ({ filled }: { filled: boolean }) => (
-  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? colors.primary : '#e8e8e8'}>
+const IconMoney = ({ filled, colors }: { filled: boolean; colors: AppColors }) => (
+  <Svg
+    width={10}
+    height={10}
+    viewBox="0 0 24 24"
+    fill={filled ? colors.primary : colors.borderEmphasis}
+  >
     <Circle cx="12" cy="12" r="10" />
-    <SvgText x="12" y="16" textAnchor="middle" fontSize="12" fill={filled ? colors.textPrimary : '#bbb'} fontWeight="bold">
+    <SvgText
+      x="12"
+      y="16"
+      textAnchor="middle"
+      fontSize="12"
+      fill={filled ? colors.onPrimary : colors.textMuted}
+      fontWeight="bold"
+    >
       ¥
     </SvgText>
   </Svg>
 )
 
-const PriceLevel = ({ level }: { level: number | null }) => {
+const PriceLevel = ({ level, colors }: { level: number | null; colors: AppColors }) => {
   // 価格帯が不明なスポットは大半のため、記号は出さずに詰める（旧実装の「?」は意味が伝わらない）
   if (level === null || level === undefined) return null
   return (
-    <View style={styles.priceRow}>
+    <View style={iconStyles.priceRow}>
       {[1, 2, 3, 4].map((i) => (
-        <IconMoney key={i} filled={i <= level} />
+        <IconMoney key={i} filled={i <= level} colors={colors} />
       ))}
     </View>
   )
@@ -72,6 +88,10 @@ export function NearbySheetSpotCard({
   onToggleLike?: () => void
   onClose?: () => void
 }) {
+  const { colors, resolvedScheme } = useAppTheme()
+  const styles = useThemedStyles(
+    resolvedScheme === 'dark' ? createDarkStyles : createLightStyles
+  )
   const uri = spotPhotoUrl(spot.photoRef, 'thumbnail')
 
   const distLabel =
@@ -100,7 +120,7 @@ export function NearbySheetSpotCard({
           accessibilityRole="button"
           accessibilityLabel="閉じる"
         >
-          <Ionicons name="close" size={18} color={colors.textPrimary} />
+          <Ionicons name="close" size={18} color={PHOTO_CONTROL_ICON} />
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
@@ -136,9 +156,9 @@ export function NearbySheetSpotCard({
             {spot.rating ? (
               <View style={styles.rateRow}>
                 <IconGoogle />
-                <IconStar />
+                <IconStar color={colors.primary} />
                 <Text style={styles.rateSmall}>{spot.rating}</Text>
-                <PriceLevel level={spot.priceLevel} />
+                <PriceLevel level={spot.priceLevel} colors={colors} />
               </View>
             ) : null}
             {distLabel ? <Text style={styles.distSmall}>{distLabel}</Text> : null}
@@ -155,16 +175,28 @@ export function NearbySheetSpotCard({
   )
 }
 
-const styles = StyleSheet.create({
+const iconStyles = StyleSheet.create({
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+})
+
+type ListGenreTokens = {
+  listGenreBg: string
+  listGenreBorder: string
+  listGenreText: string
+}
+
+const makeStyles = (chipTokens: ListGenreTokens) => (colors: AppColors) => StyleSheet.create({
   card: {
     borderRadius: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   cardCompact: { marginBottom: 0 },
   cardPopup: { marginBottom: 0 },
@@ -179,11 +211,11 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(36,34,32,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 3,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.1,
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
@@ -191,7 +223,7 @@ const styles = StyleSheet.create({
   },
   cardPhoto: {
     height: 120,
-    backgroundColor: '#e8e4de',
+    backgroundColor: colors.mapMuted,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     overflow: 'hidden',
@@ -202,21 +234,23 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   spotCat: {
     ...type.label,
-    backgroundColor: GOOGLE_HOME.listGenreBg,
+    backgroundColor: chipTokens.listGenreBg,
     borderWidth: 1,
-    borderColor: GOOGLE_HOME.listGenreBorder,
-    color: GOOGLE_HOME.listGenreText,
+    borderColor: chipTokens.listGenreBorder,
+    color: chipTokens.listGenreText,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
   },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rateSmall: { ...type.caption, color: '#888' },
+  rateSmall: { ...type.caption, color: colors.textSecondary },
   // 距離は右端に単独で置く数値。行内の他のメタより太くして目的地までの遠近を拾えるようにする
-  distSmall: { ...type.caption, fontWeight: '700' as const, color: '#aaa' },
+  distSmall: { ...type.caption, fontWeight: '700' as const, color: colors.textMuted },
   // 地図と並ぶカードでも店名が起点。carousel / compact は numberOfLines 1 のまま
   spotName: { ...type.heading, color: colors.textPrimary },
-  spotAddr: { ...type.caption, color: '#aaa' },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  spotAddr: { ...type.caption, color: colors.textMuted },
 })
+
+const createLightStyles = makeStyles(GOOGLE_HOME)
+const createDarkStyles = makeStyles(GOOGLE_HOME_DARK_CHIPS)

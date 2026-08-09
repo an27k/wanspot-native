@@ -8,14 +8,15 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  View,
 } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
 import { WalkAreaTagPicker } from '@/components/walk-area/WalkAreaTagPicker'
-import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import {
   OB_DOG_KEY,
   OB_LOCATION_GRANTED,
@@ -27,11 +28,12 @@ import { walkAreaTagsForUpsert } from '@/lib/walk-area-tags'
 export default function WalkAreaOnboardingPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const styles = useThemedStyles(createStyles)
   const [anchor, setAnchor] = useState<{ lat: number; lng: number } | null>(null)
   const [tags, setTags] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const padTop = insets.top + 16
-  const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
+  const padBottom = insets.bottom + 32
 
   useEffect(() => {
     void (async () => {
@@ -88,7 +90,9 @@ export default function WalkAreaOnboardingPage() {
           位置情報が使えない場合のフォールバックです。近くのおすすめに使います。あとから設定でも変更できます。
         </Text>
 
-        <WalkAreaTagPicker anchor={anchor} value={tags} onChange={setTags} />
+        <View style={styles.pickerCard}>
+          <WalkAreaTagPicker anchor={anchor} value={tags} onChange={setTags} />
+        </View>
 
         <TouchableOpacity
           style={[styles.next, (!canNext || submitting) && styles.nextOff]}
@@ -102,19 +106,26 @@ export default function WalkAreaOnboardingPage() {
   )
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#fff' },
-  main: { flex: 1, backgroundColor: '#fff' },
-  h2: { ...type.title, color: colors.textPrimary },
-  hint: { ...type.caption, color: '#888' },
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  flex: { flex: 1, backgroundColor: colors.paper },
+  main: { flex: 1, backgroundColor: colors.paper },
+  h2: { ...type.title, color: colors.textPrimary, textAlign: 'center' },
+  hint: { ...type.caption, color: colors.textSecondary, textAlign: 'center' },
+  pickerCard: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
   next: {
     marginTop: 8,
-    height: 48,
+    height: 52,
     borderRadius: 16,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   nextOff: { opacity: 0.45 },
-  nextTxt: { ...type.button, color: colors.textPrimary },
+  nextTxt: { ...type.button, color: colors.onPrimary },
 })

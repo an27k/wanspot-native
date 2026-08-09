@@ -9,13 +9,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from 'react-native-maps'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
-import { WANSPOT_GOOGLE_MAP_STYLE } from '@/constants/google-map-style'
+import {
+  WANSPOT_GOOGLE_MAP_STYLE_DARK,
+  WANSPOT_GOOGLE_MAP_STYLE_LIGHT,
+} from '@/constants/google-map-style'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { isGoogleMapsConfigured } from '@/lib/google-maps-config'
 import { inferSpotGenre } from '@/lib/nearby/map-filter'
 import { MAP_GENRE_COLOR } from '@/lib/nearby/constants'
@@ -68,7 +73,17 @@ function regionForLocation(lat: number, lng: number): Region {
  * ノーマルピン（ティアドロップ型）。選択中はブランド色＋拡大し、ポップのマウントアニメを付ける。
  * 非選択ピンは tracksViewChanges を切って静止画として描画する（パフォーマンス優先）。
  */
-function NormalMapPin({ genreColor, selected }: { genreColor: string; selected: boolean }) {
+function NormalMapPin({
+  genreColor,
+  selected,
+  selectedColor,
+  shadowColor,
+}: {
+  genreColor: string
+  selected: boolean
+  selectedColor: string
+  shadowColor: string
+}) {
   const scale = useRef(new Animated.Value(selected ? 0.6 : 1)).current
 
   useEffect(() => {
@@ -86,7 +101,7 @@ function NormalMapPin({ genreColor, selected }: { genreColor: string; selected: 
   return (
     <Animated.View
       style={[
-        styles.pinWrap,
+        pinStyles.wrap,
         { width: size + 8, height: size + 8 },
         selected && { transform: [{ scale }] },
       ]}
@@ -94,8 +109,8 @@ function NormalMapPin({ genreColor, selected }: { genreColor: string; selected: 
       <Ionicons
         name="location-sharp"
         size={size}
-        color={selected ? colors.brandDark : genreColor}
-        style={styles.pinIcon}
+        color={selected ? selectedColor : genreColor}
+        style={[pinStyles.icon, { textShadowColor: shadowColor }]}
       />
     </Animated.View>
   )
@@ -110,12 +125,16 @@ function SpotMarker({
   spot,
   selected,
   genreColor,
+  selectedColor,
+  shadowColor,
   stackIndex,
   onPress,
 }: {
   spot: SpreadSpot
   selected: boolean
   genreColor: string
+  selectedColor: string
+  shadowColor: string
   /** 描画順を固定するための安定インデックス（重なり時の z-order 入れ替わり防止） */
   stackIndex: number
   onPress: (spot: SheetSpot) => void
@@ -142,7 +161,12 @@ function SpotMarker({
       zIndex={selected ? 10_000 : stackIndex}
       tracksViewChanges={track}
     >
-      <NormalMapPin genreColor={genreColor} selected={selected} />
+      <NormalMapPin
+        genreColor={genreColor}
+        selected={selected}
+        selectedColor={selectedColor}
+        shadowColor={shadowColor}
+      />
     </Marker>
   )
 }
@@ -169,6 +193,8 @@ export function NearbyMapView({
   bottomInset?: number
 }) {
   const insets = useSafeAreaInsets()
+  const { colors, resolvedScheme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const mapRef = useRef<any>(null)
   const [mapReady, setMapReady] = useState(false)
   const [mapLoadTimedOut, setMapLoadTimedOut] = useState(false)
@@ -204,7 +230,15 @@ export function NearbyMapView({
     [userLocation?.lat, userLocation?.lng]
   )
 
-  const mapStyle = useMemo(() => [...WANSPOT_GOOGLE_MAP_STYLE] as any, [])
+  const mapStyle = useMemo(
+    () =>
+      [
+        ...(resolvedScheme === 'dark'
+          ? WANSPOT_GOOGLE_MAP_STYLE_DARK
+          : WANSPOT_GOOGLE_MAP_STYLE_LIGHT),
+      ] as any,
+    [resolvedScheme]
+  )
 
   useEffect(() => {
     if (mapReady) {
@@ -297,6 +331,8 @@ export function NearbyMapView({
             spot={spot}
             selected={selectedSpot?.key === spot.key}
             genreColor={MAP_GENRE_COLOR[inferSpotGenre(spot)]}
+            selectedColor={colors.primary}
+            shadowColor={colors.surfaceRaised}
             stackIndex={index + 1}
             onPress={handleMarkerPress}
           />
@@ -318,36 +354,42 @@ export function NearbyMapView({
         accessibilityRole="button"
         accessibilityLabel="現在地に戻る"
       >
-        <Ionicons name="navigate" size={22} color={userLocation ? colors.textPrimary : '#aaa'} />
+        <Ionicons
+          name="navigate"
+          size={22}
+          color={userLocation ? colors.textPrimary : colors.textDisabled}
+        />
       </TouchableOpacity>
     </View>
   )
 }
 
-const styles = StyleSheet.create({
-  wrap: { flex: 1 },
-  map: { ...StyleSheet.absoluteFillObject },
-  pinWrap: {
+const pinStyles = StyleSheet.create({
+  wrap: {
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
-  pinIcon: {
-    textShadowColor: 'rgba(255,255,255,0.9)',
+  icon: {
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 3,
   },
+})
+
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  wrap: { flex: 1, backgroundColor: colors.mapMuted },
+  map: { ...StyleSheet.absoluteFillObject },
   recenterBtn: {
     position: 'absolute',
     right: 16,
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
@@ -358,7 +400,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
@@ -366,17 +408,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   configTitle: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary },
-  configHint: { ...type.caption, color: '#888' },
+  configHint: { ...type.caption, color: colors.textSecondary },
   mapHint: {
     position: 'absolute',
     left: 16,
     right: 16,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 10,
     padding: 10,
     borderWidth: 1,
     borderColor: colors.border,
     zIndex: 6,
   },
-  mapHintTxt: { ...type.caption, color: '#888', textAlign: 'center' },
+  mapHintTxt: { ...type.caption, color: colors.textSecondary, textAlign: 'center' },
 })

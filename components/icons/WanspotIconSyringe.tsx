@@ -1,6 +1,6 @@
 import { View } from 'react-native'
 import Svg, { G, Line, Rect } from 'react-native-svg'
-import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
+import { useAppTheme } from '@/context/ThemeContext'
 
 type Props = {
   size?: number
@@ -8,8 +8,9 @@ type Props = {
 }
 
 /** wanspot_icon_syringe.svg 準拠（設定タブ・ワクチン行） */
-export function WanspotIconSyringe({ size = 20, color = SETTINGS_ICON_COLOR }: Props) {
-  const stroke = color
+export function WanspotIconSyringe({ size = 20, color }: Props) {
+  const { colors } = useAppTheme()
+  const stroke = color ?? colors.text
   const sw = 1.8
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>

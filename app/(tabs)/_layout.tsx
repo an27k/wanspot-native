@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { colors } from '@/constants/colors'
 import { GlassTabBar } from '@/components/navigation/GlassTabBar'
 import { AlbumTabIcon } from '@/components/icons/AlbumTabIcon'
+import { useAppTheme } from '@/context/ThemeContext'
 import { track } from '@/lib/analytics'
 import { REVIEW_ALBUM_TAB_ENABLED } from '@/lib/feature-flags'
 
@@ -12,6 +12,8 @@ import { REVIEW_ALBUM_TAB_ENABLED } from '@/lib/feature-flags'
  * 旧 search ルートは通知・保存状態からの遷移互換のため非表示で残す（index へリダイレクト）。
  */
 export default function TabsLayout() {
+  const { colors } = useAppTheme()
+
   return (
       <Tabs
         initialRouteName="index"
@@ -45,10 +47,9 @@ export default function TabsLayout() {
             name="articles"
             options={{
               title: 'まとめ記事',
-              sceneStyle: { backgroundColor: 'transparent' },
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
-                  name={focused ? 'newspaper' : 'newspaper-outline'}
+                  name={focused ? 'book' : 'book-outline'}
                   color={color}
                   size={focused ? 26 : 24}
                 />

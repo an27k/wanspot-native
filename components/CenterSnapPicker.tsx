@@ -9,8 +9,9 @@ import {
   Text,
   View,
 } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 const ITEM_H = 40
 const VISIBLE_ROWS = 5
@@ -35,6 +36,7 @@ function indexForValue(data: Row[], value: string): number {
  * 中央に選択行が来るスクロール（ドラム型ではなく、ハイライト帯固定）
  */
 export function CenterSnapPicker({ data, value, onChange, listKey = 'col' }: Props) {
+  const styles = useThemedStyles(createStyles)
   const ref = useRef<ScrollView>(null)
   const pad = ((VISIBLE_ROWS - 1) / 2) * ITEM_H
 
@@ -111,13 +113,13 @@ export function CenterSnapPicker({ data, value, onChange, listKey = 'col' }: Pro
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   wrap: {
     height: CENTER_PICKER_HEIGHT,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.cardBg,
+    backgroundColor: colors.input,
     overflow: 'hidden',
   },
   scroll: { flex: 1 },
@@ -129,7 +131,7 @@ const styles = StyleSheet.create({
     height: ITEM_H,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: colors.brand,
+    borderColor: colors.primary,
     backgroundColor: 'rgba(255, 216, 77, 0.12)',
     zIndex: 2,
   },

@@ -11,7 +11,9 @@ import Animated, {
 } from 'react-native-reanimated'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
 import { SOFT_SPRING } from '@/lib/motion/constants'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 type Props = {
   children: ReactNode
@@ -24,6 +26,8 @@ type Props = {
 export function GlassSearchShell({ children, focused, variant = 'light' }: Props) {
   const focusSv = useSharedValue(focused ? 1 : 0)
   const isGoogle = variant === 'google'
+  const { colors, isDark } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
 
   useEffect(() => {
     focusSv.value = withSpring(focused ? 1 : 0, SOFT_SPRING)
@@ -51,12 +55,9 @@ export function GlassSearchShell({ children, focused, variant = 'light' }: Props
     }
     return {
       borderColor: interpolateColor(focusSv.value, [0, 1], [colors.border, colors.primary]),
-      backgroundColor:
-        Platform.OS === 'ios'
-          ? `rgba(255,255,255,${0.52 + focusSv.value * 0.12})`
-          : `rgba(255,255,255,${0.94 + focusSv.value * 0.04})`,
+      backgroundColor: colors.input,
     }
-  })
+  }, [colors.border, colors.input, colors.primary, isGoogle])
 
   return (
     <Animated.View style={[styles.shell, isGoogle && styles.shellGoogle, shellStyle]}>
@@ -64,7 +65,7 @@ export function GlassSearchShell({ children, focused, variant = 'light' }: Props
         {Platform.OS === 'ios' ? (
           <BlurView
             intensity={focused ? (isGoogle ? 36 : 48) : isGoogle ? 28 : 32}
-            tint={isGoogle ? 'dark' : 'light'}
+            tint={isGoogle || isDark ? 'dark' : 'light'}
             style={StyleSheet.absoluteFill}
           />
         ) : null}
@@ -74,10 +75,10 @@ export function GlassSearchShell({ children, focused, variant = 'light' }: Props
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   shell: {
     flex: 1,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,

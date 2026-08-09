@@ -1,7 +1,8 @@
 import { IconPaw } from '@/components/IconPaw'
-import { colors } from '@/constants/colors'
+import { useAppTheme } from '@/context/ThemeContext'
 
 /** 犬写真プレースホルダ（SVG のみ — PNG デコード回避） */
-export function DogPawPlaceholder({ size = 40, fill = colors.dogPhotoPlaceholderPaw }: { size?: number; fill?: string }) {
-  return <IconPaw size={size} color={fill} />
+export function DogPawPlaceholder({ size = 40, fill }: { size?: number; fill?: string }) {
+  const { colors } = useAppTheme()
+  return <IconPaw size={size} color={fill ?? colors.dogPhotoPlaceholderPaw} />
 }

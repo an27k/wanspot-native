@@ -3,8 +3,9 @@ import { StyleSheet, Text, View } from 'react-native'
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { applyOAuthCallbackUrl } from '@/lib/oauth-supabase'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
 
@@ -17,6 +18,7 @@ function isNonEmptyCallbackUrl(url: unknown): url is string {
  */
 export default function AuthOAuthCallbackScreen() {
   const router = useRouter()
+  const styles = useThemedStyles(createStyles)
   const handledRef = useRef(false)
   const urlFromHook = Linking.useURL()
 
@@ -64,7 +66,7 @@ export default function AuthOAuthCallbackScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', gap: 16 },
   txt: { ...type.caption, color: colors.textMuted, paddingHorizontal: 24, textAlign: 'center' },
 })

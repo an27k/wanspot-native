@@ -11,14 +11,15 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { AppHeader } from '@/components/AppHeader'
 import { DogIdentityProfile } from '@/components/dog/DogIdentityProfile'
 import { DogVaccineSettings } from '@/components/settings/DogVaccineSettings'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { RunningDog } from '@/components/DogStates'
 import { WalkAreaTagPicker } from '@/components/walk-area/WalkAreaTagPicker'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { invalidateCache } from '@/lib/client-cache'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
 import { resolveSessionLocation } from '@/lib/location-session'
@@ -29,6 +30,7 @@ import { walkAreaTagsForUpsert } from '@/lib/walk-area-tags'
 export default function DogProfileSettingsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const styles = useThemedStyles(createStyles)
   const { dog, setDog, userId, loading: dogLoading } = useDogProfile()
   const [tags, setTags] = useState<string[]>([])
   const [anchor, setAnchor] = useState<{ lat: number; lng: number } | null>(null)
@@ -72,24 +74,18 @@ export default function DogProfileSettingsScreen() {
     }
   }, [tags, router])
 
-  const padTop = insets.top + 8
   const padBottom = insets.bottom + 24
   const loading = dogLoading || areaLoading
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={[styles.header, { paddingTop: padTop }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={12} accessibilityLabel="戻る">
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.headerTitle}>愛犬情報編集</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <AppHeader variant="back" onBack={() => router.back()} />
 
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: padBottom + 72 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: padBottom + 72 }}
         keyboardShouldPersistTaps="handled"
       >
+        <Text style={styles.pageTitle}>愛犬情報編集</Text>
         {loading ? (
           <View style={styles.loadingWrap}>
             <RunningDog label="読み込み中..." />
@@ -134,20 +130,9 @@ export default function DogProfileSettingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cardBg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, ...type.button, color: colors.text, textAlign: 'center' as const },
-  headerSpacer: { width: 44 },
+  pageTitle: { ...type.title, color: colors.textPrimary, marginTop: 24, marginBottom: 4 },
   loadingWrap: { marginTop: 48, alignItems: 'center' },
   emptyTxt: { marginTop: 24, ...type.caption, color: colors.textMuted, textAlign: 'center' as const },
   profileCard: {
@@ -156,7 +141,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 16,
     borderRadius: 16,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -164,7 +149,7 @@ const styles = StyleSheet.create({
   sectionHeadSpaced: { marginTop: 28 },
   vaccineCard: {
     borderRadius: 16,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
@@ -176,7 +161,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 12,
     backgroundColor: colors.cardBg,
     borderTopWidth: 1,
@@ -185,10 +170,8 @@ const styles = StyleSheet.create({
   saveBtn: {
     paddingVertical: 14,
     borderRadius: 16,
-    backgroundColor: colors.brandButton,
+    backgroundColor: colors.primary,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.brandDark,
   },
-  saveBtnTxt: { ...type.button, color: colors.text },
+  saveBtnTxt: { ...type.button, color: colors.onPrimary },
 })

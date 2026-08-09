@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { View } from 'react-native'
 import Svg, { Circle, G } from 'react-native-svg'
-import { colors } from '@/constants/colors'
+import { useAppTheme } from '@/context/ThemeContext'
 import Animated, {
   Easing,
   cancelAnimation,
@@ -41,6 +41,7 @@ const DOTS = Array.from({ length: DOT_COUNT }, (_, i) => {
 })
 
 export function BrandLoader({ size = 96 }: { size?: number }) {
+  const { colors } = useAppTheme()
   const rotate = useSharedValue(0)
 
   useEffect(() => {

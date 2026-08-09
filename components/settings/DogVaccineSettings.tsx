@@ -6,8 +6,9 @@ import {
   ownerBirthdayToYmd,
   splitYmdToParts,
 } from '@/components/OwnerBirthdayPickers'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import {
   computeVaccineStamp,
   formatDateJaGregorian,
@@ -17,6 +18,8 @@ import {
 import { supabase } from '@/lib/supabase'
 
 function VaccineStampMark() {
+  const styles = useThemedStyles(createStyles)
+
   return (
     <View style={styles.stamp}>
       <Text style={styles.stampTxt}>接種済</Text>
@@ -33,6 +36,7 @@ type VaccineKind = 'rabies' | 'mixed'
 
 /** 設定タブ用ワクチン行（旧マイページのワクチンUIを移設） */
 export function DogVaccineSettings({ dog, onUpdated }: Props) {
+  const styles = useThemedStyles(createStyles)
   const [pickerKind, setPickerKind] = useState<VaccineKind | null>(null)
   const [pickerYear, setPickerYear] = useState('')
   const [pickerMonth, setPickerMonth] = useState('')
@@ -164,7 +168,7 @@ export function DogVaccineSettings({ dog, onUpdated }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -176,10 +180,10 @@ const styles = StyleSheet.create({
   // 設定タブのリスト行と同じ組み（mypage の rowTxt / rowSubTxt に合わせる）
   rowTitle: { ...type.row, color: colors.text },
   rowSub: { ...type.caption, color: colors.textMuted, marginTop: 2 },
-  rowSubMuted: { color: colors.textLight },
+  rowSubMuted: { color: colors.textSecondary },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 46 },
   // › は文字ではなくシェブロン。行の文字と一緒に動かさない
-  chevron: { fontSize: 20, color: '#CCC', fontWeight: '300' },
+  chevron: { fontSize: 20, color: colors.textDisabled, fontWeight: '300' },
   stamp: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -187,9 +191,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.successMutedBg,
   },
   stampTxt: { ...type.label, color: colors.success },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 },
+  overlay: { flex: 1, backgroundColor: colors.overlayScrim, justifyContent: 'center', padding: 24 },
   pickerCard: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.paper,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -199,18 +203,18 @@ const styles = StyleSheet.create({
   birthdayCard: {
     marginTop: 4,
     padding: 16,
-    backgroundColor: colors.background,
+    backgroundColor: colors.paper,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10 },
+      ios: { shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10 },
       android: { elevation: 4 },
     }),
   },
   pickerActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  pickerGhost: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#f5f5f5', alignItems: 'center' },
-  pickerGhostTxt: { ...type.button, color: colors.textLight },
-  pickerPri: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.brandButton, alignItems: 'center' },
+  pickerGhost: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.surfaceAlt, alignItems: 'center' },
+  pickerGhostTxt: { ...type.button, color: colors.textSecondary },
+  pickerPri: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.tintStrong, alignItems: 'center' },
   pickerPriTxt: { ...type.button, color: colors.text },
 })

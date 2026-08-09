@@ -56,3 +56,19 @@ export const GOOGLE_HOME = {
   gapSection: 14,
   gapCard: 10,
 } as const
+
+/**
+ * グラデーションとガラス材質はモードをまたいで維持し、
+ * 地図上・一覧上で独立して浮く明色チップだけ warm dark に合わせる。
+ */
+export const GOOGLE_HOME_DARK_CHIPS = {
+  mapChipBg: 'rgba(32,29,26,0.94)',
+  mapChipBorder: 'rgba(255,255,255,0.12)',
+  mapChipText: '#F7F2EC',
+  listGenreBg: 'rgba(48,43,39,0.96)',
+  listGenreBorder: 'rgba(255,255,255,0.10)',
+  listGenreText: '#F7F2EC',
+  listActionBg: 'rgba(255,255,255,0.08)',
+  listActionBorder: 'rgba(255,255,255,0.12)',
+  listActionText: '#BDB5AC',
+} as const

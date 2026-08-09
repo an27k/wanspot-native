@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Image, type ImageContentFit, type ImageStyle } from 'expo-image'
 import { StyleSheet, View, type StyleProp } from 'react-native'
+import type { AppColors } from '@/constants/colors'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { sanitizeImageForDisplay } from '@/lib/images/sanitize-for-display'
 
 type Props = {
@@ -22,6 +24,7 @@ export function SafeRemoteImage({
   sanitize = true,
   recyclingKey,
 }: Props) {
+  const styles = useThemedStyles(createStyles)
   const [displayUri, setDisplayUri] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -69,9 +72,9 @@ export function SafeRemoteImage({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   fallback: {
-    backgroundColor: '#e8e8e8',
+    backgroundColor: colors.mapMuted,
     overflow: 'hidden',
   },
 })

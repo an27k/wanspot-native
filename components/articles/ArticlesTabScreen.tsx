@@ -6,15 +6,16 @@ import { useRouter } from 'expo-router'
 import { useIsFocused } from '@react-navigation/native'
 import { DiscoverFeedCard } from '@/components/search/DiscoverFeedCard'
 import { ArticleListRow } from '@/components/articles/ArticleListRow'
-import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
-import { BrandTabHeader } from '@/components/common/BrandTabHeader'
+import { AppHeader } from '@/components/AppHeader'
 import { ArticleListSkeleton } from '@/components/common/ShimmerSkeleton'
 import { ListEnterItem } from '@/components/common/ListEnterItem'
 import { PowState } from '@/components/DogStates'
 import { ListAdSlot } from '@/components/ads/ListAdSlot'
-import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import type { AppColors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { useScrollYReport } from '@/hooks/useScrollYReport'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { shouldInjectListAd } from '@/lib/ads/list-injection'
@@ -75,6 +76,8 @@ export function ArticlesTabScreen() {
   const router = useRouter()
   const isFocused = useIsFocused()
   const insets = useSafeAreaInsets()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
 
   const [articlesRaw, setArticlesRaw] = useState<ArticleRow[]>([])
   const [articlesList, setArticlesList] = useState<ArticleRow[]>([])
@@ -306,7 +309,8 @@ export function ArticlesTabScreen() {
   }, [loadArticles])
 
   return (
-    <GoogleHomeBackground>
+    <View style={styles.root}>
+      <AppHeader />
       <Animated.ScrollView
         onScroll={scrollHandler}
         scrollEventThrottle={16}
@@ -317,21 +321,19 @@ export function ArticlesTabScreen() {
           viewportHeightRef.current = e.nativeEvent.layout.height
         }}
         contentContainerStyle={{
-          paddingTop: insets.top + 12,
-          paddingHorizontal: GOOGLE_HOME.padH,
+          paddingTop: 12,
+          paddingHorizontal: 20,
           paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24,
         }}
         refreshControl={
-          <RefreshControl refreshing={pullRefreshing} onRefresh={() => void handleRefresh()} tintColor="#fff" />
+          <RefreshControl refreshing={pullRefreshing} onRefresh={() => void handleRefresh()} tintColor={colors.primary} />
         }
       >
-        <BrandTabHeader />
-
         {articlesLoading && articlesRaw.length === 0 ? (
           <>
-            <ArticleListSkeleton variant="dark" />
-            <ArticleListSkeleton variant="dark" />
-            <ArticleListSkeleton variant="dark" />
+            <ArticleListSkeleton />
+            <ArticleListSkeleton />
+            <ArticleListSkeleton />
           </>
         ) : null}
         {articlesFetchError && !articlesLoading && articlesRaw.length === 0 ? (
@@ -389,6 +391,12 @@ export function ArticlesTabScreen() {
           return (
             <ListEnterItem key={article.id} index={index} animate={articlesListEnter}>
               <View>
+                {index === 1 ? (
+                  <View style={styles.sectionHeading}>
+                    <View style={styles.sectionRule} />
+                    <Text style={styles.sectionHeadingTxt}>新着記事</Text>
+                  </View>
+                ) : null}
                 {index === 0 ? (
                   // 先頭はヒーローカード（ブロック型）。以降はリスト型で一覧性を上げる
                   <DiscoverFeedCard
@@ -417,23 +425,33 @@ export function ArticlesTabScreen() {
           )
         })}
       </Animated.ScrollView>
-    </GoogleHomeBackground>
+    </View>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.paper },
   chipScroll: { marginBottom: 14, flexGrow: 0 },
   chipRow: { flexDirection: 'row', gap: 8, paddingRight: 16 },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: colors.border,
   },
-  chipOn: { backgroundColor: 'rgba(255,255,255,0.92)', borderColor: 'rgba(255,255,255,0.92)' },
+  chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   // 絞り込みチップ。地図の MapFilterBar と同じ label で揃える
-  chipTxt: { ...type.label, color: GOOGLE_HOME.textSecondary },
-  chipTxtOn: { color: '#2A2522', fontWeight: '800' },
+  chipTxt: { ...type.label, color: colors.textSecondary },
+  chipTxtOn: { color: colors.onPrimary, fontWeight: '800' },
+  sectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  sectionRule: { width: 3, height: 20, borderRadius: 2, backgroundColor: colors.primary },
+  sectionHeadingTxt: { ...type.heading, color: colors.textPrimary },
 })

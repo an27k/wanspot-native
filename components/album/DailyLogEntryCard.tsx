@@ -11,8 +11,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { SafeRemoteImage } from '@/components/common/SafeRemoteImage'
-import { TOKENS } from '@/constants/color-tokens'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import {
   DAILY_LOG_CONTEXTS,
   contextLabel,
@@ -33,6 +35,8 @@ type Props = {
 
 /** アイコンの浮遊アニメーション（単色のまま、v8 restraint準拠） */
 function FloatingPawOrb() {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const float = useSharedValue(0)
 
   useEffect(() => {
@@ -53,7 +57,7 @@ function FloatingPawOrb() {
 
   return (
     <Animated.View style={[styles.orb, style]}>
-      <Ionicons name="paw" size={22} color="#fff" />
+      <Ionicons name="paw" size={22} color={colors.onPrimary} />
     </Animated.View>
   )
 }
@@ -64,6 +68,8 @@ function FloatingPawOrb() {
  * 記録済み: 当日のサムネ + 気分スタンプ + 「＋ついか」（1日に何度でも追記できる）。
  */
 export function DailyLogEntryCard({ dogName, plates, onRecord, onOpenPlate }: Props) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const todayPlates = useMemo(() => todaysDailyLogPlates(plates), [plates])
   const hasToday = todayPlates.length > 0
 
@@ -107,7 +113,7 @@ export function DailyLogEntryCard({ dogName, plates, onRecord, onOpenPlate }: Pr
                   />
                 ) : (
                   <View style={[styles.todayThumb, styles.todayThumbPlaceholder]}>
-                    <Ionicons name="paw" size={18} color={TOKENS.text.meta} />
+                    <Ionicons name="paw" size={18} color={colors.textMeta} />
                   </View>
                 )}
                 {emoji ? (
@@ -129,7 +135,7 @@ export function DailyLogEntryCard({ dogName, plates, onRecord, onOpenPlate }: Pr
             accessibilityRole="button"
             accessibilityLabel="きょうのログを追加する"
           >
-            <Ionicons name="add" size={22} color={TOKENS.brand.primary} />
+            <Ionicons name="add" size={22} color={colors.primary} />
             <Text style={styles.todayAddTxt}>ついか</Text>
           </Pressable>
         </ScrollView>
@@ -144,7 +150,7 @@ export function DailyLogEntryCard({ dogName, plates, onRecord, onOpenPlate }: Pr
             accessibilityRole="button"
             accessibilityLabel={`${ctx.label}を記録する`}
           >
-            <Ionicons name={ctx.icon as keyof typeof Ionicons.glyphMap} size={13} color={TOKENS.brand.pillText} />
+            <Ionicons name={ctx.icon as keyof typeof Ionicons.glyphMap} size={13} color={colors.pillText} />
             <Text style={styles.chipTxt}>{ctx.label}</Text>
           </Pressable>
         ))}
@@ -153,15 +159,15 @@ export function DailyLogEntryCard({ dogName, plates, onRecord, onOpenPlate }: Pr
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   card: {
     borderRadius: 24,
     padding: 16,
     gap: 12,
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
-    shadowColor: TOKENS.brand.primary,
+    borderColor: colors.border,
+    shadowColor: colors.primary,
     shadowOpacity: 0.1,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
@@ -174,25 +180,25 @@ const styles = StyleSheet.create({
     borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: TOKENS.brand.primary,
-    shadowColor: TOKENS.brand.primary,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
   },
   headCopy: { flex: 1, gap: 2 },
   kicker: {
     ...type.label,
-    color: TOKENS.text.meta,
+    color: colors.textMeta,
   },
-  title: { ...type.heading, color: TOKENS.text.primary },
-  sub: { ...type.caption, color: TOKENS.text.secondary },
+  title: { ...type.heading, color: colors.textPrimary },
+  sub: { ...type.caption, color: colors.textSecondary },
   todayRow: { gap: 10, paddingVertical: 2 },
   todayThumbWrap: { position: 'relative' },
   todayThumb: {
     width: 76,
     height: 76,
     borderRadius: 16,
-    backgroundColor: TOKENS.surface.alt,
+    backgroundColor: colors.surfaceAlt,
   },
   todayThumbPlaceholder: {
     alignItems: 'center',
@@ -207,9 +213,9 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
   },
   // 絵文字。26×26 の丸に収めるアイコンなので文字の型は当てない
   todayMoodTxt: { fontSize: 13 },
@@ -230,13 +236,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: TOKENS.brand.tintStrong,
-    backgroundColor: TOKENS.brand.tintWeak,
+    borderColor: colors.tintStrong,
+    backgroundColor: colors.tintWeak,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
   },
-  todayAddTxt: { ...type.label, color: TOKENS.brand.pillText },
+  todayAddTxt: { ...type.label, color: colors.pillText },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     flexDirection: 'row',
@@ -245,9 +251,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: TOKENS.brand.tintWeak,
+    backgroundColor: colors.tintWeak,
     borderWidth: 1,
-    borderColor: TOKENS.brand.tintStrong,
+    borderColor: colors.tintStrong,
   },
-  chipTxt: { ...type.label, color: TOKENS.brand.pillText },
+  chipTxt: { ...type.label, color: colors.pillText },
 })

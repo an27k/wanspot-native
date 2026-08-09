@@ -75,8 +75,9 @@ export async function fetchNearbySpots(eventId: string): Promise<NearbySpot[]> {
     const spots = Array.isArray(json?.spots) ? json.spots : []
     // place_id が無いと詳細を開けない。押せないものを並べない
     return spots.filter((s) => Boolean(s.place_id))
-  } catch {
+  } catch (error) {
     // 周辺スポットが出せなくてもイベント詳細は表示できる
+    console.warn('[calendar/nearby] nearby spots request failed', error)
     return []
   }
 }

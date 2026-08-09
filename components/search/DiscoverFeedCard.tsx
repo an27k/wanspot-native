@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { PressableScale } from '@/components/common/PressableScale'
-import { colors } from '@/constants/colors'
-import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 
 type Props = {
@@ -15,7 +15,7 @@ type Props = {
   onPress: () => void
 }
 
-/** Google Discover 風の横型記事カード（左テキスト・右サムネ） */
+/** まとめ記事タブ先頭の編集部特集カード。写真を主役にした縦型レイアウト。 */
 export function DiscoverFeedCard({
   title,
   summary,
@@ -24,66 +24,57 @@ export function DiscoverFeedCard({
   recyclingKey,
   onPress,
 }: Props) {
+  const styles = useThemedStyles(createStyles)
   const kicker = keywords.slice(0, 2).join(' · ') || 'ワンスポまとめ'
 
   return (
     <PressableScale onPress={onPress}>
       <View style={styles.shell}>
-        <View style={styles.row}>
-          <View style={styles.textCol}>
-            <Text style={styles.kicker} numberOfLines={1}>
-              {kicker}
-            </Text>
-            <Text style={styles.title} numberOfLines={3}>
-              {title}
-            </Text>
-            <Text style={styles.summary} numberOfLines={2}>
-              {summary}
-            </Text>
-          </View>
-          {imageUrl ? (
-            <ArticleRemoteImage
-              uri={resizePlacesImageUrl(imageUrl, 'thumbnail')}
-              style={styles.thumb}
-              recyclingKey={recyclingKey}
-              priority="normal"
-            />
-          ) : (
-            <View style={[styles.thumb, styles.thumbPh]} />
-          )}
+        {imageUrl ? (
+          <ArticleRemoteImage
+            uri={resizePlacesImageUrl(imageUrl, 'card')}
+            style={styles.hero}
+            recyclingKey={recyclingKey}
+            priority="normal"
+          />
+        ) : (
+          <View style={[styles.hero, styles.thumbPh]} />
+        )}
+        <View style={styles.textCol}>
+          <Text style={styles.kicker} numberOfLines={1}>
+            {kicker}
+          </Text>
+          <Text style={styles.title} numberOfLines={3}>
+            {title}
+          </Text>
+          <Text style={styles.summary} numberOfLines={2}>
+            {summary}
+          </Text>
         </View>
       </View>
     </PressableScale>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   /*
-    半透明ガラスから不透明な白カードへ。グラデーション背景に半透明を重ねると
+    半透明ガラスからテーマ準拠の不透明カードへ。グラデーション背景に半透明を重ねると
     カードの輪郭が地に溶けて、要素の優先順位が読めなくなっていた。
     まとめ記事の行カードと同じ質感に揃える
   */
   shell: {
-    marginBottom: GOOGLE_HOME.gapCard,
-    backgroundColor: colors.background,
+    marginBottom: 16,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 14,
-    padding: 16,
-  },
-  textCol: { flex: 1, gap: 6, minWidth: 0 },
+  textCol: { gap: 7, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16 },
   kicker: {
     ...type.label,
     color: colors.textMuted,
   },
-  // 記事一覧の先頭に置くヒーローカードの見出し。
-  // title(26) はテキスト列が約200pxしかなく3行でも見出しが切れるため heading に留める
   title: {
     ...type.heading,
     color: colors.textPrimary,
@@ -92,10 +83,9 @@ const styles = StyleSheet.create({
     ...type.caption,
     color: colors.textSecondary,
   },
-  thumb: {
-    width: 92,
-    height: 92,
-    borderRadius: 14,
+  hero: {
+    width: '100%',
+    aspectRatio: 16 / 9,
     backgroundColor: colors.dogPhotoPlaceholderBg,
   },
   thumbPh: { opacity: 0.5 },

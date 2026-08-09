@@ -6,8 +6,10 @@ import { WalkAlertModal } from '@/components/map/WalkAlertModal'
 import { GoogleGlassPanel } from '@/components/search/GoogleGlassPanel'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import { GOOGLE_HOME } from '@/constants/google-home-tokens'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { useWeather } from '@/lib/weather/use-weather'
 import { useWalkDailyAdvice } from '@/lib/weather/use-walk-daily-advice'
 import { useWalkLine } from '@/lib/weather/use-walk-line'
@@ -44,11 +46,13 @@ export function WalkAlertCard({
 }: {
   location: { lat: number; lng: number } | null
   onRequestLocation?: () => void
-  /** glass = グラデ背景用のダークガラス（検索/記事系）、light = 白背景カード（設定タブ） */
+  /** glass = グラデ背景用のダークガラス（検索/記事系）、light = テーマ準拠カード（設定タブ） */
   surface?: 'glass' | 'light'
 }) {
   const [open, setOpen] = useState(false)
   const { dog } = useDogProfile()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
 
   /** いつものお散歩時間（null=未設定→朝5:00にきょうのおすすめ、設定あり→2時間前に予定時刻の予測を通知） */
   const [walkTimeHour, setWalkTimeHour] = useState<number | null>(null)
@@ -125,7 +129,11 @@ export function WalkAlertCard({
                   {adviceLoading && !advice ? '今日のお散歩アドバイスを作成中…' : adviceText}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={isLight ? '#CCC' : GOOGLE_HOME.textMuted} />
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={isLight ? colors.textHint : GOOGLE_HOME.textMuted}
+              />
             </View>
           ) : (
             <View style={styles.bodyRow}>
@@ -139,7 +147,11 @@ export function WalkAlertCard({
                       : '気温を取得できませんでした'}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={isLight ? '#CCC' : GOOGLE_HOME.textMuted} />
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={isLight ? colors.textHint : GOOGLE_HOME.textMuted}
+              />
             </View>
       )}
 
@@ -194,11 +206,11 @@ export function WalkAlertCard({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   shell: { marginBottom: 0 },
-  /** 設定タブ用の白背景カード（他タブのリストカードと同じ質感に揃える） */
+  /** 設定タブ用の通常面カード（他タブのリストカードと同じ質感に揃える） */
   lightShell: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
@@ -226,7 +238,7 @@ const styles = StyleSheet.create({
   bodyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bodyCol: { flex: 1, gap: 4, minWidth: 0 },
   statusLine: { flexDirection: 'row', flexWrap: 'wrap' },
-  levelTxt: { ...type.title, color: GOOGLE_HOME.textPrimary },
+  levelTxt: { ...type.heading, color: GOOGLE_HOME.textPrimary },
   // 同じ「レベル · 現在N℃」の行を出すモーダル側（tempInline）と同じ組みにする
   tempTxt: { ...type.button, color: GOOGLE_HOME.textPrimary },
   advice: { ...type.caption, color: GOOGLE_HOME.textSecondary },

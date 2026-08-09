@@ -14,7 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { useRouter } from 'expo-router'
@@ -29,12 +29,13 @@ import { DogSizeSegments, type DogSizeKey } from '@/components/onboarding/DogSiz
 import { FormField } from '@/components/onboarding/FormField'
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader'
 import { TapSelectRow } from '@/components/onboarding/TapSelectRow'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { DOG_BREED_QUICK_PICKS, filterDogBreeds } from '@/lib/dog-breeds'
 import { showImagePickerOptions } from '@/lib/image-picker'
 import { OB_DOG_KEY } from '@/lib/onboarding-constants'
 import { setWalkTimeHour as setWalkTimePref, WALK_TIME_CHOICES } from '@/lib/weather/walk-time-pref'
 import { supabase } from '@/lib/supabase'
-import { TAB_BAR_HEIGHT } from '@/constants/layout'
 
 function formatBirthdayLabel(y: string, m: string, d: string): string {
   const ymd = ownerBirthdayToYmd(y, m, d)
@@ -46,7 +47,8 @@ function formatBirthdayLabel(y: string, m: string, d: string): string {
 export default function DogPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
 
   const [name, setName] = useState('')
   const [breed, setBreed] = useState('')
@@ -100,7 +102,8 @@ export default function DogPage() {
         const arrayBuffer = await response.arrayBuffer()
         const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(filePath, arrayBuffer, { contentType: 'image/jpeg', upsert: true })
+          // 毎回一意なパスなので上書きは不要。upsert は SELECT 権限も要求する。
+          .upload(filePath, arrayBuffer, { contentType: 'image/jpeg', upsert: false })
         if (uploadError) {
           Alert.alert('エラー', '写真のアップロードに失敗しました')
           setDogPhotoUri(null)
@@ -156,7 +159,7 @@ export default function DogPage() {
     }
   }
 
-  const padBottom = TAB_BAR_HEIGHT + insets.bottom + 24
+  const padBottom = insets.bottom + 24
   const padTop = insets.top + 16
 
   return (
@@ -207,7 +210,7 @@ export default function DogPage() {
             value={name}
             onChangeText={setName}
             placeholder="例: モカ"
-            placeholderTextColor="#BBB"
+            placeholderTextColor={colors.textSecondary}
             style={styles.textInput}
             returnKeyType="next"
           />
@@ -274,7 +277,7 @@ export default function DogPage() {
             <Ionicons
               name={vaccineExpanded ? 'chevron-up' : 'chevron-down'}
               size={18}
-              color="#aaa"
+              color={colors.textSecondary}
               style={styles.vaccineChevron}
             />
           </Pressable>
@@ -368,7 +371,7 @@ export default function DogPage() {
               value={breedQuery}
               onChangeText={setBreedQuery}
               placeholder="犬種名で検索"
-              placeholderTextColor="#BBB"
+              placeholderTextColor={colors.textSecondary}
               autoCorrect={false}
             />
             {/*
@@ -484,7 +487,7 @@ export default function DogPage() {
 
 const CTA_HEIGHT = 92
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   walkTimeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   walkTimeChip: {
     paddingHorizontal: 12,
@@ -492,31 +495,33 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
-  walkTimeChipOn: { borderColor: colors.brandDark, backgroundColor: colors.tintWeak },
+  walkTimeChipOn: { borderColor: colors.primary, backgroundColor: colors.tintWeak },
   walkTimeChipTxt: { ...type.label, color: colors.textSecondary },
-  walkTimeChipTxtOn: { color: colors.brandDark },
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
-  scrollContent: { paddingHorizontal: 24 },
+  walkTimeChipTxtOn: { color: colors.primary },
+  container: { flex: 1, backgroundColor: colors.paper },
+  scrollContent: { paddingHorizontal: 20 },
   title: {
     ...type.title,
-    color: '#1A1A1A',
-    marginTop: 8,
+    color: colors.textPrimary,
+    marginTop: 12,
+    textAlign: 'center',
   },
   sub: {
     ...type.caption,
-    color: '#888',
+    color: colors.textSecondary,
     marginTop: 8,
     marginBottom: 24,
+    textAlign: 'center',
   },
   photoSection: { alignItems: 'center', marginBottom: 28 },
   photoCircle: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    backgroundColor: colors.tintStrong,
-    borderWidth: 2,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.tintWeak,
+    borderWidth: 1,
     borderColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -526,89 +531,95 @@ const styles = StyleSheet.create({
   photoCirclePressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   photoPreview: { width: '100%', height: '100%' },
   photoPlaceholder: { justifyContent: 'center', alignItems: 'center' },
-  photoLabel: { ...type.caption, color: '#888' },
+  photoLabel: { ...type.caption, color: colors.textSecondary },
   textInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     ...type.row,
-    color: '#1A1A1A',
+    color: colors.textPrimary,
   },
   vaccineWrap: {
     marginTop: 8,
     marginBottom: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#EEE',
-    backgroundColor: '#FAFAF8',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     overflow: 'hidden',
   },
-  vaccineHead: { padding: 14 },
+  vaccineHead: { padding: 16 },
   // 任意項目を畳んである節。heading(20) に上げると必須の入力より目立つので label に寄せる
-  vaccineTitle: { ...type.label, color: '#999' },
-  vaccineHint: { ...type.caption, color: '#bbb', marginTop: 4 },
-  vaccineChevron: { position: 'absolute', right: 14, top: 16 },
-  vaccineBody: { paddingHorizontal: 14, paddingBottom: 14, gap: 8 },
-  vaccineLbl: { ...type.label, color: '#aaa' },
+  vaccineTitle: { ...type.label, color: colors.textSecondary },
+  vaccineHint: { ...type.caption, color: colors.textSecondary, marginTop: 4 },
+  vaccineChevron: { position: 'absolute', right: 16, top: 18 },
+  vaccineBody: { paddingHorizontal: 16, paddingBottom: 16, gap: 8 },
+  vaccineLbl: { ...type.label, color: colors.textSecondary },
   row2: { flexDirection: 'row', gap: 10 },
   optionHalf: {
     flex: 1,
     height: 44,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0EFEC',
+    backgroundColor: colors.paper,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  optionHalfOn: { backgroundColor: colors.primary },
-  optionHalfTxt: { ...type.button, color: '#999' },
-  optionHalfTxtOn: { color: colors.textPrimary },
+  optionHalfOn: { backgroundColor: colors.tintWeak, borderColor: colors.primary },
+  optionHalfTxt: { ...type.button, color: colors.textSecondary },
+  optionHalfTxtOn: { color: colors.primary },
   ctaContainer: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingTop: 16,
-    backgroundColor: '#FAFAF8',
+    backgroundColor: colors.paper,
     borderTopWidth: 1,
-    borderTopColor: '#EEE',
+    borderTopColor: colors.border,
   },
   ctaButton: {
     backgroundColor: colors.primary,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
   },
-  ctaButtonDisabled: { backgroundColor: '#E5E5E5' },
+  ctaButtonDisabled: { backgroundColor: colors.border },
   ctaButtonPressed: { backgroundColor: colors.brandDark, transform: [{ scale: 0.98 }] },
-  ctaText: { ...type.button, color: '#1A1A1A' },
-  ctaTextDisabled: { color: '#999' },
-  modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modalRootCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 },
+  ctaText: { ...type.button, color: colors.onPrimary },
+  ctaTextDisabled: { color: colors.textSecondary },
+  modalRoot: { flex: 1, backgroundColor: colors.overlayScrim, justifyContent: 'flex-end' },
+  modalRootCenter: { flex: 1, backgroundColor: colors.overlayScrim, justifyContent: 'center', padding: 20 },
   modalCardCenter: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
     padding: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modalCard: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 20,
     maxHeight: '80%',
   },
-  modalTitle: { ...type.title, color: '#1A1A1A', marginBottom: 12 },
-  modalHint: { ...type.caption, color: '#888', marginBottom: 12 },
+  modalTitle: { ...type.title, color: colors.textPrimary, marginBottom: 12 },
+  modalHint: { ...type.caption, color: colors.textSecondary, marginBottom: 12 },
   searchInp: {
     borderWidth: 1,
-    borderColor: '#E5E5E5',
-    borderRadius: 10,
+    borderColor: colors.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     ...type.row,
+    color: colors.textPrimary,
+    backgroundColor: colors.paper,
     marginBottom: 8,
   },
   quickPicks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
@@ -618,29 +629,29 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
   },
   quickChipOn: { borderColor: colors.primary, backgroundColor: colors.tintWeak },
   quickChipTxt: { ...type.label, color: colors.textSecondary },
-  quickChipTxtOn: { color: colors.brandDark },
+  quickChipTxtOn: { color: colors.primary },
   breedList: { maxHeight: 320 },
-  breedEmpty: { paddingVertical: 18, ...type.caption, color: '#888', textAlign: 'center' as const },
-  breedRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  breedRowOn: { backgroundColor: colors.tintStrong },
-  breedRowTxt: { ...type.row, color: '#1A1A1A' },
+  breedEmpty: { paddingVertical: 18, ...type.caption, color: colors.textSecondary, textAlign: 'center' as const },
+  breedRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+  breedRowOn: { backgroundColor: colors.tintWeak },
+  breedRowTxt: { ...type.row, color: colors.textPrimary },
   birthdayCard: {
-    backgroundColor: '#FAFAF8',
+    backgroundColor: colors.paper,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#EEE',
+    borderColor: colors.border,
   },
   modalDone: {
     marginTop: 12,
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  modalDoneTxt: { ...type.button, color: colors.textPrimary },
+  modalDoneTxt: { ...type.button, color: colors.onPrimary },
 })

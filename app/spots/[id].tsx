@@ -2,11 +2,13 @@ import { useEffect, useMemo } from 'react'
 import { useLocalSearchParams } from 'expo-router'
 import { View, Text, StyleSheet } from 'react-native'
 import SpotDetailScreen from '@/components/spot-detail/SpotDetailScreen'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { track } from '@/lib/analytics'
 import { isPendingPlaceRouteId, pendingPlaceFromParams } from '@/lib/spot-detail-pending'
 
 export default function SpotDetailRoute() {
+  const styles = useThemedStyles(createStyles)
   const params = useLocalSearchParams()
   const rawId = params.id
   const spotIdRaw = Array.isArray(rawId) ? rawId[0] : rawId
@@ -50,7 +52,7 @@ export default function SpotDetailRoute() {
   return <SpotDetailScreen spotId={spotId} pendingPlace={pendingPlace} />
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   fallback: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cardBg },
   err: { color: colors.textMuted },
 })

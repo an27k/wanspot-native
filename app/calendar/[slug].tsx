@@ -5,10 +5,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AiSummaryCard } from '@/components/common/AiSummaryCard'
+import { AppHeader } from '@/components/AppHeader'
 import { PowState } from '@/components/DogStates'
 import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { takeCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
 import {
   fetchNearbySpots,
@@ -51,10 +54,10 @@ function openExternal(url: string): void {
 export default function CalendarEventDetailScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const { slug } = useLocalSearchParams<{ slug: string }>()
   const event = useMemo(() => (typeof slug === 'string' ? takeCalendarEvent(slug) : null), [slug])
-
-  const padTop = insets.top + 8
 
   // 周辺スポットは詳細を開いたときだけ取りに行く。
   // 一覧APIに含めると1か月ぶん（100件超 × 最大6スポット）を毎回運ぶことになる
@@ -74,13 +77,7 @@ export default function CalendarEventDetailScreen() {
     // メモリスタッシュ経由でのみ開く画面のため、直リンクやプロセス再起動後は カレンダーへ誘導する
     return (
       <View style={styles.root}>
-        <View style={[styles.header, { paddingTop: padTop }]}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={12} accessibilityLabel="戻る">
-            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={styles.headerTitle}>イベント</Text>
-          <View style={styles.headerSpacer} />
-        </View>
+        <AppHeader variant="back" onBack={() => router.back()} />
         <View style={styles.missWrap}>
           <PowState label="イベント情報を表示できませんでした。カレンダーから開き直してください。" />
         </View>
@@ -123,22 +120,20 @@ export default function CalendarEventDetailScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={[styles.header, { paddingTop: padTop }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={12} accessibilityLabel="戻る">
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          イベント
-        </Text>
-        <Pressable
-          style={styles.shareBtn}
-          onPress={() => void shareEvent(event)}
-          hitSlop={12}
-          accessibilityLabel="共有"
-        >
-          <Ionicons name="share-outline" size={22} color={colors.textPrimary} />
-        </Pressable>
-      </View>
+      <AppHeader
+        variant="back"
+        onBack={() => router.back()}
+        rightSlot={
+          <Pressable
+            style={styles.shareBtn}
+            onPress={() => void shareEvent(event)}
+            hitSlop={12}
+            accessibilityLabel="共有"
+          >
+            <Ionicons name="share-outline" size={22} color={colors.textPrimary} />
+          </Pressable>
+        }
+      />
 
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
         {event.thumbnail_url ? (
@@ -280,24 +275,12 @@ export default function CalendarEventDetailScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cardBg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, ...type.button, color: colors.textPrimary, textAlign: 'center' as const },
-  headerSpacer: { width: 44 },
   shareBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   missWrap: { marginTop: 48, alignItems: 'center', paddingHorizontal: 24 },
   hero: { width: '100%', height: 210, backgroundColor: colors.border },
-  body: { padding: 16, gap: 12 },
+  body: { padding: 20, gap: 12 },
   title: { ...type.title, color: colors.textPrimary },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
   tagPill: {
@@ -305,11 +288,11 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 999,
     borderWidth: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   tagPillTxt: { ...type.label, color: colors.textSecondary },
   sectionCard: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,

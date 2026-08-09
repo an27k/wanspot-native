@@ -1,0 +1,66 @@
+# Dependencies and generated Expo output
+.git
+node_modules/
+.expo/
+.next/
+dist/
+out/
+build/
+web-build/
+coverage/
+.vercel/
+expo-env.d.ts
+*.tsbuildinfo
+.eas-inspect-*/
+
+# Local environments and credentials
+.env
+.env.*
+!.env.example
+:.env.local/
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# Local build output. Keep ios/ source itself in the EAS archive.
+ios/Pods/
+ios/build/
+ios/DerivedData/
+ios/**/*.xcuserdata/
+*.xcuserstate
+.kotlin/
+android/
+supabase/.branches/
+supabase/.temp/
+supabase/.env.keys
+supabase/.env.local
+supabase/.env.*.local
+
+# Store submission assets are not runtime inputs.
+store-assets/
+
+# Local/debug artifacts
+.DS_Store
+.idea/
+.vscode/
+.vs/
+.history/
+.cache/
+.cursor/
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+logs/
+tmp/
+reports/
+backups/
+*.bak
+*.orig.*
+*.tmp
+*.temp
+patches/

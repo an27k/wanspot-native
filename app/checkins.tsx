@@ -8,16 +8,19 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import * as Location from 'expo-location'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
+import { AppHeader } from '@/components/AppHeader'
 import { UserSpotsListScreen } from '@/components/lists/UserSpotsListScreen'
 import { RunningDog } from '@/components/DogStates'
 import { IconPaw } from '@/components/IconPaw'
 import { EmptyState } from '@/components/common/EmptyState'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { fetchCheckedInSpotsForUser, type UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import { supabase } from '@/lib/supabase'
 import {
@@ -27,16 +30,9 @@ import {
 } from '@/lib/user-spot-list-utils'
 import { openSpotDetailFromUserSpotRow } from '@/lib/open-spot-detail'
 import { wanspotFetch } from '@/lib/wanspot-api'
-import { TAB_BAR_HEIGHT } from '@/constants/layout'
 
-const IconChevronLeft = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.5} strokeLinecap="round">
-    <Path d="M15 18l-6-6 6-6" />
-  </Svg>
-)
-
-const IconSort = () => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round">
+const IconSort = ({ color }: { color: string }) => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round">
     <Path d="M3 6h18M3 12h12M3 18h6" />
   </Svg>
 )
@@ -54,6 +50,8 @@ type LoadState = 'idle' | 'loading' | 'success' | 'error' | 'redirect'
 export default function CheckinsPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const [spots, setSpots] = useState<UserSpotRow[]>([])
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -134,13 +132,15 @@ export default function CheckinsPage() {
 
   const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
 
-  const padTop = Math.max(12, insets.top)
-  const padBottom = TAB_BAR_HEIGHT + insets.bottom
+  const padBottom = insets.bottom + 24
 
   if (loadState === 'loading' || loadState === 'idle') {
     return (
-      <View style={[styles.screen, styles.center]}>
-        <RunningDog label="行った一覧を読み込み中..." />
+      <View style={styles.screen}>
+        <AppHeader variant="back" onBack={() => router.back()} />
+        <View style={styles.center}>
+          <RunningDog label="行った一覧を読み込み中..." />
+        </View>
       </View>
     )
   }
@@ -151,23 +151,19 @@ export default function CheckinsPage() {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.header, { paddingTop: padTop }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="戻る">
-          <IconChevronLeft />
-        </TouchableOpacity>
-        <View style={styles.titleRow}>
-          <View style={styles.titleLeft}>
-            <IconPaw size={18} color={colors.textPrimary} />
-            <Text style={styles.h1}>行った</Text>
-            <Text style={styles.count}>（累計 {loadState === 'success' ? spots.length : '—'}）</Text>
-          </View>
-          {loadState === 'success' && spots.length > 0 ? (
-            <TouchableOpacity style={styles.sortPill} onPress={() => setShowSort(true)}>
-              <IconSort />
-              <Text style={styles.sortPillTxt}>{currentSort.label}</Text>
-            </TouchableOpacity>
-          ) : null}
+      <AppHeader variant="back" onBack={() => router.back()} />
+      <View style={styles.pageHeading}>
+        <View style={styles.titleLeft}>
+          <IconPaw size={18} color={colors.textPrimary} />
+          <Text style={styles.h1}>行った</Text>
+          <Text style={styles.count}>累計 {loadState === 'success' ? spots.length : '—'}</Text>
         </View>
+        {loadState === 'success' && spots.length > 0 ? (
+          <TouchableOpacity style={styles.sortPill} onPress={() => setShowSort(true)}>
+            <IconSort color={colors.textInverse} />
+            <Text style={styles.sortPillTxt}>{currentSort.label}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: padBottom, gap: 12 }}>
@@ -182,7 +178,7 @@ export default function CheckinsPage() {
         ) : null}
         {loadState === 'success' && spots.length === 0 ? (
           <EmptyState
-            icon={<IconPaw size={40} color="#D6CEC3" />}
+            icon={<IconPaw size={40} color={colors.textHint} />}
             title="まだ行ったスポットがありません"
             body="お散歩で立ち寄ったスポットに足あとをつけると、ここに記録されます。"
             actionLabel="スポットを探す"
@@ -219,7 +215,7 @@ export default function CheckinsPage() {
                     setShowSort(false)
                   }}
                 >
-                  <Text style={[styles.sortLineTxt, disabled && { color: '#ddd' }]}>
+                  <Text style={[styles.sortLineTxt, disabled && styles.sortLineTxtDisabled]}>
                     {opt.label}
                     {sortKey === opt.key && !disabled ? ' ✓' : ''}
                   </Text>
@@ -233,22 +229,23 @@ export default function CheckinsPage() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.paper },
-  center: { justifyContent: 'center', alignItems: 'center' },
-  header: {
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  pageHeading: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingHorizontal: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
   },
-  backBtn: { marginBottom: 4, alignSelf: 'flex-start' },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   titleLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   // largeTitle(34) は並びの都合で使わない。ヘッダは1行に アイコン＋見出し＋累計＋並べ替えピル が同居する
   h1: { ...type.title, color: colors.textPrimary },
-  count: { ...type.caption, color: '#aaa' },
+  count: { ...type.caption, color: colors.textMeta },
   sortPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -258,16 +255,16 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.textPrimary,
   },
-  sortPillTxt: { ...type.label, color: '#fff' },
+  sortPillTxt: { ...type.label, color: colors.textInverse },
   errBox: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.border,
   },
   errTitle: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary, marginBottom: 8 },
-  errBody: { ...type.caption, color: '#888', marginBottom: 12 },
+  errBody: { ...type.caption, color: colors.textSecondary, marginBottom: 12 },
   retry: {
     width: '100%',
     paddingVertical: 10,
@@ -275,10 +272,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
   },
-  retryTxt: { ...type.button, color: colors.textPrimary },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', padding: 24 },
+  retryTxt: { ...type.button, color: colors.onPrimary },
+  modalBg: { flex: 1, backgroundColor: colors.overlayScrim, justifyContent: 'center', padding: 24 },
   sortSheet: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
@@ -286,5 +283,6 @@ const styles = StyleSheet.create({
   },
   sortLine: { paddingVertical: 12, paddingHorizontal: 16 },
   sortLineOn: { backgroundColor: colors.tintStrong },
-  sortLineTxt: { ...type.row, color: '#888' },
+  sortLineTxt: { ...type.row, color: colors.textSecondary },
+  sortLineTxtDisabled: { color: colors.textDisabled },
 })

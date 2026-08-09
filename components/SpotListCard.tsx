@@ -11,28 +11,35 @@ import type { PlaceCardEnrichment } from '@/lib/user-spot-list-utils'
 import { calcDistanceMeters } from '@/lib/user-spot-list-utils'
 import { spotPhotoUrl } from '@/lib/wanspot-api'
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 const IconHeart = ({ filled }: { filled: boolean }) => (
   <WanspotIconHeart size={16} filled={filled} />
 )
 
-const IconStar = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
+const IconStar = ({ color }: { color: string }) => (
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth={1.5}>
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
 )
 
-const IconMoney = ({ filled }: { filled: boolean }) => (
-  <Svg width={10} height={10} viewBox="0 0 24 24" fill={filled ? colors.primary : '#e8e8e8'}>
+const IconMoney = ({ filled, colors }: { filled: boolean; colors: AppColors }) => (
+  <Svg
+    width={10}
+    height={10}
+    viewBox="0 0 24 24"
+    fill={filled ? colors.primary : colors.borderEmphasis}
+  >
     <Circle cx="12" cy="12" r="10" />
     <SvgText
       x="12"
       y="16"
       textAnchor="middle"
       fontSize="12"
-      fill={filled ? colors.textPrimary : '#bbb'}
+      fill={filled ? colors.onPrimary : colors.textMuted}
       fontWeight="bold"
     >
       ¥
@@ -40,14 +47,14 @@ const IconMoney = ({ filled }: { filled: boolean }) => (
   </Svg>
 )
 
-const PriceLevel = ({ level }: { level: number | null }) => {
+const PriceLevel = ({ level, colors }: { level: number | null; colors: AppColors }) => {
   if (level === null || level === undefined) {
-    return <Text style={styles.q}>?</Text>
+    return <Text style={[type.caption, { color: colors.textHint }]}>?</Text>
   }
   return (
-    <View style={styles.priceRow}>
+    <View style={iconStyles.priceRow}>
       {[1, 2, 3, 4].map((i) => (
-        <IconMoney key={i} filled={i <= level} />
+        <IconMoney key={i} filled={i <= level} colors={colors} />
       ))}
     </View>
   )
@@ -94,6 +101,8 @@ export function SpotListCard({
   unlikeLoading,
 }: SpotListCardProps) {
   const requireAuth = useRequireAuth()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const photoRef = enrichment?.photo_ref ?? null
   const uri = spotPhotoUrl(photoRef, 'thumbnail')
   const displayRating = enrichment?.rating ?? null
@@ -204,9 +213,9 @@ export function SpotListCard({
             {showRatingRow ? (
               <View style={styles.rateRow}>
                 <IconGoogle />
-                <IconStar />
+                <IconStar color={colors.primary} />
                 <Text style={styles.rateTxt}>{displayRating}</Text>
-                <PriceLevel level={priceLevel} />
+                <PriceLevel level={priceLevel} colors={colors} />
               </View>
             ) : null}
             {distLabel ? <Text style={styles.dist}>{distLabel}</Text> : null}
@@ -219,15 +228,19 @@ export function SpotListCard({
   )
 }
 
-const styles = StyleSheet.create({
+const iconStyles = StyleSheet.create({
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+})
+
+const createStyles = (colors: AppColors) => StyleSheet.create({
   card: {
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  photoWrap: { height: 144, backgroundColor: '#e8e4de', position: 'relative' },
+  photoWrap: { height: 144, backgroundColor: colors.mapMuted, position: 'relative' },
   photo: { width: '100%', height: '100%' },
   heartCol: { position: 'absolute', top: 8, right: 8, alignItems: 'center', gap: 4 },
   heartBtn: {
@@ -260,12 +273,10 @@ const styles = StyleSheet.create({
   },
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rateTxt: { ...type.caption, color: '#888' },
+  rateTxt: { ...type.caption, color: colors.textSecondary },
   // 距離は右端に単独で置く数値。行内の他のメタより太くして目的地までの遠近を拾えるようにする
-  dist: { ...type.caption, fontWeight: '700' as const, color: '#aaa' },
+  dist: { ...type.caption, fontWeight: '700' as const, color: colors.textMuted },
   // 一覧の視線の起点。ここが14pxだとカードの中で写真しか目に入らない
   name: { ...type.heading, color: colors.textPrimary },
-  addr: { ...type.caption, color: '#aaa' },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  q: { ...type.caption, color: '#ccc' },
+  addr: { ...type.caption, color: colors.textMuted },
 })

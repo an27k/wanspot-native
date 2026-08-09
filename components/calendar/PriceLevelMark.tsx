@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 /** 料金ランクの上限。web の PriceLevelMark と揃える */
 const PRICE_LEVEL_MAX = 4
@@ -19,6 +20,8 @@ export function PriceLevelMark({
   /** sm = 一覧カード、md = 詳細画面 */
   size?: 'sm' | 'md'
 }) {
+  const styles = useThemedStyles(createStyles)
+
   if (level == null || !Number.isFinite(level)) return null
 
   const md = size === 'md'
@@ -44,7 +47,7 @@ export function PriceLevelMark({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   pillSm: {
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -57,12 +60,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.tintWeak,
   },
-  pillFree: { backgroundColor: '#F0FDF4' },
+  pillFree: { backgroundColor: colors.successMutedBg },
   // letterSpacing はトークンの 0.7 ではなく 1 のまま。¥ が詰まると
   // 「4段のうち何段か」を数えられなくなる
   txtSm: { ...type.label, color: colors.pillText, letterSpacing: 1 },
   txtMd: { ...type.label, fontSize: 13, color: colors.pillText, letterSpacing: 1 },
   // 未該当分。薄くして「上限4のうち何段か」を読み取れるようにする
   txtMuted: { color: `${colors.pillText}40` },
-  txtFree: { color: '#2FA56A', letterSpacing: 0 },
+  txtFree: { color: colors.success, letterSpacing: 0 },
 })

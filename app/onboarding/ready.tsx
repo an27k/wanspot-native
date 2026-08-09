@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { OnboardingBrand } from '@/components/onboarding/onboarding-ui'
+import { OnboardingBrandLockup } from '@/components/onboarding/onboarding-ui'
 import { OB_DOG_KEY, OB_WALK_AREA_TAGS_KEY } from '@/lib/onboarding-constants'
 import { completeOnboarding } from '@/lib/onboarding-complete'
 import { dogLabel } from '@/lib/dog-label'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 /**
  * 散歩エリアを選んだ人（＝位置情報を断った人）向けの締めの画面。
@@ -21,6 +22,7 @@ import { type } from '@/constants/typography'
 export default function OnboardingReadyPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const styles = useThemedStyles(createStyles)
   const [busy, setBusy] = useState(false)
   /** 未入力・保存漏れなら null のまま。dogLabel が「うちの子」に落とす */
   const [dogName, setDogName] = useState<string | null>(null)
@@ -70,7 +72,7 @@ export default function OnboardingReadyPage() {
       style={styles.main}
       contentContainerStyle={[styles.content, { paddingTop: padTop, paddingBottom: padBottom }]}
     >
-      <OnboardingBrand />
+      <OnboardingBrandLockup />
 
       {/* location 画面と同じく、名前の長さで行数が変わらないよう高さを固定する */}
       <View style={styles.headingBox}>
@@ -79,11 +81,13 @@ export default function OnboardingReadyPage() {
         </Text>
       </View>
 
-      <Text style={styles.hint}>
-        選んだエリアのまわりで、{name}と入れるスポットが提案できます。{'\n'}
-        現在地を許可すると、今いる場所から探せるようになります。{'\n'}
-        あとからアプリで変更もできます。
-      </Text>
+      <View style={styles.infoCard}>
+        <Text style={styles.hint}>
+          選んだエリアのまわりで、{name}と入れるスポットが提案できます。{'\n'}
+          現在地を許可すると、今いる場所から探せるようになります。{'\n'}
+          あとからアプリで変更もできます。
+        </Text>
+      </View>
 
       <View style={styles.spacer} />
 
@@ -96,12 +100,19 @@ export default function OnboardingReadyPage() {
   )
 }
 
-const styles = StyleSheet.create({
-  main: { flex: 1, backgroundColor: '#fff' },
-  content: { flexGrow: 1, paddingHorizontal: 24, gap: 16 },
-  headingBox: { height: 76, justifyContent: 'center', marginTop: 8 },
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  main: { flex: 1, backgroundColor: colors.paper },
+  content: { flexGrow: 1, paddingHorizontal: 20, gap: 16 },
+  headingBox: { height: 82, justifyContent: 'center', marginTop: 8 },
   h2: { ...type.title, color: colors.textPrimary, textAlign: 'center' as const },
-  hint: { ...type.caption, lineHeight: 22, color: '#8A8A8A', textAlign: 'left' as const },
+  infoCard: {
+    padding: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  hint: { ...type.body, color: colors.textSecondary },
   spacer: { flex: 1, minHeight: 24 },
   next: {
     height: 52,
@@ -112,5 +123,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   nextOff: { opacity: 0.6 },
-  nextTxt: { ...type.button, color: colors.textPrimary, textAlign: 'center' as const },
+  nextTxt: { ...type.button, color: colors.onPrimary, textAlign: 'center' as const },
 })

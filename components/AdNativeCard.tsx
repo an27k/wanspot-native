@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import { InteractionManager, StyleSheet, Text, View } from 'react-native'
-import { sharedNativeAdStyles } from '@/lib/ads/nativeAdCardStyles'
+import type { AppColors } from '@/constants/colors'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
+import { createNativeAdCardStyles } from '@/lib/ads/nativeAdCardStyles'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 
 type NativeAdHandle = {
@@ -19,6 +21,8 @@ type NativeAdCardComponent = ComponentType<{
 const NATIVE_LOAD_MAX_ATTEMPTS = 4
 
 export function AdNativeCard({ adsReady }: Props) {
+  const sharedNativeAdStyles = useThemedStyles(createNativeAdCardStyles)
+  const styles = useThemedStyles(createStyles)
   const [nativeAd, setNativeAd] = useState<NativeAdHandle | null>(null)
   const [NativeAdCard, setNativeAdCard] = useState<NativeAdCardComponent | null>(null)
   const [loadExhausted, setLoadExhausted] = useState(false)
@@ -126,10 +130,10 @@ export function AdNativeCard({ adsReady }: Props) {
   return <NativeAdCard nativeAd={nativeAd} />
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   emptyCard: {
     minHeight: 32,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.surfaceAlt,
   },
   placeholderMuted: {
     opacity: 0.72,

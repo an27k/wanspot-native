@@ -38,17 +38,16 @@ export async function fetchSpotsByIds(params: {
 
   const results = await Promise.all(
     chunks.map(async (chunk) => {
-      try {
-        const res = await wanspotFetch('/api/spots/by-ids', {
-          method: 'POST',
-          json: { ids: chunk.ids, placeIds: chunk.placeIds, columns: params.columns },
-        })
-        if (!res.ok) return []
-        const json = (await res.json()) as { spots?: Record<string, unknown>[] }
-        return json.spots ?? []
-      } catch {
-        return []
+      const res = await wanspotFetch('/api/spots/by-ids', {
+        method: 'POST',
+        json: { ids: chunk.ids, placeIds: chunk.placeIds, columns: params.columns },
+      })
+      if (!res.ok) {
+        throw new Error(`spots/by-ids failed with status ${res.status}`)
       }
+      const json = (await res.json()) as { spots?: unknown }
+      if (!Array.isArray(json.spots)) throw new Error('spots/by-ids returned an invalid payload')
+      return json.spots as Record<string, unknown>[]
     })
   )
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Image } from 'expo-image'
 import { IconPaw } from '@/components/IconPaw'
-import { colors } from '@/constants/colors'
+import { useAppTheme } from '@/context/ThemeContext'
 import { sanitizeImageForDisplay } from '@/lib/images/sanitize-for-display'
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
 
 /** 犬アバター — デコード前に JPEG 化、失敗時は SVG プレースホルダ */
 export function SafeDogAvatar({ uri, size = 40 }: Props) {
+  const { colors } = useAppTheme()
   const [displayUri, setDisplayUri] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
 

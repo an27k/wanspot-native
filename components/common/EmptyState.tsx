@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 /**
  * 保存済みリストの空状態。
@@ -25,6 +26,8 @@ export function EmptyState({
   actionLabel?: string
   onAction?: () => void
 }) {
+  const styles = useThemedStyles(createStyles)
+
   return (
     <View style={styles.wrap}>
       <View style={styles.circle}>{icon}</View>
@@ -43,14 +46,14 @@ export function EmptyState({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   // 左右を広めに空けて中央に集める。リストと同じ幅で組むと空きが目立たない
   wrap: { alignItems: 'center', paddingHorizontal: 44, paddingVertical: 48, gap: 12 },
   circle: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#EFE8DE',
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -65,5 +68,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   ctaPressed: { opacity: 0.85 },
-  ctaTxt: { ...type.button, fontSize: 16, color: '#FFFFFF' },
+  ctaTxt: { ...type.button, fontSize: 16, color: colors.onPrimary },
 })

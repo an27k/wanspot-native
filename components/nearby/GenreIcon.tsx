@@ -1,21 +1,23 @@
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Rect } from 'react-native-svg'
 import { MAP_GENRE_CHIPS, type MapGenreKey } from '@/lib/nearby/constants'
-import { colors } from '@/constants/colors'
+import { useAppTheme } from '@/context/ThemeContext'
 
 /** 公園はベンチのオリジナル SVG、その他は Ionicons で統一表示する。 */
 export function GenreIcon({
   genre,
   size = 20,
-  color = colors.textPrimary,
+  color,
 }: {
   genre: MapGenreKey
   size?: number
   color?: string
 }) {
-  if (genre === 'park') return <BenchIcon size={size} color={color} />
+  const { colors } = useAppTheme()
+  const resolvedColor = color ?? colors.textPrimary
+  if (genre === 'park') return <BenchIcon size={size} color={resolvedColor} />
   const def = MAP_GENRE_CHIPS.find((g) => g.key === genre) ?? MAP_GENRE_CHIPS[0]
-  return <Ionicons name={def.icon as keyof typeof Ionicons.glyphMap} size={size} color={color} />
+  return <Ionicons name={def.icon as keyof typeof Ionicons.glyphMap} size={size} color={resolvedColor} />
 }
 
 function BenchIcon({ size, color }: { size: number; color: string }) {

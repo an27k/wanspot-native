@@ -3,8 +3,10 @@ import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-nati
 import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import {
   CACHE_TTL,
   getCacheEntry,
@@ -35,6 +37,8 @@ function shortDate(takenOn: string): string {
 /** マイページ内のアルバム（カメラで撮った「今日の1枚」が溜まる） */
 export function AlbumSection() {
   const router = useRouter()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const [photos, setPhotos] = useState<DogPhoto[]>([])
   const [loading, setLoading] = useState(true)
   const [viewer, setViewer] = useState<DogPhoto | null>(null)
@@ -122,9 +126,9 @@ export function AlbumSection() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   card: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     paddingTop: 16,
     paddingBottom: 16,

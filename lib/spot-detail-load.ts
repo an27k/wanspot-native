@@ -12,7 +12,7 @@ import { readStashedSpotDetailPlace } from '@/lib/spot-detail-stash'
 import { wanspotFetch } from '@/lib/wanspot-api'
 
 export const SPOT_DETAIL_SELECT =
-  'id, place_id, name, category, rating, address, lat, lng, price_level, price_label, instagram_id, ig_status, ig_last_checked'
+  'id, place_id, name, category, rating, address, lat, lng, price_level, price_label, instagram_id, instagram_lookup_due'
 
 export type SpotDetailRow = {
   id: string
@@ -26,8 +26,7 @@ export type SpotDetailRow = {
   price_level?: number | null
   price_label?: string | null
   instagram_id?: string | null
-  ig_status?: string | null
-  ig_last_checked?: string | null
+  instagram_lookup_due?: boolean
   /** ペット同伴可否（共通コントラクト。/api/spots/row やハンドオフ元の PlaceResult から引き継ぐ） */
   pet_indoor_allowed?: boolean | null
   pet_terrace_only?: boolean | null

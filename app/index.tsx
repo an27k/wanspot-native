@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { useAuth } from '@/context/AuthContext'
+import { useAppTheme } from '@/context/ThemeContext'
 import { ONBOARDING_COMPLETE_KEY } from '@/lib/onboarding-constants'
 import { supabase } from '@/lib/supabase'
 
@@ -11,6 +12,7 @@ type Gate = 'loading' | 'login' | 'onboard' | 'tabs'
 
 export default function Index() {
   const { session, loading: authLoading } = useAuth()
+  const { colors } = useAppTheme()
   const [gate, setGate] = useState<Gate>('loading')
 
   useEffect(() => {
@@ -58,7 +60,14 @@ export default function Index() {
 
   if (authLoading || gate === 'loading') {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: colors.paper,
+        }}
+      >
         <LoadingDogSvg size={72} />
       </View>
     )

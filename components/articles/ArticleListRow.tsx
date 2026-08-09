@@ -1,8 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
 import { PressableScale } from '@/components/common/PressableScale'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 
 type Props = {
@@ -23,6 +26,9 @@ type Props = {
  * 記事の見出しであることは太さで出す。
  */
 export function ArticleListRow({ title, area, genreLabel, imageUrl, recyclingKey, onPress }: Props) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
+
   return (
     <PressableScale onPress={onPress}>
       <View style={styles.shell}>
@@ -52,43 +58,41 @@ export function ArticleListRow({ title, area, genreLabel, imageUrl, recyclingKey
               {title}
             </Text>
           </View>
+          <Ionicons name="chevron-forward" size={17} color={colors.textMuted} />
         </View>
       </View>
     </PressableScale>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   /*
     半透明ガラスから不透明な白カードへ。グラデーション背景に半透明を重ねると
     カードの輪郭が地に溶けて、どこからどこまでが1件なのか読めなくなっていた。
     他タブのカードと同じ質感に揃える
   */
   shell: {
-    marginBottom: 10,
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 10,
+    paddingVertical: 10,
   },
   thumb: {
-    width: 72,
+    width: 88,
     height: 72,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: colors.dogPhotoPlaceholderBg,
   },
   thumbPh: {},
   textCol: { flex: 1, gap: 5, minWidth: 0 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   areaPill: {
-    backgroundColor: '#EFEAE3',
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,

@@ -13,9 +13,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { colors } from '@/constants/colors'
+import { AppHeader } from '@/components/AppHeader'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { NearbyMapView } from '@/components/map/NearbyMapView'
 import { MapFilterBar } from '@/components/map/MapFilterBar'
 import { NearbySpotCarousel } from '@/components/nearby/NearbySpotCarousel'
@@ -74,7 +77,10 @@ type SearchAnchor = { lat: number; lng: number; label: string }
 function NearbyPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const topSafe = insets.top + 8
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
+  // 共通 AppHeader がセーフエリアを受け持つため、地図内は純粋な余白だけでよい。
+  const topSafe = 8
   const searchBarTop = topSafe
   const filterBarTop = searchBarTop + SEARCH_BAR_H
   const overlayTop = filterBarTop + FILTER_BAR_H
@@ -491,7 +497,9 @@ function NearbyPage() {
   return (
     <GestureHandlerRootView style={styles.flex}>
       <View style={styles.flex}>
-        <View style={styles.mapArea}>
+        <AppHeader />
+        <View style={styles.mapContent}>
+          <View style={styles.mapArea}>
           <NearbyMapView
             markers={items}
             selectedSpot={selectedSpot}
@@ -531,10 +539,10 @@ function NearbyPage() {
               <RunningDog label={resolving ? '場所を探しています...' : '周辺のスポットを探し中...'} />
             </View>
           ) : null}
-        </View>
+          </View>
 
-        {/* 地図上部: 検索バー（旧検索ホームから統合）＋フィルタバー */}
-        <View style={styles.mapOverlays} pointerEvents="box-none">
+          {/* 地図上部: 検索バー（旧検索ホームから統合）＋フィルタバー */}
+          <View style={styles.mapOverlays} pointerEvents="box-none">
           <View style={[styles.searchBarWrap, { top: searchBarTop }]}>
             <View style={styles.searchPill}>
               <Ionicons name="search" size={18} color={colors.textSecondary} />
@@ -554,7 +562,7 @@ function NearbyPage() {
               />
               {query.length > 0 || searchActive ? (
                 <TouchableOpacity onPress={clearSearch} hitSlop={8} accessibilityLabel="検索をクリア">
-                  <Ionicons name="close-circle" size={18} color="#BBB" />
+                  <Ionicons name="close-circle" size={18} color={colors.textHint} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -604,40 +612,42 @@ function NearbyPage() {
               ))}
             </View>
           ) : null}
-        </View>
-
-        {/* 地図下の横スワイプカルーセル（常設・シートは廃止） */}
-        {items.length > 0 ? (
-          <NearbySpotCarousel
-            items={items}
-            selectedKey={selectedSpot?.key ?? null}
-            userLocation={location}
-            likedPlaceIds={likedPlaceIds}
-            onToggleLike={(s) => void handleToggleLike(s)}
-            onPressSpot={handleOpenDetail}
-            onSelectSpot={setSelectedSpot}
-            bottomOffset={carouselBottom}
-          />
-        ) : null}
-
-        {showEmpty ? (
-          <View style={[styles.emptyCard, { bottom: carouselBottom }]}>
-            <Text style={styles.emptyTitle}>{emptyCopy.title}</Text>
-            <Text style={styles.emptyHint}>{emptyCopy.hint}</Text>
-            {emptyCopy.action ? (
-              <TouchableOpacity style={styles.emptyActionBtn} onPress={clearConditions}>
-                <Text style={styles.emptyActionTxt}>{emptyCopy.action}</Text>
-              </TouchableOpacity>
-            ) : null}
           </View>
-        ) : null}
+
+          {/* 地図下の横スワイプカルーセル（常設・シートは廃止） */}
+          {items.length > 0 ? (
+            <NearbySpotCarousel
+              items={items}
+              selectedKey={selectedSpot?.key ?? null}
+              userLocation={location}
+              likedPlaceIds={likedPlaceIds}
+              onToggleLike={(s) => void handleToggleLike(s)}
+              onPressSpot={handleOpenDetail}
+              onSelectSpot={setSelectedSpot}
+              bottomOffset={carouselBottom}
+            />
+          ) : null}
+
+          {showEmpty ? (
+            <View style={[styles.emptyCard, { bottom: carouselBottom }]}>
+              <Text style={styles.emptyTitle}>{emptyCopy.title}</Text>
+              <Text style={styles.emptyHint}>{emptyCopy.hint}</Text>
+              {emptyCopy.action ? (
+                <TouchableOpacity style={styles.emptyActionBtn} onPress={clearConditions}>
+                  <Text style={styles.emptyActionTxt}>{emptyCopy.action}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
       </View>
     </GestureHandlerRootView>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.paper },
+  mapContent: { flex: 1, position: 'relative' },
   mapArea: { flex: 1, zIndex: 1 },
   mapOverlays: {
     position: 'absolute',
@@ -651,7 +661,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
@@ -674,7 +684,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  permissionBtnTxt: { ...type.button, color: '#fff' },
+  permissionBtnTxt: { ...type.button, color: colors.textInverse },
   permissionBtnGhostTxt: { ...type.button, color: colors.textPrimary },
   errOverlay: {
     ...type.caption,
@@ -682,8 +692,8 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     textAlign: 'center',
-    color: '#c44',
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    color: colors.error,
+    backgroundColor: colors.errorMutedBg,
     padding: 8,
     borderRadius: 8,
     zIndex: 11,
@@ -692,21 +702,21 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(247,246,243,0.96)',
+    backgroundColor: colors.paper,
     zIndex: 7,
   },
   emptyCard: {
     position: 'absolute',
     left: 16,
     right: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 16,
     gap: 6,
     zIndex: 9,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.12,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 },
@@ -714,8 +724,8 @@ const styles = StyleSheet.create({
   },
   searchBarWrap: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    left: 20,
+    right: 20,
     zIndex: 5,
   },
   searchPill: {
@@ -725,54 +735,54 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: '#fff',
+    backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 5,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   // 自分で打つ検索文字。入れ物は height 48 固定なので 17 でも収まる
   searchInput: { flex: 1, ...type.row, color: colors.textPrimary, paddingVertical: 0 },
   resultBar: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    left: 20,
+    right: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    elevation: 2,
   },
   // 左は今どこを見ているかの表示、右は押せる出口。同じ太さで並べると出口が埋もれる
   resultBarTxt: { ...type.caption, flex: 1, color: colors.textPrimary },
-  resultBarClose: { ...type.button, color: colors.brandDark },
+  resultBarClose: { ...type.button, color: colors.pillText },
   predList: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    backgroundColor: '#fff',
+    left: 20,
+    right: 20,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
     zIndex: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    elevation: 3,
   },
   predRow: {
     flexDirection: 'row',
@@ -787,18 +797,18 @@ const styles = StyleSheet.create({
   predMain: { ...type.row, color: colors.textPrimary },
   predSub: { ...type.caption, color: colors.textSecondary, marginTop: 1 },
   emptyTitle: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary },
-  emptyHint: { ...type.caption, color: '#888' },
+  emptyHint: { ...type.caption, color: colors.textSecondary },
   emptyActionBtn: {
     alignSelf: 'flex-start',
     marginTop: 4,
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: colors.brandButton,
+    backgroundColor: colors.tintStrong,
     borderWidth: 1,
-    borderColor: colors.brandDark,
+    borderColor: colors.primary,
   },
-  emptyActionTxt: { ...type.button, color: colors.textPrimary },
+  emptyActionTxt: { ...type.button, color: colors.pillText },
 })
 
 export default function NearbyPageScreen() {

@@ -4,8 +4,10 @@ import { Image } from 'expo-image'
 import { useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { BrandLoader } from '@/components/common/BrandLoader'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import {
   CACHE_TTL,
   getCacheEntry,
@@ -111,6 +113,8 @@ type Props = {
 }
 
 export function AlbumMosaic({ userId, todayPhoto, onCaptureToday, onRetakeToday, saving }: Props) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const [photos, setPhotos] = useState<DogPhoto[]>([])
   const [loading, setLoading] = useState(true)
   const [viewer, setViewer] = useState<DogPhoto | null>(null)
@@ -234,7 +238,7 @@ export function AlbumMosaic({ userId, todayPhoto, onCaptureToday, onRetakeToday,
                   onPress={onCaptureToday}
                   disabled={saving}
                 >
-                  <Ionicons name="camera" size={28} color={colors.textPrimary} />
+                  <Ionicons name="camera" size={28} color={colors.onPrimary} />
                   <Text style={styles.todayCtaTxt}>今日の1枚を撮る</Text>
                 </Pressable>
               )
@@ -265,7 +269,7 @@ export function AlbumMosaic({ userId, todayPhoto, onCaptureToday, onRetakeToday,
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   wrap: { paddingHorizontal: H_PADDING, marginTop: 8 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   sectionTitle: { ...type.heading, color: colors.text },
@@ -287,7 +291,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   // タイル内だがタップの主目的なのでボタンとして扱う
-  todayCtaTxt: { ...type.button, color: colors.textPrimary, textAlign: 'center' },
+  todayCtaTxt: { ...type.button, color: colors.onPrimary, textAlign: 'center' },
   dateLbl: {
     position: 'absolute',
     left: 6,
@@ -295,7 +299,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: colors.surfaceRaised,
   },
   dateTxt: { ...type.label, color: colors.primary },
   retakeBtn: {
@@ -317,7 +321,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.primary,
   },
-  todayBadgeTxt: { ...type.label, color: colors.textPrimary },
+  todayBadgeTxt: { ...type.label, color: colors.onPrimary },
   emptyHint: {
     marginTop: 12,
     ...type.caption,

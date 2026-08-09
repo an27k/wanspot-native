@@ -1,7 +1,10 @@
 import { Stack } from 'expo-router'
 import { Platform } from 'react-native'
+import { useAppTheme } from '@/context/ThemeContext'
 
 export default function AuthLayout() {
+  const { colors } = useAppTheme()
+
   return (
     <Stack
       screenOptions={{
@@ -12,6 +15,7 @@ export default function AuthLayout() {
         fullScreenGestureEnabled: Platform.OS === 'ios',
         animationMatchesGesture: true,
         animationDuration: Platform.OS === 'ios' ? 380 : 280,
+        contentStyle: { backgroundColor: colors.paper },
       }}
     />
   )

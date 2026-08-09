@@ -3,78 +3,85 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Logo } from '@/components/Logo'
-import { colors } from '@/constants/colors'
-import { type } from '@/constants/typography'
+import type { AppColors } from '@/constants/colors'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 type AppHeaderProps = {
   variant?: 'default' | 'back' | 'centered'
+  /** 互換用。画面名はヘッダー内に置かず、本文側の見出しとして表示する。 */
   title?: string
   onBack?: () => void
   rightSlot?: ReactNode
 }
 
-export function AppHeader({ variant = 'default', title, onBack, rightSlot }: AppHeaderProps) {
+/** セーフエリアを除いた、全画面共通ヘッダーの高さ。 */
+export const APP_HEADER_HEIGHT = 52
+
+/**
+ * 全画面共通のブランドヘッダー。
+ *
+ * タブと詳細のどちらでも中央は必ず「現行アイコン + wanspot」に固定し、
+ * 詳細画面だけ左右に戻る・共有などの操作を足す。
+ */
+export function AppHeader({ variant = 'default', onBack, rightSlot }: AppHeaderProps) {
   const insets = useSafeAreaInsets()
-  const paddingTop = insets.top + 12
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
+  const hasBack = variant === 'back'
 
   return (
-    <View style={[styles.bar, { paddingTop, borderBottomColor: colors.border }]}>
-      {variant === 'back' ? (
-        <View style={styles.row}>
-          <Pressable onPress={onBack} hitSlop={12} style={styles.side}>
-            <Ionicons name="chevron-back-outline" size={26} color={colors.text} />
-          </Pressable>
-          <Text style={styles.titleMid} numberOfLines={1}>
-            {title ?? ''}
-          </Text>
-          <View style={[styles.side, styles.sideRight]}>{rightSlot}</View>
+    <View style={[styles.bar, { paddingTop: insets.top, borderBottomColor: colors.border }]}>
+      <View style={styles.row}>
+        <View style={styles.side}>
+          {hasBack ? (
+            <Pressable
+              onPress={onBack}
+              hitSlop={12}
+              style={styles.sideButton}
+              accessibilityRole="button"
+              accessibilityLabel="戻る"
+            >
+              <Ionicons name="chevron-back" size={26} color={colors.text} />
+            </Pressable>
+          ) : null}
         </View>
-      ) : variant === 'centered' ? (
-        <View style={styles.centeredRow}>
+
+        <View style={styles.centeredRow} accessibilityRole="header">
           <Logo size={26} />
           <Text style={styles.brandText}>wanspot</Text>
         </View>
-      ) : (
-        <View style={styles.row}>
-          <View style={styles.brand}>
-            <Logo size={28} />
-            <Text style={styles.brandText}>wanspot</Text>
-          </View>
-          <View style={styles.sideRight}>{rightSlot}</View>
+
+        <View style={[styles.side, styles.sideRight]}>
+          {rightSlot}
         </View>
-      )}
+      </View>
     </View>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   centeredRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    flex: 1,
   },
   bar: {
-    paddingHorizontal: 12,
-    paddingBottom: 10,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
+    zIndex: 20,
   },
   row: {
+    height: APP_HEADER_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingHorizontal: 8,
   },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   // ロゴと組むワードマーク。文章の階層ではなく意匠なので型には寄せない
-  brandText: { fontWeight: '800', fontSize: 16, color: colors.text },
-  side: { width: 40, justifyContent: 'center' },
-  sideRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  // 戻る付きヘッダーの画面名。iOS 標準のナビタイトルと同じ 17/700
-  titleMid: {
-    flex: 1,
-    textAlign: 'center',
-    ...type.button,
-    color: colors.text,
-  },
+  brandText: { fontWeight: '800', fontSize: 20, letterSpacing: -0.5, color: colors.text },
+  side: { width: 48, height: APP_HEADER_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  sideButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  sideRight: { flexDirection: 'row', gap: 4 },
 })

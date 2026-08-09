@@ -1,7 +1,8 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { safeToString } from '@/lib/ios-safe-console'
 
 type Props = {
@@ -12,6 +13,31 @@ type Props = {
 
 type State = {
   error: Error | null
+}
+
+function ScreenErrorFallback({
+  error,
+  label,
+  onRetry,
+}: {
+  error: Error
+  label?: string
+  onRetry: () => void
+}) {
+  const styles = useThemedStyles(createStyles)
+
+  return (
+    <View style={styles.root}>
+      <Text style={styles.title}>表示中に問題が発生しました</Text>
+      <Text style={styles.body}>もう一度お試しください。</Text>
+      <Text style={styles.debug}>
+        {label ?? 'screen'}: {safeToString(error)}
+      </Text>
+      <Pressable style={styles.btn} onPress={onRetry}>
+        <Text style={styles.btnTxt}>再読み込み</Text>
+      </Pressable>
+    </View>
+  )
 }
 
 /** JS 例外でアプリ全体を落とさずフォールバック UI を出す */
@@ -38,23 +64,18 @@ export class ScreenErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <View style={styles.root}>
-          <Text style={styles.title}>表示中に問題が発生しました</Text>
-          <Text style={styles.body}>もう一度お試しください。</Text>
-          <Text style={styles.debug}>
-            {this.props.label ?? 'screen'}: {safeToString(this.state.error)}
-          </Text>
-          <Pressable style={styles.btn} onPress={this.retry}>
-            <Text style={styles.btnTxt}>再読み込み</Text>
-          </Pressable>
-        </View>
+        <ScreenErrorFallback
+          error={this.state.error}
+          label={this.props.label}
+          onRetry={this.retry}
+        />
       )
     }
     return this.props.children
   }
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   root: {
     flex: 1,
     alignItems: 'center',
@@ -74,5 +95,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
-  btnTxt: { ...type.button, color: '#fff' },
+  btnTxt: { ...type.button, color: colors.onPrimary },
 })

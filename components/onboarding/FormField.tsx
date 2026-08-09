@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 export function FormField({
   label,
@@ -13,6 +15,8 @@ export function FormField({
   hint?: string
   children: ReactNode
 }) {
+  const styles = useThemedStyles(createStyles)
+
   return (
     <View style={styles.fieldGroup}>
       <View style={styles.fieldLabelRow}>
@@ -27,9 +31,9 @@ export function FormField({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   fieldGroup: {
-    marginBottom: 24,
+    marginBottom: 22,
   },
   fieldLabelRow: {
     flexDirection: 'row',
@@ -38,15 +42,15 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     ...type.label,
-    color: '#1A1A1A',
+    color: colors.textPrimary,
   },
   // 入れ子の Text なので太さは親（label の700）を継承させる。ここだけ細いと浮く
   fieldRequired: {
-    color: '#FF6B6B',
+    color: colors.primary,
   },
   fieldHint: {
     ...type.caption,
-    color: '#999',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
 })

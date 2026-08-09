@@ -23,13 +23,16 @@ import { NearbySpotCard } from '@/components/nearby/NearbySpotCard'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
 import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
+import { fetchSpotsByIds } from '@/lib/fetch-spots-by-ids'
 import { adsEnabledForDevice } from '@/lib/ads-policy'
 import { shouldInjectListAd } from '@/lib/ads/list-injection'
 import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
 import { supabase } from '@/lib/supabase'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
 import { resolveSessionLocation } from '@/lib/location-session'
 import { wanspotFetch } from '@/lib/wanspot-api'
@@ -83,8 +86,8 @@ function isDogRunSpot(spot: PlaceResult): boolean {
   return DOG_RUN_RELEVANT_PATTERN.test(text)
 }
 
-const IconSort = () => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round">
+const IconSort = ({ color }: { color: string }) => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round">
     <Path d="M3 6h18M3 12h12M3 18h6" />
   </Svg>
 )
@@ -93,6 +96,8 @@ export function NearbyListScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const isFocused = useIsFocused()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const [genre, setGenre] = useState('cafe')
   const [distance, setDistance] = useState<DistanceKey>(1000)
   const [spots, setSpots] = useState<PlaceResult[]>([])
@@ -260,14 +265,15 @@ export function NearbyListScreen() {
     }
     const fetchLikes = async () => {
       const placeIds = spots.map((s) => s.place_id)
-      const { data } = await supabase.from('spots').select('id, place_id').in('place_id', placeIds)
-      if (!data) return
+      const rows = await fetchSpotsByIds({ placeIds, columns: 'card' })
       const spotIdsByPlace: Record<string, string> = {}
       const spotIds: string[] = []
-      data.forEach((row) => {
-        if (row.id && row.place_id) {
-          spotIdsByPlace[row.place_id] = row.id
-          spotIds.push(row.id)
+      rows.forEach((row) => {
+        const id = typeof row.id === 'string' ? row.id : ''
+        const placeId = typeof row.place_id === 'string' ? row.place_id : ''
+        if (id && placeId) {
+          spotIdsByPlace[placeId] = id
+          spotIds.push(id)
         }
       })
       setSpotIdsByPlaceId(spotIdsByPlace)
@@ -281,12 +287,18 @@ export function NearbyListScreen() {
       ;(likes ?? []).forEach((like) => {
         if (like.spot_id) countBySpotId[like.spot_id] = (countBySpotId[like.spot_id] ?? 0) + 1
       })
-      data.forEach((row) => {
-        counts[row.place_id] = countBySpotId[row.id] ?? 0
+      rows.forEach((row) => {
+        const id = typeof row.id === 'string' ? row.id : ''
+        const placeId = typeof row.place_id === 'string' ? row.place_id : ''
+        if (id && placeId) counts[placeId] = countBySpotId[id] ?? 0
       })
       setLikeCounts(counts)
     }
-    void fetchLikes()
+    void fetchLikes().catch((error) => {
+      console.warn('[NearbyListScreen] like counts failed', error)
+      setLikeCounts({})
+      setSpotIdsByPlaceId({})
+    })
   }, [spots])
 
   const reloadUserLikedPlaceIds = useCallback(async () => {
@@ -300,9 +312,27 @@ export function NearbyListScreen() {
       setLikedPlaceIds(new Set())
       return
     }
-    const spotIds = [...new Set(likes.map((l) => l.spot_id).filter(Boolean))]
-    const { data: rows } = await supabase.from('spots').select('place_id').in('id', spotIds)
-    setLikedPlaceIds(new Set((rows ?? []).map((r) => r.place_id).filter(Boolean)))
+    const spotIds = [
+      ...new Set(
+        likes
+          .map((like) => like.spot_id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0)
+      ),
+    ]
+    let rows: Record<string, unknown>[]
+    try {
+      rows = await fetchSpotsByIds({ ids: spotIds, columns: 'card' })
+    } catch (error) {
+      console.warn('[NearbyListScreen] liked spots failed', error)
+      return
+    }
+    setLikedPlaceIds(
+      new Set(
+        rows.flatMap((row) =>
+          typeof row.place_id === 'string' && row.place_id.length > 0 ? [row.place_id] : []
+        )
+      )
+    )
   }, [])
 
   const onPullRefreshNearby = useCallback(async () => {
@@ -404,8 +434,8 @@ export function NearbyListScreen() {
           <RefreshControl
             refreshing={pullRefreshing}
             onRefresh={onPullRefreshNearby}
-            tintColor={colors.brand}
-            colors={[colors.brand]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
       >
@@ -463,7 +493,7 @@ export function NearbyListScreen() {
               <Text style={[styles.likeFilterTxt, likedOnlyFilter && styles.likeFilterTxtOn]}>いいね</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.sortBtn} onPress={() => setShowSort(true)}>
-              <IconSort />
+              <IconSort color={colors.textInverse} />
               <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
             </TouchableOpacity>
           </View>
@@ -547,13 +577,13 @@ export function NearbyListScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   main: { flex: 1, backgroundColor: colors.paper },
   scroll: { flex: 1 },
   scrollContent: {},
   genreBar: {
     maxHeight: 64,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     paddingVertical: 10,
@@ -567,14 +597,14 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   genreChipOn: { backgroundColor: colors.tintStrong },
-  genreChipOff: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  genreChipOff: { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border },
   genreTxt: { ...type.label },
   genreTxtOn: { color: colors.primary },
   genreTxtOff: { color: colors.textSecondary },
   distRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     paddingVertical: 8,
@@ -595,18 +625,18 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderWidth: 1,
   },
-  likeFilterIcon: { width: 12, height: 12, tintColor: '#888' },
-  likeFilterIconOn: { tintColor: '#fff' },
+  likeFilterIcon: { width: 12, height: 12, tintColor: colors.textMuted },
+  likeFilterIconOn: { tintColor: colors.textInverse },
   likeFilterBtnOff: {
-    backgroundColor: '#f5f5f5',
-    borderColor: '#e8e8e8',
+    backgroundColor: colors.surfaceAlt,
+    borderColor: colors.border,
   },
   likeFilterBtnOn: {
     backgroundColor: colors.textPrimary,
     borderColor: colors.textPrimary,
   },
-  likeFilterTxt: { ...type.label, color: '#888' },
-  likeFilterTxtOn: { color: '#fff' },
+  likeFilterTxt: { ...type.label, color: colors.textSecondary },
+  likeFilterTxtOn: { color: colors.textInverse },
   distChip: {
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -614,10 +644,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   distChipOn: { backgroundColor: colors.textPrimary },
-  distChipOff: { backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e8e8e8' },
+  distChipOff: { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border },
   distTxt: { ...type.label },
-  distTxtOn: { color: '#fff' },
-  distTxtOff: { color: '#888' },
+  distTxtOn: { color: colors.textInverse },
+  distTxtOff: { color: colors.textSecondary },
   sortBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -627,10 +657,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.textPrimary,
   },
-  sortBtnTxt: { ...type.label, color: '#fff' },
+  sortBtnTxt: { ...type.label, color: colors.textInverse },
   list: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
   permissionBanner: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
@@ -645,11 +675,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 999,
   },
-  permissionBtnTxt: { ...type.button, color: '#fff' },
-  err: { ...type.body, textAlign: 'center' as const, paddingVertical: 32, color: '#aaa' },
-  sortOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 180, paddingRight: 16 },
+  permissionBtnTxt: { ...type.button, color: colors.textInverse },
+  err: { ...type.body, textAlign: 'center' as const, paddingVertical: 32, color: colors.textMuted },
+  sortOverlay: { flex: 1, backgroundColor: colors.overlayScrim, justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 180, paddingRight: 16 },
   sortMenu: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
@@ -659,6 +689,6 @@ const styles = StyleSheet.create({
   sortItem: { paddingVertical: 10, paddingHorizontal: 16 },
   sortItemOn: { backgroundColor: colors.tintStrong },
   // チップではなく選択メニューの行なのでリスト行の型。指で押す対象を12pxにしない
-  sortItemTxt: { ...type.row, color: '#888' },
+  sortItemTxt: { ...type.row, color: colors.textSecondary },
   sortItemTxtOn: { color: colors.textPrimary },
 })

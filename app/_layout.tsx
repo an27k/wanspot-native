@@ -1,17 +1,24 @@
 import 'react-native-gesture-handler'
 import '@/lib/ios-safe-console'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import * as WebBrowser from 'expo-web-browser'
 import { Stack } from 'expo-router'
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
+import * as SystemUI from 'expo-system-ui'
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavigationThemeProvider,
+} from '@react-navigation/native'
 import { Platform } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { enableScreens } from 'react-native-screens'
 import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 import { AuthProvider } from '@/context/AuthContext'
+import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext'
 import { initAnalytics } from '@/lib/analytics'
 import { useNotificationDeeplink } from '@/lib/notifications/use-notification-deeplink'
 import { logUserEvent } from '@/lib/user-events'
@@ -63,10 +70,50 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <StatusBar style="dark" />
-          <ScreenErrorBoundary label="root">
-          <Stack screenOptions={stackScreenOptions}>
+        <AppThemeProvider>
+          <ThemedRoot />
+        </AppThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  )
+}
+
+function ThemedRoot() {
+  const { colors, isDark } = useAppTheme()
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      void SystemUI.setBackgroundColorAsync(colors.paper)
+    }
+  }, [colors.paper])
+
+  const navigationTheme = useMemo(() => {
+    const baseTheme = isDark ? DarkTheme : DefaultTheme
+    return {
+      ...baseTheme,
+      colors: {
+        ...baseTheme.colors,
+        primary: colors.primary,
+        background: colors.paper,
+        card: colors.surface,
+        text: colors.text,
+        border: colors.border,
+        notification: colors.error,
+      },
+    }
+  }, [colors, isDark])
+
+  return (
+    <NavigationThemeProvider value={navigationTheme}>
+      <AuthProvider>
+        <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={colors.surface} />
+        <ScreenErrorBoundary label="root">
+          <Stack
+            screenOptions={{
+              ...stackScreenOptions,
+              contentStyle: { backgroundColor: colors.paper },
+            }}
+          >
             {/* タブシェル・ゲート画面のみスワイプ pop を無効化。詳細ルートは stackScreenOptions のまま */}
             <Stack.Screen
               name="(tabs)"
@@ -83,9 +130,8 @@ export default function RootLayout() {
               }}
             />
           </Stack>
-          </ScreenErrorBoundary>
-        </AuthProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+        </ScreenErrorBoundary>
+      </AuthProvider>
+    </NavigationThemeProvider>
   )
 }

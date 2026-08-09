@@ -10,9 +10,12 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { AppHeader } from '@/components/AppHeader'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { useAuth } from '@/context/AuthContext'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { supabase } from '@/lib/supabase'
 import { wanspotFetch } from '@/lib/wanspot-api'
 
@@ -21,6 +24,8 @@ const DELETE_CONFIRM = 'DELETE'
 export default function AccountDeleteScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const { signOut } = useAuth()
   const [confirmText, setConfirmText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -69,24 +74,14 @@ export default function AccountDeleteScreen() {
   }, [confirmText, busy, exitToLogin])
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
-      <View style={styles.topBar}>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="戻る"
-        >
-          <Ionicons name="chevron-back" size={28} color="#1A1A1A" />
-        </Pressable>
-        <Text style={styles.topTitle}>アカウントを削除</Text>
-        <View style={styles.topBarSpacer} />
-      </View>
+    <View style={styles.root}>
+      <AppHeader variant="back" onBack={() => router.back()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
         keyboardShouldPersistTaps="handled"
       >
+        <Text style={styles.pageTitle}>アカウントを削除</Text>
         <Text style={styles.warnTitle}>以下のデータが削除されます：</Text>
         <Text style={styles.warnBody}>
           ・プロフィール情報{'\n'}
@@ -104,7 +99,7 @@ export default function AccountDeleteScreen() {
           value={confirmText}
           onChangeText={setConfirmText}
           placeholder={DELETE_CONFIRM}
-          placeholderTextColor="#BBB"
+          placeholderTextColor={colors.textHint}
           autoCapitalize="characters"
           autoCorrect={false}
           editable={!busy}
@@ -130,41 +125,32 @@ export default function AccountDeleteScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAFAF8' },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
-  },
-  topTitle: { flex: 1, textAlign: 'center', ...type.button, color: '#1A1A1A' },
-  topBarSpacer: { width: 28 },
-  scroll: { paddingHorizontal: 24, paddingTop: 24, gap: 16 },
-  warnTitle: { ...type.heading, color: '#1A1A1A' },
-  warnBody: { ...type.body, color: '#555' },
-  inputLabel: { ...type.body, color: '#333', marginTop: 8 },
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.paper },
+  scroll: { paddingHorizontal: 20, paddingTop: 24, gap: 16 },
+  pageTitle: { ...type.title, color: colors.textPrimary, marginBottom: 4 },
+  warnTitle: { ...type.heading, color: colors.textPrimary },
+  warnBody: { ...type.body, color: colors.textSecondary },
+  inputLabel: { ...type.body, color: colors.textPrimary, marginTop: 8 },
   input: {
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
-    color: '#1A1A1A',
+    backgroundColor: colors.input,
+    color: colors.textPrimary,
   },
   dangerBtn: {
     marginTop: 8,
-    backgroundColor: '#E84335',
+    backgroundColor: colors.error,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   dangerBtnOff: { opacity: 0.45 },
-  dangerBtnTxt: { ...type.button, color: '#fff' },
+  dangerBtnTxt: { ...type.button, color: colors.textInverse },
   ghostBtn: { paddingVertical: 14, alignItems: 'center' },
-  ghostBtnTxt: { ...type.button, color: '#666' },
+  ghostBtnTxt: { ...type.button, color: colors.textSecondary },
 })

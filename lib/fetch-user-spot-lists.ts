@@ -162,7 +162,17 @@ export async function fetchLikedSpotsForUser(
 
   // spots はサーバ経由で引く。anon キーはバンドルに平文で入っており、
   // 直読みを許すと判定列がページングで全件抜ける
-  const spotRows = await fetchSpotsByIds({ ids: orderedIds, columns: 'list' })
+  let spotRows: Record<string, unknown>[]
+  try {
+    spotRows = await fetchSpotsByIds({ ids: orderedIds, columns: 'list' })
+  } catch (error) {
+    console.warn('[fetchLikedSpotsForUser] spots API failed', error)
+    return {
+      ok: false,
+      error: 'スポット情報の取得に失敗しました。時間をおいて再試行してください。',
+      code: 'SPOT_API_ERROR',
+    }
+  }
 
   const { data: likeRows } = await supabase.from('spot_likes').select('spot_id').in('spot_id', orderedIds)
   const likeCountBySpotId: Record<string, number> = {}
@@ -245,7 +255,17 @@ export async function fetchCheckedInSpotsForUser(
 
   // spots はサーバ経由で引く。anon キーはバンドルに平文で入っており、
   // 直読みを許すと判定列がページングで全件抜ける
-  const spotRows = await fetchSpotsByIds({ ids: orderedIds, columns: 'list' })
+  let spotRows: Record<string, unknown>[]
+  try {
+    spotRows = await fetchSpotsByIds({ ids: orderedIds, columns: 'list' })
+  } catch (error) {
+    console.warn('[fetchCheckedInSpotsForUser] spots API failed', error)
+    return {
+      ok: false,
+      error: 'スポット情報の取得に失敗しました。時間をおいて再試行してください。',
+      code: 'SPOT_API_ERROR',
+    }
+  }
 
   const { data: likeRows } = await supabase.from('spot_likes').select('spot_id').in('spot_id', orderedIds)
   const likeCountBySpotId: Record<string, number> = {}

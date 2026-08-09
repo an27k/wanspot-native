@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Image, LayoutChangeEvent, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native'
 import { formatNativeAdStarString } from '@/lib/ads/nativeAdStar'
-import { sharedNativeAdStyles } from '@/lib/ads/nativeAdCardStyles'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
+import { createNativeAdCardStyles } from '@/lib/ads/nativeAdCardStyles'
 import {
   NativeAd,
   NativeAdView,
@@ -19,6 +20,7 @@ type Props = {
 const iconPh = { width: 0, height: 0 }
 
 export function NativeAdStandardCard({ nativeAd, adViewStyle }: Props) {
+  const sharedNativeAdStyles = useThemedStyles(createNativeAdCardStyles)
   const starLine = formatNativeAdStarString(nativeAd.starRating)
   const [mediaH, setMediaH] = useState(120)
 

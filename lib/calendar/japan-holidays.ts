@@ -63,3 +63,10 @@ export const CALENDAR_DATE_COLORS = {
   sunday_or_holiday: '#E11D48',
   weekday: '#6B6560',
 } as const
+
+export const CALENDAR_DATE_COLORS_DARK = {
+  past: '#766F68',
+  saturday: '#78A9FF',
+  sunday_or_holiday: '#FF7894',
+  weekday: '#BDB5AC',
+} as const

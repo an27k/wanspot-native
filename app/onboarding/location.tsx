@@ -9,12 +9,14 @@ import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHead
 import { OB_DOG_KEY, OB_LOCATION_GRANTED, OB_LOCATION_KEY } from '@/lib/onboarding-constants'
 import { completeOnboarding } from '@/lib/onboarding-complete'
 import { dogLabel } from '@/lib/dog-label'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 export default function OnboardingLocationPage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const styles = useThemedStyles(createStyles)
   const [busy, setBusy] = useState(false)
   /** 未入力・保存漏れなら null のまま。dogLabel が「うちの子」に落とす */
   const [dogName, setDogName] = useState<string | null>(null)
@@ -101,11 +103,13 @@ export default function OnboardingLocationPage() {
         </Text>
       </View>
 
-      <Text style={styles.hint}>
-        現在地を許可すると、今いる場所のまわりで{name}と入れるスポットが提案できます。{'\n'}
-        また、今日の天候を分析してお散歩に向いた時間もお知らせします。{'\n'}
-        あとからアプリで変更もできます。
-      </Text>
+      <View style={styles.infoCard}>
+        <Text style={styles.hint}>
+          現在地を許可すると、今いる場所のまわりで{name}と入れるスポットが提案できます。{'\n'}
+          また、今日の天候を分析してお散歩に向いた時間もお知らせします。{'\n'}
+          あとからアプリで変更もできます。
+        </Text>
+      </View>
 
       {/* 上の説明と下のボタンを引き離し、画面下部の空白を詰める */}
       <View style={styles.spacer} />
@@ -126,19 +130,25 @@ export default function OnboardingLocationPage() {
   )
 }
 
-const styles = StyleSheet.create({
-  main: { flex: 1, backgroundColor: '#fff' },
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  main: { flex: 1, backgroundColor: colors.paper },
   /** flexGrow で画面いっぱいに広げ、spacer にボタンを下へ押させる */
-  content: { flexGrow: 1, paddingHorizontal: 24, gap: 16 },
+  content: { flexGrow: 1, paddingHorizontal: 20, gap: 16 },
   /** 2行ぶんの高さを確保しておく。名前が長くても行数もこの高さも変わらない */
-  headingBox: { height: 76, justifyContent: 'center', marginTop: 8 },
+  headingBox: { height: 82, justifyContent: 'center', marginTop: 8 },
   h2: {
     ...type.title,
-    fontWeight: '800',
     color: colors.textPrimary,
     textAlign: 'center',
   },
-  hint: { ...type.caption, lineHeight: 22, color: '#8A8A8A', textAlign: 'left' as const },
+  infoCard: {
+    padding: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  hint: { ...type.body, color: colors.textSecondary },
   spacer: { flex: 1, minHeight: 24 },
   next: {
     height: 52,
@@ -149,5 +159,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   nextOff: { opacity: 0.6 },
-  nextTxt: { ...type.button, color: colors.textPrimary, textAlign: 'center' as const },
+  nextTxt: { ...type.button, color: colors.onPrimary, textAlign: 'center' as const },
 })

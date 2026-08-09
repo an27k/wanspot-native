@@ -1,16 +1,16 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { Image } from 'expo-image'
-import { LinearGradient } from 'expo-linear-gradient'
 import { Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import Svg, { Circle, Path, Polygon, Text as SvgTextNode } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArticleRemoteImage } from '@/components/articles/ArticleRemoteImage'
+import { AppHeader } from '@/components/AppHeader'
 import { RunningDog } from '@/components/DogStates'
-import { colors } from '@/constants/colors'
-import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
-import { supabase } from '@/lib/supabase'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
 import { remoteImageAcceptHeaders } from '@/lib/images/remoteImageDefaults'
 import { openSpotDetailFromPlace } from '@/lib/open-spot-detail'
@@ -38,71 +38,34 @@ function isUuid(s: string): boolean {
   return /^[0-9a-f-]{36}$/i.test(s.trim())
 }
 
-function normalizePriceLevel(raw: unknown): number | null {
-  if (raw === null || raw === undefined || raw === '') return null
-  const n = typeof raw === 'number' ? raw : Number(raw)
-  if (!Number.isFinite(n)) return null
-  return Math.max(0, Math.min(4, Math.round(n)))
-}
-
-/** `/api/spots/detail` のレスポンス（フラット or result）から spots 行用ペイロードを組み立てる */
-function buildSpotUpsertFromDetailJson(json: unknown, placeId: string, fallbackName: string): Record<string, unknown> | null {
-  if (!json || typeof json !== 'object') return null
-  const root = json as Record<string, unknown>
-  if (typeof root.error === 'string' && root.error.length > 0) return null
-  const o = (root.result && typeof root.result === 'object' ? root.result : root) as Record<string, unknown>
-  const name =
-    (typeof o.name === 'string' && o.name.trim()) ||
-    (fallbackName.trim() || 'スポット')
-  const addr =
-    (typeof o.formatted_address === 'string' && o.formatted_address.trim()) ||
-    (typeof o.vicinity === 'string' && o.vicinity.trim()) ||
-    null
-  const geom = o.geometry as { location?: { lat?: number; lng?: number } } | undefined
-  const lat = typeof geom?.location?.lat === 'number' ? geom.location.lat : null
-  const lng = typeof geom?.location?.lng === 'number' ? geom.location.lng : null
-  const rating = typeof o.rating === 'number' && Number.isFinite(o.rating) ? o.rating : null
-  const price_level = normalizePriceLevel(o.price_level ?? o.priceLevel)
-  let category = 'establishment'
-  const types = o.types
-  const typeStrings = Array.isArray(types)
-    ? types.filter((t): t is string => typeof t === 'string')
-    : []
-  if (typeStrings.length > 0) {
-    category = typeStrings[0]
-  }
-  return {
-    place_id: placeId,
-    name,
-    category,
-    address: addr,
-    lat,
-    lng,
-    rating,
-    price_level,
-    ...(typeStrings.length > 0 ? { google_types: typeStrings } : {}),
-  }
-}
-
-async function ensureSpotRowFromPlaceId(placeId: string, fallbackName: string): Promise<SpotRow | null> {
-  const res = await wanspotFetch(`/api/spots/detail?place_id=${encodeURIComponent(placeId)}`)
-  if (!res.ok) return null
-  let json: unknown
-  try {
-    json = await res.json()
-  } catch {
-    return null
-  }
-  const payload = buildSpotUpsertFromDetailJson(json, placeId, fallbackName)
-  if (!payload) return null
+async function ensureSpotRowFromPlaceId(placeId: string): Promise<SpotRow | null> {
   // クライアントから spots へ直接 upsert していた。書き込み権限をクライアントに
   // 残すと、判定列（$0.02/件で生成）を第三者に上書きされうる。
-  // 同等のサーバ実装が既にあるのでそちらに寄せ、spots への権限を剥がせるようにする
-  const ensureRes = await wanspotFetch('/api/spots/ensure', { method: 'POST', json: payload })
+  // サーバーへはplace_idだけ渡し、Google検証済みの値だけを保存する。
+  const ensureRes = await wanspotFetch('/api/spots/ensure', {
+    method: 'POST',
+    json: { place_id: placeId },
+  })
   if (!ensureRes.ok) return null
   try {
-    const ensured = (await ensureRes.json()) as { spot?: SpotRow }
-    return ensured.spot ?? null
+    const ensured = (await ensureRes.json()) as { spot?: Partial<SpotRow> }
+    const row = ensured.spot
+    if (
+      !row ||
+      typeof row.id !== 'string' ||
+      typeof row.place_id !== 'string' ||
+      typeof row.name !== 'string' ||
+      typeof row.category !== 'string'
+    ) {
+      return null
+    }
+    return {
+      id: row.id,
+      place_id: row.place_id,
+      name: row.name,
+      category: row.category,
+      address: typeof row.address === 'string' ? row.address : null,
+    }
   } catch {
     return null
   }
@@ -172,20 +135,17 @@ type Article = {
   image_url: string | null
 }
 
-const IconChevron = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.5} strokeLinecap="round">
-    <Path d="M15 18l-6-6 6-6" />
-  </Svg>
-)
-
-const IconShare = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
-    <Circle cx={18} cy={5} r={3} />
-    <Circle cx={6} cy={12} r={3} />
-    <Circle cx={18} cy={19} r={3} />
-    <Path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" />
-  </Svg>
-)
+const IconShare = () => {
+  const { colors } = useAppTheme()
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
+      <Circle cx={18} cy={5} r={3} />
+      <Circle cx={6} cy={12} r={3} />
+      <Circle cx={18} cy={19} r={3} />
+      <Path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" />
+    </Svg>
+  )
+}
 
 const IconX = () => (
   <Svg width={18} height={18} viewBox="0 0 24 24" fill="#fff">
@@ -193,19 +153,28 @@ const IconX = () => (
   </Svg>
 )
 
-const IconCopy = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
-    <Path d="M9 9h10v10H9zM5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-  </Svg>
-)
+const IconCopy = () => {
+  const { colors } = useAppTheme()
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
+      <Path d="M9 9h10v10H9zM5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+    </Svg>
+  )
+}
 
-const IconStarSm = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
-    <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-  </Svg>
-)
+const IconStarSm = () => {
+  const { colors } = useAppTheme()
+  return (
+    <Svg width={11} height={11} viewBox="0 0 24 24" fill={colors.primary} stroke={colors.primary} strokeWidth={1.5}>
+      <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </Svg>
+  )
+}
 
 function PriceLevel({ level }: { level: number | null }) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
+
   if (level === null || level === undefined) {
     return <Text style={styles.plQ}>?</Text>
   }
@@ -213,8 +182,8 @@ function PriceLevel({ level }: { level: number | null }) {
     <View style={{ flexDirection: 'row', gap: 2 }}>
       {[1, 2, 3, 4].map((i) => (
         <Svg key={i} width={10} height={10} viewBox="0 0 24 24">
-          <Circle cx={12} cy={12} r={10} fill={i <= level ? colors.primary : '#e8e8e8'} />
-          <SvgTextNode x={12} y={16} textAnchor="middle" fontSize={12} fill={i <= level ? colors.textPrimary : '#bbb'} fontWeight="bold">
+          <Circle cx={12} cy={12} r={10} fill={i <= level ? colors.primary : colors.surfaceAlt} />
+          <SvgTextNode x={12} y={16} textAnchor="middle" fontSize={12} fill={i <= level ? colors.textPrimary : colors.textMeta} fontWeight="bold">
             ¥
           </SvgTextNode>
         </Svg>
@@ -251,6 +220,7 @@ const ArticleSpotCard = memo(function ArticleSpotCard({
   onOpen: () => void
   photoRecyclingKey: string
 }) {
+  const styles = useThemedStyles(createStyles)
   const photoRef = enrichment?.photo_ref ?? null
   const photoUrl = spotPhotoUrl(photoRef)
   const displayRating = enrichment?.rating ?? null
@@ -264,14 +234,6 @@ const ArticleSpotCard = memo(function ArticleSpotCard({
 
   return (
     <View style={styles.spotCard}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(85,224,180,0.14)', 'rgba(182,108,255,0.12)', 'rgba(255,255,255,0.94)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View pointerEvents="none" style={[styles.articleGlassTube, styles.articleGlassTubeTop]} />
       <View style={styles.spotImgWrap}>
         {photoUrl ? (
           <ArticleRemoteImage uri={photoUrl} style={styles.spotImg} recyclingKey={photoRecyclingKey} priority="normal" />
@@ -294,13 +256,6 @@ const ArticleSpotCard = memo(function ArticleSpotCard({
         <Text style={styles.spotName}>{row.name}</Text>
         <Text style={styles.spotAddr}>{address}</Text>
         <Pressable style={styles.spotCta} onPress={onOpen}>
-          <LinearGradient
-            pointerEvents="none"
-            colors={['#55E0B4', '#7F5CFF']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
           <Text style={styles.spotCtaTxt}>→ スポットを見る</Text>
         </Pressable>
       </View>
@@ -325,6 +280,8 @@ const BlockRenderer = memo(function BlockRenderer({
   articleId: string
   blockImageRecyclingKey?: string
 }) {
+  const styles = useThemedStyles(createStyles)
+
   if (block.type === 'image') {
     return (
       <View style={styles.imgBlock}>
@@ -380,8 +337,10 @@ const BlockRenderer = memo(function BlockRenderer({
 export default function ArticleDetailScreen({ articleId }: { articleId: string }) {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const styles = useThemedStyles(createStyles)
   const [article, setArticle] = useState<Article | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [spotRowsById, setSpotRowsById] = useState<Record<string, SpotRow>>({})
   const [enrichmentByPlaceId, setEnrichmentByPlaceId] = useState<Record<string, PlaceCardEnrichment>>({})
@@ -390,6 +349,7 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
     async (opts?: { force?: boolean }) => {
       const cacheKey = `articleDetail:${articleId}`
       const cached = !opts?.force ? readCache<Article | null>(cacheKey) : undefined
+      setLoadError(null)
       // キャッシュがあれば即表示し、裏で最新化（記事の再訪問時に白画面/再読み込み待ちを防ぐ）
       if (cached !== undefined) {
         setArticle(cached)
@@ -397,26 +357,37 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
       } else {
         setLoading(true)
       }
-      const { data } = await fetchWithCache(
-        cacheKey,
-        CACHE_TTL.ARTICLE_DETAIL_MS,
-        async () => {
-          // articles を直読みしていた。anon キーはバンドルに平文で入っており
-          // 実質公開情報なので、記事本文110件が全件取得できる状態だった。
-          // サーバ経由にして articles のクライアント権限を剥がせるようにする
-          const res = await wanspotFetch(`/api/articles/${encodeURIComponent(articleId)}`, { auth: false })
-          if (!res.ok) return null
-          try {
-            const json = (await res.json()) as { article?: Article }
-            return json.article ?? null
-          } catch {
-            return null
-          }
-        },
-        { force: opts?.force }
-      )
-      setArticle(data)
-      setLoading(false)
+      try {
+        const { data } = await fetchWithCache(
+          cacheKey,
+          CACHE_TTL.ARTICLE_DETAIL_MS,
+          async () => {
+            // articles を直読みしていた。anon キーはバンドルに平文で入っており
+            // 実質公開情報なので、記事本文110件が全件取得できる状態だった。
+            // サーバ経由にして articles のクライアント権限を剥がせるようにする
+            const res = await wanspotFetch(
+              `/api/articles/${encodeURIComponent(articleId)}`,
+              { auth: false }
+            )
+            if (res.status === 404) return null
+            if (!res.ok) throw new Error(`article detail failed with status ${res.status}`)
+            const json = (await res.json()) as { article?: unknown }
+            if (!json.article || typeof json.article !== 'object') {
+              throw new Error('article detail returned an invalid payload')
+            }
+            return json.article as Article
+          },
+          { force: opts?.force }
+        )
+        setArticle(data)
+      } catch (error) {
+        console.warn('[ArticleDetailScreen] article load failed', error)
+        if (cached === undefined) {
+          setLoadError('記事を読み込めませんでした。通信環境を確認して再試行してください。')
+        }
+      } finally {
+        setLoading(false)
+      }
     },
     [articleId]
   )
@@ -483,7 +454,17 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
       const placeKeys = spotIds.filter((s) => !isUuid(s) && s.trim().length > 0)
 
       // spots はサーバ経由で引く（anon キーでの直読みを塞ぐため）
-      const rows = await fetchSpotsByIds({ ids: uuidKeys, placeIds: placeKeys, columns: 'card' })
+      let rows: Record<string, unknown>[]
+      try {
+        rows = await fetchSpotsByIds({
+          ids: uuidKeys,
+          placeIds: placeKeys,
+          columns: 'card',
+        })
+      } catch (error) {
+        console.warn('[ArticleDetailScreen] spot hydration failed', error)
+        return
+      }
 
       if (cancelled) return
 
@@ -523,7 +504,7 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
       const missingPlaceIds = spotIds.filter((k) => !byBlockKey[k] && !isUuid(k))
       const ensuredRows =
         missingPlaceIds.length > 0
-          ? await Promise.all(missingPlaceIds.map((pid) => ensureSpotRowFromPlaceId(pid, spotNameByKey[pid] ?? '')))
+          ? await Promise.all(missingPlaceIds.map((pid) => ensureSpotRowFromPlaceId(pid)))
           : []
 
       if (cancelled) return
@@ -562,7 +543,7 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
     return () => {
       cancelled = true
     }
-  }, [spotHydrateKey])
+  }, [spotHydrateKey, spotIds])
 
   /** スポットカード用サムネを batch-details 取得後に先読み */
   useEffect(() => {
@@ -613,18 +594,34 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
     [article]
   )
 
-  const bottomPad = TAB_BAR_HEIGHT + insets.bottom + 32
+  const bottomPad = insets.bottom + 32
 
   if (loading) {
     return (
       <View style={styles.root}>
-        <View style={[styles.backRow, { paddingTop: Math.max(16, insets.top) }]}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <IconChevron />
-            <Text style={styles.backTxt}>戻る</Text>
+        <AppHeader variant="back" onBack={() => router.back()} />
+        <View style={styles.loadingBody}>
+          <RunningDog label="読み込み中..." />
+        </View>
+      </View>
+    )
+  }
+
+  if (loadError && !article) {
+    return (
+      <View style={styles.root}>
+        <AppHeader variant="back" onBack={() => router.back()} />
+        <View style={styles.errorBody}>
+          <Text style={styles.empty}>{loadError}</Text>
+          <Pressable
+            style={styles.retryButton}
+            onPress={() => void load({ force: true })}
+            accessibilityRole="button"
+            accessibilityLabel="記事を再読み込み"
+          >
+            <Text style={styles.retryButtonText}>再試行</Text>
           </Pressable>
         </View>
-        <RunningDog label="読み込み中..." />
       </View>
     )
   }
@@ -632,12 +629,7 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
   if (!article) {
     return (
       <View style={styles.root}>
-        <View style={[styles.backRow, { paddingTop: Math.max(16, insets.top) }]}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <IconChevron />
-            <Text style={styles.backTxt}>戻る</Text>
-          </Pressable>
-        </View>
+        <AppHeader variant="back" onBack={() => router.back()} />
         <Text style={styles.empty}>記事が見つかりません</Text>
       </View>
     )
@@ -645,12 +637,10 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
 
   return (
     <View style={styles.rootWhite}>
-      <ScrollView contentContainerStyle={{ paddingBottom: bottomPad }} showsVerticalScrollIndicator={false}>
-        <View style={[styles.backRow, { paddingTop: Math.max(16, insets.top) }]}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <IconChevron />
-            <Text style={styles.backTxt}>戻る</Text>
-          </Pressable>
+      <AppHeader
+        variant="back"
+        onBack={() => router.back()}
+        rightSlot={
           <Pressable
             style={styles.shareBtn}
             onPress={() => setShowShareSheet(true)}
@@ -659,7 +649,9 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
           >
             <IconShare />
           </Pressable>
-        </View>
+        }
+      />
+      <ScrollView contentContainerStyle={{ paddingBottom: bottomPad }} showsVerticalScrollIndicator={false}>
         {article.image_url ? (
           <ArticleRemoteImage
             // .trim() は先読み（396行）と URL を一致させるため必須。前後空白があると
@@ -672,14 +664,6 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
         ) : null}
         <View style={styles.pad}>
           <View style={styles.articleIntro}>
-            <LinearGradient
-              pointerEvents="none"
-              colors={['rgba(85,224,180,0.2)', 'rgba(182,108,255,0.16)', 'rgba(255,255,255,0.92)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View pointerEvents="none" style={[styles.articleGlassTube, styles.articleGlassTubeIntro]} />
             <Text style={styles.articleKicker}>WANSPOT ARTICLE</Text>
             <Text style={styles.title}>{article.title}</Text>
             {article.keywords?.length > 0 ? (
@@ -775,72 +759,40 @@ export default function ArticleDetailScreen({ articleId }: { articleId: string }
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.paper },
-  rootWhite: { flex: 1, backgroundColor: '#F7F4F0' },
+  rootWhite: { flex: 1, backgroundColor: colors.paper },
+  loadingBody: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { textAlign: 'center', marginTop: 40, ...type.body, color: colors.textMuted },
-  backRow: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  errorBody: { flex: 1, alignItems: 'center', paddingHorizontal: 24 },
+  retryButton: {
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 999,
+    backgroundColor: colors.primary,
   },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backTxt: { ...type.button, color: colors.textPrimary },
+  retryButtonText: { ...type.button, color: colors.onPrimary },
   shareBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.86)',
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   hero: { width: '100%', aspectRatio: 16 / 9 },
-  pad: { paddingHorizontal: 16 },
+  pad: { paddingHorizontal: 20 },
   articleIntro: {
-    position: 'relative',
-    overflow: 'hidden',
-    marginTop: -18,
-    marginBottom: 22,
-    borderRadius: 26,
-    padding: 18,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.78)',
-    shadowColor: '#7F5CFF',
-    shadowOpacity: 0.12,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 4,
+    paddingVertical: 20,
+    marginBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   articleKicker: {
     ...type.label,
-    color: '#7F5CFF',
+    color: colors.primary,
     marginBottom: 8,
   },
-  articleGlassTube: {
-    position: 'absolute',
-    height: 18,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.28)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.58)',
-  },
-  articleGlassTubeIntro: {
-    top: 18,
-    right: -20,
-    width: '62%',
-    transform: [{ rotate: '-6deg' }],
-  },
-  articleGlassTubeTop: {
-    top: 16,
-    left: 18,
-    width: '58%',
-    opacity: 0.72,
-    transform: [{ rotate: '-5deg' }],
-  },
-  title: { ...type.title, color: '#201B24' },
+  title: { ...type.title, color: colors.textPrimary },
   kwBox: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -849,62 +801,57 @@ const styles = StyleSheet.create({
   },
   kwTag: {
     ...type.label,
-    color: '#7F5CFF',
-    backgroundColor: 'rgba(255,255,255,0.66)',
+    color: colors.primary,
+    backgroundColor: colors.tintWeak,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(127,92,255,0.18)',
+    borderColor: colors.tintStrong,
     borderRadius: 999,
     paddingHorizontal: 9,
     paddingVertical: 5,
   },
-  sectionTitle: { ...type.heading, color: '#201B24', marginBottom: 10 },
+  sectionTitle: { ...type.heading, color: colors.textPrimary, marginBottom: 10 },
   sectionTitleMt: { marginTop: 24 },
   // 節見出し(20) と本文(16) の間の3階層目。サイズは行と同じ17まで落とし、
   // 見出しであることは heading と同じ太さ(800)で出す
-  itemTitle: { ...type.heading, fontSize: 17, lineHeight: 23, color: '#201B24', marginBottom: 8 },
+  itemTitle: { ...type.heading, fontSize: 17, lineHeight: 23, color: colors.textPrimary, marginBottom: 8 },
   itemTitleMt: { marginTop: 16 },
-  textBlock: { ...type.body, color: 'rgba(32,27,36,0.78)', marginBottom: 20 },
+  textBlock: { ...type.body, color: colors.textPrimary, marginBottom: 20 },
   imgBlock: { marginVertical: 24 },
   imgBlockImg: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12 },
-  imgCap: { ...type.caption, textAlign: 'center', color: '#aaa', marginTop: 8 },
+  imgCap: { ...type.caption, textAlign: 'center', color: colors.textMuted, marginTop: 8 },
   spotCard: {
     marginVertical: 24,
-    borderRadius: 22,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.78)',
-    shadowColor: '#7F5CFF',
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
+    borderColor: colors.border,
   },
-  spotImgWrap: { width: '100%', height: 144, backgroundColor: '#e8e4de' },
+  spotImgWrap: { width: '100%', height: 144, backgroundColor: colors.mapMuted },
   spotImg: { width: '100%', height: '100%' },
   spotBody: { padding: 12, gap: 4 },
   spotTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  catPill: { backgroundColor: 'rgba(255,255,255,0.72)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  catPillTxt: { ...type.label, color: '#7F5CFF' },
+  catPill: { backgroundColor: colors.tintWeak, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  catPillTxt: { ...type.label, color: colors.primary },
   rateMini: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   // 評価値。11pxの星と10pxの料金マークに挟まれるので label のまま上げない
-  rateMiniTxt: { ...type.label, color: '#888' },
+  rateMiniTxt: { ...type.label, color: colors.textSecondary },
   spotName: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary },
-  spotAddr: { ...type.caption, color: '#aaa' },
+  spotAddr: { ...type.caption, color: colors.textMuted },
   spotCta: {
     marginTop: 12,
     paddingVertical: 10,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#7F5CFF',
+    backgroundColor: colors.primary,
     alignItems: 'center',
   },
-  spotCtaTxt: { ...type.button, color: '#fff' },
-  related: { marginTop: 40, paddingTop: 24, borderTopWidth: 1, borderTopColor: '#eee' },
+  spotCtaTxt: { ...type.button, color: colors.onPrimary },
+  related: { marginTop: 40, paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.borderSubtle },
   relatedTitle: { ...type.heading, color: colors.textPrimary, marginBottom: 16 },
-  relatedCard: { borderRadius: 12, padding: 16, backgroundColor: '#f9f9f9', marginBottom: 12 },
+  relatedCard: { borderRadius: 12, padding: 16, backgroundColor: colors.surfaceTertiary, marginBottom: 12 },
   relatedName: { ...type.row, fontWeight: '700' as const, color: colors.textPrimary, marginBottom: 4 },
-  relatedDesc: { ...type.caption, color: '#888', marginBottom: 12 },
+  relatedDesc: { ...type.caption, color: colors.textSecondary, marginBottom: 12 },
   relatedBtn: {
     alignSelf: 'flex-start',
     paddingHorizontal: 16,
@@ -912,13 +859,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.primary,
   },
-  relatedBtnTxt: { ...type.button, color: colors.textPrimary },
-  relatedNone: { ...type.caption, color: '#bbb' },
+  relatedBtnTxt: { ...type.button, color: colors.onPrimary },
+  relatedNone: { ...type.caption, color: colors.textMeta },
   // 料金不明の「?」。隣の ¥ マークが10pxの円なので label で揃える
-  plQ: { ...type.label, color: '#ccc' },
-  shareOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
+  plQ: { ...type.label, color: colors.textDisabled },
+  shareOverlay: { flex: 1, backgroundColor: colors.overlayScrim, justifyContent: 'center', padding: 20 },
   shareBox: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 24,
     padding: 24,
     maxWidth: 340,
@@ -926,11 +873,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   // 灰色・字間広めのマイクロラベルとして置かれている見出し。title(26) ではなく label
-  shareTitle: { ...type.label, color: '#aaa', textAlign: 'center', marginBottom: 20 },
+  shareTitle: { ...type.label, color: colors.textMuted, textAlign: 'center', marginBottom: 20 },
   shareGrid: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
   shareX: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#000' },
   shareLine: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#06C755' },
-  shareCopy: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: '#f5f5f5' },
+  shareCopy: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, backgroundColor: colors.surfaceAlt },
   shareLbl: { ...type.label, color: colors.textPrimary },
   shareLblW: { ...type.label, color: '#fff' },
 })

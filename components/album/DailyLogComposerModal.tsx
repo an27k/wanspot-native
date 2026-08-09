@@ -3,8 +3,10 @@ import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { TOKENS } from '@/constants/color-tokens'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import {
   DAILY_LOG_CONTEXTS,
   DAILY_LOG_MOODS,
@@ -49,6 +51,8 @@ export function DailyLogComposerModal({
   onSaved,
 }: Props) {
   const insets = useSafeAreaInsets()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const [context, setContext] = useState<DailyLogContext>(initialContext)
   const [media, setMedia] = useState<PickedDailyLogMedia | null>(null)
   const [mood, setMood] = useState<DailyLogMood | null>(null)
@@ -135,7 +139,7 @@ export function DailyLogComposerModal({
               <Text style={styles.title}>きょうの{dogName}</Text>
             </View>
             <Pressable onPress={onClose} hitSlop={8} disabled={saving} accessibilityLabel="閉じる">
-              <Ionicons name="close" size={24} color={TOKENS.text.primary} />
+              <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
 
@@ -154,7 +158,7 @@ export function DailyLogComposerModal({
                   <Ionicons
                     name={ctx.icon as keyof typeof Ionicons.glyphMap}
                     size={13}
-                    color={on ? '#fff' : TOKENS.brand.pillText}
+                    color={on ? colors.onPrimary : colors.pillText}
                   />
                   <Text style={[styles.chipTxt, on && styles.chipTxtOn]}>{ctx.label}</Text>
                 </Pressable>
@@ -186,14 +190,14 @@ export function DailyLogComposerModal({
             <View style={styles.mediaRow}>
               <Pressable style={styles.mediaBtn} onPress={() => void capture()} disabled={saving}>
                 <View style={styles.mediaBtnOrb}>
-                  <Ionicons name="camera" size={22} color="#fff" />
+                  <Ionicons name="camera" size={22} color={colors.onPrimary} />
                 </View>
                 <Text style={styles.mediaBtnTxt}>カメラ</Text>
                 <Text style={styles.mediaBtnSub}>写真 or 10秒動画</Text>
               </Pressable>
               <Pressable style={styles.mediaBtn} onPress={() => void pick()} disabled={saving}>
                 <View style={[styles.mediaBtnOrb, styles.mediaBtnOrbAlt]}>
-                  <Ionicons name="images" size={22} color={TOKENS.brand.pillText} />
+                  <Ionicons name="images" size={22} color={colors.pillText} />
                 </View>
                 <Text style={styles.mediaBtnTxt}>ライブラリ</Text>
                 <Text style={styles.mediaBtnSub}>1点えらぶ</Text>
@@ -237,11 +241,11 @@ export function DailyLogComposerModal({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   bg: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.overlayScrim,
   },
   sheet: {
     borderTopLeftRadius: 28,
@@ -249,19 +253,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 10,
     gap: 14,
-    backgroundColor: TOKENS.surface.paper,
+    backgroundColor: colors.paper,
   },
   grabber: {
     alignSelf: 'center',
     width: 40,
     height: 5,
     borderRadius: 3,
-    backgroundColor: TOKENS.border.emphasis,
+    backgroundColor: colors.borderEmphasis,
   },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headCopy: { flex: 1, gap: 1 },
-  kicker: { ...type.label, color: TOKENS.text.meta },
-  title: { ...type.title, color: TOKENS.text.primary },
+  kicker: { ...type.label, color: colors.textMeta },
+  title: { ...type.title, color: colors.textPrimary },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     flexDirection: 'row',
@@ -270,16 +274,16 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: TOKENS.brand.tintWeak,
+    backgroundColor: colors.tintWeak,
     borderWidth: 1,
-    borderColor: TOKENS.brand.tintStrong,
+    borderColor: colors.tintStrong,
   },
   chipOn: {
-    backgroundColor: TOKENS.brand.primary,
-    borderColor: TOKENS.brand.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  chipTxt: { ...type.label, color: TOKENS.brand.pillText },
-  chipTxtOn: { color: '#fff' },
+  chipTxt: { ...type.label, color: colors.pillText },
+  chipTxtOn: { color: colors.onPrimary },
   mediaRow: { flexDirection: 'row', gap: 10 },
   mediaBtn: {
     flex: 1,
@@ -287,9 +291,9 @@ const styles = StyleSheet.create({
     gap: 4,
     borderRadius: 20,
     paddingVertical: 16,
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
   },
   mediaBtnOrb: {
     width: 46,
@@ -297,24 +301,24 @@ const styles = StyleSheet.create({
     borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: TOKENS.brand.primary,
+    backgroundColor: colors.primary,
     marginBottom: 2,
   },
-  mediaBtnOrbAlt: { backgroundColor: TOKENS.brand.tintWeak },
-  mediaBtnTxt: { ...type.button, color: TOKENS.text.primary },
-  mediaBtnSub: { ...type.caption, color: TOKENS.text.secondary },
+  mediaBtnOrbAlt: { backgroundColor: colors.tintWeak },
+  mediaBtnTxt: { ...type.button, color: colors.textPrimary },
+  mediaBtnSub: { ...type.caption, color: colors.textSecondary },
   previewWrap: { position: 'relative', alignSelf: 'center' },
   preview: {
     width: 148,
     height: 148,
     borderRadius: 20,
-    backgroundColor: TOKENS.surface.alt,
+    backgroundColor: colors.surfaceAlt,
   },
   previewVideo: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
-    backgroundColor: TOKENS.text.primary,
+    backgroundColor: colors.vessel,
   },
   previewVideoTxt: { ...type.label, color: 'rgba(255,255,255,0.85)' },
   previewRemove: {
@@ -335,30 +339,30 @@ const styles = StyleSheet.create({
     gap: 2,
     borderRadius: 14,
     paddingVertical: 8,
-    backgroundColor: TOKENS.surface.primary,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: TOKENS.border.default,
+    borderColor: colors.border,
   },
   moodOn: {
-    backgroundColor: TOKENS.brand.tintWeak,
-    borderColor: TOKENS.brand.primary,
+    backgroundColor: colors.tintWeak,
+    borderColor: colors.primary,
   },
   // 絵文字。文字ではなくアイコンなので型には寄せない
   moodEmoji: { fontSize: 18 },
-  moodTxt: { ...type.label, color: TOKENS.text.secondary },
-  moodTxtOn: { color: TOKENS.brand.pillText },
+  moodTxt: { ...type.label, color: colors.textSecondary },
+  moodTxtOn: { color: colors.pillText },
   saveBtn: {
     borderRadius: 999,
     paddingVertical: 15,
     alignItems: 'center',
-    backgroundColor: TOKENS.brand.primary,
-    shadowColor: TOKENS.brand.primary,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
     shadowOpacity: 0.3,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  saveBtnDisabled: { backgroundColor: TOKENS.border.emphasis, shadowOpacity: 0, elevation: 0 },
-  saveBtnTxt: { ...type.button, color: '#fff' },
-  saveBtnTxtDisabled: { color: TOKENS.text.tertiary },
+  saveBtnDisabled: { backgroundColor: colors.borderEmphasis, shadowOpacity: 0, elevation: 0 },
+  saveBtnTxt: { ...type.button, color: colors.onPrimary },
+  saveBtnTxtDisabled: { color: colors.textMuted },
 })

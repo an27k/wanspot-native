@@ -5,18 +5,19 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { RunningDog, PowState } from '@/components/DogStates'
-import { GoogleHomeBackground } from '@/components/search/GoogleHomeBackground'
-import { BrandTabHeader } from '@/components/common/BrandTabHeader'
-import { GOOGLE_HOME } from '@/constants/google-home-tokens'
+import { AppHeader } from '@/components/AppHeader'
 import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
 import { resolveEventPrefecture } from '@/lib/calendar/resolve-prefecture'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { fetchWithCache } from '@/lib/client-cache'
 import { stashCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
 import {
   CALENDAR_DATE_COLORS,
+  CALENDAR_DATE_COLORS_DARK,
   calendarDateTone,
   japanHolidaysInMonth,
 } from '@/lib/calendar/japan-holidays'
@@ -66,6 +67,9 @@ function buildMonthGrid(year: number, month: number): (number | null)[][] {
 export function CalendarTabScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { colors, isDark } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
+  const dateColors = isDark ? CALENDAR_DATE_COLORS_DARK : CALENDAR_DATE_COLORS
   const today = useMemo(() => todayJst(), [])
 
   const [year, setYear] = useState(today.year)
@@ -146,6 +150,9 @@ export function CalendarTabScreen() {
     holidayName: selectedHoliday,
   })
   const selectedIsPast = selectedTone === 'past'
+  const selectedDay = Number(selectedKey.slice(-2))
+  const selectedWeekday = WEEKDAYS[new Date(year, month - 1, selectedDay).getDay()]
+  const selectedDayTitle = `${month}月${selectedDay}日（${selectedWeekday}）のイベント`
 
   const openDetail = useCallback(
     (ev: CalendarEventWithRelations) => {
@@ -167,15 +174,14 @@ export function CalendarTabScreen() {
   )
 
   return (
-    <GoogleHomeBackground>
+    <View style={styles.root}>
+      <AppHeader />
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + 12,
+          paddingTop: 12,
           paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24,
         }}
       >
-        <BrandTabHeader />
-
         <View style={styles.monthHeader}>
           <Pressable style={styles.monthNavBtn} onPress={() => moveMonth(-1)} accessibilityLabel="前の月">
             <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
@@ -193,7 +199,11 @@ export function CalendarTabScreen() {
             {WEEKDAYS.map((w, i) => (
               <Text
                 key={w}
-                style={[styles.weekday, i === 0 && { color: '#D85A5A' }, i === 6 && { color: '#4E97F2' }]}
+                style={[
+                  styles.weekday,
+                  i === 0 && { color: isDark ? dateColors.sunday_or_holiday : '#D85A5A' },
+                  i === 6 && { color: isDark ? dateColors.saturday : '#4E97F2' },
+                ]}
               >
                 {w}
               </Text>
@@ -214,7 +224,7 @@ export function CalendarTabScreen() {
                     ? colors.textPrimary
                     : isToday
                       ? colors.brandDark
-                      : CALENDAR_DATE_COLORS[tone]
+                      : dateColors[tone]
                 return (
                   <Pressable
                     key={di}
@@ -241,7 +251,7 @@ export function CalendarTabScreen() {
                       <Text
                         style={[
                           styles.holidayMark,
-                          { color: tone === 'past' ? CALENDAR_DATE_COLORS.past : CALENDAR_DATE_COLORS.sunday_or_holiday },
+                          { color: tone === 'past' ? dateColors.past : dateColors.sunday_or_holiday },
                         ]}
                         numberOfLines={1}
                       >
@@ -255,7 +265,7 @@ export function CalendarTabScreen() {
                           style={[
                             styles.dot,
                             {
-                              backgroundColor: ev.tags?.[0]?.color || colors.primary,
+                              backgroundColor: colors.primary,
                               opacity: tone === 'past' ? 0.45 : 1,
                             },
                           ]}
@@ -268,6 +278,8 @@ export function CalendarTabScreen() {
             </View>
           ))}
         </View>
+
+        <Text style={styles.dayListTitle}>{selectedDayTitle}</Text>
 
         {loading ? (
           <View style={styles.stateWrap}>
@@ -285,7 +297,7 @@ export function CalendarTabScreen() {
               <View
                 style={[
                   styles.holidayBanner,
-                  selectedIsPast && { opacity: 0.65, backgroundColor: '#F1EFEC' },
+                  selectedIsPast && { opacity: 0.65, backgroundColor: colors.surfaceAlt },
                 ]}
               >
                 <Text
@@ -293,8 +305,8 @@ export function CalendarTabScreen() {
                     styles.holidayBannerTxt,
                     {
                       color: selectedIsPast
-                        ? CALENDAR_DATE_COLORS.past
-                        : CALENDAR_DATE_COLORS.sunday_or_holiday,
+                        ? dateColors.past
+                        : dateColors.sunday_or_holiday,
                     },
                   ]}
                 >
@@ -356,24 +368,24 @@ export function CalendarTabScreen() {
                       ))}
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#CCC" />
+                  <Ionicons name="chevron-forward" size={18} color={colors.textDisabled} />
                 </Pressable>
               )
             })}
           </View>
         )}
       </ScrollView>
-    </GoogleHomeBackground>
+    </View>
   )
 }
 
-const styles = StyleSheet.create({
-
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.paper },
   monthHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginBottom: 8,
   },
   monthNavBtn: {
@@ -382,14 +394,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  monthTitle: { ...type.heading, color: GOOGLE_HOME.textPrimary },
+  monthTitle: { ...type.heading, color: colors.textPrimary },
   gridCard: {
-    marginHorizontal: 16,
-    backgroundColor: colors.background,
+    marginHorizontal: 20,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
@@ -411,7 +423,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     minHeight: 44,
   },
-  dayCellSelected: { backgroundColor: colors.tintStrong },
+  dayCellSelected: { backgroundColor: colors.tintWeak },
   dayCellPast: { opacity: 0.72 },
   // 日付はハンドオフ指定の 17/600。リスト行と同じ大きさで、数字だけ少し締める
   dayNum: { ...type.row, fontWeight: '600' as const, color: colors.textPrimary },
@@ -428,7 +440,7 @@ const styles = StyleSheet.create({
   },
   holidayBanner: {
     borderRadius: 12,
-    backgroundColor: '#FFF1F2',
+    backgroundColor: colors.errorMutedBg,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -440,22 +452,28 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
     ...type.caption,
-    color: GOOGLE_HOME.textSecondary,
+    color: colors.textSecondary,
   },
-  dayList: { marginTop: 12, paddingHorizontal: 16, gap: 10 },
+  dayListTitle: {
+    ...type.heading,
+    color: colors.textPrimary,
+    marginTop: 16,
+    marginHorizontal: 20,
+  },
+  dayList: { marginTop: 10, paddingHorizontal: 20, gap: 10 },
   eventCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 10,
   },
-  eventThumb: { width: 64, height: 64, borderRadius: 12 },
+  eventThumb: { width: 72, height: 72, borderRadius: 12 },
   eventThumbPh: {
-    backgroundColor: colors.cardBg,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -468,7 +486,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 999,
     borderWidth: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   tagPillTxt: { ...type.label, color: colors.textSecondary },
   /** 都道府県。ジャンルタグと並ぶが「どこでやるか」は性質が違うので塗りで区別する */

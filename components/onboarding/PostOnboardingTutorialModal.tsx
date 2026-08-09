@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { Animated, Dimensions, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 interface PostOnboardingTutorialModalProps {
   visible: boolean
@@ -15,6 +16,7 @@ export function PostOnboardingTutorialModal({
   dogName,
   onDismiss,
 }: PostOnboardingTutorialModalProps) {
+  const styles = useThemedStyles(createStyles)
   const heart1Anim = useRef(new Animated.Value(0)).current
   const heart2Anim = useRef(new Animated.Value(0)).current
   const heart3Anim = useRef(new Animated.Value(0)).current
@@ -154,39 +156,41 @@ export function PostOnboardingTutorialModal({
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CARD_WIDTH = Math.min(SCREEN_WIDTH - 48, 360)
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: colors.overlayScrim,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
   },
   card: {
     width: CARD_WIDTH,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 24,
     paddingTop: 32,
     paddingBottom: 24,
     paddingHorizontal: 24,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
   },
   visualArea: {
     width: '100%',
-    height: 140,
+    height: 124,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     marginBottom: 8,
   },
   dogContainer: {
-    width: 120,
-    height: 120,
+    width: 104,
+    height: 104,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -225,7 +229,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...type.title,
-    color: '#1A1A1A',
+    color: colors.textPrimary,
     textAlign: 'center' as const,
   },
   titleHighlight: {
@@ -234,17 +238,16 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   body: {
-    fontSize: 14,
-    color: '#666666',
+    ...type.body,
+    color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
     marginTop: 12,
   },
   ctaButton: {
     width: '100%',
     backgroundColor: colors.primary,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -254,7 +257,7 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     ...type.button,
-    color: '#1A1A1A',
+    color: colors.onPrimary,
     letterSpacing: 0.5,
   },
 })

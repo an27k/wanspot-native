@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { catalogEntryByLabel, searchWalkAreaCatalog, suggestedWalkAreasNear } from '@/lib/walk-area-catalog'
 import { MAX_WALK_AREA_TAGS } from '@/lib/walk-area-tags'
 
@@ -13,6 +15,8 @@ export type WalkAreaTagPickerProps = {
 }
 
 export function WalkAreaTagPicker({ anchor, value, onChange, maxTags = MAX_WALK_AREA_TAGS }: WalkAreaTagPickerProps) {
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   const [search, setSearch] = useState('')
   const max = maxTags
 
@@ -132,7 +136,7 @@ export function mergeUnknownWalkTags(saved: string[]): string[] {
   return [...unknown, ...known]
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   wrap: { alignSelf: 'stretch' },
   // 画面側の見出し（heading）の下にぶら下がる小見出しなので label
   sectionLbl: { ...type.label, color: colors.text },
@@ -148,7 +152,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     ...type.row,
     color: colors.text,
-    backgroundColor: colors.cardBg,
+    backgroundColor: colors.input,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
@@ -159,20 +163,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: colors.brandButton,
+    backgroundColor: colors.tintWeak,
     borderWidth: 1,
-    borderColor: colors.brandDark,
+    borderColor: colors.primary,
   },
-  chipOnTxt: { ...type.label, color: colors.text },
+  chipOnTxt: { ...type.label, color: colors.primary },
   // × は文字ではなく削除アイコンなので、チップの文字と一緒に縮めない
-  chipRemove: { fontSize: 16, fontWeight: '700', color: colors.textMuted, marginLeft: 2 },
+  chipRemove: { fontSize: 16, fontWeight: '700', color: colors.primary, marginLeft: 2 },
   chipOff: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.cardBg,
+    backgroundColor: colors.surface,
   },
   chipDis: { opacity: 0.45 },
   chipOffTxt: { ...type.label, color: colors.text },

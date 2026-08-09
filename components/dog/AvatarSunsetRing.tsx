@@ -1,7 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient'
 import type { ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
+import type { AppColors } from '@/constants/colors'
 import { GRADIENT_SUNSET, GRADIENT_SUNSET_POINTS } from '@/constants/gradients'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 const RING = 3
 const GAP = 3
@@ -21,6 +23,7 @@ type Props = {
 
 /** アバターの細いリング（サンセット or グレー） */
 export function AvatarSunsetRing({ size, children, energized, tone = 'sunset' }: Props) {
+  const styles = useThemedStyles(createStyles)
   const outer = size + (RING + GAP) * 2
   const ringColors = tone === 'gray' ? GRADIENT_GRAY : tone === 'aurora' ? GRADIENT_AURORA : GRADIENT_SUNSET
   return (
@@ -46,7 +49,7 @@ export function AvatarSunsetRing({ size, children, energized, tone = 'sunset' }:
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   ring: { alignItems: 'center', justifyContent: 'center' },
-  gap: { backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  gap: { backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
 })

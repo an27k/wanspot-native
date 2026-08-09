@@ -15,6 +15,18 @@ import { walkAreaTagsForUpsert } from '@/lib/walk-area-tags'
 
 export type CompleteOnboardingResult = { ok: true } | { ok: false; message: string }
 
+async function finishOnboardingStorage(): Promise<void> {
+  await Promise.all([
+    AsyncStorage.removeItem(OB_DOG_KEY),
+    AsyncStorage.removeItem('ob_size'),
+    AsyncStorage.removeItem('ob_area'),
+    AsyncStorage.removeItem(OB_LOCATION_KEY),
+    AsyncStorage.removeItem(OB_LOCATION_GRANTED),
+  ])
+  await AsyncStorage.setItem(POST_ONBOARDING_TUTORIAL_KEY, '1')
+  await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, '1')
+}
+
 /** オンボーディング完了 — 散歩エリアタグは空でも可（位置許可済みユーザー） */
 export async function completeOnboarding(params: {
   walkAreaTags: string[]
@@ -25,8 +37,29 @@ export async function completeOnboarding(params: {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  if (!user) {
+    return { ok: false, message: '入力データが見つかりません。最初からやり直してください。' }
+  }
+
+  // オンボーディングは新規犬の作成専用。ログイン直後の一時的な照会失敗などで
+  // 既存ユーザーが誤って到達しても、既存プロフィールを入力値で更新しない。
+  const { data: existingDog, error: dogSelErr } = await supabase
+    .from('dogs')
+    .select('id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle()
+  if (dogSelErr) {
+    return { ok: false, message: dogSelErr.message }
+  }
+  if (existingDog) {
+    await finishOnboardingStorage()
+    params.router.replace('/(tabs)')
+    return { ok: true }
+  }
+
   const rawDog = await AsyncStorage.getItem(OB_DOG_KEY)
-  if (!user || !rawDog) {
+  if (!rawDog) {
     return { ok: false, message: '入力データが見つかりません。最初からやり直してください。' }
   }
 
@@ -80,19 +113,8 @@ export async function completeOnboarding(params: {
   const isNewColumnMissing = (err: { message?: string } | null) =>
     !!err?.message && (err.message.includes('walk_area_tags') || err.message.includes('is_primary'))
 
-  const { data: existingDog, error: dogSelErr } = await supabase
-    .from('dogs')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle()
-  if (dogSelErr) {
-    return { ok: false, message: dogSelErr.message }
-  }
-
   const runDogWrite = async (payload: Record<string, unknown>) =>
-    existingDog?.id
-      ? supabase.from('dogs').update(payload).eq('id', existingDog.id)
-      : supabase.from('dogs').insert({ user_id: user.id, ...payload })
+    supabase.from('dogs').insert({ user_id: user.id, ...payload })
 
   let dogWrite = await runDogWrite({ ...dogBase, ...dogExtra })
   if (dogWrite.error && isNewColumnMissing(dogWrite.error)) {
@@ -102,15 +124,7 @@ export async function completeOnboarding(params: {
     return { ok: false, message: dogWrite.error.message }
   }
 
-  await Promise.all([
-    AsyncStorage.removeItem(OB_DOG_KEY),
-    AsyncStorage.removeItem('ob_size'),
-    AsyncStorage.removeItem('ob_area'),
-    AsyncStorage.removeItem(OB_LOCATION_KEY),
-    AsyncStorage.removeItem(OB_LOCATION_GRANTED),
-  ])
-  await AsyncStorage.setItem(POST_ONBOARDING_TUTORIAL_KEY, '1')
-  await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, '1')
+  await finishOnboardingStorage()
 
   params.router.replace('/(tabs)')
   return { ok: true }

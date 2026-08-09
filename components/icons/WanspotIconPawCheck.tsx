@@ -1,6 +1,6 @@
 import { View } from 'react-native'
 import Svg, { Ellipse, Path } from 'react-native-svg'
-import { SETTINGS_ICON_COLOR } from '@/components/settings/settings-icon-color'
+import { useAppTheme } from '@/context/ThemeContext'
 
 type Props = {
   size?: number
@@ -17,13 +17,15 @@ type Props = {
  */
 export function WanspotIconPawCheck({
   size = 20,
-  color = SETTINGS_ICON_COLOR,
+  color,
   variant = 'solid',
 }: Props) {
+  const { colors } = useAppTheme()
+  const resolvedColor = color ?? colors.text
   const outline = variant === 'outline'
   const stroke = outline ? 1.5 : 0
-  const fill = outline ? 'none' : color
-  const strokeColor = outline ? color : undefined
+  const fill = outline ? 'none' : resolvedColor
+  const strokeColor = outline ? resolvedColor : undefined
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -44,7 +46,7 @@ export function WanspotIconPawCheck({
         <Path
           d="M14.4 17.5l2.5 2.6 4.6-5.4"
           fill="none"
-          stroke={color}
+          stroke={resolvedColor}
           strokeWidth={2.4}
           strokeLinecap="round"
           strokeLinejoin="round"

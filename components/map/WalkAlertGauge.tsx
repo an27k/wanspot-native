@@ -1,4 +1,5 @@
 import Svg, { Circle, Defs, Line, LinearGradient, Stop, Text as SvgText } from 'react-native-svg'
+import { useAppTheme } from '@/context/ThemeContext'
 import type { WalkAlertKey } from '@/lib/weather/walk-alert'
 
 const TICK_ANGLES = [215, 233, 251, 270, 289, 307, 325]
@@ -39,7 +40,7 @@ function polar(cx: number, cy: number, r: number, deg: number) {
  */
 export function WalkAlertGauge({
   size = 24,
-  color = '#3FCB97',
+  color,
   iconColor = '#fff',
   ringColor,
   tempC,
@@ -51,13 +52,15 @@ export function WalkAlertGauge({
   color?: string
   /** 目盛り・針・文字色 */
   iconColor?: string
-  /** 円の輪郭色（未指定時は color） */
+  /** 円の輪郭色（未指定時は白い光沢輪郭） */
   ringColor?: string
   tempC?: number | null
   level?: WalkAlertKey
   filled?: boolean
 }) {
-  const ring = ringColor ?? color
+  const { colors } = useAppTheme()
+  const resolvedColor = color ?? colors.success
+  const ring = ringColor ?? 'rgba(255,255,255,0.55)'
   const cx = 12
   const cy = 12
   const angle = needleAngle(tempC, level)
@@ -75,15 +78,15 @@ export function WalkAlertGauge({
       </Defs>
 
       {/* 外周のソフトなハロー（原色感を和らげる） */}
-      {filled ? <Circle cx={cx} cy={cy} r={11.2} fill={color} opacity={0.16} /> : null}
+      {filled ? <Circle cx={cx} cy={cy} r={11.2} fill={resolvedColor} opacity={0.16} /> : null}
 
       {/* ベースの円 */}
       <Circle
         cx={cx}
         cy={cy}
         r={9.7}
-        fill={filled ? color : 'transparent'}
-        stroke={filled ? 'rgba(255,255,255,0.55)' : iconColor}
+        fill={filled ? resolvedColor : 'transparent'}
+        stroke={filled ? ring : ringColor ?? iconColor}
         strokeWidth={filled ? 1 : sw}
       />
 

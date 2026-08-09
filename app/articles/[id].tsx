@@ -1,9 +1,11 @@
 import { useLocalSearchParams } from 'expo-router'
 import { View, Text, StyleSheet } from 'react-native'
 import ArticleDetailScreen from '@/components/articles/ArticleDetailScreen'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 
 export default function ArticleDetailRoute() {
+  const styles = useThemedStyles(createStyles)
   const { id } = useLocalSearchParams<{ id: string }>()
   const articleId = Array.isArray(id) ? id[0] : id
   if (!articleId) {
@@ -16,7 +18,7 @@ export default function ArticleDetailRoute() {
   return <ArticleDetailScreen articleId={articleId} />
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   fallback: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cardBg },
   err: { color: colors.textMuted },
 })

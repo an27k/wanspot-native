@@ -4,8 +4,10 @@ import { Ionicons } from '@expo/vector-icons'
 import { DogAlertFace } from '@/components/map/DogAlertFace'
 import { WalkAlertGauge } from '@/components/map/WalkAlertGauge'
 import { breedHeatSensitivity } from '@/lib/dog-breeds'
-import { colors } from '@/constants/colors'
+import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
 import {
   WALK_ALERT_LEVELS,
   walkAlertFromTemp,
@@ -64,6 +66,8 @@ export function WalkAlertModal({
   dogBreed?: string | null
 }) {
   const [guideExpanded, setGuideExpanded] = useState(false)
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   // 湿度・体感補正後のレベル（advice側）があれば優先し、本文とバッジのトーンを一致させる
   const level: WalkAlertLevel | null = dailyAdvice?.levelKey
     ? walkAlertLevel(dailyAdvice.levelKey)
@@ -101,7 +105,7 @@ export function WalkAlertModal({
                     <View style={styles.miniGauge}>
                       <WalkAlertGauge
                         size={34}
-                        color={colors.background}
+                        color={colors.paper}
                         ringColor={level.color}
                         iconColor={level.color}
                         tempC={tempC}
@@ -158,7 +162,7 @@ export function WalkAlertModal({
                 <View style={styles.adviceBox}>
                   {adviceLoading && !dailyAdvice ? (
                     <View style={styles.adviceLoading}>
-                      <ActivityIndicator size="small" color={colors.brandDark} />
+                      <ActivityIndicator size="small" color={colors.primary} />
                       <Text style={styles.adviceLoadingTxt}>今日の散歩アドバイスを作成中…</Text>
                     </View>
                   ) : (
@@ -223,10 +227,10 @@ export function WalkAlertModal({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(43, 42, 40, 0.42)',
+    backgroundColor: colors.overlayScrim,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
@@ -236,12 +240,12 @@ const styles = StyleSheet.create({
     maxWidth: 380,
     // 警告文が長い日や温度ガイド展開時に画面を超えても、閉じるボタンを画面内に残す
     maxHeight: '85%',
-    backgroundColor: colors.cardBg,
+    backgroundColor: colors.surface,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 22,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.12,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 10 },
@@ -267,7 +271,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.background,
+    backgroundColor: colors.paper,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -275,7 +279,7 @@ const styles = StyleSheet.create({
   },
   headerStatus: { flex: 1, flexShrink: 1 },
   levelInline: { ...type.title },
-  tempInline: { ...type.button, color: colors.textLight },
+  tempInline: { ...type.button, color: colors.textSecondary },
   guideToggle: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingLeft: 8 },
   guideToggleTxt: { ...type.label, color: colors.textMuted },
   metaLine: {
@@ -291,22 +295,22 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 12,
-    backgroundColor: colors.background,
+    backgroundColor: colors.paper,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   scaleRowOn: {
-    backgroundColor: '#FFFBF5',
-    borderColor: colors.brand,
+    backgroundColor: colors.tintWeak,
+    borderColor: colors.primary,
   },
   scaleTextCol: { flex: 1, gap: 1 },
   // 温度ガイドは7段階の一覧。太字を並べると自分の段階を探しにくいので、行はウェイト400に落として色で示す
-  scaleLabel: { ...type.row, color: colors.textLight },
+  scaleLabel: { ...type.row, color: colors.textSecondary },
   scaleRange: { ...type.caption, color: colors.textMuted },
   activeDot: { width: 7, height: 7, borderRadius: 4 },
   adviceBox: {
     marginTop: 12,
-    backgroundColor: colors.background,
+    backgroundColor: colors.paper,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
@@ -330,11 +334,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.paper,
   },
-  walkTimeChipOn: { borderColor: colors.brandDark, backgroundColor: colors.tintWeak },
+  walkTimeChipOn: { borderColor: colors.primary, backgroundColor: colors.tintWeak },
   walkTimeChipTxt: { ...type.label, color: colors.textSecondary },
-  walkTimeChipTxtOn: { color: colors.brandDark },
+  walkTimeChipTxtOn: { color: colors.primary },
   disclaimer: {
     ...type.caption,
     marginTop: 10,
@@ -351,16 +355,16 @@ const styles = StyleSheet.create({
   walkLineTxt: { ...type.body, color: colors.textPrimary },
   adviceLoadingTxt: { ...type.caption, color: colors.textMuted },
   // 位置情報の説明文が入る箇所。読ませる文章なので本文サイズ
-  noData: { ...type.body, marginTop: 16, color: colors.textLight },
+  noData: { ...type.body, marginTop: 16, color: colors.textSecondary },
   locationBtn: {
     marginTop: 16,
     alignSelf: 'stretch',
     paddingVertical: 14,
     borderRadius: 999,
-    backgroundColor: colors.brand,
+    backgroundColor: colors.primary,
     alignItems: 'center',
   },
-  locationBtnTxt: { ...type.button, color: colors.textPrimary },
+  locationBtnTxt: { ...type.button, color: colors.onPrimary },
   closeBtn: {
     marginTop: 16,
     alignSelf: 'stretch',
@@ -369,5 +373,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.textPrimary,
     alignItems: 'center',
   },
-  closeTxt: { ...type.button, color: '#fff' },
+  closeTxt: { ...type.button, color: colors.textInverse },
 })
