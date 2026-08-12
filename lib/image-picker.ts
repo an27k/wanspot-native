@@ -115,6 +115,16 @@ export type PickedDailyLogMedia = { uri: string; mimeType: string }
 
 /**
  * きょうのログ用：カメラで写真 or 短い動画（最大10秒）を1点撮影
+ *
+ * **REVIEW_ALBUM_TAB_ENABLED を true にする前に読むこと。**
+ * 2026-08-12 に NSMicrophoneUsageDescription を Info.plist から外した。
+ * 理由は、この関数の唯一の呼び出し元（DailyLogComposerModal）がアルバムのフラグで
+ * 止まっていて動画撮影に到達できず、「宣言だけあって使わない権限」が審査の
+ * 指摘対象になるため（同じ形で ATT が Guideline 2.1 で差し戻された）。
+ *
+ * mediaTypes に動画を含んだままフラグを立てると、録音権限の記述が無い状態で
+ * カメラが起動し **iOS がアプリを強制終了させる**。アルバムを再開するときは
+ * app.json の expo-image-picker から `microphonePermission: false` を外すこと。
  */
 export async function captureDailyLogMedia(): Promise<PickedDailyLogMedia | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync()

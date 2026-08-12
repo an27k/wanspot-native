@@ -76,9 +76,6 @@ PODS:
     - ExpoModulesCore
   - ExpoLogBox (55.0.13):
     - React-Core
-  - ExpoMediaLibrary (55.0.19):
-    - ExpoModulesCore
-    - React-Core
   - ExpoModulesCore (55.0.25):
     - boost
     - DoubleConversion
@@ -125,8 +122,6 @@ PODS:
   - ExpoSymbols (55.0.9):
     - ExpoModulesCore
   - ExpoSystemUI (55.0.20):
-    - ExpoModulesCore
-  - ExpoTrackingTransparency (55.0.16):
     - ExpoModulesCore
   - ExpoVideo (55.0.19):
     - ExpoModulesCore
@@ -3251,7 +3246,6 @@ DEPENDENCIES:
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
   - ExpoLocation (from `../node_modules/expo-location/ios`)
   - "ExpoLogBox (from `../node_modules/@expo/log-box`)"
-  - ExpoMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoModulesJSI (from `../node_modules/expo-modules-core`)
   - ExpoNotifications (from `../node_modules/expo-notifications/ios`)
@@ -3259,7 +3253,6 @@ DEPENDENCIES:
   - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
   - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
-  - ExpoTrackingTransparency (from `../node_modules/expo-tracking-transparency/ios`)
   - ExpoVideo (from `../node_modules/expo-video/ios`)
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
   - fast_float (from `../node_modules/react-native/third-party-podspecs/fast_float.podspec`)
@@ -3408,8 +3401,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-location/ios"
   ExpoLogBox:
     :path: "../node_modules/@expo/log-box"
-  ExpoMediaLibrary:
-    :path: "../node_modules/expo-media-library/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   ExpoModulesJSI:
@@ -3424,8 +3415,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-symbols/ios"
   ExpoSystemUI:
     :path: "../node_modules/expo-system-ui/ios"
-  ExpoTrackingTransparency:
-    :path: "../node_modules/expo-tracking-transparency/ios"
   ExpoVideo:
     :path: "../node_modules/expo-video/ios"
   ExpoWebBrowser:
@@ -3625,7 +3614,6 @@ SPEC CHECKSUMS:
   ExpoLinking: 221ab136d976b632e04ff4023660cc9c24233d07
   ExpoLocation: bf93d9f5a311c24855fcfe454baa33efc7660c7c
   ExpoLogBox: 4bb2f041d3281b8c27ed494fae3b6f217ba79857
-  ExpoMediaLibrary: 00cb64dbf0c193178049cec75ef96ce25a571807
   ExpoModulesCore: a0657acfb83a882b48f84492a095fd44fd43b26c
   ExpoModulesJSI: 1685389cde9f19c40f98ca0ad46d4804471486cc
   ExpoNotifications: ca16befd83d0a6ee07f6b4e40dccfb9148708700
@@ -3633,7 +3621,6 @@ SPEC CHECKSUMS:
   ExpoSharing: 40cd8fd65209bc35adc710ff7e42dd35913d2a0f
   ExpoSymbols: 896159288ad708e1a32dc12c92fe5f90bff01126
   ExpoSystemUI: e64c0e662ddf324a1a5e9bbd8752d00cd8a485ea
-  ExpoTrackingTransparency: edafcc198751fe63bea2f0798f974872367a7ec9
   ExpoVideo: e6ac5b0bd3a9e636403afde090fd8abf28ce192b
   ExpoWebBrowser: b10b2e9f3552fe1c75aa2fa518f78ce8b213c439
   fast_float: b32c788ed9c6a8c584d114d0047beda9664e7cc6

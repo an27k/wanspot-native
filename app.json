@@ -66,7 +66,11 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "近くの散歩エリアの候補を表示するために位置情報を使います。"
+          "locationWhenInUsePermission": "近くの散歩エリアの候補を表示するために位置情報を使います。",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
         }
       ],
       [
@@ -92,17 +96,12 @@
         "expo-image-picker",
         {
           "photosPermission": "ワンちゃんやプロフィールの写真を設定するため、写真ライブラリへのアクセスを許可してください。",
-          "cameraPermission": "ワンちゃんやプロフィールの写真を撮影するため、カメラへのアクセスを許可してください。"
+          "cameraPermission": "ワンちゃんやプロフィールの写真を撮影するため、カメラへのアクセスを許可してください。",
+          "microphonePermission": false
         }
       ],
       "react-native-maps",
       "expo-sharing",
-      [
-        "expo-media-library",
-        {
-          "savePhotosPermission": "作ったVlogをカメラロールに保存するため、写真への追加を許可してください。"
-        }
-      ],
       "expo-notifications"
     ],
     "extra": {

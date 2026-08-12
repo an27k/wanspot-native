@@ -5,7 +5,9 @@
   "expo": {
     "autolinking": {
       "exclude": [
-        "react-native-google-mobile-ads"
+        "react-native-google-mobile-ads",
+        "expo-tracking-transparency",
+        "expo-media-library"
       ]
     }
   },

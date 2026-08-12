@@ -31,11 +31,20 @@ module.exports = ({ config }) => {
   const adsEnabled =
     process.env.EXPO_PUBLIC_ADS_ENABLED === 'true' || process.env.EXPO_PUBLIC_ADS_ENABLED === '1'
 
+  /*
+    広告が無効なときに外すプラグイン。
+    expo-tracking-transparency を残すと NSUserTrackingUsageDescription と
+    AppTrackingTransparency.framework だけがバイナリに入り、ダイアログは
+    一度も出ない状態になる。2026-08-12 の審査で Guideline 2.1 の差し戻し理由に
+    なったのがこれ。広告SDKと同じ扱いに揃える。
+  */
+  const adOnlyPlugins = ['react-native-google-mobile-ads', 'expo-tracking-transparency']
+
   const plugins = (config.plugins ?? [])
     .filter((entry) => {
       if (adsEnabled) return true
       const name = Array.isArray(entry) ? entry[0] : entry
-      return name !== 'react-native-google-mobile-ads'
+      return !adOnlyPlugins.includes(name)
     })
     .map((entry) => {
       if (entry === 'react-native-maps') {
