@@ -981,6 +981,15 @@ export default function SpotDetailScreen({
             </View>
           ) : null}
 
+          {/*
+            サイズ条件はバッジの直下に必ず出す。「11kg以下」「キャリーに入るサイズ」
+            のように、同伴可でも連れて行けない犬がいる情報で、これが無いと
+            大型犬の飼い主は現地で断られるまで分からない。自由文なのでそのまま出す。
+          */}
+          {spot.pet_size_limit?.trim() ? (
+            <Text style={styles.petSizeLimit}>サイズ条件: {spot.pet_size_limit.trim()}</Text>
+          ) : null}
+
           <View style={styles.ratingRow}>
             <View style={styles.ratingLeft}>
               <View style={styles.gBadge}>
@@ -1362,6 +1371,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     borderWidth: 1,
   },
   petBadgeTxt: { ...type.label },
+  petSizeLimit: { ...type.caption, color: colors.textSecondary, marginTop: 6 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   ratingLeft: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 },
   gBadge: {

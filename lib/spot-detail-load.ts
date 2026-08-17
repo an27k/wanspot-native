@@ -11,8 +11,14 @@ import { extractPlaceIdFromRouteId } from '@/lib/spot-detail-pending'
 import { readStashedSpotDetailPlace } from '@/lib/spot-detail-stash'
 import { wanspotFetch } from '@/lib/wanspot-api'
 
+/*
+  pet_* を落としていたため、マップから渡ってきたとき（PlaceResult が同伴可否を
+  持ち回る）は同伴可否バッジが出るのに、共有リンク・記事・通知から直接開いた
+  ときだけ何も出ない、という差が生まれていた。同じスポットで入口によって
+  表示が変わるのは、飼い主から見れば情報が消えたのと同じ。
+*/
 export const SPOT_DETAIL_SELECT =
-  'id, place_id, name, category, rating, address, lat, lng, price_level, price_label, instagram_id, instagram_lookup_due'
+  'id, place_id, name, category, rating, address, lat, lng, price_level, price_label, instagram_id, instagram_lookup_due, pet_indoor_allowed, pet_terrace_only, pet_friendly_status, pet_friendly_verified, pet_size_limit'
 
 export type SpotDetailRow = {
   id: string
@@ -32,6 +38,8 @@ export type SpotDetailRow = {
   pet_terrace_only?: boolean | null
   pet_friendly_status?: string | null
   pet_friendly_verified?: boolean | null
+  /** 「11kg以下」「キャリーに入るサイズ」等の自由文。バッジだけでは判断できない条件 */
+  pet_size_limit?: string | null
   /** 構造化属性の短いラベル（共有文用。犬情報は含めない） */
   dog_fact_highlights?: string[]
 }
@@ -61,6 +69,7 @@ export function spotRowFromPlace(routeId: string, place: PlaceResult, resolvedId
     pet_terrace_only: place.pet_terrace_only ?? null,
     pet_friendly_status: place.pet_friendly_status ?? null,
     pet_friendly_verified: place.pet_friendly_verified ?? null,
+    pet_size_limit: place.pet_size_limit ?? null,
   }
 }
 
