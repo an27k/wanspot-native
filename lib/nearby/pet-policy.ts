@@ -57,10 +57,26 @@ export type PetPolicyBadge = {
   tone: 'ok' | 'terrace' | 'caution'
 }
 
-/** 同伴可否バッジの内容を決める。根拠になるデータが無いときは null（何も出さない） */
+/**
+ * 同伴可否バッジの内容を決める。
+ *
+ * 分岐が indoor / terrace / not_allowed の3つしかなく、leashed_only と
+ * 「allowed だが屋内可否は未確認」が揃って null に落ちていた。実データで測ると
+ * 70%（50件中35件）がバッジ無しで、「確認済みでリード着用なら同伴可」と
+ * 「そもそも誰も調べていない」が画面上で見分けられなかった。
+ *
+ * 検証済みで分かっていることは、弱い情報でも必ず何か出す。出さないのは
+ * 本当に未検証のときだけにする。
+ */
 export function petPolicyBadge(p: PetPolicySource): PetPolicyBadge | null {
+  if (p.pet_friendly_status === 'not_allowed') return { label: '同伴不可の可能性', tone: 'caution' }
   if (p.pet_indoor_allowed === true) return { label: '店内OK・確認済み', tone: 'ok' }
   if (placeIsTerracePetOk(p)) return { label: 'テラス席のみOK', tone: 'terrace' }
-  if (p.pet_friendly_status === 'not_allowed') return { label: '同伴不可の可能性', tone: 'caution' }
+  if (p.pet_friendly_status === 'leashed_only') return { label: 'リード着用で同伴OK', tone: 'ok' }
+  // 同伴自体は確認済みだが、屋内まで入れるかは分かっていない。
+  // 「OK」だけを出すと店内に入れる前提で来てしまうので、そこは言い切らない
+  if (p.pet_friendly_status === 'allowed') return { label: '同伴OK・店内は要確認', tone: 'ok' }
+  // 検証は済んでいるが可否を判定できなかった。未検証（何も出さない）とは別の状態
+  if (p.pet_friendly_verified === true) return { label: '同伴可否は要確認', tone: 'caution' }
   return null
 }
