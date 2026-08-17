@@ -66,7 +66,7 @@ import { isAiSummaryEmpty, type AiSummaryEmptyReason, fetchAiSummary } from '@/l
 import { withTimeout } from '@/lib/promise-timeout'
 import { calcDistanceMeters, formatDistanceLabel } from '@/lib/nearby/geo'
 import { petPolicyBadge, type PetPolicyBadge } from '@/lib/nearby/pet-policy'
-import { formatPriceDisplay, getSpotOpenStatus } from '@/lib/business-hours'
+import { formatPriceDisplay, getSpotOpenStatus, todayHoursSummary } from '@/lib/business-hours'
 import { getGoogleMapsIosApiKey } from '@/lib/google-maps-config'
 import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
 import type { PlaceResult } from '@/types/places'
@@ -855,6 +855,7 @@ export default function SpotDetailScreen({
   const mapMiniUrl =
     spot?.lat != null && spot?.lng != null ? buildSpotMapMiniUrl(spot.lat, spot.lng) : ''
   const openStatus = getSpotOpenStatus(openingHours, openNow)
+  const todayHours = todayHoursSummary(openingHours, openNow)
   const displayPrice = formatPriceDisplay(googlePriceLabel ?? spot?.price_label, googlePriceLevel ?? spot?.price_level)
   const igUrl = spot?.instagram_id?.trim()
     ? `https://www.instagram.com/${spot.instagram_id.replace(/^@/, '')}/`
@@ -1008,10 +1009,25 @@ export default function SpotDetailScreen({
                     openStatus === 'open' ? styles.openInlineOpen : styles.openInlineClosed,
                   ]}
                 >
-                  · {openStatus === 'open' ? 'Open' : 'Close'}
+                  · {openStatus === 'open' ? '営業中' : '営業時間外'}
                 </Text>
               ) : null}
             </View>
+            {/*
+              本日の営業時間は折りたたみの外に出す。日曜の夕方に病院を探している人が
+              知りたいのは「いま開いているか」ではなく「何時まで開いているか」で、
+              その答えが英語1語の Open では足りない。
+            */}
+            {todayHours ? (
+              <Text
+                style={[
+                  styles.todayHours,
+                  todayHours.tone === 'open' ? styles.openInlineOpen : styles.openInlineClosed,
+                ]}
+              >
+                {todayHours.label}
+              </Text>
+            ) : null}
             <View style={styles.linkRow}>
               <Pressable style={styles.igBtn} onPress={() => Linking.openURL(igUrl)} accessibilityLabel="Instagram">
                 <IconInstagram size={18} />
@@ -1372,6 +1388,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   petBadgeTxt: { ...type.label },
   petSizeLimit: { ...type.caption, color: colors.textSecondary, marginTop: 6 },
+  todayHours: { ...type.caption, fontWeight: '700' as const, marginTop: 4 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   ratingLeft: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 },
   gBadge: {

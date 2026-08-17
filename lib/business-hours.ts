@@ -111,3 +111,56 @@ export function formatPriceDisplay(
   }
   return null
 }
+
+
+/**
+ * 「本日の営業時間」を1行で返す。
+ *
+ * これまで営業時間は「住所・営業時間・料金」の折りたたみの内側にあり、上部に
+ * 出ていたのは英語1語の Open / Close だけだった。日曜の夕方に動物病院を探して
+ * いる人が最初に知りたいのは「いま開いているか」ではなく「何時まで開いているか」
+ * なので、時刻ごと外に出す。
+ */
+export function todayHoursSummary(
+  weekdayText: string[] | null | undefined,
+  openNow?: boolean | null
+): { label: string; tone: OpenStatus } | null {
+  if (!weekdayText?.length) {
+    if (typeof openNow === 'boolean') {
+      return { label: openNow ? '営業中' : '営業時間外', tone: openNow ? 'open' : 'closed' }
+    }
+    return null
+  }
+
+  const today = todayJaWeekday(new Date())
+  const todayLine = weekdayText.find((line) => line.trim().startsWith(today))
+  if (!todayLine) return null
+
+  const body = todayLine.replace(/^[^:]+:\s*/, '').trim()
+  if (!body) return null
+
+  const status = getSpotOpenStatus(weekdayText, openNow)
+  if (/定休|休業|休み|closed/i.test(body)) return { label: '本日は休み', tone: 'closed' }
+
+  const remain = minutesUntilClose(body)
+  if (status === 'open' && remain != null && remain <= 120) {
+    // 残りが短いときだけ添える。常に出すと「あと8時間」のような無意味な情報になる
+    const h = Math.floor(remain / 60)
+    const m = remain % 60
+    const left = h > 0 ? `あと${h}時間${m > 0 ? `${m}分` : ''}` : `あと${m}分`
+    return { label: `本日 ${body}（${left}）`, tone: 'open' }
+  }
+  return { label: `本日 ${body}`, tone: status }
+}
+
+/** 閉店までの残り分。判定できないときは null */
+function minutesUntilClose(body: string): number | null {
+  if (/24\s*時間|24時間|終日/i.test(body)) return null
+  const chunks = body.split(/[–—\-~～]/).map((x) => x.trim()).filter(Boolean)
+  if (chunks.length < 2) return null
+  const closeMin = parseClockToken(chunks[chunks.length - 1])
+  if (closeMin == null) return null
+  const nowMin = minutesInTokyo(new Date())
+  const diff = closeMin - nowMin
+  return diff > 0 ? diff : null
+}

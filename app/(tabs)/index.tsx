@@ -106,6 +106,8 @@ function NearbyPage() {
   const [nearbyPlaces, setNearbyPlaces] = useState<PlaceResult[]>([])
   const [spotsLoading, setSpotsLoading] = useState(false)
   const [spotsFetchError, setSpotsFetchError] = useState('')
+  /** 実際に探した半径。0件のときに「どこまで探したか」を伝えるのに使う */
+  const [searchedRadiusM, setSearchedRadiusM] = useState<number | null>(null)
 
   const [likedRows, setLikedRows] = useState<SheetSpot[]>([])
   const [selectedSpot, setSelectedSpot] = useState<SheetSpot | null>(null)
@@ -294,11 +296,12 @@ function NearbyPage() {
         setSpotsLoading(true)
       }
 
-      const { spots, error } =
+      const { spots, error, radiusM } =
         genre === null
           ? await fetchAllNearbySpotsWithExpansion(center)
           : await fetchNearbySpotsForGenreWithExpansion(center, genre)
       writeCache(cacheKey, { spots, error: error ?? '' })
+      setSearchedRadiusM(radiusM)
       setNearbyPlaces(spots)
       setSpotsFetchError(error ?? '')
       setSpotsLoading(false)
@@ -511,6 +514,14 @@ function NearbyPage() {
   const showEmpty =
     !spotsLoading && !resolving && items.length === 0 && (searchActive || !!location)
 
+  /*
+    0件のとき「どこまで探したか」を必ず添える。範囲が分からないまま
+    「見つかりませんでした」だけを出すと、存在しないのか探せていないのかが
+    区別できない。地方や緊急時ほどこの差が効く。
+  */
+  const searchedRangeHint =
+    searchedRadiusM != null ? `半径 約${Math.round(searchedRadiusM / 1000)}km まで探しました。` : ''
+
   const emptyCopy = searchActive
     ? conditionCount > 0
       ? {
@@ -520,7 +531,7 @@ function NearbyPage() {
         }
       : {
           title: 'この周辺のスポットが見つかりませんでした',
-          hint: '少し広いエリア名や近くの駅名で試してみてください。',
+          hint: `${searchedRangeHint}少し広いエリア名や近くの駅名で試してみてください。`,
           action: null,
         }
     : conditionCount > 0
@@ -531,7 +542,7 @@ function NearbyPage() {
         }
       : {
           title: '近くにスポットが見つかりませんでした',
-          hint: '別のジャンルを試すか、位置情報をご確認ください。',
+          hint: `${searchedRangeHint}別のジャンルを試すか、位置情報をご確認ください。`,
           action: null,
         }
 
