@@ -57,9 +57,17 @@ function SettingsTab() {
         <AppHeader />
         {/*
           説明文は置かない。押した先の入口画面に同じことが書いてあるので、
-          ここで先に読ませても二度手間になる。出口はボタン1つで足りる。
+          ここで先に読ませても二度手間になる。
+
+          テーマ切り替えはアカウントと関係ない端末の設定なので、ゲストでも触れる
+          ようにする。ここを閉じていると、登録しない人はライト/ダークを選べない。
+          表示の切り替えを上、登録の導線を下に置き、2つをまとめて中央に寄せる。
         */}
         <View style={styles.guestMain}>
+          <View style={styles.guestTheme}>
+            <Text style={styles.sectionCaption}>表示</Text>
+            <ThemePreferenceSegments />
+          </View>
           <PressableScale
             style={styles.guestBtn}
             onPress={() => router.push('/(auth)/signup')}
@@ -69,14 +77,6 @@ function SettingsTab() {
             <Ionicons name="log-in-outline" size={18} color={colors.onPrimary} />
             <Text style={styles.guestBtnTxt}>ログイン / 新規登録</Text>
           </PressableScale>
-        </View>
-        {/*
-          テーマ切り替えはアカウントと関係ない端末の設定なので、ゲストでも触れるようにする。
-          ここを閉じていると、登録しない人はライト/ダークを選べない。
-        */}
-        <View style={styles.section}>
-          <Text style={styles.sectionCaption}>表示</Text>
-          <ThemePreferenceSegments />
         </View>
 
         <View style={[styles.guestLegal, { paddingBottom: padBottom }]}>
@@ -276,7 +276,8 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   rowSubTxt: { ...type.caption, color: colors.textMuted },
   rowDivider: { height: 1, backgroundColor: colors.border, marginLeft: 48 },
   dangerTitle: { ...type.row, fontWeight: '600' as const, color: colors.error },
-  guestMain: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
+  guestMain: { flex: 1, justifyContent: 'center', paddingHorizontal: 20, gap: 20 },
+  guestTheme: { gap: 8 },
   guestBtn: {
     flexDirection: 'row',
     alignItems: 'center',
