@@ -1,0 +1,694 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Image,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import * as Linking from 'expo-linking'
+import * as Location from 'expo-location'
+import { useFocusEffect, useRouter } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useIsFocused } from '@react-navigation/native'
+import Svg, { Path } from 'react-native-svg'
+import { AppHeader } from '@/components/AppHeader'
+import { AdNativeCard } from '@/components/AdNativeCard'
+import { NearbySpotCard } from '@/components/nearby/NearbySpotCard'
+import { RunningDog, PowState } from '@/components/DogStates'
+import { PostOnboardingTutorialModal } from '@/components/onboarding/PostOnboardingTutorialModal'
+import { fetchUserWalkAreaTags } from '@/lib/fetch-user-walk-area-tags'
+import { fetchSpotsByIds } from '@/lib/fetch-spots-by-ids'
+import { adsEnabledForDevice } from '@/lib/ads-policy'
+import { shouldInjectListAd } from '@/lib/ads/list-injection'
+import { isAdsMobileSdkInitialized, prepareSearchTabAdsOnce } from '@/lib/prepare-search-ads'
+import { supabase } from '@/lib/supabase'
+import type { AppColors } from '@/constants/colors'
+import { type } from '@/constants/typography'
+import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { useAppTheme } from '@/context/ThemeContext'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
+import { POST_ONBOARDING_TUTORIAL_KEY } from '@/lib/onboarding-constants'
+import { resolveSessionLocation } from '@/lib/location-session'
+import { wanspotFetch } from '@/lib/wanspot-api'
+import type { PlaceResult } from '@/types/places'
+
+const ICON_FILTER_FUNNEL = require('@/assets/icon-filter-funnel.png')
+
+const GENRES = [
+  { key: 'cafe', label: 'カフェ' },
+  { key: 'park', label: '公園' },
+  { key: 'restaurant', label: 'レストラン' },
+  { key: 'dog_run', label: 'ドッグラン' },
+  { key: 'veterinary_care', label: '動物病院' },
+  { key: 'pet_hotel', label: 'ペットホテル' },
+  { key: 'pet_store', label: 'ペットショップ' },
+  { key: 'grooming', label: 'トリミング' },
+] as const
+
+const DISTANCES = [
+  { key: 1000, label: '1km' },
+  { key: 3000, label: '3km' },
+  { key: 5000, label: '5km' },
+] as const
+
+type DistanceKey = (typeof DISTANCES)[number]['key']
+
+type SortKey = 'distance' | 'rating' | 'likes'
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'distance', label: '距離順' },
+  { key: 'rating', label: '評価順' },
+  { key: 'likes', label: 'いいね数' },
+]
+
+function calcDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371000
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+const DOG_RUN_SEARCH_QUERY = 'ドッグラン'
+const DOG_RUN_RELEVANT_PATTERN = /(ドッグラン|ドッグパーク|犬の広場|dog ?run|dog ?park)/i
+
+function isDogRunSpot(spot: PlaceResult): boolean {
+  const text = [spot.name, spot.address, spot.category]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .join(' ')
+  return DOG_RUN_RELEVANT_PATTERN.test(text)
+}
+
+const IconSort = ({ color }: { color: string }) => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round">
+    <Path d="M3 6h18M3 12h12M3 18h6" />
+  </Svg>
+)
+
+export function NearbyListScreen() {
+  const router = useRouter()
+  const insets = useSafeAreaInsets()
+  const isFocused = useIsFocused()
+  const { colors } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
+  const [genre, setGenre] = useState('cafe')
+  const [distance, setDistance] = useState<DistanceKey>(1000)
+  const [spots, setSpots] = useState<PlaceResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [error, setError] = useState('')
+  const [sortKey, setSortKey] = useState<SortKey>('distance')
+  const [showSort, setShowSort] = useState(false)
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({})
+  const [spotsFetchError, setSpotsFetchError] = useState('')
+  const [likedOnlyFilter, setLikedOnlyFilter] = useState(false)
+  const [likedPlaceIds, setLikedPlaceIds] = useState<Set<string>>(() => new Set())
+  const [showObTutorial, setShowObTutorial] = useState(false)
+  const [obTutorialDogName, setObTutorialDogName] = useState('')
+  const [userWalkTags, setUserWalkTags] = useState<string[]>([])
+  const [pullRefreshing, setPullRefreshing] = useState(false)
+  const [adsRuntimeReady, setAdsRuntimeReady] = useState(false)
+  const [spotIdsByPlaceId, setSpotIdsByPlaceId] = useState<Record<string, string>>({})
+  const adsPrimedRef = useRef(false)
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false)
+
+  useFocusEffect(
+    useCallback(() => {
+      void (async () => {
+        try {
+          const v = await AsyncStorage.getItem(POST_ONBOARDING_TUTORIAL_KEY)
+          if (v === '1') {
+            setShowObTutorial(true)
+            const {
+              data: { user },
+            } = await supabase.auth.getUser()
+            if (user) {
+              const { data: dogRow } = await supabase
+                .from('dogs')
+                .select('name')
+                .eq('user_id', user.id)
+                .maybeSingle()
+              const n = typeof dogRow?.name === 'string' ? dogRow.name.trim() : ''
+              setObTutorialDogName(n)
+            } else {
+              setObTutorialDogName('')
+            }
+          }
+        } catch {
+          /* ignore */
+        }
+        const tags = await fetchUserWalkAreaTags(supabase)
+        setUserWalkTags(tags)
+      })()
+    }, [])
+  )
+
+  const dismissObTutorial = useCallback(async () => {
+    try {
+      await AsyncStorage.removeItem(POST_ONBOARDING_TUTORIAL_KEY)
+    } catch {
+      /* ignore */
+    }
+    setShowObTutorial(false)
+  }, [])
+
+  // TODO: いいね5件達成時に「AIがもっとぴったりな提案をします」のヒントを
+  // マイページ または いいね一覧画面で表示する仕組みを別途検討
+
+  useEffect(() => {
+    const valid = new Set(DISTANCES.map((d) => d.key))
+    if (!valid.has(distance)) setDistance(DISTANCES[0].key)
+  }, [distance])
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false
+      void (async () => {
+        const { status } = await Location.getForegroundPermissionsAsync()
+        if (cancelled) return
+        if (status !== 'granted') {
+          setLocation(null)
+          setLocationPermissionDenied(true)
+          setError('')
+          return
+        }
+        setLocationPermissionDenied(false)
+        try {
+          const result = await resolveSessionLocation(null)
+          if (cancelled) return
+          if (!result.ok) {
+            if (result.permissionDenied) {
+              setLocation(null)
+              setLocationPermissionDenied(true)
+              setError('')
+            } else {
+              setError(result.error)
+            }
+            return
+          }
+          setLocation(result.location)
+          setError('')
+        } catch {
+          if (!cancelled) setError('位置情報を取得できませんでした')
+        }
+      })()
+      return () => {
+        cancelled = true
+      }
+    }, [])
+  )
+
+  const fetchNearbySpots = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!location) return
+      const silent = opts?.silent === true
+      if (!silent) {
+        setLoading(true)
+        setSpotsFetchError('')
+      }
+      try {
+        const q =
+          genre === 'dog_run'
+            ? `/api/spots/search?q=${encodeURIComponent(DOG_RUN_SEARCH_QUERY)}&lat=${location.lat}&lng=${location.lng}`
+            : `/api/spots/nearby?lat=${location.lat}&lng=${location.lng}&radius=${distance}&type=${genre}`
+        const r = await wanspotFetch(q)
+        let data: { spots?: PlaceResult[]; error?: string } = {}
+        try {
+          data = (await r.json()) as { spots?: PlaceResult[]; error?: string }
+        } catch {
+          setSpots([])
+          setSpotsFetchError('スポット情報の解析に失敗しました')
+          return
+        }
+        if (!r.ok) {
+          setSpots([])
+          setSpotsFetchError(
+            typeof data.error === 'string' ? data.error : `スポットの取得に失敗しました (${r.status})`
+          )
+          return
+        }
+        const rawSpots = data.spots ?? []
+        const nextSpots =
+          genre === 'dog_run'
+            ? rawSpots
+                .filter(isDogRunSpot)
+                .filter((spot) => calcDistance(location.lat, location.lng, spot.lat, spot.lng) <= distance)
+                .map((spot) => ({ ...spot, category: 'ドッグラン' }))
+            : rawSpots
+        setSpots(nextSpots)
+      } catch {
+        setSpots([])
+        setSpotsFetchError('うまく読み込めませんでした。通信環境を確認して、もう一度お試しください。')
+      } finally {
+        if (!silent) setLoading(false)
+      }
+    },
+    [location, genre, distance]
+  )
+
+  useEffect(() => {
+    void fetchNearbySpots()
+  }, [fetchNearbySpots])
+
+  useEffect(() => {
+    if (spots.length === 0) {
+      setLikeCounts({})
+      setSpotIdsByPlaceId({})
+      return
+    }
+    const fetchLikes = async () => {
+      const placeIds = spots.map((s) => s.place_id)
+      const rows = await fetchSpotsByIds({ placeIds, columns: 'card' })
+      const spotIdsByPlace: Record<string, string> = {}
+      const spotIds: string[] = []
+      rows.forEach((row) => {
+        const id = typeof row.id === 'string' ? row.id : ''
+        const placeId = typeof row.place_id === 'string' ? row.place_id : ''
+        if (id && placeId) {
+          spotIdsByPlace[placeId] = id
+          spotIds.push(id)
+        }
+      })
+      setSpotIdsByPlaceId(spotIdsByPlace)
+      const counts: Record<string, number> = {}
+      if (spotIds.length === 0) {
+        setLikeCounts(counts)
+        return
+      }
+      const { data: likes } = await supabase.from('spot_likes').select('spot_id').in('spot_id', spotIds)
+      const countBySpotId: Record<string, number> = {}
+      ;(likes ?? []).forEach((like) => {
+        if (like.spot_id) countBySpotId[like.spot_id] = (countBySpotId[like.spot_id] ?? 0) + 1
+      })
+      rows.forEach((row) => {
+        const id = typeof row.id === 'string' ? row.id : ''
+        const placeId = typeof row.place_id === 'string' ? row.place_id : ''
+        if (id && placeId) counts[placeId] = countBySpotId[id] ?? 0
+      })
+      setLikeCounts(counts)
+    }
+    void fetchLikes().catch((error) => {
+      console.warn('[NearbyListScreen] like counts failed', error)
+      setLikeCounts({})
+      setSpotIdsByPlaceId({})
+    })
+  }, [spots])
+
+  const reloadUserLikedPlaceIds = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setLikedPlaceIds(new Set())
+      return
+    }
+    const { data: likes } = await supabase.from('spot_likes').select('spot_id').eq('user_id', user.id)
+    if (!likes?.length) {
+      setLikedPlaceIds(new Set())
+      return
+    }
+    const spotIds = [
+      ...new Set(
+        likes
+          .map((like) => like.spot_id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0)
+      ),
+    ]
+    let rows: Record<string, unknown>[]
+    try {
+      rows = await fetchSpotsByIds({ ids: spotIds, columns: 'card' })
+    } catch (error) {
+      console.warn('[NearbyListScreen] liked spots failed', error)
+      return
+    }
+    setLikedPlaceIds(
+      new Set(
+        rows.flatMap((row) =>
+          typeof row.place_id === 'string' && row.place_id.length > 0 ? [row.place_id] : []
+        )
+      )
+    )
+  }, [])
+
+  const onPullRefreshNearby = useCallback(async () => {
+    setPullRefreshing(true)
+    try {
+      await reloadUserLikedPlaceIds()
+      await fetchNearbySpots({ silent: true })
+      const tags = await fetchUserWalkAreaTags(supabase)
+      setUserWalkTags(tags)
+    } finally {
+      setPullRefreshing(false)
+    }
+  }, [fetchNearbySpots, reloadUserLikedPlaceIds])
+
+  useFocusEffect(
+    useCallback(() => {
+      void reloadUserLikedPlaceIds()
+    }, [reloadUserLikedPlaceIds])
+  )
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false
+
+      const run = async () => {
+        try {
+          if (!adsEnabledForDevice()) {
+            if (!cancelled) setAdsRuntimeReady(false)
+            return
+          }
+          if (isAdsMobileSdkInitialized()) {
+            adsPrimedRef.current = true
+            if (!cancelled) setAdsRuntimeReady(true)
+            return
+          }
+          if (adsPrimedRef.current) {
+            if (!cancelled) setAdsRuntimeReady(true)
+            return
+          }
+          // 起動直後の負荷と競合を避ける（検索と同じ安全側の遅延）
+          await new Promise((r) => setTimeout(r, 800))
+          if (cancelled) return
+          await prepareSearchTabAdsOnce()
+          adsPrimedRef.current = true
+          if (!cancelled) setAdsRuntimeReady(true)
+        } catch (e) {
+          console.warn(`prepareSearchTabAds failed (nearby): ${String((e as unknown) ?? '')}`)
+          if (!cancelled) setAdsRuntimeReady(false)
+        }
+      }
+
+      void run()
+
+      return () => {
+        cancelled = true
+      }
+    }, [])
+  )
+
+  const handleSpotLikeChange = useCallback((placeId: string, liked: boolean) => {
+    setLikedPlaceIds((prev) => {
+      const next = new Set(prev)
+      if (liked) next.add(placeId)
+      else next.delete(placeId)
+      return next
+    })
+  }, [])
+
+  const sortedSpots = useMemo(() => {
+    const loc = location
+    return [...spots].sort((a, b) => {
+      if (sortKey === 'rating') return (b.rating ?? 0) - (a.rating ?? 0)
+      if (sortKey === 'likes') return (likeCounts[b.place_id] ?? 0) - (likeCounts[a.place_id] ?? 0)
+      if (!loc) return 0
+      return (
+        calcDistance(loc.lat, loc.lng, a.lat, a.lng) - calcDistance(loc.lat, loc.lng, b.lat, b.lng)
+      )
+    })
+  }, [spots, sortKey, likeCounts, location])
+
+  const displayedSpots = useMemo(() => {
+    if (!likedOnlyFilter) return sortedSpots
+    return sortedSpots.filter((s) => likedPlaceIds.has(s.place_id))
+  }, [sortedSpots, likedOnlyFilter, likedPlaceIds])
+
+  const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey)!
+
+  return (
+    <View style={styles.main}>
+      <AppHeader />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: TAB_BAR_HEIGHT + insets.bottom },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefreshNearby}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.genreBar}>
+          {GENRES.map((g) => (
+            <TouchableOpacity
+              key={g.key}
+              onPress={() => {
+                setGenre(g.key)
+                if (g.key === 'dog_run' && distance < 3000) {
+                  setDistance(3000)
+                }
+              }}
+              style={[styles.genreChip, genre === g.key ? styles.genreChipOn : styles.genreChipOff]}
+            >
+              <Text style={[styles.genreTxt, genre === g.key ? styles.genreTxtOn : styles.genreTxtOff]}>
+                {g.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        <View style={styles.distRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.distScroll}
+            contentContainerStyle={styles.distScrollContent}
+          >
+            {DISTANCES.map((d) => (
+              <TouchableOpacity
+                key={d.key}
+                onPress={() => setDistance(d.key)}
+                style={[styles.distChip, distance === d.key ? styles.distChipOn : styles.distChipOff]}
+              >
+                <Text style={[styles.distTxt, distance === d.key ? styles.distTxtOn : styles.distTxtOff]}>
+                  {d.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <View style={styles.distRowSpacer} />
+          <View style={styles.distRowActions}>
+            <TouchableOpacity
+              style={[styles.likeFilterBtn, likedOnlyFilter ? styles.likeFilterBtnOn : styles.likeFilterBtnOff]}
+              onPress={() => setLikedOnlyFilter((v) => !v)}
+              accessibilityLabel={likedOnlyFilter ? 'いいねしたお店のみ表示中。タップで全件表示' : 'いいねしたお店のみ表示'}
+              accessibilityRole="button"
+            >
+              <Image
+                source={ICON_FILTER_FUNNEL}
+                style={[styles.likeFilterIcon, likedOnlyFilter && styles.likeFilterIconOn]}
+                resizeMode="contain"
+                accessibilityIgnoresInvertColors
+              />
+              <Text style={[styles.likeFilterTxt, likedOnlyFilter && styles.likeFilterTxtOn]}>いいね</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.sortBtn} onPress={() => setShowSort(true)}>
+              <IconSort color={colors.textInverse} />
+              <Text style={styles.sortBtnTxt}>{currentSort.label}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.list}>
+          {locationPermissionDenied ? (
+            <View style={styles.permissionBanner}>
+              <Text style={styles.permissionBannerTxt}>現在地を表示するには位置情報の許可が必要です。</Text>
+              <TouchableOpacity
+                style={styles.permissionBtn}
+                onPress={() => void Linking.openSettings()}
+                accessibilityRole="button"
+                accessibilityLabel="設定アプリを開く"
+              >
+                <Text style={styles.permissionBtnTxt}>設定を開く</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          {error ? <Text style={styles.err}>{error}</Text> : null}
+          {spotsFetchError ? <Text style={styles.err}>{spotsFetchError}</Text> : null}
+          {loading ? <RunningDog label="近くのスポットを探し中..." /> : null}
+          {!loading && !error && !spotsFetchError && spots.length === 0 && location ? (
+            <PowState label="近くにスポットが見つかりませんでした" />
+          ) : null}
+          {!loading &&
+          !error &&
+          !spotsFetchError &&
+          spots.length > 0 &&
+          likedOnlyFilter &&
+          displayedSpots.length === 0 ? (
+            <PowState label="この条件ではいいねしたお店がありません" />
+          ) : null}
+          {displayedSpots.map((spot, index) => (
+            <View key={spot.place_id}>
+              <NearbySpotCard
+                spot={spot}
+                likeCount={likeCounts[spot.place_id] ?? 0}
+                userLocation={location}
+                userWalkTags={userWalkTags}
+                initialSpotId={spotIdsByPlaceId[spot.place_id] ?? null}
+                initiallyLiked={likedPlaceIds.has(spot.place_id)}
+                onLikeStateChange={handleSpotLikeChange}
+              />
+              {isFocused && shouldInjectListAd(index, displayedSpots.length) ? (
+                <AdNativeCard adsReady={adsRuntimeReady} />
+              ) : null}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+
+      <Modal visible={showSort} transparent animationType="fade" onRequestClose={() => setShowSort(false)}>
+        <Pressable style={styles.sortOverlay} onPress={() => setShowSort(false)}>
+          <View style={styles.sortMenu}>
+            {SORT_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[styles.sortItem, sortKey === opt.key && styles.sortItemOn]}
+                onPress={() => {
+                  setSortKey(opt.key)
+                  setShowSort(false)
+                }}
+              >
+                <Text style={[styles.sortItemTxt, sortKey === opt.key && styles.sortItemTxtOn]}>
+                  {opt.label}
+                  {sortKey === opt.key ? ' ✓' : ''}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+
+      <PostOnboardingTutorialModal
+        visible={showObTutorial}
+        dogName={obTutorialDogName}
+        onDismiss={dismissObTutorial}
+      />
+    </View>
+  )
+}
+
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  main: { flex: 1, backgroundColor: colors.paper },
+  scroll: { flex: 1 },
+  scrollContent: {},
+  genreBar: {
+    maxHeight: 64,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  /** 検索の discover タブ（discTab）と同形状のカードボタン。選択のみ黄色 */
+  genreChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  genreChipOn: { backgroundColor: colors.tintStrong },
+  genreChipOff: { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border },
+  genreTxt: { ...type.label },
+  genreTxtOn: { color: colors.primary },
+  genreTxtOff: { color: colors.textSecondary },
+  distRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  /** 距離チップは内容幅で左詰め（flex:1 しない） */
+  distScroll: { flexGrow: 0, flexShrink: 1, maxHeight: 40 },
+  distScrollContent: { flexDirection: 'row', alignItems: 'center', flexGrow: 0 },
+  distRowSpacer: { flex: 1, minWidth: 8 },
+  distRowActions: { flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
+  likeFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginRight: 8,
+    borderWidth: 1,
+  },
+  likeFilterIcon: { width: 12, height: 12, tintColor: colors.textMuted },
+  likeFilterIconOn: { tintColor: colors.textInverse },
+  likeFilterBtnOff: {
+    backgroundColor: colors.surfaceAlt,
+    borderColor: colors.border,
+  },
+  likeFilterBtnOn: {
+    backgroundColor: colors.textPrimary,
+    borderColor: colors.textPrimary,
+  },
+  likeFilterTxt: { ...type.label, color: colors.textSecondary },
+  likeFilterTxtOn: { color: colors.textInverse },
+  distChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginRight: 8,
+  },
+  distChipOn: { backgroundColor: colors.textPrimary },
+  distChipOff: { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border },
+  distTxt: { ...type.label },
+  distTxtOn: { color: colors.textInverse },
+  distTxtOff: { color: colors.textSecondary },
+  sortBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: colors.textPrimary,
+  },
+  sortBtnTxt: { ...type.label, color: colors.textInverse },
+  list: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
+  permissionBanner: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    gap: 12,
+  },
+  permissionBannerTxt: { ...type.body, color: colors.textPrimary },
+  permissionBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.textPrimary,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+  },
+  permissionBtnTxt: { ...type.button, color: colors.textInverse },
+  err: { ...type.body, textAlign: 'center' as const, paddingVertical: 32, color: colors.textMuted },
+  sortOverlay: { flex: 1, backgroundColor: colors.overlayScrim, justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 180, paddingRight: 16 },
+  sortMenu: {
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minWidth: 140,
+    overflow: 'hidden',
+  },
+  sortItem: { paddingVertical: 10, paddingHorizontal: 16 },
+  sortItemOn: { backgroundColor: colors.tintStrong },
+  // チップではなく選択メニューの行なのでリスト行の型。指で押す対象を12pxにしない
+  sortItemTxt: { ...type.row, color: colors.textSecondary },
+  sortItemTxtOn: { color: colors.textPrimary },
+})

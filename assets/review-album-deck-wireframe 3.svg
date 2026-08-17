@@ -1,0 +1,157 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="390" y2="844" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF845C"/>
+      <stop offset="0.38" stop-color="#F96F8F"/>
+      <stop offset="0.72" stop-color="#B8D7B8"/>
+      <stop offset="1" stop-color="#30D2AE"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.42"/>
+    </linearGradient>
+    <linearGradient id="darkGlass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.58"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.22"/>
+    </linearGradient>
+    <linearGradient id="liquidStroke" x1="20" y1="190" x2="370" y2="552" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#72F2D7"/>
+      <stop offset="0.34" stop-color="#FFD36E"/>
+      <stop offset="0.68" stop-color="#FF6F9D"/>
+      <stop offset="1" stop-color="#9B8CFF"/>
+    </linearGradient>
+    <linearGradient id="photoGrad" x1="34" y1="204" x2="356" y2="406" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7AA16D"/>
+      <stop offset="0.45" stop-color="#D7B37B"/>
+      <stop offset="1" stop-color="#4F3A32"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#3B201E" flood-opacity="0.22"/>
+    </filter>
+    <filter id="cardShadow" x="-12%" y="-12%" width="124%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#4A2720" flood-opacity="0.24"/>
+    </filter>
+    <filter id="ctaShadow" x="-10%" y="-20%" width="120%" height="150%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#24584E" flood-opacity="0.22"/>
+    </filter>
+    <clipPath id="mainPhotoClip">
+      <rect x="34" y="204" width="322" height="202" rx="22"/>
+    </clipPath>
+    <clipPath id="phoneClip">
+      <rect width="390" height="844" rx="0"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#phoneClip)">
+    <rect width="390" height="844" fill="url(#bg)"/>
+
+    <rect x="132.5" y="12" width="125" height="34" rx="17" fill="#090909"/>
+    <circle cx="154" cy="29" r="10" fill="#7FAEAF"/>
+    <rect x="176" y="25" width="54" height="8" rx="4" fill="#151515"/>
+    <circle cx="239" cy="29" r="2" fill="#404040"/>
+    <text x="22" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif" font-size="14" font-weight="700" fill="#171717">13:23</text>
+    <text x="319" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif" font-size="13" font-weight="700" fill="#171717">5G</text>
+    <rect x="348" y="22" width="30" height="14" rx="7" fill="#66E67B"/>
+    <text x="353" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif" font-size="10" font-weight="800" fill="white">94</text>
+
+    <text x="20" y="83" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="31" font-weight="800" fill="white">Review</text>
+    <text x="21" y="106" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="700" fill="white" opacity="0.9">Album deck for saved memories</text>
+
+    <g filter="url(#softShadow)">
+      <rect x="260" y="66" width="110" height="42" rx="21" fill="url(#glass)" stroke="white" stroke-opacity="0.45"/>
+      <circle cx="282" cy="87" r="16" fill="#F8F0E9" stroke="white" stroke-width="2"/>
+      <circle cx="276" cy="84" r="3" fill="#925A32"/>
+      <circle cx="288" cy="84" r="3" fill="#925A32"/>
+      <path d="M278 93 Q282 97 287 93" stroke="#925A32" stroke-width="2" stroke-linecap="round"/>
+      <text x="307" y="92" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="15" font-weight="800" fill="white">Moka</text>
+      <path d="M352 83 L358 89 L364 83" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <text x="348" y="144" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="28" font-weight="300" fill="white" opacity="0.9">+</text>
+    <path d="M351 130 H365 V144 H351 Z M361 126 L369 134" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.95"/>
+
+    <g opacity="0.48" transform="rotate(-3 195 153)">
+      <rect x="66" y="122" width="258" height="72" rx="20" fill="url(#darkGlass)" stroke="white" stroke-opacity="0.3"/>
+      <rect x="78" y="134" width="82" height="48" rx="12" fill="#866A54" opacity="0.75"/>
+      <text x="174" y="148" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="800" fill="#3B2A28">Previous review</text>
+      <text x="174" y="166" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="700" fill="#5A4540">2026.06.15 / 4.5</text>
+      <text x="174" y="181" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="700" fill="#5A4540">Dimmed card behind</text>
+    </g>
+
+    <g filter="url(#cardShadow)">
+      <rect x="20" y="190" width="350" height="362" rx="30" fill="url(#glass)" stroke="url(#liquidStroke)" stroke-width="3"/>
+      <rect x="25" y="195" width="340" height="352" rx="26" stroke="white" stroke-opacity="0.42"/>
+
+      <g clip-path="url(#mainPhotoClip)">
+        <rect x="34" y="204" width="322" height="202" fill="url(#photoGrad)"/>
+        <circle cx="233" cy="296" r="47" fill="#D8A06B"/>
+        <circle cx="208" cy="266" r="16" fill="#B87642"/>
+        <circle cx="257" cy="266" r="16" fill="#B87642"/>
+        <circle cx="218" cy="292" r="4" fill="#261711"/>
+        <circle cx="248" cy="292" r="4" fill="#261711"/>
+        <ellipse cx="233" cy="314" rx="12" ry="8" fill="#4F2B22"/>
+        <path d="M34 352 C110 322 161 376 224 348 C281 322 310 334 356 310 V406 H34 Z" fill="#242018" fill-opacity="0.5"/>
+        <rect x="44" y="220" width="70" height="24" rx="12" fill="white" fill-opacity="0.72"/>
+        <text x="55" y="236" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="800" fill="#4D3830">Dog OK</text>
+      </g>
+
+      <rect x="285" y="218" width="60" height="30" rx="15" fill="#FF806C"/>
+      <text x="301" y="238" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="800" fill="white">Selected</text>
+
+      <text x="38" y="438" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="22" font-weight="800" fill="#2D2522">Yoyogi Park Cafe</text>
+      <text x="40" y="469" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700" fill="#6F5B54">2026.06.21</text>
+      <text x="169" y="469" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="800" fill="#F3A51B">*</text>
+      <text x="190" y="469" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700" fill="#6F5B54">4.8</text>
+      <line x1="38" y1="491" x2="352" y2="491" stroke="#6F5B54" stroke-opacity="0.16"/>
+      <text x="39" y="524" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="15" font-weight="700" fill="#4B3B36">Relaxed on the terrace</text>
+    </g>
+
+    <circle cx="25" cy="518" r="8" fill="#75F0D2" fill-opacity="0.85"/>
+    <circle cx="364" cy="225" r="5" fill="#FFB76F" fill-opacity="0.78"/>
+    <path d="M312 194 C345 199 363 214 372 242" stroke="#FF8DB3" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+
+    <g opacity="0.52" transform="rotate(2 195 618)">
+      <rect x="52" y="576" width="286" height="84" rx="22" fill="url(#darkGlass)" stroke="white" stroke-opacity="0.32"/>
+      <rect x="66" y="590" width="86" height="56" rx="14" fill="#5D754E" opacity="0.72"/>
+      <text x="166" y="607" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="800" fill="#372926">Next review</text>
+      <text x="166" y="626" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="700" fill="#5A4540">2026.06.05 / 4.2</text>
+      <text x="166" y="642" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="700" fill="#5A4540">Dimmed card ahead</text>
+    </g>
+
+    <g filter="url(#ctaShadow)">
+      <rect x="20" y="678" width="350" height="60" rx="30" fill="url(#glass)" stroke="white" stroke-opacity="0.55"/>
+      <circle cx="52" cy="708" r="22" fill="#F8F0E9" stroke="url(#liquidStroke)" stroke-width="2"/>
+      <rect x="42" y="698" width="20" height="20" rx="6" fill="#8D6B4B"/>
+      <circle cx="63" cy="717" r="6" fill="#FF8D6C" fill-opacity="0.85"/>
+      <text x="84" y="714" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="17" font-weight="800" fill="#2E2825">Make Vlog from 1 review</text>
+      <circle cx="338" cy="708" r="22" fill="#FF7A65"/>
+      <path d="M329 708 H345 M339 700 L347 708 L339 716" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <g filter="url(#softShadow)">
+      <circle cx="344" cy="640" r="25" fill="#FF765F"/>
+      <circle cx="336" cy="640" r="2.5" fill="white"/>
+      <circle cx="344" cy="640" r="2.5" fill="white"/>
+      <circle cx="352" cy="640" r="2.5" fill="white"/>
+    </g>
+
+    <g filter="url(#softShadow)">
+      <rect x="20" y="754" width="350" height="66" rx="31" fill="#E8FFF4" fill-opacity="0.66" stroke="white" stroke-opacity="0.45"/>
+      <g opacity="0.7">
+        <circle cx="78" cy="786" r="8" stroke="#466A5F" stroke-width="2"/>
+        <path d="M84 792 L92 800" stroke="#466A5F" stroke-width="2" stroke-linecap="round"/>
+        <path d="M149 784 C149 773 165 773 165 784 C165 794 157 801 157 801 C157 801 149 794 149 784Z" stroke="#466A5F" stroke-width="2"/>
+        <circle cx="157" cy="784" r="3" fill="#466A5F"/>
+        <rect x="280" y="776" width="20" height="20" rx="4" stroke="#466A5F" stroke-width="2"/>
+        <circle cx="347" cy="788" r="10" stroke="#466A5F" stroke-width="2"/>
+      </g>
+      <rect x="200" y="762" width="54" height="50" rx="22" fill="#FFFFFF" fill-opacity="0.82"/>
+      <circle cx="227" cy="787" r="14" fill="#FF7E73" fill-opacity="0.18"/>
+      <rect x="216" y="778" width="22" height="20" rx="6" stroke="#FF7468" stroke-width="2"/>
+      <circle cx="227" cy="788" r="5" stroke="#FF7468" stroke-width="2"/>
+      <text x="209" y="811" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="800" fill="#FF7468">Review</text>
+    </g>
+
+    <rect x="138" y="831" width="114" height="4" rx="2" fill="#0B0B0B"/>
+  </g>
+</svg>
