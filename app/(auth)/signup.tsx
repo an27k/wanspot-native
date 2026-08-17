@@ -120,7 +120,6 @@ export default function SignupScreen() {
               <Logo size={72} />
             </View>
             <Text style={styles.title}>Wanspot</Text>
-            <Text style={styles.lead}>地図とイベント一覧は、登録しなくても見られます</Text>
             <TextInput
               style={styles.input}
               placeholder="メールアドレス"
@@ -224,13 +223,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   logo: { alignSelf: 'center', marginBottom: 4 },
   // ワードマークは型スケールの外。ロゴと対で置くブランド資産であって画面タイトルではない。
   // largeTitle は日本語の見出し用に letterSpacing を詰めてあるので、欧文のロゴには当てない
-  title: { fontSize: 28, fontWeight: '800', textAlign: 'center', color: colors.text, marginTop: 12, marginBottom: 8 },
-  lead: {
-    ...type.body,
-    textAlign: 'center',
-    color: colors.textSecondary,
-    marginBottom: 24,
-  },
+  title: { fontSize: 28, fontWeight: '800', textAlign: 'center', color: colors.text, marginTop: 12, marginBottom: 24 },
   input: {
     borderWidth: 1,
     borderColor: colors.border,

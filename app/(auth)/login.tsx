@@ -119,7 +119,6 @@ export default function LoginScreen() {
               <Logo size={72} />
             </View>
             <Text style={styles.title}>Wanspot</Text>
-            <Text style={styles.lead}>地図とイベント一覧は、登録しなくても見られます</Text>
             <TextInput
               style={styles.input}
               placeholder="メールアドレス"
@@ -230,12 +229,6 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     color: colors.text,
     marginTop: 12,
     marginBottom: 8,
-  },
-  lead: {
-    ...type.body,
-    textAlign: 'center',
-    color: colors.textSecondary,
-    marginBottom: 24,
   },
   input: {
     borderWidth: 1,
