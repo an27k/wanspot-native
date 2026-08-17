@@ -68,6 +68,7 @@ import { useDogProfile } from '@/components/dog/useDogProfile'
 import type { PlaceResult } from '@/types/places'
 import { breedHeatSensitivity } from '@/lib/dog-breeds'
 import { walkAlertFromTemp, walkAlertLevel, type WalkAlertKey } from '@/lib/weather/walk-alert'
+import { dogAgeMonths } from '@/lib/analytics-context'
 
 const FILTER_BAR_H = 52
 const SEARCH_BAR_H = 56
@@ -368,7 +369,12 @@ function NearbyPage() {
           import('@/lib/weather/walk-time-pref'),
         ])
         const walkHour = await getWalkTimeHour()
-        void syncWalkAdviceMorningNotification(null, { location, walkHour, dogBreed: dog?.breed ?? null })
+        void syncWalkAdviceMorningNotification(null, {
+          location,
+          walkHour,
+          dogBreed: dog?.breed ?? null,
+          dogBirthday: dog?.birthday ?? null,
+        })
       })()
     }, 4000)
     return () => clearTimeout(t)
@@ -394,8 +400,11 @@ function NearbyPage() {
   const heatKey = useMemo<WalkAlertKey | null>(() => {
     const t = weather.data?.tempC
     if (typeof t !== 'number') return null
-    return walkAlertFromTemp(t, { heatSensitivity: breedHeatSensitivity(dog?.breed) }).key
-  }, [weather.data?.tempC, dog?.breed])
+    return walkAlertFromTemp(t, {
+      heatSensitivity: breedHeatSensitivity(dog?.breed),
+      ageMonths: dogAgeMonths(dog?.birthday ?? null),
+    }).key
+  }, [weather.data?.tempC, dog?.breed, dog?.birthday])
 
   /** 地図に出す暑さ警告。警戒段階のときだけ返す */
   const heatAlert = useMemo(() => {

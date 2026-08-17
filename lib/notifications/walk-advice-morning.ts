@@ -1,6 +1,7 @@
 import { loadNotificationsModule } from '@/lib/notifications/notifications-module'
+import { dogAgeMonths } from '@/lib/analytics-context'
 import { breedHeatSensitivity } from '@/lib/dog-breeds'
-import { walkAlertFromTemp } from '@/lib/weather/walk-alert'
+import { walkAlertFromTemp, ageHeatSensitivity } from '@/lib/weather/walk-alert'
 import {
   fetchWalkHourlySlotsForDate,
   type WalkHourlySlot,
@@ -43,9 +44,26 @@ function addDaysToKey(dateKey: string, days: number): string {
   return dt.toISOString().slice(0, 10)
 }
 
-/** 歩きやすいスロットか（お散歩アラートと同じ安全側基準: 25℃以下・降水50%未満・雨系でない） */
-function isWalkableSlot(s: WalkHourlySlot): boolean {
-  return s.tempC <= 25 && s.precipProb < 50 && s.condition !== 'rain' && s.condition !== 'thunder' && s.condition !== 'snow'
+/**
+ * 歩きやすいスロットか（降水50%未満・雨系でない・気温が上限以下）。
+ *
+ * 気温の上限を25℃固定にしていたため、犬種と年齢の補正がここだけ通っていなかった。
+ * 同じファイル内の walkAlertFromTemp は短頭種を21℃で「暑さ注意」にしているのに、
+ * こちらは25℃まで「歩きやすい」と判定する二重基準になっていた。
+ */
+function isWalkableSlot(s: WalkHourlySlot, heat = 0): boolean {
+  const maxTemp = 25 - Math.max(0, Math.min(2, heat)) * 2
+  return s.tempC <= maxTemp && s.precipProb < 50 && s.condition !== 'rain' && s.condition !== 'thunder' && s.condition !== 'snow'
+}
+
+/** 条件を満たすスロットが無い日に、せめて時刻と気温を返すための最低気温スロット */
+function coolestSlot(slots: WalkHourlySlot[], fromHour?: number): WalkHourlySlot | null {
+  let out: WalkHourlySlot | null = null
+  for (const s of slots) {
+    if (fromHour != null && s.hour < fromHour) continue
+    if (!out || s.tempC < out.tempC) out = s
+  }
+  return out
 }
 
 /** 快適域(12〜24℃)からの距離 */
@@ -63,11 +81,11 @@ function comfortDistance(tempC: number): number {
  * 飼い主にはどうしようもない。実際、20時の散歩の2時間前（18時）に届いた通知が
  * 「きょうは9時ごろが歩きやすそうです」と言っており、意味をなしていなかった。
  */
-function pickBestSlot(slots: WalkHourlySlot[], fromHour?: number): WalkHourlySlot | null {
+function pickBestSlot(slots: WalkHourlySlot[], fromHour?: number, heat = 0): WalkHourlySlot | null {
   let best: WalkHourlySlot | null = null
   for (const s of slots) {
     if (fromHour != null && s.hour < fromHour) continue
-    if (!isWalkableSlot(s)) continue
+    if (!isWalkableSlot(s, heat)) continue
     if (
       !best ||
       comfortDistance(s.tempC) < comfortDistance(best.tempC) ||
@@ -80,10 +98,19 @@ function pickBestSlot(slots: WalkHourlySlot[], fromHour?: number): WalkHourlySlo
 }
 
 /** デフォルト（散歩時間 未設定）: きょうのおすすめ時間の提言 */
-function buildDefaultBody(slots: WalkHourlySlot[], name: string, fromHour?: number): string {
-  const best = pickBestSlot(slots, fromHour)
+function buildDefaultBody(slots: WalkHourlySlot[], name: string, fromHour?: number, heat = 0): string {
+  const best = pickBestSlot(slots, fromHour, heat)
   if (best) {
     return `きょうは${best.hour}時ごろ（${best.tempC}℃・降水${best.precipProb}%）が歩きやすそうです。${name}とのお散歩の目安にどうぞ。`
+  }
+  /*
+    基準を満たす時間が1つも無い日でも、時刻と気温は必ず出す。
+    「いちばん涼しい時間に短めのお散歩が安心です」だけでは、何時なのかが分からず
+    受け取った側は結局自分で調べ直すことになる。真夏はこの分岐に入り続ける。
+  */
+  const cool = coolestSlot(slots, fromHour)
+  if (cool) {
+    return `きょうは終日きびしい予報です。いちばん涼しいのは${cool.hour}時ごろ（${cool.tempC}℃）。${name}とのお散歩は短めにしましょう。`
   }
   return `きょうは暑さや天気が厳しめの予報です。いちばん涼しい時間に短めのお散歩が安心です。`
 }
@@ -103,9 +130,9 @@ function buildCustomBody(
   notifyHour: number
 ): string {
   const planned = slots.find((s) => s.hour === walkHour) ?? null
-  const best = pickBestSlot(slots, notifyHour)
+  const best = pickBestSlot(slots, notifyHour, heat)
 
-  if (planned && isWalkableSlot(planned)) {
+  if (planned && isWalkableSlot(planned, heat)) {
     const level = walkAlertFromTemp(planned.tempC, { heatSensitivity: heat })
     // 予定時刻が歩きやすく、明確により良い時間もなければそのまま背中を押す
     if (!best || best.hour === planned.hour || comfortDistance(best.tempC) >= comfortDistance(planned.tempC)) {
@@ -121,7 +148,7 @@ function buildCustomBody(
     // 代案が無い＝これ以降に歩きやすい時間が無い。予定を変える提案はせず、歩き方の助言にする
     return `${walkHour}時は${planned.tempC}℃・降水${planned.precipProb}%の見込みです。${name}の様子を見ながら、短めの調整が安心です。`
   }
-  return buildDefaultBody(slots, name, notifyHour)
+  return buildDefaultBody(slots, name, notifyHour, heat)
 }
 
 /**
@@ -138,11 +165,13 @@ export async function syncWalkAdviceMorningNotification(
     walkHour?: number | null
     /** 短頭種など暑さに弱い犬種は通知の判定も厳しくする */
     dogBreed?: string | null
+    /** 子犬とシニアも同じく厳しくする。犬種と合算して2段まで */
+    dogBirthday?: string | null
   }
 ): Promise<void> {
   const nameKey = dogName?.trim() || null
   const walkHour = opts?.walkHour ?? null
-  const heat = breedHeatSensitivity(opts?.dogBreed)
+  const heat = breedHeatSensitivity(opts?.dogBreed) + ageHeatSensitivity(dogAgeMonths(opts?.dogBirthday ?? null))
   const now = nowJst()
   const dedupe = `${nameKey}:${walkHour}:${now.dateKey}:${opts?.location ? 'loc' : 'noloc'}:h${heat}`
   if (syncedKey === dedupe) return

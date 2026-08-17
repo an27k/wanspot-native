@@ -97,6 +97,20 @@ export function walkAlertLevel(key: WalkAlertKey): WalkAlertLevel {
  * - 気温35℃以上 または 体感38℃以上は「中止」
  * - 湿度65%以上かつ気温25℃以上は1段階厳しく判定（暑さ注意→危険、危険→中止）
  */
+/**
+ * 年齢による暑さへの弱さ（0〜2）。犬種の耐性に足して使う。
+ *
+ * 生後6か月未満とシニアは体温調節が追いつかない。7歳から緩やかに、
+ * 10歳以上は短頭種と同じ扱いにする。未設定は 0（標準）。
+ */
+export function ageHeatSensitivity(ageMonths: number | null | undefined): number {
+  if (typeof ageMonths !== 'number' || !Number.isFinite(ageMonths) || ageMonths < 0) return 0
+  if (ageMonths < 6) return 2
+  if (ageMonths >= 120) return 2
+  if (ageMonths >= 84) return 1
+  return 0
+}
+
 export function walkAlertFromTemp(
   tempC: number,
   opts?: {
@@ -108,6 +122,14 @@ export function walkAlertFromTemp(
      * 犬種を聞いておきながら判定に効かせないのは、飼い主に対して不誠実になる。
      */
     heatSensitivity?: number | null
+    /**
+     * 月齢。子犬とシニアは体温調節が追いつかず、同じ気温でも先に危険域へ入る。
+     * 犬種の耐性と合算して段階を決める（合計は従来どおり2段までで頭打ち）。
+     *
+     * 犬種は聞いて反映しているのに年齢は聞いておきながら使っていなかった。
+     * 13歳の柴も生後2か月の子犬も、1歳のラブラドールと同じ閾値になっていた。
+     */
+    ageMonths?: number | null
   }
 ): WalkAlertLevel {
   const feelsLikeC = opts?.feelsLikeC
@@ -119,7 +141,8 @@ export function walkAlertFromTemp(
    * 22℃でも「暑さ注意」になり、空振りの警告で信頼を失う。危険側の取りこぼしと
    * 空振りは対称ではなく、鳴りすぎたアラートは次から読まれなくなる。
    */
-  const shift = Math.max(0, Math.min(2, Math.round(opts?.heatSensitivity ?? 0))) * 2
+  const sensitivity = Math.max(0, Math.round(opts?.heatSensitivity ?? 0)) + ageHeatSensitivity(opts?.ageMonths)
+  const shift = Math.max(0, Math.min(2, sensitivity)) * 2
   const mildShift = Math.round(shift / 2)
 
   if (tempC >= 35 - shift || (typeof feelsLikeC === 'number' && feelsLikeC >= 38 - shift)) return BY_KEY.stop

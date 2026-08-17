@@ -18,6 +18,7 @@ import { getWalkTimeHour, setWalkTimeHour as persistWalkTimeHour } from '@/lib/w
 import { breedHeatSensitivity } from '@/lib/dog-breeds'
 import { walkAlertFromTemp, walkAlertLevel } from '@/lib/weather/walk-alert'
 import type { WeatherCondition } from '@/lib/weather/fetch-weather'
+import { dogAgeMonths } from '@/lib/analytics-context'
 
 function weatherAwareLabel(levelLabel: string, condition: WeatherCondition | null | undefined): string {
   switch (condition) {
@@ -69,6 +70,7 @@ export function WalkAlertCard({
   useEffect(() => {
     if (!walkTimeLoaded) return
     void syncWalkAdviceMorningNotification(dog?.name, {
+      dogBirthday: dog?.birthday ?? null,
       location,
       walkHour: walkTimeHour,
       dogBreed: dog?.breed ?? null,
@@ -83,7 +85,12 @@ export function WalkAlertCard({
   const tempC = weather?.tempC ?? null
   // 犬種の暑さ耐性を閾値に効かせる（短頭種は同じ気温でもリスクが高い）
   const baseLevel =
-    tempC != null ? walkAlertFromTemp(tempC, { heatSensitivity: breedHeatSensitivity(dog?.breed) }) : null
+    tempC != null
+      ? walkAlertFromTemp(tempC, {
+          heatSensitivity: breedHeatSensitivity(dog?.breed),
+          ageMonths: dogAgeMonths(dog?.birthday ?? null),
+        })
+      : null
 
   const { advice, loading: adviceLoading } = useWalkDailyAdvice(
     location,
