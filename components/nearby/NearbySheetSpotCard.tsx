@@ -14,6 +14,7 @@ import { GOOGLE_HOME, GOOGLE_HOME_DARK_CHIPS } from '@/constants/google-home-tok
 import { useAppTheme } from '@/context/ThemeContext'
 import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { petPolicyBadge } from '@/lib/nearby/pet-policy'
+import { openStateFromPeriods } from '@/lib/business-hours'
 
 const PHOTO_CONTROL_ICON = '#242220'
 
@@ -96,6 +97,11 @@ export function NearbySheetSpotCard({
   const uri = spotPhotoUrl(spot.photoRef, 'thumbnail')
 
   const petBadge = petPolicyBadge(spot)
+  /*
+    閉まっているときだけ出す。開いていることは既定なので、わざわざ言うと
+    情報が薄まる。periods が無いスポットは何も出さない（分からないだけなので）。
+  */
+  const closedNow = openStateFromPeriods(spot.opening_hours?.periods).status === 'closed'
   const distLabel =
     userLocation &&
     formatDistanceLabel(calcDistanceMeters(userLocation.lat, userLocation.lng, spot.lat, spot.lng))
@@ -182,6 +188,7 @@ export function NearbySheetSpotCard({
             </Text>
           </View>
         ) : null}
+        {closedNow ? <Text style={styles.closedNow}>いまは営業時間外</Text> : null}
         {!compact && variant !== 'carousel' ? (
           <Text style={styles.spotAddr} numberOfLines={2}>{spot.address}</Text>
         ) : null}
@@ -286,6 +293,7 @@ const makeStyles = (chipTokens: ListGenreTokens) => (colors: AppColors) => Style
     maxWidth: '100%',
   },
   petPillTxt: { ...type.caption, fontWeight: '700' as const },
+  closedNow: { ...type.caption, color: colors.textMuted, marginTop: 2 },
 })
 
 const createLightStyles = makeStyles(GOOGLE_HOME)

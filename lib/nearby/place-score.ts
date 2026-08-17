@@ -2,6 +2,7 @@ import { calcDistanceMeters } from '@/lib/nearby/geo'
 import { isDogRunCategory } from '@/lib/nearby/constants'
 import type { PlaceResult } from '@/types/places'
 import type { WalkAlertKey } from '@/lib/weather/walk-alert'
+import { openStateFromPeriods } from '@/lib/business-hours'
 
 const PRIOR_MEAN = 4.0
 const PRIOR_WEIGHT = 10
@@ -145,6 +146,17 @@ function situationFactor(spot: PlaceResult, situation: WalkSituation | null): nu
       factor *= 0.8
     }
   }
+
+  /*
+    閉まっている場所は下げる。日曜の夕方に閉院した動物病院が先頭に来るのが
+    いちばん重い失敗で、緊急時は「開いていること」が他の何より優先される。
+
+    periods を持たないスポットは減点しない。detail_cache の充填率は約56%で、
+    データが無いことを「閉まっている」と同じ扱いにすると、収集が進んでいない
+    地域のスポットがまとめて沈む。分からないものは分からないまま並べる。
+  */
+  const open = openStateFromPeriods(spot.opening_hours?.periods).status
+  if (open === 'closed') factor *= 0.35
 
   const size = situation.dogSize?.toUpperCase()
   if ((size === 'L' || size === 'XL') && spot.pet_size_limit) {

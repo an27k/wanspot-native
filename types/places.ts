@@ -1,3 +1,5 @@
+import type { OpeningPeriod } from '@/lib/business-hours'
+
 /** Web lib/places.ts PlaceResult と同等 */
 export type PlaceResult = {
   place_id: string
@@ -21,6 +23,11 @@ export type PlaceResult = {
   pet_indoor_allowed?: boolean | null
   /** サーバー検証済みの拡張カテゴリ（dog_run / onsen）。名前の表記ゆれより優先する分類 */
   extended_category?: string | null
+  /**
+   * 営業時間。open_now ではなく periods を受け取り、判定はクライアントで毎回行う。
+   * open_now は「その瞬間」を焼き込むので、24時間キャッシュに載せると嘘になる。
+   */
+  opening_hours?: { periods?: OpeningPeriod[] | null } | null
   /** テラス席のみ同伴可か（共通コントラクト） */
   pet_terrace_only?: boolean | null
   /** ペット同伴ステータス文字列（例: 'not_allowed'。共通コントラクト） */

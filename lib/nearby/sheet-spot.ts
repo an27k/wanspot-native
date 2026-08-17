@@ -1,5 +1,6 @@
 import type { UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import type { PlaceResult } from '@/types/places'
+import type { OpeningPeriod } from '@/lib/business-hours'
 
 /** ボトムシート3タブ共通の軽量行 */
 export type SheetSpot = {
@@ -24,6 +25,8 @@ export type SheetSpot = {
   pet_friendly_status?: string | null
   /** ペット同伴情報が確認済みか */
   pet_friendly_verified?: boolean | null
+  /** 営業時間。カードで「営業時間外」を出すのに使う */
+  opening_hours?: { periods?: OpeningPeriod[] | null } | null
   /** サーバー検証済みの拡張カテゴリ（dog_run / onsen）。ジャンル推定で名称より優先する */
   extended_category?: string | null
 }
@@ -47,6 +50,7 @@ export function sheetSpotFromPlace(p: PlaceResult): SheetSpot {
     pet_terrace_only: p.pet_terrace_only ?? null,
     pet_friendly_status: p.pet_friendly_status ?? null,
     pet_friendly_verified: p.pet_friendly_verified ?? null,
+    opening_hours: p.opening_hours ?? null,
     extended_category: p.extended_category ?? null,
   }
 }
