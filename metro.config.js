@@ -9,14 +9,33 @@ function adsEnabledEnv() {
   return raw === 'true' || raw === '1'
 }
 
+/*
+  広告が無効なときに、本物の代わりに読ませるスタブ。
+
+  **extraNodeModules は使わない。** あれは「node_modules で解決できなかったとき」の
+  代替でしかなく、パッケージが実在する限り無視される。実際 2026-08-12 のビルド245で、
+  expo-tracking-transparency の本物が読み込まれ
+
+      import { requireNativeModule } from 'expo-modules-core'
+      export default requireNativeModule('ExpoTrackingTransparency')  // ← 例外
+
+  が import の瞬間に throw した（autolinking から外してネイティブ側を消したため）。
+  結果 prepare-search-ads → ArticlesTabScreen / NearbyListScreen の評価が失敗し、
+  まとめ記事と近くのスポット一覧が真っ白になった。
+
+  resolveRequest は解決処理そのものを差し替えるので、node_modules に実体があっても
+  必ずスタブが勝つ。
+*/
+const ADS_ONLY_STUBS = {
+  'react-native-google-mobile-ads': path.resolve(projectRoot, 'lib/ads/google-mobile-ads-stub.ts'),
+  'expo-tracking-transparency': path.resolve(projectRoot, 'lib/ads/tracking-transparency-stub.ts'),
+}
+
 if (!adsEnabledEnv()) {
-  config.resolver.extraNodeModules = {
-    ...(config.resolver.extraNodeModules ?? {}),
-    'react-native-google-mobile-ads': path.resolve(projectRoot, 'lib/ads/google-mobile-ads-stub.ts'),
-    // ATT は広告のためだけに使う。広告が無効ならダイアログは一度も出ないので、
-    // フレームワークごと外す。残すと「ATT を使っているのに許可を求めない」
-    // として審査で 2.1 の差し戻しになる（2026-08-12 実際に指摘を受けた）。
-    'expo-tracking-transparency': path.resolve(projectRoot, 'lib/ads/tracking-transparency-stub.ts'),
+  config.resolver.resolveRequest = (context, moduleName, platform) => {
+    const stub = ADS_ONLY_STUBS[moduleName]
+    if (stub) return { type: 'sourceFile', filePath: stub }
+    return context.resolveRequest(context, moduleName, platform)
   }
 }
 
