@@ -21,6 +21,10 @@
       "entitlements": {
         "com.apple.developer.applesignin": [
           "Default"
+        ],
+        "com.apple.developer.associated-domains": [
+          "applinks:www.wanspot.app",
+          "applinks:wanspot.app"
         ]
       },
       "infoPlist": {
@@ -39,8 +43,16 @@
               "com.googleusercontent.apps.573139399424-cgqe3u58m724rpjsm5uu0u1t69qor80m"
             ]
           }
+        ],
+        "CFBundleDevelopmentRegion": "ja",
+        "CFBundleLocalizations": [
+          "ja"
         ]
-      }
+      },
+      "associatedDomains": [
+        "applinks:www.wanspot.app",
+        "applinks:wanspot.app"
+      ]
     },
     "android": {
       "package": "app.wanspot.app",
