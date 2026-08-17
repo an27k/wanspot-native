@@ -16,6 +16,36 @@ export type AiSummaryResult = {
   searchState?: 'done' | 'pending'
 }
 
+/**
+ * レビューが出せなかった理由。
+ *
+ * サーバーが空を返す条件は5つあり、「ネット上に情報が無い」はそのうち1つだけ。
+ * 残りは閲覧枠の上限・件数枠の上限・レート制限・他リクエストの処理中で、どれも
+ * 運用側の都合。情報があるスポットでも、その瞬間に開いた人には空が返る。
+ *
+ * したがって既定は 'busy'（非断定）にする。emptyReason が無い旧サーバーや、
+ * 将来増えた未知の理由も自動的に安全側へ倒れる。'no_information' を明示的に
+ * 受け取ったときだけ「見つかりませんでした」と言い切る。
+ */
+export type AiSummaryEmptyReason = 'no_information' | 'busy'
+
+export type AiSummaryEmpty = { empty: true; reason: AiSummaryEmptyReason }
+
+export function isAiSummaryEmpty(v: AiSummaryResult | AiSummaryEmpty | null): v is AiSummaryEmpty {
+  return v !== null && 'empty' in v
+}
+
+/** 空応答をキャッシュに載せないため、理由を例外で運ぶ */
+class AiSummaryEmptyError extends Error {
+  constructor(readonly reason: AiSummaryEmptyReason) {
+    super(`ai-summary empty: ${reason}`)
+  }
+}
+
+function toEmptyReason(raw: unknown): AiSummaryEmptyReason {
+  return raw === 'no_information' ? 'no_information' : 'busy'
+}
+
 export type AiSummaryRequest = {
   place_id: string
   spot_id?: string
@@ -49,7 +79,7 @@ function aiSummaryCacheKey(req: AiSummaryRequest): string {
 export async function fetchAiSummary(
   req: AiSummaryRequest,
   opts?: { force?: boolean }
-): Promise<AiSummaryResult | null> {
+): Promise<AiSummaryResult | AiSummaryEmpty | null> {
   try {
     const { data } = await fetchWithCache(
       aiSummaryCacheKey(req),
@@ -61,9 +91,12 @@ export async function fetchAiSummary(
           personalNote?: string
           wanspotRating?: { avg: number; count: number }
           searchState?: 'done' | 'pending'
+          emptyReason?: string
         }>('/api/ai-summary', { method: 'POST', json: req })
         if (!json.keywords || !json.summary) {
-          throw new Error('ai-summary: invalid response')
+          // 例外にすることで fetchWithCache に載らない。一時的な混雑が TTL の間
+          // 張り付くと、待っても直らないように見える
+          throw new AiSummaryEmptyError(toEmptyReason(json.emptyReason))
         }
         return {
           keywords: json.keywords,
@@ -76,7 +109,8 @@ export async function fetchAiSummary(
       opts
     )
     return data
-  } catch {
+  } catch (e) {
+    if (e instanceof AiSummaryEmptyError) return { empty: true, reason: e.reason }
     return null
   }
 }

@@ -62,7 +62,7 @@ import { pickSpotReviewMemoPlaceholder } from '@/lib/spot-review-memo'
 import { logUserEvent } from '@/lib/user-events'
 import { WanspotIconPaw } from '@/components/icons/WanspotIconPaw'
 import { useDogProfile } from '@/components/dog/useDogProfile'
-import { fetchAiSummary } from '@/lib/ai-summary'
+import { isAiSummaryEmpty, type AiSummaryEmptyReason, fetchAiSummary } from '@/lib/ai-summary'
 import { withTimeout } from '@/lib/promise-timeout'
 import { calcDistanceMeters, formatDistanceLabel } from '@/lib/nearby/geo'
 import { petPolicyBadge, type PetPolicyBadge } from '@/lib/nearby/pet-policy'
@@ -222,6 +222,8 @@ export default function SpotDetailScreen({
   const [photoRefs, setPhotoRefs] = useState<string[]>([])
   const [currentPhoto, setCurrentPhoto] = useState(0)
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null)
+  /* 空だった理由。既定は非断定側（'busy'）に倒す。理由の設計は lib/ai-summary.ts */
+  const [aiEmptyReason, setAiEmptyReason] = useState<AiSummaryEmptyReason>('busy')
   const [aiLoading, setAiLoading] = useState(true)
   const [reviewsForAi, setReviewsForAi] = useState<string[]>([])
   const [userId, setUserId] = useState<string | null>(null)
@@ -464,6 +466,7 @@ export default function SpotDetailScreen({
     if (isGuest) {
       setAiLoading(false)
       setAiSummary(null)
+      setAiEmptyReason('busy')
       return
     }
     const dogKey = `${dog?.size ?? 'none'}:${dog?.breed ?? 'none'}`
@@ -507,7 +510,13 @@ export default function SpotDetailScreen({
       })
       // cancelled で捨てると、同じ requestKey の再実行が早期 return して要約が永久に出ない。
       // 「最新のリクエストか」で判定すれば、重複した再実行があっても結果は活きる
-      if (aiRequestKeyRef.current === requestKey && result) setAiSummary(result)
+      if (aiRequestKeyRef.current !== requestKey) return
+      if (isAiSummaryEmpty(result)) {
+        setAiEmptyReason(result.reason)
+        setAiSummary(null)
+      } else if (result) {
+        setAiSummary(result)
+      }
     })().finally(() => {
       // 自分が最新リクエストのときだけローディングを下ろす（新しい取得が始まっていれば触らない）。
       // ここを cancelled で判定すると、再実行が早期 return したときに「生成中...」が固まる
@@ -1074,12 +1083,19 @@ export default function SpotDetailScreen({
             ) : (
               <View style={styles.aiEmptyBox}>
                 {/*
-                  謝らずに事実を言う。ネット上に犬連れ情報が無いスポットは実在し、
-                  それはアプリの失敗ではない。代わりに、知っている飼い主から
-                  教えてもらう枠を出す（検索では埋まらない層の唯一の入口）
+                  言い切れるのは、サーバーが「情報が無い」と明示したときだけ。
+                  空が返る条件は5つあり、残る4つは閲覧枠・件数枠・レート制限・
+                  他リクエストの処理中で、どれも運用側の都合。情報があるスポットでも
+                  その瞬間に開いた人には空が返るので、断定すると事実と違うことを言う。
+
+                  情報が無いのが本当のときは謝らない。ネット上に犬連れ情報が無い
+                  スポットは実在し、それはアプリの失敗ではない。どちらの場合も、
+                  知っている飼い主から教えてもらう枠は出す。
                 */}
                 <Text style={styles.aiEmptyTxt}>
-                  このスポットの犬連れ情報は、ネット上に見つかりませんでした。
+                  {aiEmptyReason === 'no_information'
+                    ? 'このスポットの犬連れ情報は、ネット上に見つかりませんでした。'
+                    : 'いま混み合っています。しばらくしてから、もう一度お試しください。'}
                 </Text>
                 <Pressable style={styles.aiTipBtn} onPress={() => setShowTipModal(true)}>
                   <WanspotIconPaw size={14} color={colors.pillText} />
