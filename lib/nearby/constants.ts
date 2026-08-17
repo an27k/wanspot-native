@@ -4,6 +4,18 @@ export const NEARBY_RADIUS_M = 5000
 /** 件数不足時に段階拡張する半径（既存 3km 相当 → 上限 5km） */
 export const NEARBY_RADIUS_EXPANSION_STEPS_M = [3000, NEARBY_RADIUS_M] as const
 
+/**
+ * 緊急性の高いジャンルだけ広く探す半径（メートル）。
+ *
+ * 通常は5kmで打ち止めだが、犬が吐き続けている状況で「5km圏内に無い」は
+ * 「存在しない」と同じ意味になる。地方では車20分の病院がここで消えていた。
+ * 対象を絞っているので API コストの増分は限定的。
+ */
+export const URGENT_RADIUS_EXPANSION_STEPS_M = [3000, NEARBY_RADIUS_M, 15000, 40000] as const
+
+/** 半径を広げてでも見つけるべきジャンル */
+export const URGENT_GENRES: readonly string[] = ['veterinary_care']
+
 /** この件数未満なら次の半径へ自動拡張 */
 export const NEARBY_MIN_SPOTS_THRESHOLD = 5
 

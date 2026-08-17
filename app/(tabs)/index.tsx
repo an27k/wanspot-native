@@ -431,7 +431,7 @@ function NearbyPage() {
       base = [...scored, ...likedRows.filter((s) => s.placeId && !seen.has(s.placeId))]
     }
     // 同一施設が別スポットとして二重登録されているケースを1件に畳む
-    return applyMapConditions(dedupeSameSpots(base), conditions, (s) => likedPlaceIds.has(s.placeId))
+    return applyMapConditions(dedupeSameSpots(base), conditions, (s) => likedPlaceIds.has(s.placeId), genre)
   }, [searchAnchor, nearbyPlaces, location, genre, likedRows, conditions, likedPlaceIds, situation])
 
   // 絞り込みで選択中スポットが消えたら、選択も静かに外す

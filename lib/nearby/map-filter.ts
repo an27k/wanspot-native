@@ -59,14 +59,32 @@ export function activeConditionCount(cond: MapConditionFilter): number {
 }
 
 /** 条件フィルタを AND で適用する。isLiked はいいね判定（likedPlaceIds ＋ 楽観更新の合成を呼び出し側が渡す） */
+/**
+ * 同伴条件（店内OK / テラスOK）が意味を持たないジャンル。
+ *
+ * 動物病院とペットホテルは犬を連れて行くのが前提の施設で、「店内同伴可」を
+ * 検証する対象ではない。実データでは動物病院18件すべてが pet_indoor_allowed=null
+ * なので、カフェ探しで入れた条件が残ったまま病院を選ぶと必ず0件になる。
+ * 犬が吐き続けている日曜の夕方に「条件に合うスポットが見つかりませんでした」を
+ * 出すのが、この AND の帰結だった。
+ */
+const GENRES_IGNORING_PET_CONDITIONS: readonly string[] = ['veterinary_care', 'pet_hotel']
+
+export function petConditionsApplyTo(genre: string | null | undefined): boolean {
+  return !genre || !GENRES_IGNORING_PET_CONDITIONS.includes(genre)
+}
+
 export function applyMapConditions<T extends PetPolicySource>(
   items: T[],
   cond: MapConditionFilter,
-  isLiked: (item: T) => boolean
+  isLiked: (item: T) => boolean,
+  genre?: string | null
 ): T[] {
   let out = items
-  if (cond.indoorOnly) out = out.filter(placeIsIndoorPetOk)
-  if (cond.terraceOnly) out = out.filter(placeIsTerracePetOk)
+  if (petConditionsApplyTo(genre)) {
+    if (cond.indoorOnly) out = out.filter(placeIsIndoorPetOk)
+    if (cond.terraceOnly) out = out.filter(placeIsTerracePetOk)
+  }
   if (cond.likedOnly) out = out.filter(isLiked)
   return out
 }

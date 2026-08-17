@@ -4,6 +4,8 @@ import {
   MAP_GENRE_CHIPS,
   NEARBY_MIN_SPOTS_THRESHOLD,
   NEARBY_RADIUS_EXPANSION_STEPS_M,
+  URGENT_GENRES,
+  URGENT_RADIUS_EXPANSION_STEPS_M,
   type MapGenreKey,
 } from '@/lib/nearby/constants'
 import { sortDogRunSpotsByPriority } from '@/lib/nearby/dog-run-priority'
@@ -156,7 +158,10 @@ export async function fetchNearbySpotsForGenreWithExpansion(
   genre: MapGenreKey,
   minSpots = NEARBY_MIN_SPOTS_THRESHOLD
 ): Promise<{ spots: PlaceResult[]; error: string | null; radiusM: number }> {
-  const steps = NEARBY_RADIUS_EXPANSION_STEPS_M
+  // 動物病院だけは 5km で打ち止めにしない。緊急時に「圏内に無い」は「無い」と同じ
+  const steps = URGENT_GENRES.includes(genre)
+    ? URGENT_RADIUS_EXPANSION_STEPS_M
+    : NEARBY_RADIUS_EXPANSION_STEPS_M
   let lastResult: { spots: PlaceResult[]; error: string | null; radiusM: number } | null = null
 
   for (const radiusM of steps) {
