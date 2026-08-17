@@ -26,6 +26,8 @@ import { eventShareUrl } from '@/lib/calendar/event-share'
 import { directLinksOnly, occurrenceLabel } from '@/lib/calendar/types'
 import { remoteImageAcceptHeaders, remoteImageExpoProps } from '@/lib/images/remoteImageDefaults'
 import { resizePlacesImageUrl } from '@/lib/images/placesImage'
+import { LoginRequiredPanel } from '@/components/auth/LoginRequiredPanel'
+import { useAuth } from '@/context/AuthContext'
 
 const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨']
 
@@ -53,6 +55,8 @@ function openExternal(url: string): void {
 }
 
 export default function CalendarEventDetailScreen() {
+  const { session } = useAuth()
+  const isGuest = !session
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { colors } = useAppTheme()
@@ -202,8 +206,18 @@ export default function CalendarEventDetailScreen() {
             </View>
           ) : null}
 
-          {/* イベント本文はアカウント不要。隠すと 5.1.1(v) で再却下される */}
-          {(event.ai_summary?.trim() || event.description?.trim()) ? (
+          {/*
+            AIレビューはスポット詳細と同じくアカウント必須にする。日程・会場・料金・
+            公式サイトといった事実情報はここから下に全部出しているので、アカウント
+            不要の機能を塞いだことにはならない（5.1.1(v) が求めているのはそちら）。
+          */}
+          {isGuest ? (
+            <LoginRequiredPanel
+              title="ワンスポ AIレビュー"
+              body="このイベントが愛犬とどうなのかをまとめたAIレビューは、登録すると読めます。"
+              feature="event_ai_review"
+            />
+          ) : (event.ai_summary?.trim() || event.description?.trim()) ? (
             <AiSummaryCard
               heading="ワンスポ AIレビュー"
               body={stripTrailingEllipsis((event.ai_summary?.trim() || event.description?.trim())!)}

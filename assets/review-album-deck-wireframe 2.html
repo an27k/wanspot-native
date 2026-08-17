@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Review Album Deck Wireframe</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #151515;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+
+      .frame {
+        width: min(390px, 100vw);
+        aspect-ratio: 390 / 844;
+        border-radius: 34px;
+        overflow: hidden;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+        background: white;
+      }
+
+      img {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="frame" aria-label="Review Album Deck wireframe, 390 by 844">
+      <img src="./review-album-deck-wireframe.svg" alt="Review Album Deck wireframe" />
+    </main>
+  </body>
+</html>

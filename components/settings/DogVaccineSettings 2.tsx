@@ -1,0 +1,220 @@
+import { useCallback, useState } from 'react'
+import { Alert, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { WanspotIconSyringe } from '@/components/icons/WanspotIconSyringe'
+import {
+  OwnerBirthdayPickers,
+  ownerBirthdayToYmd,
+  splitYmdToParts,
+} from '@/components/OwnerBirthdayPickers'
+import type { AppColors } from '@/constants/colors'
+import { type } from '@/constants/typography'
+import { useThemedStyles } from '@/hooks/use-themed-styles'
+import {
+  computeVaccineStamp,
+  formatDateJaGregorian,
+  type DogProfile,
+  ymdFromDogField,
+} from '@/lib/dog-display'
+import { supabase } from '@/lib/supabase'
+
+function VaccineStampMark() {
+  const styles = useThemedStyles(createStyles)
+
+  return (
+    <View style={styles.stamp}>
+      <Text style={styles.stampTxt}>接種済</Text>
+    </View>
+  )
+}
+
+type Props = {
+  dog: DogProfile
+  onUpdated: (dog: DogProfile) => void
+}
+
+type VaccineKind = 'rabies' | 'mixed'
+
+/** 設定タブ用ワクチン行（旧マイページのワクチンUIを移設） */
+export function DogVaccineSettings({ dog, onUpdated }: Props) {
+  const styles = useThemedStyles(createStyles)
+  const [pickerKind, setPickerKind] = useState<VaccineKind | null>(null)
+  const [pickerYear, setPickerYear] = useState('')
+  const [pickerMonth, setPickerMonth] = useState('')
+  const [pickerDay, setPickerDay] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const openPicker = useCallback(
+    (kind: VaccineKind) => {
+      const stored = kind === 'rabies' ? dog.rabies_vaccinated_at : dog.vaccine_vaccinated_at
+      const ymd = ymdFromDogField(stored ?? '')
+      const p = splitYmdToParts(ymd || null)
+      setPickerYear(p.y)
+      setPickerMonth(p.m)
+      setPickerDay(p.d)
+      setPickerKind(kind)
+    },
+    [dog]
+  )
+
+  const confirmPicker = async () => {
+    if (!pickerKind) return
+    const ymd = ownerBirthdayToYmd(pickerYear, pickerMonth, pickerDay) ?? ''
+    setSaving(true)
+    try {
+      const patch =
+        pickerKind === 'rabies'
+          ? { rabies_vaccinated_at: ymd || null }
+          : { vaccine_vaccinated_at: ymd || null }
+      const { error } = await supabase.from('dogs').update(patch).eq('id', dog.id)
+      if (error) {
+        Alert.alert('保存に失敗しました', error.message)
+        return
+      }
+      onUpdated({ ...dog, ...patch })
+      setPickerKind(null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const renderRow = (opts: {
+    label: string
+    kind: VaccineKind
+    storedAt: string | null
+    vaccinatedFlag: boolean | null
+    showRabiesExpiry: boolean
+  }) => {
+    const ymd = ymdFromDogField(opts.storedAt ?? '')
+    const hasDate = !!ymd
+    const stampKind = computeVaccineStamp(ymd, opts.showRabiesExpiry)
+    const primaryText = hasDate
+      ? formatDateJaGregorian(ymd)
+      : opts.vaccinatedFlag
+        ? '接種日を登録してください'
+        : '未登録'
+
+    return (
+      <Pressable
+        key={opts.kind}
+        style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+        onPress={() => openPicker(opts.kind)}
+        accessibilityRole="button"
+        accessibilityLabel={opts.label}
+      >
+        <WanspotIconSyringe size={20} />
+        <View style={styles.rowTextCol}>
+          <Text style={styles.rowTitle}>{opts.label}</Text>
+          <Text style={[styles.rowSub, !hasDate && styles.rowSubMuted]} numberOfLines={1}>
+            {primaryText}
+          </Text>
+        </View>
+        {stampKind ? <VaccineStampMark /> : null}
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
+    )
+  }
+
+  return (
+    <>
+      {renderRow({
+        label: '混合ワクチン',
+        kind: 'mixed',
+        storedAt: dog.vaccine_vaccinated_at,
+        vaccinatedFlag: dog.vaccine_vaccinated,
+        showRabiesExpiry: false,
+      })}
+      <View style={styles.divider} />
+      {renderRow({
+        label: '狂犬病ワクチン',
+        kind: 'rabies',
+        storedAt: dog.rabies_vaccinated_at,
+        vaccinatedFlag: dog.rabies_vaccinated,
+        showRabiesExpiry: true,
+      })}
+
+      {pickerKind !== null ? (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setPickerKind(null)}>
+          <View style={styles.overlay}>
+            <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setPickerKind(null)} />
+            <View style={styles.pickerCard}>
+              <Text style={styles.pickerTitle}>
+                {pickerKind === 'rabies' ? '狂犬病ワクチン接種日' : '混合ワクチン接種日'}
+              </Text>
+              <View style={styles.birthdayCard}>
+                <OwnerBirthdayPickers
+                  fieldLabel=""
+                  hint={null}
+                  year={pickerYear}
+                  month={pickerMonth}
+                  day={pickerDay}
+                  onChangeYear={setPickerYear}
+                  onChangeMonth={setPickerMonth}
+                  onChangeDay={setPickerDay}
+                />
+              </View>
+              <View style={styles.pickerActions}>
+                <Pressable style={styles.pickerGhost} onPress={() => setPickerKind(null)}>
+                  <Text style={styles.pickerGhostTxt}>キャンセル</Text>
+                </Pressable>
+                <Pressable style={styles.pickerPri} onPress={() => void confirmPicker()} disabled={saving}>
+                  <Text style={styles.pickerPriTxt}>{saving ? '保存中...' : '決定'}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+    </>
+  )
+}
+
+const createStyles = (colors: AppColors) => StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  rowTextCol: { flex: 1 },
+  // 設定タブのリスト行と同じ組み（mypage の rowTxt / rowSubTxt に合わせる）
+  rowTitle: { ...type.row, color: colors.text },
+  rowSub: { ...type.caption, color: colors.textMuted, marginTop: 2 },
+  rowSubMuted: { color: colors.textSecondary },
+  divider: { height: 1, backgroundColor: colors.border, marginLeft: 46 },
+  // › は文字ではなくシェブロン。行の文字と一緒に動かさない
+  chevron: { fontSize: 20, color: colors.textDisabled, fontWeight: '300' },
+  stamp: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: colors.successMutedBg,
+  },
+  stampTxt: { ...type.label, color: colors.success },
+  overlay: { flex: 1, backgroundColor: colors.overlayScrim, justifyContent: 'center', padding: 24 },
+  pickerCard: {
+    backgroundColor: colors.paper,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  pickerTitle: { ...type.heading, color: colors.text, marginBottom: 10, textAlign: 'center' as const },
+  birthdayCard: {
+    marginTop: 4,
+    padding: 16,
+    backgroundColor: colors.paper,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...Platform.select({
+      ios: { shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10 },
+      android: { elevation: 4 },
+    }),
+  },
+  pickerActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  pickerGhost: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.surfaceAlt, alignItems: 'center' },
+  pickerGhostTxt: { ...type.button, color: colors.textSecondary },
+  pickerPri: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.tintStrong, alignItems: 'center' },
+  pickerPriTxt: { ...type.button, color: colors.text },
+})
