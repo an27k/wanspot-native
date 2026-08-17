@@ -25,10 +25,11 @@ import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary'
 function SettingsTab() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { signOut } = useAuth()
+  const { session, signOut } = useAuth()
   const { colors } = useAppTheme()
   const styles = useThemedStyles(createStyles)
   const { dog, loading } = useDogProfile()
+  const isGuest = !session
   const apiBase = useMemo(() => getWanspotApiBase(), [])
   /** お散歩予報カード用の現在地（許可済みセッション位置。毎朝の通知タップの着地でもある） */
   const [walkLocation, setWalkLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -49,6 +50,46 @@ function SettingsTab() {
   )
 
   const padBottom = TAB_BAR_HEIGHT + insets.bottom + 16
+
+  if (isGuest) {
+    return (
+      <View style={styles.root}>
+        <AppHeader />
+        {/*
+          説明文は置かない。押した先の入口画面に同じことが書いてあるので、
+          ここで先に読ませても二度手間になる。出口はボタン1つで足りる。
+        */}
+        <View style={styles.guestMain}>
+          <PressableScale
+            style={styles.guestBtn}
+            onPress={() => router.push('/(auth)/signup')}
+            accessibilityRole="button"
+            accessibilityLabel="ログインまたは新規登録"
+          >
+            <Ionicons name="log-in-outline" size={18} color={colors.onPrimary} />
+            <Text style={styles.guestBtnTxt}>ログイン / 新規登録</Text>
+          </PressableScale>
+        </View>
+        {/*
+          テーマ切り替えはアカウントと関係ない端末の設定なので、ゲストでも触れるようにする。
+          ここを閉じていると、登録しない人はライト/ダークを選べない。
+        */}
+        <View style={styles.section}>
+          <Text style={styles.sectionCaption}>表示</Text>
+          <ThemePreferenceSegments />
+        </View>
+
+        <View style={[styles.guestLegal, { paddingBottom: padBottom }]}>
+          <PressableScale style={styles.legalRow} onPress={() => openWeb('/privacy')} accessibilityLabel="プライバシーポリシー">
+            <Text style={styles.legalTxt}>プライバシーポリシー</Text>
+          </PressableScale>
+          <PressableScale style={styles.legalRow} onPress={() => openWeb('/terms')} accessibilityLabel="利用規約">
+            <Text style={styles.legalTxt}>利用規約</Text>
+          </PressableScale>
+        </View>
+      </View>
+    )
+  }
 
   if (loading && !dog) {
     return (
@@ -161,7 +202,7 @@ function SettingsTab() {
               style={styles.row}
               onPress={async () => {
                 await signOut()
-                router.replace('/(auth)/login')
+                router.replace('/(tabs)')
               }}
               accessibilityLabel="ログアウト"
             >
@@ -235,6 +276,21 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   rowSubTxt: { ...type.caption, color: colors.textMuted },
   rowDivider: { height: 1, backgroundColor: colors.border, marginLeft: 48 },
   dangerTitle: { ...type.row, fontWeight: '600' as const, color: colors.error },
+  guestMain: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
+  guestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+  },
+  guestBtnTxt: { ...type.button, color: colors.onPrimary },
+  guestLegal: { alignItems: 'center', gap: 4, paddingHorizontal: 20 },
+  legalRow: { paddingVertical: 8, paddingHorizontal: 12 },
+  legalTxt: { ...type.caption, color: colors.textMuted },
 })
 
 export default function SettingsTabScreen() {

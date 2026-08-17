@@ -148,7 +148,7 @@ export function SpotListCard({
     }
 
     setLikeLoading(true)
-    if (!requireAuth('いいねするにはログインしてください。')) {
+    if (!requireAuth('いいねはアカウントに保存されます。')) {
       setLikeLoading(false)
       return
     }

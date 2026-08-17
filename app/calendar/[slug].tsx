@@ -11,6 +11,7 @@ import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
 import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { useAppTheme } from '@/context/ThemeContext'
+import { logUserEvent } from '@/lib/user-events'
 import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { takeCalendarEvent } from '@/lib/calendar/calendar-detail-stash'
 import {
@@ -72,6 +73,14 @@ export default function CalendarEventDetailScreen() {
       alive = false
     }
   }, [event?.id])
+
+  useEffect(() => {
+    if (!event?.id) return
+    logUserEvent({
+      eventType: 'event_view',
+      props: { event_id: event.id, slug: event.slug ?? slug ?? null },
+    })
+  }, [event?.id, event?.slug, slug])
 
   if (!event) {
     // メモリスタッシュ経由でのみ開く画面のため、直リンクやプロセス再起動後は カレンダーへ誘導する
@@ -193,7 +202,7 @@ export default function CalendarEventDetailScreen() {
             </View>
           ) : null}
 
-          {/* ワンスポAIレビュー（全文表示。description と重複するためイベント内容セクションは出さない） */}
+          {/* イベント本文はアカウント不要。隠すと 5.1.1(v) で再却下される */}
           {(event.ai_summary?.trim() || event.description?.trim()) ? (
             <AiSummaryCard
               heading="ワンスポ AIレビュー"

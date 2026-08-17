@@ -129,7 +129,7 @@ export function NearbySpotCard({
     if (likeLoading) return
     playLikeHeartAnimation(scaleAnim)
     setLikeLoading(true)
-    if (!requireAuth('いいねするにはログインしてください。')) {
+    if (!requireAuth('いいねはアカウントに保存されます。')) {
       setLikeLoading(false)
       return
     }

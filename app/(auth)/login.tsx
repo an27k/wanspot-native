@@ -21,6 +21,7 @@ import { useAppTheme } from '@/context/ThemeContext'
 import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { isAppleSignInAvailable, signInWithApple } from '@/lib/apple-signin'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
+import { continueAsGuest } from '@/lib/continue-as-guest'
 import { isSupabaseOAuthReady, signInWithGoogleOAuth } from '@/lib/oauth-supabase'
 
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
@@ -118,6 +119,7 @@ export default function LoginScreen() {
               <Logo size={72} />
             </View>
             <Text style={styles.title}>Wanspot</Text>
+            <Text style={styles.lead}>地図とイベント一覧は、登録しなくても見られます</Text>
             <TextInput
               style={styles.input}
               placeholder="メールアドレス"
@@ -199,6 +201,14 @@ export default function LoginScreen() {
                 <Text style={styles.linkTxt}>新規登録はこちら</Text>
               </Pressable>
             </Link>
+            <Pressable
+              style={styles.guestLink}
+              onPress={continueAsGuest}
+              accessibilityRole="button"
+              accessibilityLabel="登録せずに地図とイベントを見る"
+            >
+              <Text style={styles.guestLinkTxt}>登録しないで使う</Text>
+            </Pressable>
           </View>
         </TouchableWithoutFeedback>
       </ScrollView>
@@ -219,6 +229,12 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     textAlign: 'center',
     color: colors.text,
     marginTop: 12,
+    marginBottom: 8,
+  },
+  lead: {
+    ...type.body,
+    textAlign: 'center',
+    color: colors.textSecondary,
     marginBottom: 24,
   },
   input: {
@@ -242,6 +258,14 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   btnTxt: { ...type.button, color: colors.onPrimary },
   link: { marginTop: 20, alignItems: 'center' },
   linkTxt: { ...type.body, color: colors.textMuted },
+  guestLink: { marginTop: 20, alignItems: 'center', paddingVertical: 10 },
+  // 「細く小さく」。出口としては必要だが、主役は新規登録なので目線を奪わない
+  guestLinkTxt: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textMuted,
+    textDecorationLine: 'underline' as const,
+  },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',

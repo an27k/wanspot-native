@@ -25,6 +25,7 @@ import { useAppTheme } from '@/context/ThemeContext'
 import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { isAppleSignInAvailable, signInWithApple } from '@/lib/apple-signin'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
+import { continueAsGuest } from '@/lib/continue-as-guest'
 import { isSupabaseOAuthReady, signInWithGoogleOAuth } from '@/lib/oauth-supabase'
 import { track } from '@/lib/analytics'
 
@@ -119,6 +120,7 @@ export default function SignupScreen() {
               <Logo size={72} />
             </View>
             <Text style={styles.title}>Wanspot</Text>
+            <Text style={styles.lead}>地図とイベント一覧は、登録しなくても見られます</Text>
             <TextInput
               style={styles.input}
               placeholder="メールアドレス"
@@ -200,6 +202,14 @@ export default function SignupScreen() {
                 <Text style={styles.linkTxt}>すでにアカウントをお持ちの方</Text>
               </Pressable>
             </Link>
+            <Pressable
+              style={styles.guestLink}
+              onPress={continueAsGuest}
+              accessibilityRole="button"
+              accessibilityLabel="登録せずに地図とイベントを見る"
+            >
+              <Text style={styles.guestLinkTxt}>登録しないで使う</Text>
+            </Pressable>
           </View>
         </TouchableWithoutFeedback>
       </ScrollView>
@@ -214,7 +224,13 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   logo: { alignSelf: 'center', marginBottom: 4 },
   // ワードマークは型スケールの外。ロゴと対で置くブランド資産であって画面タイトルではない。
   // largeTitle は日本語の見出し用に letterSpacing を詰めてあるので、欧文のロゴには当てない
-  title: { fontSize: 28, fontWeight: '800', textAlign: 'center', color: colors.text, marginTop: 12, marginBottom: 24 },
+  title: { fontSize: 28, fontWeight: '800', textAlign: 'center', color: colors.text, marginTop: 12, marginBottom: 8 },
+  lead: {
+    ...type.body,
+    textAlign: 'center',
+    color: colors.textSecondary,
+    marginBottom: 24,
+  },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -236,6 +252,14 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   btnTxt: { ...type.button, color: colors.onPrimary },
   link: { marginTop: 20, alignItems: 'center' },
   linkTxt: { ...type.body, color: colors.textMuted },
+  guestLink: { marginTop: 20, alignItems: 'center', paddingVertical: 10 },
+  // 「細く小さく」。出口としては必要だが、主役は新規登録なので目線を奪わない
+  guestLinkTxt: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textMuted,
+    textDecorationLine: 'underline' as const,
+  },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',

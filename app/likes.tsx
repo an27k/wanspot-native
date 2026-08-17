@@ -48,7 +48,7 @@ const SORT_OPTIONS: { key: UserSpotSortKey; label: string }[] = [
   { key: 'likes', label: 'いいね数' },
 ]
 
-type LoadState = 'idle' | 'loading' | 'success' | 'error' | 'redirect'
+type LoadState = 'idle' | 'loading' | 'success' | 'error' | 'guest'
 
 export default function LikesPage() {
   const router = useRouter()
@@ -87,8 +87,7 @@ export default function LikesPage() {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError) console.warn('[likes] getUser', authError.message)
     if (!user) {
-      setLoadState('redirect')
-      router.replace('/(auth)/login')
+      setLoadState('guest')
       return
     }
     const result = await fetchLikedSpotsForUser(supabase, user.id)
@@ -100,7 +99,7 @@ export default function LikesPage() {
     }
     setSpots(result.spots)
     setLoadState('success')
-  }, [router])
+  }, [])
 
   useEffect(() => {
     void load()
@@ -141,7 +140,7 @@ export default function LikesPage() {
     if (unlikeLoadingId) return
     setUnlikeLoadingId(spot.id)
     try {
-      if (!requireAuth('いいねを解除するにはログインしてください。')) return
+      if (!requireAuth('いいねの変更はアカウントに保存されます。')) return
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       await supabase.from('spot_likes').delete().eq('user_id', user.id).eq('spot_id', spot.id)
@@ -164,8 +163,19 @@ export default function LikesPage() {
     )
   }
 
-  if (loadState === 'redirect') {
-    return <View style={styles.screen} />
+  if (loadState === 'guest') {
+    return (
+      <View style={styles.screen}>
+        <AppHeader variant="back" onBack={() => router.back()} />
+        <EmptyState
+          icon={<WanspotIconHeart size={40} filled color={colors.textHint} />}
+          title="いいねはアカウントに保存されます"
+          body="地図とイベント一覧は、登録しなくても見られます。"
+          actionLabel="ログイン"
+          onAction={() => router.push('/(auth)/login')}
+        />
+      </View>
+    )
   }
 
   return (

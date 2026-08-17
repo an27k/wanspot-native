@@ -17,7 +17,9 @@ import { AppHeader } from '@/components/AppHeader'
 import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
+import { useAuth } from '@/context/AuthContext'
 import { useAppTheme } from '@/context/ThemeContext'
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth'
 import { useThemedStyles } from '@/hooks/use-themed-styles'
 import { NearbyMapView } from '@/components/map/NearbyMapView'
 import { MapFilterBar } from '@/components/map/MapFilterBar'
@@ -76,7 +78,10 @@ type SearchAnchor = { lat: number; lng: number; label: string }
 
 function NearbyPage() {
   const router = useRouter()
+  const { session } = useAuth()
+  const requireAuth = useRequireAuth()
   const insets = useSafeAreaInsets()
+  const filtersLocked = !session
   const { colors } = useAppTheme()
   const styles = useThemedStyles(createStyles)
   // 共通 AppHeader がセーフエリアを受け持つため、地図内は純粋な余白だけでよい。
@@ -207,12 +212,16 @@ function NearbyPage() {
   }, [])
 
   const handleToggleCondition = useCallback((key: keyof MapConditionFilter) => {
+    // いいね絞り込みだけアカウント必須。ジャンル・店内OKは地図の閲覧そのもの
+    if (key === 'likedOnly' && !requireAuth('いいねで絞り込むには、アカウントが必要です。', 'map_liked_filter')) {
+      return
+    }
     setConditions((prev) => {
       const next = { ...prev, [key]: !prev[key] }
       void AsyncStorage.setItem(NEARBY_MAP_CONDITIONS_STORAGE_KEY, JSON.stringify(next))
       return next
     })
-  }, [])
+  }, [requireAuth])
 
   const clearConditions = useCallback(() => {
     setConditions(EMPTY_MAP_CONDITIONS)
@@ -408,6 +417,7 @@ function NearbyPage() {
 
   const handleToggleLike = useCallback(
     async (spot: SheetSpot) => {
+      if (!requireAuth('いいねはアカウントに保存されます。', 'map_like')) return
       // 連打すると再レンダー前の同じ状態から2回とも「いいね追加」と判定され、二重 INSERT になる
       if (likeInFlightRef.current.has(spot.placeId)) return
       likeInFlightRef.current.add(spot.placeId)
@@ -423,7 +433,6 @@ function NearbyPage() {
       } = await supabase.auth.getUser()
       if (!user) {
         rollback()
-        router.push('/(auth)/login')
         return
       }
       let spotId = spot.spotUuid
@@ -462,7 +471,7 @@ function NearbyPage() {
         likeInFlightRef.current.delete(spot.placeId)
       }
     },
-    [likedPlaceIds, router, loadUserLists]
+    [likedPlaceIds, requireAuth, loadUserLists]
   )
 
   const conditionCount = activeConditionCount(conditions)
@@ -575,6 +584,10 @@ function NearbyPage() {
             onSelectGenre={handleSelectGenre}
             onToggleCondition={handleToggleCondition}
             topInset={filterBarTop}
+            likedLocked={filtersLocked}
+            onLikedLockedPress={() =>
+              requireAuth('いいねで絞り込むには、アカウントが必要です。', 'map_liked_filter')
+            }
           />
 
           {searchActive ? (

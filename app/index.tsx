@@ -7,8 +7,9 @@ import { useAuth } from '@/context/AuthContext'
 import { useAppTheme } from '@/context/ThemeContext'
 import { ONBOARDING_COMPLETE_KEY } from '@/lib/onboarding-constants'
 import { supabase } from '@/lib/supabase'
+import { hasChosenGuest } from '@/lib/continue-as-guest'
 
-type Gate = 'loading' | 'login' | 'onboard' | 'tabs'
+type Gate = 'loading' | 'entry' | 'onboard' | 'tabs'
 
 export default function Index() {
   const { session, loading: authLoading } = useAuth()
@@ -20,8 +21,18 @@ export default function Index() {
 
     let cancelled = false
     void (async () => {
+      /*
+        入口を1枚置く。ほとんどの人はここで初めてアプリに触るので、主役は新規登録。
+        セッションは端末に残るため、この画面を見るのは新規か再インストールした人だけ。
+
+        ただし「登録しないで使う」を一度選んだ端末はそのままタブへ送る。地図・
+        イベント一覧はアカウント不要の機能なので、そこをログイン壁の奥に置き続けると
+        Apple 5.1.1(v) に触れる（2026-08-16・ビルド246で却下）。
+      */
       if (!session) {
-        setGate('login')
+        const guest = await hasChosenGuest()
+        if (cancelled) return
+        setGate(guest ? 'tabs' : 'entry')
         return
       }
 
@@ -72,7 +83,7 @@ export default function Index() {
       </View>
     )
   }
-  if (gate === 'login') return <Redirect href="/(auth)/login" />
+  if (gate === 'entry') return <Redirect href="/(auth)/signup" />
   if (gate === 'onboard') return <Redirect href="/onboarding/dog" />
   return <Redirect href="/(tabs)" />
 }

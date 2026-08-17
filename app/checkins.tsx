@@ -45,7 +45,7 @@ const SORT_OPTIONS: { key: UserSpotSortKey; label: string }[] = [
   { key: 'likes', label: 'いいね数' },
 ]
 
-type LoadState = 'idle' | 'loading' | 'success' | 'error' | 'redirect'
+type LoadState = 'idle' | 'loading' | 'success' | 'error' | 'guest'
 
 export default function CheckinsPage() {
   const router = useRouter()
@@ -82,8 +82,7 @@ export default function CheckinsPage() {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError) console.warn('[checkins] getUser', authError.message)
     if (!user) {
-      setLoadState('redirect')
-      router.replace('/(auth)/login')
+      setLoadState('guest')
       return
     }
     const result = await fetchCheckedInSpotsForUser(supabase, user.id)
@@ -95,7 +94,7 @@ export default function CheckinsPage() {
     }
     setSpots(result.spots)
     setLoadState('success')
-  }, [router])
+  }, [])
 
   useEffect(() => {
     void load()
@@ -145,8 +144,19 @@ export default function CheckinsPage() {
     )
   }
 
-  if (loadState === 'redirect') {
-    return <View style={styles.screen} />
+  if (loadState === 'guest') {
+    return (
+      <View style={styles.screen}>
+        <AppHeader variant="back" onBack={() => router.back()} />
+        <EmptyState
+          icon={<IconPaw size={40} color={colors.textHint} />}
+          title="行った記録はアカウントに保存されます"
+          body="地図とイベント一覧は、登録しなくても見られます。"
+          actionLabel="ログイン"
+          onAction={() => router.push('/(auth)/login')}
+        />
+      </View>
+    )
   }
 
   return (

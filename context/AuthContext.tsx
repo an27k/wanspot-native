@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { ONBOARDING_COMPLETE_KEY } from '@/lib/onboarding-constants'
 import { supabase } from '@/lib/supabase'
 import { setWanspotSessionCache } from '@/lib/wanspot-api'
+import { clearGuestChoice } from '@/lib/continue-as-guest'
 
 type AuthContextValue = {
   session: Session | null
@@ -44,6 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setWanspotSessionCache(s)
       setSession(s)
+      // 登録・ログインが成立したらゲスト選択を捨てる。次にサインアウトしたときは
+      // また入口から始まる。OAuth も同じ経路を通るので、ここに置けば取りこぼさない
+      if (s) void clearGuestChoice()
     })
     return () => {
       mounted = false

@@ -27,6 +27,7 @@ import { Ionicons } from '@expo/vector-icons'
 import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { AppHeader } from '@/components/AppHeader'
+import { LoginRequiredPanel } from '@/components/auth/LoginRequiredPanel'
 import { RunningDog, PowState } from '@/components/DogStates'
 import { IconGoogleMaps } from '@/components/IconGoogleMaps'
 import { IconInstagram } from '@/components/IconInstagram'
@@ -69,6 +70,7 @@ import { formatPriceDisplay, getSpotOpenStatus } from '@/lib/business-hours'
 import { getGoogleMapsIosApiKey } from '@/lib/google-maps-config'
 import { computeVlogProgressFromPlates } from '@/lib/album/vlog-progress'
 import type { PlaceResult } from '@/types/places'
+import { useAuth } from '@/context/AuthContext'
 import { useAppTheme } from '@/context/ThemeContext'
 import { useThemedStyles } from '@/hooks/use-themed-styles'
 
@@ -199,8 +201,10 @@ export default function SpotDetailScreen({
   const styles = useThemedStyles(createStyles)
   const petBadgeToneStyles = useThemedStyles(createPetBadgeToneStyles)
   const router = useRouter()
+  const { session } = useAuth()
   const requireAuth = useRequireAuth()
   const { dog, loading: dogLoading } = useDogProfile()
+  const isGuest = !session
   const insets = useSafeAreaInsets()
   const likeScale = useRef(new Animated.Value(1)).current
   const instagramAutoFetchSent = useRef<string | null>(null)
@@ -396,6 +400,9 @@ export default function SpotDetailScreen({
           setUserRating(0)
           setUserMemo('')
         }
+        if (canQuerySpotState) {
+          logUserEvent({ eventType: 'spot_view', spotId: resolvedSpotId })
+        }
       }
 
       if (detailRes?.photos?.length) {
@@ -454,6 +461,11 @@ export default function SpotDetailScreen({
 
   useEffect(() => {
     if (loading || !spot || dogLoading) return
+    if (isGuest) {
+      setAiLoading(false)
+      setAiSummary(null)
+      return
+    }
     const dogKey = `${dog?.size ?? 'none'}:${dog?.breed ?? 'none'}`
     const requestKey = `${spot.id}:${dogKey}:${reviewsForAi.length > 0 ? 'r1' : 'r0'}`
     if (aiRequestKeyRef.current === requestKey) return
@@ -501,7 +513,7 @@ export default function SpotDetailScreen({
       // ここを cancelled で判定すると、再実行が早期 return したときに「生成中...」が固まる
       if (aiRequestKeyRef.current === requestKey) setAiLoading(false)
     })
-  }, [spot, loading, dogLoading, dog?.size, dog?.breed, userId, reviewsForAi])
+  }, [spot, loading, dogLoading, dog?.size, dog?.breed, userId, reviewsForAi, isGuest])
 
   useEffect(() => {
     if (photoRefs.length === 0) return
@@ -582,7 +594,7 @@ export default function SpotDetailScreen({
 
   const saveUserRating = async (rating: number) => {
     if (!SPOT_INLINE_REVIEW_ENABLED || !spot || !checkedIn) return
-    if (!requireAuth('評価を残すにはログインしてください。')) return
+    if (!requireAuth('評価はアカウントに保存されます。', 'spot_rating')) return
     if (!userId) return
     const id = await ensureVisitId()
     if (!id) return
@@ -600,7 +612,7 @@ export default function SpotDetailScreen({
     memoDebounceRef.current = setTimeout(() => {
       void (async () => {
         if (!spot || !userId || !checkedIn) return
-        if (!requireAuth('メモを残すにはログインしてください。')) return
+        if (!requireAuth('メモはアカウントに保存されます。', 'spot_memo')) return
         const id = await ensureVisitId()
         if (!id) return
         await updateVisit(id, { comment: comment.trim() || null })
@@ -610,7 +622,7 @@ export default function SpotDetailScreen({
 
   const submitTip = async () => {
     if (!spot || tipSending) return
-    if (!requireAuth('情報を送るにはログインしてください。')) return
+    if (!requireAuth('情報の送信にはアカウントが必要です。', 'spot_tip')) return
     setTipSending(true)
     try {
       const result = await submitSpotInfoTip(spot.id, tipBody)
@@ -632,7 +644,7 @@ export default function SpotDetailScreen({
 
   const toggleLike = async () => {
     if (!spot || likeLoading) return
-    if (!requireAuth('いいねするにはログインしてください。')) return
+    if (!requireAuth('いいねはアカウントに保存されます。', 'spot_like')) return
     if (!userId) return
     if (!isSpotUuid(spot.id)) {
       setVisitToast({
@@ -736,7 +748,7 @@ export default function SpotDetailScreen({
 
   const recordVisitTap = async () => {
     if (!spot || visitRecording || visitRecordInFlight.current) return
-    if (!requireAuth('チェックインするにはログインしてください。')) return
+    if (!requireAuth('行った記録はアカウントに保存されます。', 'spot_checkin')) return
     if (!userId) return
     if (!isSpotUuid(spot.id)) {
       setVisitToast({
@@ -1018,6 +1030,14 @@ export default function SpotDetailScreen({
             </View>
           ) : null}
 
+          {isGuest ? (
+            <LoginRequiredPanel
+              variant="card"
+              title="ワンスポ AIレビュー"
+              body="うちの子の年齢やサイズに合わせた読み方は、ログイン後に表示します。住所・営業時間・地図はこのまま見られます。"
+              feature="spot_ai_review"
+            />
+          ) : (
           <View style={styles.aiCard}>
             {aiLoading ? (
               <RunningDog label="ワンスポAIレビューを生成中..." />
@@ -1068,6 +1088,7 @@ export default function SpotDetailScreen({
               </View>
             )}
           </View>
+          )}
 
           <Pressable style={styles.mapMini} onPress={() => Linking.openURL(mapsUrl)} accessibilityLabel="Google Mapsで開く">
             {mapMiniUrl ? (

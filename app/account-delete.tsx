@@ -43,7 +43,7 @@ export default function AccountDeleteScreen() {
     } catch {
       /* ignore */
     }
-    router.replace('/(auth)/login')
+    router.replace('/(tabs)')
   }, [router, signOut])
 
   const onDelete = useCallback(async () => {

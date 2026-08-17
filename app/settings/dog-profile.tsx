@@ -90,6 +90,13 @@ export default function DogProfileSettingsScreen() {
           <View style={styles.loadingWrap}>
             <RunningDog label="読み込み中..." />
           </View>
+        ) : !userId ? (
+          <View style={styles.guestWrap}>
+            <Text style={styles.emptyTxt}>愛犬プロフィールはアカウントに保存されます。地図とイベント一覧はそのまま見られます。</Text>
+            <Pressable style={styles.loginBtn} onPress={() => router.push('/(auth)/login')}>
+              <Text style={styles.loginBtnTxt}>ログインする</Text>
+            </Pressable>
+          </View>
         ) : dog && userId ? (
           <>
             <View style={styles.profileCard}>
@@ -135,6 +142,14 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   pageTitle: { ...type.title, color: colors.textPrimary, marginTop: 24, marginBottom: 4 },
   loadingWrap: { marginTop: 48, alignItems: 'center' },
   emptyTxt: { marginTop: 24, ...type.caption, color: colors.textMuted, textAlign: 'center' as const },
+  guestWrap: { marginTop: 24, alignItems: 'center', gap: 16 },
+  loginBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+  },
+  loginBtnTxt: { ...type.button, color: colors.onPrimary },
   profileCard: {
     marginTop: 16,
     marginBottom: 20,

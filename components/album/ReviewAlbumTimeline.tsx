@@ -1047,7 +1047,15 @@ export function ReviewAlbumTimeline({
   if (!userId) {
     return (
       <View style={styles.guest}>
-        <Text style={styles.guestTxt}>ログインすると、自分だけのアルバムが使えます。</Text>
+        <Text style={styles.guestTxt}>アルバムはアカウントに保存されます。地図とイベント一覧はそのまま見られます。</Text>
+        <Pressable
+          style={styles.guestBtn}
+          onPress={() => router.push('/(auth)/login')}
+          accessibilityRole="button"
+          accessibilityLabel="ログインする"
+        >
+          <Text style={styles.guestBtnTxt}>ログインする</Text>
+        </Pressable>
       </View>
     )
   }
@@ -1899,8 +1907,15 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   loadingPhoto: { height: 132, borderRadius: 16, backgroundColor: colors.surfaceTertiary },
   loadingLineWide: { width: '68%', height: 14, borderRadius: 7, backgroundColor: colors.borderEmphasis },
   loadingLine: { width: '44%', height: 12, borderRadius: 6, backgroundColor: colors.border },
-  guest: { padding: 24, alignItems: 'center' },
+  guest: { padding: 24, alignItems: 'center', gap: 16 },
   guestTxt: { ...type.body, color: colors.textSecondary, textAlign: 'center' },
+  guestBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+  },
+  guestBtnTxt: { ...type.button, color: colors.onPrimary },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
   tile: {
     width: TILE_W,

@@ -35,12 +35,16 @@ export function MapFilterBar({
   onSelectGenre,
   onToggleCondition,
   topInset,
+  likedLocked = false,
+  onLikedLockedPress,
 }: {
   genre: MapGenreKey | null
   conditions: MapConditionFilter
   onSelectGenre: (genre: MapGenreKey | null) => void
   onToggleCondition: (key: keyof MapConditionFilter) => void
   topInset: number
+  likedLocked?: boolean
+  onLikedLockedPress?: () => void
 }) {
   const [conditionsOpen, setConditionsOpen] = useState(false)
   const { colors, resolvedScheme } = useAppTheme()
@@ -56,7 +60,9 @@ export function MapFilterBar({
       <TouchableOpacity
         key={key}
         style={[styles.chip, on && styles.chipOn, on && { borderColor: colors.primary }]}
-        onPress={() => onToggleCondition(key)}
+        onPress={() =>
+          key === 'likedOnly' && likedLocked ? onLikedLockedPress?.() : onToggleCondition(key)
+        }
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityState={{ selected: on }}
@@ -64,6 +70,9 @@ export function MapFilterBar({
       >
         {icon}
         <Text style={[styles.chipTxt, on && styles.chipTxtOn, on && { color: colors.primary }]}>{label}</Text>
+        {key === 'likedOnly' && likedLocked ? (
+          <Ionicons name="lock-closed" size={11} color={chipTokens.mapChipText} />
+        ) : null}
       </TouchableOpacity>
     )
   }
