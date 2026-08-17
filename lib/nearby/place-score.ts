@@ -20,6 +20,16 @@ export function placeQualityScore(spot: PlaceResult): number {
       ? rawCount
       : 0
 
+  /*
+    件数が無いと n=0 で事前分布に丸まり、全スポットが定数 PRIOR_MEAN になる。
+    その結果 ★4.7 と ★3.5 が完全に同点になり、品質が順位に一切効いていなかった。
+    nearby は user_ratings_total を返していないので、実質すべてのスポットが該当する。
+
+    件数が無いときは評価そのものを薄く効かせる。件数が載れば従来どおり
+    ベイズ加重に戻り、この分岐は使われなくなる。
+  */
+  if (n === 0) return PRIOR_MEAN + (rating - PRIOR_MEAN) * 0.35
+
   const v = n
   return (v / (v + PRIOR_WEIGHT)) * rating + (PRIOR_WEIGHT / (v + PRIOR_WEIGHT)) * PRIOR_MEAN
 }
@@ -60,9 +70,25 @@ const DECAY_M = { walking: 1200, driving: 6000 } as const
 export function petCertaintyScore(spot: PlaceResult): number {
   if (spot.pet_friendly_verified !== true) return 0
 
-  // 囲われたノーリード区画は、犬連れの目的地として最も確実
-  if (isDogRunCategory(spot.extended_category)) return 1
+  /*
+    分類より status を先に見る。ドッグランに分類されているのに status が
+    矛盾している行が実測で16%（1,000件中157件。leashed_only 144 / not_allowed 13）
+    あり、分類だけで最高値を返していたため、同伴できない場所が最上位に出ていた。
+  */
+  if (spot.pet_friendly_status === 'not_allowed') return 0
+
+  // 囲われたノーリード区画は、犬連れの目的地として最も確実。
+  // ただしリード必須の場所は「走らせられる場所」ではないので、この扱いにしない
+  if (isDogRunCategory(spot.extended_category) && spot.pet_friendly_status !== 'leashed_only') {
+    return 1
+  }
   if (spot.pet_indoor_allowed === true) return 1
+  /*
+    同伴可が確認済み。屋内可否までは分かっていないが、「未検証で何も分からない」
+    とは全く違う。分岐が無かったため最下位の 0.2 に落ちており、実測で母集団の
+    3割（150件中39件）がここに沈んでいた。動物病院がまとめて沈むのもこれが原因。
+  */
+  if (spot.pet_friendly_status === 'allowed') return 0.85
   if (spot.pet_terrace_only === true) return 0.7
   if (spot.pet_friendly_status === 'leashed_only') return 0.6
   // 検証はしたが同伴可否を判定できなかった。未検証よりは情報がある
