@@ -1,6 +1,7 @@
 import { calcDistanceMeters } from '@/lib/nearby/geo'
 import { isDogRunCategory } from '@/lib/nearby/constants'
 import type { PlaceResult } from '@/types/places'
+import type { WalkAlertKey } from '@/lib/weather/walk-alert'
 
 const PRIOR_MEAN = 4.0
 const PRIOR_WEIGHT = 10
@@ -29,6 +30,14 @@ export type WalkSituation = {
   rainy?: boolean
   /** うちの子のサイズ。L/XL は入店条件が付くことがある */
   dogSize?: string | null
+  /**
+   * 暑さの段階（walkAlertFromTemp の結果）。犬種の暑さ耐性まで織り込んだ値が入る。
+   *
+   * 気温は取得していたのに並び順へ一度も渡っていなかった。35℃の日に、日陰の
+   * 分からない公園と屋外ドッグランとテラス席のみの店が最上位に並んでいた。
+   * 雨で正しく効いている減点が、暑さにだけ無かった。
+   */
+  heatKey?: WalkAlertKey | null
   /** 移動手段。徒歩なら近さの価値が跳ね上がる */
   travel?: 'walking' | 'driving'
 }
@@ -78,6 +87,36 @@ function situationFactor(spot: PlaceResult, situation: WalkSituation | null): nu
       factor *= 0.15
     } else {
       factor *= 0.6 // 屋内か不明。可能性は残すが優先はしない
+    }
+  }
+
+  /*
+    暑い日は「屋内に逃げられるか」が可否と同じ重さになる。短頭種やシニアでは
+    段階が2つ手前で上がるので、ここは犬ごとに違う結果になる。
+
+    屋内可なら減点しない。テラスのみ・屋外のみは、雨のときと同じく実質選べない。
+    屋外ドッグランは走らせる前提の場所なので、暑い日は雨より重く見る。
+    屋内ドッグランは逃げ場があるので据え置く。
+  */
+  const heat = situation.heatKey
+  if (heat === 'danger' || heat === 'stop') {
+    const severe = heat === 'stop'
+    if (spot.pet_indoor_allowed === true || spot.extended_category === 'dog_run_indoor') {
+      factor *= 1
+    } else if (isDogRunCategory(spot.extended_category)) {
+      factor *= severe ? 0.2 : 0.4
+    } else if (spot.pet_terrace_only === true || spot.pet_friendly_status === 'outdoor_only') {
+      factor *= severe ? 0.15 : 0.3
+    } else {
+      factor *= 0.6 // 屋内か不明。可能性は残すが優先はしない
+    }
+  } else if (heat === 'caution') {
+    if (spot.pet_indoor_allowed === true || spot.extended_category === 'dog_run_indoor') {
+      factor *= 1
+    } else if (spot.pet_terrace_only === true || spot.pet_friendly_status === 'outdoor_only') {
+      factor *= 0.7
+    } else if (isDogRunCategory(spot.extended_category)) {
+      factor *= 0.8
     }
   }
 

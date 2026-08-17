@@ -52,3 +52,4 @@ yarn-error.*
 # App Store 提出用の素材。スクリーンショットだけで30MBあり、履歴に入れると
 # 以後の clone がずっと重くなる。正本は App Store Connect 側なので追跡しない
 store-assets/
+.review-dataset.json

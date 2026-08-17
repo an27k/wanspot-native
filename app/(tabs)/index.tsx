@@ -66,6 +66,8 @@ import type { UserSpotRow } from '@/lib/fetch-user-spot-lists'
 import { useWeather } from '@/lib/weather/use-weather'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import type { PlaceResult } from '@/types/places'
+import { breedHeatSensitivity } from '@/lib/dog-breeds'
+import { walkAlertFromTemp, walkAlertLevel, type WalkAlertKey } from '@/lib/weather/walk-alert'
 
 const FILTER_BAR_H = 52
 const SEARCH_BAR_H = 56
@@ -92,7 +94,6 @@ function NearbyPage() {
 
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false)
-  const weather = useWeather(location)
   const { dog } = useDogProfile()
   const [locationError, setLocationError] = useState('')
 
@@ -117,6 +118,11 @@ function NearbyPage() {
   const [predictions, setPredictions] = useState<PlacePrediction[]>([])
   const [resolving, setResolving] = useState(false)
   const [searchAnchor, setSearchAnchor] = useState<SearchAnchor | null>(null)
+  /*
+    天気の原点は「いま並べている場所」に合わせる。現在地固定だと、検索で
+    遠方を指定したときに出発地の気温で行き先を評価してしまう。
+  */
+  const weather = useWeather(searchAnchor ?? location)
 
   // 入力に追従して予測候補を取得（350msデバウンス・2文字以上）
   useEffect(() => {
@@ -381,12 +387,29 @@ function NearbyPage() {
    * 並び順に効かせる状況。雨の日に屋外を、大型犬にサイズ制限のある店を
    * 上位に出さないためのもの。天気も犬情報も取れなければ距離と確実性だけで並ぶ。
    */
+  /**
+   * 暑さの段階。犬種の暑さ耐性を織り込むので、同じ気温でも短頭種では2段階手前で上がる。
+   * 気温が取れないときは null にして、暑さの減点自体を掛けない。
+   */
+  const heatKey = useMemo<WalkAlertKey | null>(() => {
+    const t = weather.data?.tempC
+    if (typeof t !== 'number') return null
+    return walkAlertFromTemp(t, { heatSensitivity: breedHeatSensitivity(dog?.breed) }).key
+  }, [weather.data?.tempC, dog?.breed])
+
+  /** 地図に出す暑さ警告。警戒段階のときだけ返す */
+  const heatAlert = useMemo(() => {
+    if (heatKey !== 'caution' && heatKey !== 'danger' && heatKey !== 'stop') return null
+    return walkAlertLevel(heatKey)
+  }, [heatKey])
+
   const situation = useMemo<WalkSituation>(
     () => ({
       rainy: weather.data?.condition === 'rain' || weather.data?.condition === 'snow' || weather.data?.condition === 'thunder',
       dogSize: dog?.size ?? null,
+      heatKey,
     }),
-    [weather.data?.condition, dog?.size]
+    [weather.data?.condition, dog?.size, heatKey]
   )
 
   const items = useMemo(() => {
@@ -519,6 +542,27 @@ function NearbyPage() {
             topInset={overlayTop}
             bottomInset={carouselBottom + 150}
           />
+
+          {/*
+            暑さの警告は地図に常設する。これまで唯一の表示は設定タブの
+            WalkAlertCard で、しかもゲストは早期 return で到達できなかった。
+            行き先を選ぶ画面に出ていなければ、選ぶ前に知らせたことにならない。
+
+            気温と位置だけで決まるのでアカウントは要らない。快適な日は出さない
+            （毎日出ていると読まれなくなる）。
+          */}
+          {heatAlert ? (
+            <View style={[styles.heatChip, { top: overlayTop + 8, borderColor: heatAlert.color }]}>
+              <View style={[styles.heatDot, { backgroundColor: heatAlert.color }]} />
+              <Text style={[styles.heatLabel, { color: heatAlert.color }]}>{heatAlert.label}</Text>
+              {typeof weather.data?.tempC === 'number' ? (
+                <Text style={styles.heatTemp}>{weather.data.tempC}℃</Text>
+              ) : null}
+              <Text style={styles.heatAdvice} numberOfLines={2}>
+                {heatAlert.advice}
+              </Text>
+            </View>
+          ) : null}
 
           {locationPermissionDenied ? (
             <View style={[styles.permissionBanner, { top: overlayTop + 8 }]}>
@@ -670,6 +714,28 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     zIndex: 2,
     elevation: 2,
   },
+  heatChip: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    backgroundColor: colors.surface,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  heatDot: { width: 8, height: 8, borderRadius: 4 },
+  heatLabel: { ...type.label, fontWeight: '800' },
+  heatTemp: { ...type.label, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
+  heatAdvice: { ...type.caption, color: colors.textSecondary, flex: 1 },
   permissionBanner: {
     position: 'absolute',
     left: 16,

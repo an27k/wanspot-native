@@ -1,0 +1,2501 @@
+[
+ {
+  "place_id": "ChIJAQAsaMaOGGAR-V-nttwvHC0",
+  "name": "カフェムルソー",
+  "category": "カフェ",
+  "extended_category": "restaurant",
+  "prefecture": "東京都",
+  "address": "〒111-0034 東京都台東区雷門２丁目１−５ 中村ビル 2F.3F",
+  "rating": 4.1,
+  "user_ratings_total": 593,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "犬を連れて行けるのは店の入り口横にあるテラス席のみで、店内(2階・3階の客席)への同伴はできません。実際の来店ブログでも、テラス席へは店内を通過できないため犬はNGと案内されており、犬連れは入り口横のペット可スペースに座ることになります。浅草の人気観光エリアにあるため、店は常に満席になりやすく、犬連れ客がテラス前で順番待ちをする状況も報告されています。テラス席は隅田川沿いに面し、天気の良い日は開放的ですが、日陰や足洗い場、給水設備についての情報は確認できませんでした。犬用メニューの有無も検索結果からは確認できません。混雑しやすい立地・時間帯を踏まえ、大型犬や人混みが苦手な子との来店は特に事前に電話などで空き状況や同伴条件を確認することをおすすめします。",
+   "keywords": [
+    "テラスのみOK",
+    "店内通過不可",
+    "混雑時は入店待ち"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJMfOalC3zAGAR2BksSTS5XhM",
+  "name": "芦屋神社",
+  "category": "神社仏閣",
+  "extended_category": "tourist_attraction",
+  "prefecture": "兵庫県",
+  "address": "〒659-0095 兵庫県芦屋市東芦屋町２０−３",
+  "rating": 4.3,
+  "user_ratings_total": 593,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で境内への同伴が可能です。芦屋の氏神として地元で崇敬されており、参道や境内は住宅街の中に位置しています。足洗い場や給水設備の有無、混雑状況についての情報は確認できていないため、訪問前に社務所へ直接問い合わせておくと安心です。祈祷やご祈願、結婚式などの神事が行われる場所のため、式典と重なる時間帯は境内が混み合う可能性があります。サイズ制限に関する情報は見当たりませんが、参拝の場としての性質上、他の参拝者への配慮としてリードを短めに持つなどマナーを守った同伴が望ましいです。",
+   "keywords": [
+    "リード同伴可",
+    "境内散策",
+    "事前確認推奨"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJQRFWiaztUzURI91BUYY-qeE",
+  "name": "鬼ヶ島 おにの館",
+  "category": "観光スポット",
+  "extended_category": "tourist_attraction",
+  "prefecture": "香川県",
+  "address": "〒760-0092 香川県高松市女木町１５−２２",
+  "rating": 3.8,
+  "user_ratings_total": 593,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "アプリ確認情報ではリードを着用すれば同伴可です。この施設は女木港のフェリー待合所、鬼の資料館「鬼の間」、食堂、レンタサイクル受付が一体となった観光案内施設で、屋内に展示や案内スペース、待合いスペースがあります。館内は観光客の出入りが多く、フェリー発着時間帯は特に混み合うため、リードを短めに持って人の流れを妨げないようにしたいところです。屋内展示スペースでは足元に鬼の面や資料が並ぶため、大型犬は動線の確保に注意が必要です。ドッグラン、足洗い場、給水設備についての情報は確認できませんでした。洞窟行きバスや電動レンタサイクルでの島内観光を予定している場合、それぞれの乗り物にペット同伴が可能かは別途、運行会社に直接確認するのが安全です。館内に食堂もありますが、犬同伴での利用可否についての情報は見つからなかったため、事前に電話などで確認することをおすすめします。全体として「拠点として立ち寄る場所」であり、長時間滞在するタイプの施設ではない点も踏まえて計画すると良いでしょう。",
+   "keywords": [
+    "リード必須",
+    "フェリー乗り場併設",
+    "館内は待合・展示スペース"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJFVZQhUj7F2AReg1-IQFEq7k",
+  "name": "道の駅 グリーンファーム館山",
+  "category": "ショッピング",
+  "extended_category": "tourist_attraction",
+  "prefecture": "千葉県",
+  "address": "〒294-0012 千葉県館山市稲２７４",
+  "rating": 3.6,
+  "user_ratings_total": 593,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴の可否や条件は施設・エリアによって異なる可能性があるため、訪問前に公式サイトや現地掲示で確認するのがおすすめです。当アプリの情報ではテラスのみで犬同伴が想定されており、屋内の物販・飲食エリアへの犬連れ可否は確認できていません。公式サイトによると敷地内には愛犬が自由に走り回れるドッグランが併設されているとのことで、テラスでの休憩と合わせて利用できる可能性があります。駐車場は用意されているため、車での来訪はしやすい立地です。テラス以外の設備（足洗い場・水飲み場・サイズ制限・日陰の有無など）については確認できる情報がなく、現地での確認をおすすめします。",
+   "keywords": [
+    "ドッグラン併設",
+    "テラス利用可",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJx0V7jrqLGGAR_VT5Fj3yNZ8",
+  "name": "ミッドタウン・ガーデン",
+  "category": "公園",
+  "extended_category": "tourist_attraction",
+  "prefecture": "東京都",
+  "address": "〒107-0052 東京都港区赤坂９丁目７−１",
+  "rating": 4.4,
+  "user_ratings_total": 750,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で通路の散歩に同伴可。東京ミッドタウンの公式案内によると、ミッドタウン・ガーデンでは通路の散歩は可能だが、芝生エリアへの立入りは遠慮するよう案内されている。リードを木や柵にくくりつけて放置することも禁止されているため、常に飼い主が付き添う必要がある。排泄物は飼い主の責任で処理するルールがある。給水設備が用意されているため、散歩中の水分補給がしやすい。園内の商業施設・店舗・レストランは各施設ごとに独自のルールがあるため、ガーデン外に立ち寄る場合は個別に確認したい。",
+   "keywords": [
+    "リード必須",
+    "芝生立入禁止",
+    "水飲み場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJCQK3LesIAWAR3CST8e-1YRA",
+  "name": "先斗町公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "京都府",
+  "address": "〒604-8012 京都府京都市中京区梅之木町先斗町通 １４５",
+  "rating": 4.4,
+  "user_ratings_total": 1128,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "園内はリード着用で同伴可能。ノーリードで走らせられる区画ではないため、常にリードでの利用が前提になる。設備として水遊びができる点が確認されているが、足洗い場や日陰の有無、地面の種類など詳しい設備情報は確認できなかった。木屋町通・先斗町の繁華街に近い立地のため、人通りや時間帯によっては周囲が賑やかになりやすい点は念頭に置くとよい。サイズ制限に関する情報はなく、大型犬の可否は不明。訪れる際は水遊び後の足元のケアができるよう、タオルなど持参しておくと安心。",
+   "keywords": [
+    "リード必須",
+    "水遊び可",
+    "都心の小規模公園"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJLdDz35xZGGAR2Clz-i3zusU",
+  "name": "陣ケ下渓谷公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "神奈川県",
+  "address": "〒240-0045 神奈川県横浜市保土ケ谷区川島町７９７",
+  "rating": 4,
+  "user_ratings_total": 760,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で入園できる公園で、園内にノーリード区画は確認できない。木もれ日の差し込む森に囲まれた渓谷公園で、遊歩道は整備されているが「途中には急な階段もあるので、足元には十分気を付けて行きたい」とされ、砂利道や未舗装の区間もある。渓流に降りて水遊びが楽しめるため、足を水に濡らす前提での来園が向く。園内は樹林に囲まれており日陰は多いとみられるが、水飲み場や足洗い場の有無は情報が確認できなかった。駐車場は有料で、8時～22時は30分100円、それ以外は60分100円、24時間最大1,300円。舗装されていない狭い道もあるため、ベビーカー同様に大型犬でも歩きにくい箇所がある点は留意したい。夜間照明の有無は確認できなかった。",
+   "keywords": [
+    "リード必須",
+    "未舗装・急階段あり",
+    "渓流で水遊び"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJO8IecqWrGWAR_tEe_oWhYxk",
+  "name": "和膳 照國",
+  "category": "レストラン",
+  "extended_category": "dog_cafe",
+  "prefecture": "神奈川県",
+  "address": "〒259-1133 神奈川県伊勢原市東大竹９３７−１",
+  "rating": 4.3,
+  "user_ratings_total": 764,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "店内へのペット同伴は不可で、テラス席のみ犬を連れて入店できます。犬用メニューが用意されているため、飼い主と一緒に食事を楽しませたい場合に向いています。テラス席には屋根が付いており、寒い時期はストーブも設置されているとの情報があり、季節を問わず利用しやすい環境です。給水設備があるため、食事中の水分補給には困りません。駐車場が併設されているため車での来店もしやすく、店舗自体は伊勢原駅から徒歩約17分とやや距離があります。テラス席は席数に限りがあると考えられるため、事前の予約が必要です。サイズ制限についての明確な情報は見当たらないため、大型犬を連れて行く場合は予約時に確認しておくと安心です。",
+   "keywords": [
+    "テラス席のみ",
+    "犬用メニューあり",
+    "予約必須"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ__-bhSYNAWARFoP87OHGwG0",
+  "name": "ヴュルツブルク",
+  "category": "レストラン",
+  "extended_category": "restaurant",
+  "prefecture": "滋賀県",
+  "address": "〒520-0811 滋賀県大津市由美浜５",
+  "rating": 4.3,
+  "user_ratings_total": 687,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "店内への同伴は不可で、犬と過ごせるのはテラス・屋外席のみです。テラス席は琵琶湖畔に面しており、当店ホームページでも「テラスではペット同伴も対応可能」と案内されています。過去のレビューでは「店内では必ずリードをつける、小型犬を椅子に座らせる場合はペットシーツなどを用意する」などのルールが紹介されており、来店時はスタッフの案内に従うと安心です。犬用の飲み水が用意されているとの紹介もありますが、当アプリでは未検証のため必ず現地で確認してください。冬場はテラスにストーブやビニールカーテンで防寒対応がされていたという報告もありますが、季節や日によって設備が変わる可能性があるため過度な期待は避けたほうが良さそうです。琵琶湖沿いのなぎさ公園に隣接し、散歩帰りに立ち寄りやすい立地です。共有の有料駐車場（一定額利用で無料時間サービスあり）が利用できます。サイズ制限についての明確な言及は見つからなかったため、大型犬を連れて行く場合は事前に電話で確認すると安心です。",
+   "keywords": [
+    "テラス席同伴OK",
+    "琵琶湖畔ロケーション",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ-UT9jTANAWAR8P01ztQNHCk",
+  "name": "膳所城跡公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "滋賀県",
+  "address": "〒520-0814 滋賀県大津市本丸町７",
+  "rating": 3.8,
+  "user_ratings_total": 687,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "園内はリード着用で同伴でき、ノーリードで走らせられる区画は確認されていない。膳所城の本丸跡を整備した公園で、琵琶湖に面した立地で見晴らしがよく、犬との散歩に向いている。春はヤマザクラやソメイヨシノなど約150本が咲く桜の名所として知られ、開花期は花見客で混み合いやすい時期がある。地面は舗装された園路と植栽エリアが混在しており、日陰は桜や樹木のある場所に限られる。駐車場はあるが台数に限りがあるとの情報があり、休日や花見シーズンは埋まりやすい点に注意したい。足洗い場や犬用の水飲み場が用意されているという情報は確認できなかったため、水分やタオルは持参した方がよい。サイズ制限に関する情報も見当たらず、確認済みの同伴条件は「リード着用で同伴可」のみとなる。",
+   "keywords": [
+    "リード着用必須",
+    "湖畔散歩",
+    "桜の名所"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJW18zQDcAUTURpR9zL2NrL6A",
+  "name": "ONOMICHI U2 / HOTEL CYCLE",
+  "category": "カフェ",
+  "extended_category": null,
+  "prefecture": "広島県",
+  "address": "日本、〒722-0037 広島県尾道市西御所町５−１１",
+  "rating": 4.2,
+  "user_ratings_total": 688,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": true,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "店内同伴OKと確認されています。館内はホテル・レストラン・カフェ＆ベーカリー・ライフスタイルショップ・サイクルショップが集まる複合施設で、駐車場も用意されています。犬用メニューやリード規定、足洗い場の有無など飲食時の細かい条件については確認できた情報がないため、来店前に各店舗へ確認することをおすすめします。",
+   "keywords": [
+    "店内同伴OK",
+    "駐車場あり",
+    "海沿いの複合施設"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJpVqJmwWiWjURmLODZR3mITI",
+  "name": "新天地公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "広島県",
+  "address": "〒730-0028 広島県広島市中区流川町３−１３",
+  "rating": 3.4,
+  "user_ratings_total": 690,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可。ノーリード区画の案内は見当たらず、常時リードでの利用が前提となる。この公園は遊具や噴水のあるような一般的な公園とは異なり、実態は繁華街の中心に位置する広場のような待ち合わせスペースで、周辺には居酒屋やバーが多く、夜には多くの人でにぎわう。日陰・水飲み場・足洗い場・地面の種類についての具体的な記載は見つからず、設備面は不明。夜間は繁華街特有の人通りや喧騒があるため、犬が驚きやすい環境かどうかは事前に様子を見ておくと安心。広場としての開放感はあるが、遊具などの子ども向け設備はなく、犬とゆったり過ごす目的というよりは、街歩きの合間の一時的な立ち寄りやすい場所として捉えるのが実情に合っている。",
+   "keywords": [
+    "リード必須",
+    "夜間人通り多め",
+    "広場のみ・遊具なし"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJt7q1hNK-GGARU5-9gd9tQbM",
+  "name": "星乃珈琲店 春日部店",
+  "category": "カフェ",
+  "extended_category": "cafe",
+  "prefecture": "埼玉県",
+  "address": "〒344-0066 埼玉県春日部市豊町３丁目１１−７",
+  "rating": 3.8,
+  "user_ratings_total": 505,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "テラス席のみワンちゃん同伴が可能で、店内へは入れません。テラス席は喫煙席を兼ねているため、タバコの煙や匂いが気になる方は注意が必要です。店内はアンティーク調の落ち着いた空間で、パンケーキやドリアなどのメニューが人気ですが、これらは店内利用が前提になるため、ワンちゃんと過ごす場合はテラスでの利用に限られます。",
+   "keywords": [
+    "テラスのみ",
+    "喫煙席併用",
+    "店内不可"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJG53XYG6QH2ARxQ0huQ8s5ec",
+  "name": "小太郎茶屋",
+  "category": "カフェ",
+  "extended_category": "farm",
+  "prefecture": "栃木県",
+  "address": "〒329-2921 栃木県那須塩原市塩原１４３６",
+  "rating": 4.3,
+  "user_ratings_total": 506,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": true,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "ワンちゃん同伴で入店できたという口コミがあり、実際に犬連れで訪れて食事を楽しんだ様子が複数投稿されています。川のそばの自然に囲まれた立地で、座敷風の席や屋外的な雰囲気の中で過ごせるため、開放的な空間を好むワンちゃんには過ごしやすい環境と言えそうです。近くを川が流れているため、天候によっては水辺の雰囲気も楽しめます。ただし駐車場は台数が少なく、道が狭い区間もあるため大きな車や混雑時のアクセスには注意が必要です。ペット用メニューや足洗い場などの設備については口コミに記載がなく不明です。店員の対応が丁寧だったという声もあり、ペット同伴の利用にも柔軟な様子がうかがえます。",
+   "keywords": [
+    "ペット同伴実績あり",
+    "自然の中の立地",
+    "駐車場少なめ"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJPYJp7G-NHmARvVF6qwjPyPs",
+  "name": "サニーキッチン",
+  "category": "カフェ",
+  "extended_category": "cafe",
+  "prefecture": "群馬県",
+  "address": "〒370-0031 群馬県高崎市上大類町９１０−１",
+  "rating": 4,
+  "user_ratings_total": 508,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴できるのは屋根付きのテラス席のみで、店内へは入れません。口コミによるとテラス席は広々としていて、わんちゃん用のお水も用意してもらえたとのことです。天気の良い日はテラスでの食事を勧める声もあり、屋外での滞在は快適そうです。子連れ客も多く賑やかな雰囲気なので、静かに過ごしたい場合は時間帯を選ぶとよさそうです。混雑時は予約が確実という口コミも複数あるため、事前予約がおすすめです。",
+   "keywords": [
+    "テラスのみ",
+    "給水あり",
+    "予約推奨"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJAQBUFNpr5TQRWScuTC-48Dg",
+  "name": "ペットボックス那覇店",
+  "category": "ショッピング",
+  "extended_category": "dog_run",
+  "prefecture": "沖縄県",
+  "address": "〒900-0006 沖縄県那覇市おもろまち３丁目５−１１ ＰＥＴ ＢＯＸ ａｎｉｍａｌ ｓｔａｓｔｉｏｎ ＮＡＨＡ",
+  "rating": 4.1,
+  "user_ratings_total": 697,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": true,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "ドッグランは小型犬専用で、月額制パスまたは年間パス（15,300円+税、3頭まで）での利用となります。5種混合以上のワクチン接種と狂犬病予防接種の証明書が必要で、生後4ヶ月以上の健康な小型犬が対象です。地面は天然芝、施設の2階にあり囲われたノーリード区画です。利用時間は10:00～18:30（年末年始・夏季休業を除く営業日）で、監視員は常駐していません。店内にはトリミング、ペットホテルの設備も整っており、犬猫用品の販売も行っています。営業時間は10:00～19:00、電話098-941-1117です。",
+   "keywords": [
+    "小型犬専用",
+    "天然芝",
+    "年間パス制"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJkQquZnDGHmARB7UFummoEwo",
+  "name": "長瀞オートキャンプ場",
+  "category": "宿泊",
+  "extended_category": null,
+  "prefecture": "埼玉県",
+  "address": "日本、〒369-1312 埼玉県秩父郡長瀞町井戸５５９−１",
+  "rating": 4.2,
+  "user_ratings_total": 753,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "予約前に確認したいのは、犬連れ可能なサイトが限定されている点。柵に囲われたノーリード可の「ドッグフリーサイト」が3区画あり、周囲も犬連れ利用者のため過ごしやすいとされるが、入口ゲートの高さは2m40cmと決まっている。人気の川沿い「ビューサイト」は犬連れ不可で、同じ川沿いでも「プレミアムサイト」は一部（2区画）が犬連れ可となる。ペット用バンガローも用意されている。館内・場内にはドッグランがあり、シャワー・ランドリー・トイレなど水回り設備は整っている。宿泊料金とは別に、1泊あたり施設利用料としてペット400円がかかる。荒川沿いのサイトは河原に降りられる作りで、森のサイトは夏場に木陰ができるとの利用者の声もある。サイトごとに地面の状態（かわらチップや砂利敷きなど）が異なるため、足元の心配がある場合はサイトの種類まで予約時に確認しておきたい。",
+   "keywords": [
+    "ペット専用サイトあり",
+    "ドッグラン完備",
+    "ビューサイトは犬連れ不可"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJX53MMgCNGGART78Pfc57ZuQ",
+  "name": "TOKYO Night & Light",
+  "category": "観光スポット",
+  "extended_category": "tourist_attraction",
+  "prefecture": "東京都",
+  "address": "日本、〒163-8001 東京都新宿区西新宿２丁目８−１",
+  "rating": 4.6,
+  "user_ratings_total": 797,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可（アプリ確認済み）。都庁第一本庁舎前の都民広場で行われる屋外プロジェクションマッピングで、鑑賞は広場の人工芝エリアが中心のため、足元は比較的やわらかい。上映は日没後の夜間に毎日行われ、新宿駅から徒歩10分程度でアクセスできる。屋外の開放的な広場のため犬連れでも入りやすいが、人が多く集まる時間帯は混雑し、他の来場者や犬同士の距離が近くなる場面もあるため、人混みが苦手な子は注意したい。日陰・足洗い場・水飲み場など犬連れ向け設備についての情報は確認できなかったため、暑い時期は飲み水や休憩の準備をしておくと安心。サイズ制限に関する情報は見当たらないが、詳細な同伴ルール（時間帯や混雑状況による制限など）は当日の現地掲示や公式サイトで確認するのが確実。",
+   "keywords": [
+    "リード必須",
+    "屋外広場鑑賞",
+    "夜間開催"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJp1nxEfOa-F8RKmZm_syU_Uo",
+  "name": "かつやまディノパーク",
+  "category": "レジャー",
+  "extended_category": "tourist_attraction",
+  "prefecture": "福井県",
+  "address": "〒911-0023 福井県勝山市村岡町寺尾５１−１１ かつやま恐竜の森内",
+  "rating": 4.3,
+  "user_ratings_total": 773,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "公式サイトによると、リードをつければ犬を連れてディノパーク内に入場でき、園内を散歩することができる。ただし、ふんの始末などマナーを守ることが条件とされている。園内にトイレはなく、入場前に済ませておく必要がある。また、水分補給以外の飲食は遠慮するよう案内されているため、飲食を伴う休憩は難しい。「かつやま恐竜の森」の駐車場が利用でき、駐車料金は無料。口コミでは老犬でも歩ける程度のコースとされ、森の中を歩くルートのため足元は舗装ではなく自然の地形が中心と考えられる。恐竜のロボットが音や動きを伴って現れる演出があるため、物音や動くものに敏感な犬は驚く可能性がある。サイズ制限についての言及は見当たらないため、大型犬の可否は事前に確認したほうがよい。",
+   "keywords": [
+    "リード同伴可",
+    "トイレなし・事前に",
+    "水分補給以外の飲食不可"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJqZpPi-tiUTURDOrRjgyytqY",
+  "name": "中津万象園・丸亀美術館",
+  "category": "観光スポット",
+  "extended_category": "park",
+  "prefecture": "香川県",
+  "address": "日本、〒763-0054 香川県丸亀市中津町２５−１",
+  "rating": 4.1,
+  "user_ratings_total": 780,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "園内はリード着用で同伴可。ノーリードで走らせられる区画はなく、常にリードでの散策が前提となる。中津万象園は池泉回遊式の大名庭園で、園内には八景池を中心に橋で結ばれた島々が点在し、水辺のそばを歩くコースが多い。水遊び可とされているが、池や水辺での扱いは足元が濡れやすく滑りやすい場所もあるため注意したい。駐車場は用意されているため車での来園はしやすい。園路は歴史ある庭園らしく石段や飛び石、砂利道など地面の種類が場所によって変わるため、脚の弱い犬や小型犬は歩きやすさを事前にイメージしておくとよい。樹齢600年の大傘松など高木も多く、部分的に木陰は期待できそうだが、園内全域が日陰というわけではない。美術館（絵画館・陶器館）は屋内展示施設のため、庭園部分のみでの同伴散策が現実的な楽しみ方になる。",
+   "keywords": [
+    "リード必須",
+    "池泉回遊庭園",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJow5DPih3A2ARcJEP2x5NILY",
+  "name": "名古屋ヒルトンプラザ",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "愛知県",
+  "address": "〒460-0008 愛知県名古屋市中区栄１丁目３−３ 名古屋ヒルトンプラザ 地下 1階",
+  "rating": 4,
+  "user_ratings_total": 845,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否は来店前に確認を。名古屋ヒルトンプラザはヒルトン名古屋の地下1階にある婦人服・バッグ・時計・宝飾品・美容サロンなどのテナントが集まるショッピングアーケードで、外部の入口も2ヶ所あります。ヒルトン名古屋の宿泊プランには体重10kg以下などの条件付きでペット同伴可能なプランがありますが、これは客室でのサービスであり、地下のショッピングフロアにそのまま適用されるかは確認できませんでした。駐車場ありという情報はありますが、犬用の足洗い場や水飲み場、サイズ制限、店内の抱っこ・カート規定などの具体的な情報は材料からは確認できていません。訪れる前に各店舗またはヒルトンプラザに直接、犬を連れての入店可否を問い合わせることをおすすめします。",
+   "keywords": [
+    "駐車場あり",
+    "同伴要確認",
+    "館内モール"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJQR3CQ_u7-F8RTuKMacMkzJo",
+  "name": "アル・プラザベル",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "福井県",
+  "address": "〒918-8577 福井県福井市花堂南２丁目１６−１",
+  "rating": 3.8,
+  "user_ratings_total": 845,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "犬の同伴可否についての公式な明言は見つからなかったため、同伴可否は来店前に確認をおすすめします。アル・プラザベルは平和堂グループが運営する大型ショッピングセンターで、スーパーやアパレル、雑貨、飲食店など多数のテナントが入っています。駐車場ありのため車での来店はしやすいですが、屋内型の大規模商業施設のため、一般的なペット同伴に関する明確な情報は確認できませんでした。系列店の設備情報では補助犬同伴可能の記載がありますが、これは身体障害者補助犬向けのものであり、一般の犬を同伴できるかどうかは別途店舗へ電話等で確認するのが確実です。",
+   "keywords": [
+    "駐車場あり",
+    "大型ショッピングモール",
+    "要事前確認"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJazvB2QNYUTURFwqSKYV-qFk",
+  "name": "種松山公園西園地",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "岡山県",
+  "address": "〒712-8041 岡山県倉敷市福田町福田福田４２６",
+  "rating": 4.1,
+  "user_ratings_total": 845,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用であれば同伴可能で、園内にノーリード解放区画があるという情報は確認できない。標高150m〜230mの山の斜面を利用した総合公園で、舗装された車道が中心のため足元は安定しているが高低差はそこそこあり、坂道の上り下りが続く点は中大型犬・老犬には注意したい。駐車場は西園地内にあり、車での来園が前提となる。桜（3月下旬〜4月上旬）やあじさい（6月）のシーズンは花見客で混雑するため、リード同伴で歩く場合は人混みでの引っかかりやすれ違いに気を配る必要がある。足洗い場・水飲み場・日陰の有無・夜間照明については確認できた情報がなく、行く前に現地で確認するのが安心。サイズ制限に関する情報もないため、犬種を問わず同伴を検討できるが、斜面や坂の多さから体力に応じたコース選びをおすすめする。",
+   "keywords": [
+    "リード必須",
+    "坂道・高低差あり",
+    "花見シーズン混雑"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJDRh0uPxOc18R59LjkftMxbE",
+  "name": "拾って来た家 やがて町",
+  "category": "観光スポット",
+  "extended_category": "tourist_attraction",
+  "prefecture": "北海道",
+  "address": "〒076-0161 北海道富良野市麓郷市街地",
+  "rating": 4.3,
+  "user_ratings_total": 845,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可。屋外に点在する複数の建物を見て回るロケ地で、廃材を集めて作られた独特の外観を持つ建物が敷地内に点在している。駐車場ありなので車での訪問がしやすい。水遊び可という情報があり、近くに水場がある可能性があるが、具体的な場所や状態は事前に確認しておきたい。建物内部の見学ができる構成になっているため、屋内に犬を連れて入れるかどうかは施設ごとに異なる可能性があり、訪問前の確認をおすすめする。日陰の有無や地面の状態、混雑具合についての情報は確認できなかったため、現地での様子を見ながら判断してほしい。サイズ制限に関する情報は見当たらなかった。",
+   "keywords": [
+    "リード同伴可",
+    "駐車場あり",
+    "屋外散策向き"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJB48n4LujWjURcu9k60VQG78",
+  "name": "ひろしまゲートパーク",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "広島県",
+  "address": "〒730-0011 広島県広島市中区基町５−２５",
+  "rating": 4.2,
+  "user_ratings_total": 941,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "広島市の条例で公園でのノーリード・放し飼いは禁止されており、園内でも常にリードをつけて手元で制御することが前提の公園です。旧市民球場跡地を活かして整備された広場で、桜並木のプロムナードや芝生を配した「リボン」状のオープンスペース、大屋根ひろばなどがあり、足元は舗装された園路と芝生が混在しています。常時利用できる給水設備が設けられているため、暑い時期の散歩中に水分補給の場所を探しやすい点は犬連れにとって助かります。大屋根ひろばは屋根付きのため、日差しの強い日でも一時的に日陰で休めるスペースとして使えます。中央の広場や大屋根ひろばはマルシェなどのイベントで賑わうことがあり、そうした開催時は人出が増えて足元が混雑しやすくなります。園内にドッグランのような専用のノーリード区画があるという情報は確認できておらず、基本的にリード着用での散歩利用が前提です。大型犬の同伴を制限する情報は見当たりませんが、イベント広場や商業施設周辺は人の往来が多いため、リードの長さや犬の様子には注意が必要です。夜は大屋根や広場周辺に照明が設けられており、日没後の散歩でも足元が見えにくくなりにくい造りです。",
+   "keywords": [
+    "リード必須",
+    "広い芝生広場",
+    "夜間照明あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJd-1eTu5_ImARnE0M6tHKJVc",
+  "name": "エポカ高根台",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "千葉県",
+  "address": "〒274-0065 千葉県船橋市高根台１丁目２−１",
+  "rating": 3.4,
+  "user_ratings_total": 930,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用であれば同伴可というのが確認されている条件です。エポカ高根台は高根公団駅前にある3階建てのショッピングセンターで、スーパーやファッション、雑貨、飲食店などが入っています。施設には駐車場があり、車での来店も可能です。ただし、犬用メニューや足洗い場、館内での抱っこ・カート規定など、犬連れ向けの具体的な設備・サービスについては確認できる情報がありませんでした。テナントごとに犬の入店可否や条件が異なる可能性が高いため、目的の店舗が決まっている場合は事前にその店舗へ直接確認するのが安心です。",
+   "keywords": [
+    "リード必須",
+    "駐車場あり",
+    "館内は要確認"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJC2EOuLYNBGARcBEIYB8XlDo",
+  "name": "久居インターガーデン",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "三重県",
+  "address": "〒514-1101 三重県津市久居明神町 風早",
+  "rating": 3.7,
+  "user_ratings_total": 931,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否は来店前に確認を。犬同伴に関する公式な案内やレビューでの言及は見当たらず、施設側の明確な方針は確認できませんでした。駐車場については広い台数が用意されていることが分かっています。館内は複数の専門店・飲食店が集まる複合商業施設のため、犬用メニューや足洗い場、サイズ制限などの設備情報は今回の調査では確認できませんでした。訪問前にテナントごとの規定を電話等で個別に確認することをおすすめします。",
+   "keywords": [
+    "駐車場あり",
+    "要事前確認",
+    "複数専門店"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJVY8_CtfyAGARrf0it2CWAlI",
+  "name": "モンテメール",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "兵庫県",
+  "address": "日本、〒659-0092 兵庫県芦屋市船戸町１−３１",
+  "rating": 3.7,
+  "user_ratings_total": 931,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "館内への同伴は不可で、犬を連れて行けるのはテラス席・屋外部分のみです。公式サイトでも「盲導犬・介助犬・聴導犬以外のペットの同伴はご遠慮下さい」とされ、モンテメールは全ての出入口でペットの持込を断っているため、専門店・大丸芦屋店を含む館内フロアには入店できません。買い物自体は同伴NGなので、犬連れの場合はテラスでの休憩や待機が中心になります。駐車場はあり、車での来訪はしやすい立地です。JR芦屋駅直結という立地上、人通りが多い時間帯は屋外テラスでも混み合う可能性があるため、落ち着ける場所を選びたい場合は時間帯に注意してください。テラスでの犬用メニューや水飲み場、足洗い場などの設備については確認できていないため、必要な場合は事前に施設へ問い合わせるのが確実です。",
+   "keywords": [
+    "店内不可",
+    "テラスのみ",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJvVsEzuVOGGARkeWyGQg7G7A",
+  "name": "LONCAFE 湘南江の島本店",
+  "category": "カフェ",
+  "extended_category": "tourist_attraction",
+  "prefecture": "神奈川県",
+  "address": "〒251-0036 神奈川県藤沢市江の島２丁目３−３８ サムエル・コッキング苑内",
+  "rating": 4.1,
+  "user_ratings_total": 973,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "犬連れの利用はテラス席のみで、苑内ではケージまたはバッグに入れる必要があります。小型犬用バッグは無料でレンタルできます。江の島の下の駐車場に車を停め、徒歩または有料のエスカーで展望台方面へ向かい、サムエル・コッキング苑入口を入った右側にあります。昼間は苑への入場料無料、17時以降は大人500円・小人250円かかります。テラスからは相模湾を臨む景色が広がり、江の島随一の展望を持つロケーションです。",
+   "keywords": [
+    "サムエル・コッキング苑内",
+    "小型犬用バッグ無料貸出",
+    "相模湾眺望"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJFeH_QW92hV8Rh-5E33WK5ao",
+  "name": "高松公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "岩手県",
+  "address": "〒020-0114 岩手県盛岡市高松１丁目２２−２６−１",
+  "rating": 4.2,
+  "user_ratings_total": 971,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用であれば園内に同伴できる。禁止区画についての明記は確認できなかったが、犬の排泄物は飼い主が持ち帰るルールが定められている。園の中心にある高松の池の周囲には約1.4kmの遊歩道が整備されており、ゆっくり歩いても20分ほどで一周できる散歩コースとして使いやすい。遊歩道は車椅子対応のスロープもある平坦な作りで、足元は歩きやすい。トイレは池周辺に複数箇所あり、水飲み場も園内設備として設置されている。駐車場は高松口付近の大型駐車場のほか池周辺にも複数箇所あり、車での来園もしやすい。春の桜まつり期間（4月中旬〜5月初旬）の土日祝は周回道路が歩行者専用になるため混雑しやすく、リード管理に注意したい。日陰や足洗い場の有無については確認できる情報がなく、大型犬の同伴制限に関する記載も見当たらなかった。",
+   "keywords": [
+    "リード必須",
+    "遊歩道1.4km",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJvaZDfjvHHmAR-ejLnuccNro",
+  "name": "宝登山ロープウェイ 山麓駅",
+  "category": "スポット",
+  "extended_category": null,
+  "prefecture": null,
+  "address": "日本、〒369-1305 埼玉県秩父郡長瀞町長瀞１７６６−１",
+  "rating": 3.9,
+  "user_ratings_total": 971,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": false,
+   "pet_size_limit": "小型犬推奨（キャリー・ケージ収容可能サイズ）"
+  },
+  "review": {
+   "summary": "リード着用で同伴可ですが、山麓駅からロープウェイに乗る場合は条件が別途あります。公式サイトによると、盲導犬・介助犬を除くペット（小動物10kg未満）は、指定のケージまたは持参のハードケージに入れることが乗車条件で、ケージは無料貸し出しがあります。料金はペット1個につき片道260円・往復520円が必要です。10kgを超える大型犬はロープウェイ利用が難しいため、事前にサイズを確認しておくと安心です。山麓駅には駐車場があるため、車で訪れてから乗り場までリードで移動する分には問題ありません。ただし山頂駅周辺のレストハウス店内や小動物公園はペット入場不可という情報があるため、山麓駅で待つだけなのか、山頂まで同伴するのかで計画を分けておくとよいでしょう。ロープウェイ自体への乗車を予定しないなら、山麓駅は駐車場を起点にした散歩・待機スペースとして利用しやすい場所です。",
+   "keywords": [
+    "ケージ必須",
+    "小型犬10kg未満",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJT61pk7CwWjURXv-6p6PRFko",
+  "name": "リブマックスリゾート安芸宮島",
+  "category": "宿泊",
+  "extended_category": "onsen",
+  "prefecture": "広島県",
+  "address": "〒739-0588 広島県廿日市市宮島町魚之棚町６３４",
+  "rating": 3.2,
+  "user_ratings_total": 971,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": true,
+   "pet_terrace_only": false,
+   "pet_size_limit": "大型犬まで可（1室につき大型犬3頭まで）"
+  },
+  "review": {
+   "summary": "客室は「和室（ペット専用の部屋1室のみ）」での同伴となるため、予約前に空室状況と部屋タイプを必ず確認してください。館内は大型犬まで同伴可能で、1室につき大型犬3頭までの受け入れとのことです。ワンちゃん向けの温泉が用意されている点は、犬連れ旅行の魅力になります。2頭目以降は1頭につき追加料金が発生するとの情報があるため、多頭飼いの方は事前確認が安心です。狂犬病・混合ワクチンの接種証明書持参とチェックイン時の同伴規約への同意が必要になる場合があるため、必要書類も予約前にチェックしておくとスムーズです。",
+   "keywords": [
+    "ペット専用客室限定",
+    "大型犬OK(1室3頭まで)",
+    "犬用温泉あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJK85aCG3DGGAR-n06QIx8EtA",
+  "name": "富士見市びん沼自然公園",
+  "category": "カフェ",
+  "extended_category": "tourist_attraction",
+  "prefecture": "埼玉県",
+  "address": "〒354-0001 埼玉県富士見市東大久保３６６４−１",
+  "rating": 4,
+  "user_ratings_total": 1005,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可というアプリ確認情報があります。ここは飲食店ではなく自然公園で、公式サイトによれば園内の遊歩道はウォーキングやペットの散歩に適した造りとされています。びん沼川沿いの水辺エリアがあり、水遊びができる場所として案内されています。駐車場は北側に149台分あり、平日は無料（ハイシーズンは有料）とのことです。園内には展望台や芝生の多目的広場、パークゴルフ場、キャンプ場、バーベキュー場なども併設されており、広い敷地の中を歩き回ることになるため、足元は舗装路と芝生・土の遊歩道が混在すると考えられます。日陰の有無や混雑状況、水飲み場や足洗い場の設置状況については公式情報から確認できなかったため、訪問前に管理事務所（指定管理者）へ直接確認することをおすすめします。BBQ場ではペット同伴利用について周囲への配慮を求める注意書きがあるとの情報もあり、エリアによって細かなルールが異なる可能性があります。",
+   "keywords": [
+    "リード必須",
+    "遊歩道散策向き",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJWcxxNl5HGGARZKku1a0CTIk",
+  "name": "ラ・オハナ 逗子海岸店",
+  "category": "レストラン",
+  "extended_category": "tourist_attraction",
+  "prefecture": "神奈川県",
+  "address": "〒249-0007 神奈川県逗子市新宿２丁目１０−１８",
+  "rating": 4.1,
+  "user_ratings_total": 1005,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否は事前に確認を。公式サイトや店舗情報にはベビーカーやキッズ設備の記載はあるが、犬の同伴に関する条件は確認できなかった。立地は国道134号線沿いで逗子海岸の目の前にあり、海沿いを散歩する流れで立ち寄りやすい場所ではある。駐車場も用意されているが、台数に限りがある旨が案内されている。同伴の可否やリードでの待機場所、屋外席の有無などは店舗へ電話で確認してから訪れるのが安心。",
+   "keywords": [
+    "同伴条件は要確認",
+    "逗子海岸沿い",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJnZqA0JDrUzURTluRosXOumU",
+  "name": "高松市立中央公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "香川県",
+  "address": "〒760-0017 香川県高松市番町１丁目１１",
+  "rating": 3.9,
+  "user_ratings_total": 1006,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可能な都市公園で、園内に立入禁止エリアやノーリード区画についての案内は確認できなかった。高松市の市街地中心部にあり、県庁や市役所、商店街に近い立地。中央部には芝生広場（自由広場）が広がり、外周は樹林で囲まれている。園内には小川が流れており、水遊びが可能。夏場は木陰で涼むこともできる。イサム・ノグチが手がけた遊具や著名人の銅像もある公園で、フラワーフェスティバルや高松まつりなど年間を通じてイベントが行われるため、開催時期は人出が多くなる点は考慮したい。水飲み場・足洗い場・夜間照明・大型犬の可否についての具体的な記載は確認できなかった。",
+   "keywords": [
+    "リード必須",
+    "小川で水遊び",
+    "木陰あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ27l_tpiOGGARWdMR83Kxfbw",
+  "name": "ノーガホテル 上野 東京",
+  "category": "宿泊",
+  "extended_category": "dog_lodging",
+  "prefecture": "東京都",
+  "address": "日本、〒110-0015 東京都台東区東上野２丁目２１−１０",
+  "rating": 4.5,
+  "user_ratings_total": 1007,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "客室・館内への犬の同伴宿泊は不可で、同伴できるのは併設ビストロの「ドッグフレンドリーテラス」のみ。予約前に電話で利用条件を確認したい。",
+   "keywords": [
+    "テラスのみ同伴可",
+    "客室宿泊不可",
+    "要事前確認"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJY9sTpYzyGGARSgxzpE_hqEE",
+  "name": "蚕糸の森公園",
+  "category": "公園",
+  "extended_category": "tourist_attraction",
+  "prefecture": "東京都",
+  "address": "〒166-0012 東京都杉並区和田３丁目５５−３０",
+  "rating": 4.1,
+  "user_ratings_total": 1209,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可。ただし杉並区の案内では蚕糸の森公園は犬連れ散歩ができる区立公園として紹介されている一方、ドッグランではないため常にリードを外さずに管理する必要がある。飼い主向けの情報では、水遊び場（じゃぶじゃぶ池・流れ）や柵で囲われた芝生エリアには犬を入れられないとされており、水遊び場は人向けの設備で犬用ではない点に注意が必要。伸縮リードの使用や公園内でのブラッシングも控えるよう案内されている。フンの後始末に加え、排泄物を洗い流すための水を持参することが求められている点も実務的なポイント。園内には滝や池のある散策路、遊歩道が整備されており、リードでの散歩コースとしては歩きやすい。ただし通り抜け利用者が多い時間帯もあり、人通りの中でリードを短く保つ配慮が必要になる。サイズ制限についての記載は見当たらないが、ドッグランのような専用の運動スペースではないため、大型犬でも他の利用者への配慮がより求められる環境と言える。",
+   "keywords": [
+    "リード着用必須",
+    "水遊び場は立入不可",
+    "大型犬向け滝・池の景観散策"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJKzqOV0iLGGARjM1z-f6-TCA",
+  "name": "Balcony by 6th",
+  "category": "カフェ",
+  "extended_category": "restaurant",
+  "prefecture": "東京都",
+  "address": "〒106-0041 東京都港区麻布台１丁目３−１ ヒルズタワープラザ 3F",
+  "rating": 4.1,
+  "user_ratings_total": 1209,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "ペット同伴はテラス席限定で、店内飲食スペースへの同伴は不可。麻布台ヒルズ公式店舗情報でも「ペット入店：可（テラス席のみ）」と明記されている。入店時はレストラン内部を通ってテラスへ案内されるため、その間はキャリーバッグやケージを必ず閉じた状態にする必要がある。テラス滞在中はリードを着用し、テーブルや椅子の範囲内で過ごすルールで、椅子やソファへの直乗せは不可。粗相があった場合は飼い主が自分で片付ける必要があり、店側からのペット用品の貸し出しは一切ない。雨天や強風時はテラス席自体が利用できず、ペット同伴での予約はキャンセル扱いとなる点も要注意。予約はテーブルチェック経由のレストラン利用のみ受け付けており、パンケーキなどのカフェ利用やバー利用は予約不可で直接来店となる。人気の「6thパンケーキ」やチーズケーキが看板メニューだが、これらは犬用ではなく人向けメニューのみで、犬用フードやおやつの提供は確認できなかった。麻布台ヒルズのタワープラザ3階という立地上、テラスは開放感があるとされるが、日陰の有無や足元の状態、混雑具合についての具体的な記載は確認できず、来店前に直接確認するのが安心。",
+   "keywords": [
+    "テラス席のみ",
+    "リード必須",
+    "キャリー移動"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ1Ya6k9NwA2ARSW7HYbq9UNE",
+  "name": "メルサ 栄本店",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "愛知県",
+  "address": "〒460-0008 愛知県名古屋市中区栄３丁目４−５",
+  "rating": 3.8,
+  "user_ratings_total": 1209,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否は来店前に確認を。公式サイトやレビューにはペット同伴に関する記載が見当たらず、犬用メニューや足洗い場などの設備情報も確認できませんでした。メルサ栄本店は名鉄系の複合商業施設で、無印良品やユニクロ、100円ショップなど日常使いのテナントが多く入る一般的なショッピングビルです。栄駅から徒歩圏という好立地ですが、館内の通路や各テナントでの犬同伴ルールは店舗ごとに異なる可能性が高いため、連れて行きたい場合は事前に施設管理者や個別の店舗へ電話などで確認することをおすすめします。",
+   "keywords": [
+    "同伴要確認",
+    "複合商業施設",
+    "駅近アクセス"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJV4kLTNnnAGARALy3ifPGpzY",
+  "name": "NORTH tRunk(ノース トランク)",
+  "category": "レストラン",
+  "extended_category": "restaurant",
+  "prefecture": "大阪府",
+  "address": "日本、〒530-0011 大阪府大阪市北区大深町３−１ グランフロント大阪 北館 ６階",
+  "rating": 4.3,
+  "user_ratings_total": 1212,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否は来店前に確認を。犬同伴に関する公式な記載は見つかりませんでした。店舗は約30席のテラス席を含む全160席の炭火焼き・洋食ビストロで、テラスはグランフロント北館のウメキタフロアで唯一のオープンエアー席とされています。ランチからディナー、夜カフェ利用まで終日使えるとされていますが、犬用メニューやカート・抱っこの規定、足洗い場や水飲み場についての情報は確認できませんでした。商業施設内の店舗のため、犬を連れて行く場合は同伴ルール・テラス利用条件・混雑状況について事前に店舗へ直接問い合わせることをおすすめします。",
+   "keywords": [
+    "同伴要確認",
+    "テラス席あり",
+    "グランフロント大阪"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ44Y7yatPUDURLbGURhOtRUA",
+  "name": "道の駅 多々羅しまなみ公園",
+  "category": "レストラン",
+  "extended_category": "tourist_attraction",
+  "prefecture": "愛媛県",
+  "address": "〒794-1402 愛媛県今治市上浦町井口9180番地2",
+  "rating": 4.1,
+  "user_ratings_total": 6101,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴条件は要確認。公式FAQでは施設内でのペット同伴は原則遠慮するよう案内されている一方、レストランのテラス席は同伴可という利用報告もあり、情報が一致していないため、訪問前に施設へ直接確認するのが安心です。当アプリの情報でも同伴できるのはテラスのみとされています。駐車場は用意されているので車移動での立ち寄りはしやすい立地です。多々羅大橋のたもとという海沿いの開けた場所柄、日陰の有無や足元の状況、混雑具合についての具体的な記載は見つかりませんでした。足洗い場や水飲み場、犬用メニューなどの設備についても確認できる情報がないため、現時点では言及を控えます。サイズ制限に関する記載も見当たりませんでした。橋や瀬戸内海の景色を楽しめる観光拠点ではありますが、犬連れでの利用可否・条件は現地または施設への確認を優先してください。",
+   "keywords": [
+    "テラス席同伴可否要確認",
+    "駐車場あり",
+    "事前確認推奨"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJMXPXzd4tImAR6ibe8tWO-d8",
+  "name": "みはらしの丘",
+  "category": "公園",
+  "extended_category": "tourist_attraction",
+  "prefecture": "茨城県",
+  "address": "〒311-1201 茨城県ひたちなか市馬渡字大沼６０５−４",
+  "rating": 4.4,
+  "user_ratings_total": 4646,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可。国営ひたち海浜公園「みはらしの丘」エリアで、公式サイトによれば犬等のペットはリード（ひも）等でつなぎ手から離さずに、他のお客様にご迷惑がかからないようにという条件付きで入園できます。具体的なルールとして、犬等のペットには必ずリード（綱）を付け、リードの長さを2メートル以内でご使用ください。混雑時は事故防止のため、リードの長さを1メートル以内でご使用くださいとされ、伸縮リードはロックしての使用が求められています。一方で、サイクリングコースやシーサイドトレイン、アトラクションなど、ペットをお連れの場合ご利用になれない場所や施設がございますので、同じ公園内でも移動できないエリアがある点は要注意です。みはらしの丘自体はひたちなか市内で一番標高の高い丘で、春はネモフィラ、夏〜秋はコキアなど四季折々の花畑が広がる開放的な広場で、日陰や座れる場所は多くなく、開花シーズンは混雑してリードの取り回しに注意が必要です。駐車場はありますが、足洗い場や給水設備についての記載は確認できなかったため、水分補給用の水は持参が安心です。",
+   "keywords": [
+    "リード2m以内",
+    "花畑・広い丘",
+    "利用不可施設あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJpX5J69Q7UDURBMweYpO4KQc",
+  "name": "来島海峡サービスエリア",
+  "category": "レストラン",
+  "extended_category": "tourist_attraction",
+  "prefecture": "愛媛県",
+  "address": "〒794-0002 愛媛県今治市大浜町３丁目９−６８",
+  "rating": 4.1,
+  "user_ratings_total": 9475,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴は可能で、ドッグランはないもののリードフックが数か所設置され、ペット用の水飲み場もあると紹介されています。2階の展望テラス席や、上り線側駐車場沿いの遊歩道・休憩所（あずまや）を一緒に歩くこともできるようです。専用のトイレスペースはないため、排泄用のシートなどは持参が安心です。今治北ICから流入した場合はこの施設に立ち寄れないので、利用する際はルートに注意してください。サイズ制限についての情報は見当たらないため、大型犬を連れて行く場合も含め、当日の混雑状況や施設の対応は事前に確認するとより安心です。",
+   "keywords": [
+    "リードフックあり",
+    "ペット用水飲み場",
+    "展望テラス散歩OK"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJAxTFZi4MBGAR9jHuxo7A3R8",
+  "name": "かざはやの里",
+  "category": "リラクゼーション",
+  "extended_category": "dog_run",
+  "prefecture": "三重県",
+  "address": "〒514-1138 三重県津市戸木町４０９６ 伊勢温泉ゴルフクラブ内",
+  "rating": 4.1,
+  "user_ratings_total": 1275,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "利用にはワクチン・狂犬病予防接種の証明が必要で、料金は頭数に応じた変動制（平日・休日で異なる）です。ドッグランは天然芝の広い区画で、小型犬用・中型犬用・大型犬以上向けなどサイズ別にエリアが分かれているため、大型犬でも安心して遊ばせやすい造りです。敷地は東京ドーム1.5個分ともいわれる広さがあり、混雑時でも十分なスペースが確保しやすいのが特徴です。園内には東屋やハンモック、足洗い場が設けられており、遊んだ後の足の泥や芝の汚れを落としてから移動できます。駐車場は複数箇所にあり台数も多いため、花まつりシーズンの繁忙期でも停めやすい立地です。糞尿の処理は飼い主の責任とされ、専用の袋やゴミ箱が用意されています。なお、施設の運営状況は時期によって変わることがあるため、来園前に最新の営業状況を確認しておくと安心です。",
+   "keywords": [
+    "ノーリード可",
+    "サイズ別エリア分け",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJJViMVqiLAGARdIv1AWldyMQ",
+  "name": "六甲山アスレチックパークGREENIA（メインエリア）",
+  "category": "公園",
+  "extended_category": "dog_run",
+  "prefecture": "兵庫県",
+  "address": "〒657-0101 兵庫県神戸市灘区六甲山町北六甲４５１２−９８",
+  "rating": 4.1,
+  "user_ratings_total": 1456,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "犬（大型犬・中型犬・小型犬）はリード着用で同伴可能で、入場チケットは大人3,000円・小学生2,000円など人間側の年齢別料金体系で、犬は同伴での追加料金の記載は確認できなかった。園内は164ポイント超のアスレチックが広がる広大な屋外施設で、駐車場が用意されているため車での来園がしやすい。ノーリードで遊べる囲われたドッグラン区画もあり、リードを外して自由に走らせたい飼い主には利用価値がある。ただし施設の主目的はアスレチック体験であり、犬を連れて周れるのはあくまで屋外エリアが中心になる点は理解しておきたい。標高が高い六甲山上に位置するため、平地より涼しい一方で天候が変わりやすく、山特有の気温差にも注意したい。週末は駐車場が昼前に満車になることもあるとの口コミもあり、混雑を避けたい場合は午前中の早い時間に到着するのがよさそうだ。",
+   "keywords": [
+    "リード着用",
+    "全犬種OK",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJi6ASYBuJiV8R1aCH7kNYmnA",
+  "name": "カインズモール仙台港",
+  "category": "ショッピング",
+  "extended_category": "dog_run",
+  "prefecture": "宮城県",
+  "address": "〒983-0013 宮城県仙台市宮城野区中野３丁目５",
+  "rating": 3.9,
+  "user_ratings_total": 1453,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": true,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "利用にはカインズ会員登録とわんちゃん情報の登録が必要で、初回利用時または狂犬病予防接種証明書の更新時は店舗受付カウンターでの登録が必須。予約はカインズアプリまたはPet'sOneメンバーズマイページから行うスマートドッグラン方式で、対象店舗のため事前予約が可能。囲われたノーリード区画のドッグランがあり、買い物のついでにリードを外して遊ばせられる。カート貸出があるため、ドッグラン利用後にそのまま店内で買い物をする動線も組みやすい。駐車場も併設されており、車での来店がしやすい。サイズ制限についての情報は確認できなかった。",
+   "keywords": [
+    "ノーリード解放",
+    "要事前登録",
+    "屋外ドッグラン"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJbZRpa8ApH2ARE1JqIHI7-to",
+  "name": "熊谷桜堤",
+  "category": "観光スポット",
+  "extended_category": null,
+  "prefecture": "埼玉県",
+  "address": "日本、〒360-0035 埼玉県熊谷市河原町２丁目",
+  "rating": 4.3,
+  "user_ratings_total": 1453,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可能です。荒川沿いの土手に約500本のソメイヨシノが連なる桜並木で、江戸時代から桜の名所として知られています。約2kmにわたる土手の遊歩道を歩くスタイルのため、足元は舗装または土手道が中心です。例年3月下旬から4月上旬の「熊谷さくら祭」期間中は多くの人出があり、土日は特に混雑するほか、期間中の一部日程では交通規制や有料駐車場（周辺の臨時駐車場）が設定されるため、事前確認をおすすめします。トイレは荒川公園内などに仮設で複数箇所設けられていますが、犬用の足洗い場や水飲み場についての情報は確認できませんでした。日陰は桜並木の木陰以外は開けた土手が多く、季節や天候によっては直射日光を受けやすい点にも注意してください。サイズ制限に関する情報は見当たりませんでした。",
+   "keywords": [
+    "リード必須",
+    "桜並木の土手道",
+    "祭り期間は混雑"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJGzBHTTB2hV8R09RNyE-u44o",
+  "name": "クロステラス盛岡",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "岩手県",
+  "address": "〒020-0022 岩手県盛岡市大通３丁目４−１",
+  "rating": 3.7,
+  "user_ratings_total": 1454,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否は来店前に確認を。ウェブ検索では公式サイトやレビューにペット同伴に関する明確な記載が見つかりませんでした。クロステラス盛岡は1〜2階がショップフロア、3〜5階が立体駐車場という構成の商業施設で、ファッション・雑貨・グルメなど複数の専門店が入っています。当アプリが確認できた設備としては駐車場ありのみで、犬用メニューや足洗い場、水飲み場、サイズ制限などの情報は確認できませんでした。館内は複数テナントが入る施設のため、同伴の可否や条件は店舗ごとに異なる可能性が高く、訪問前に各店舗または施設に直接問い合わせることをおすすめします。",
+   "keywords": [
+    "同伴可否要確認",
+    "駐車場あり",
+    "館内複数テナント"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJaTQNSNGJH2ARTRnkW2RT9xM",
+  "name": "ジョイア・ミーア 那須本店",
+  "category": "レストラン",
+  "extended_category": "restaurant",
+  "prefecture": "栃木県",
+  "address": "〒325-0301 栃木県那須郡那須町湯本４９３−３",
+  "rating": 3.9,
+  "user_ratings_total": 1665,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "店内への同伴は不可で、犬と一緒に利用できるのはテラス席（室外）のみです。公式サイトによると、犬用の食事の用意はなく、しつけができていれば小型から大型犬までテラス利用可能で、リードまたはケージの使用が必須とされています。テラス席は数が限られているため満席時は待ち時間が発生しやすく、事前予約がおすすめとの声が複数の口コミにあります。座席周辺や敷地内の駐車場・庭での排泄・マーキングは禁止されているため、事前にトイレを済ませておくと安心です。狂犬病予防接種など基本的な健康管理も来店条件として挙げられています。駐車場はありますが、那須の人気イタリアンとして週末や連休は大変混み合うため、時間をずらすと落ち着いて過ごせます。テラスは屋外のため季節や天候によって快適さが変わる点は考慮しておくとよいでしょう。犬同伴の場合は要予約とされているため、来店前に電話などで確認するのが確実です。",
+   "keywords": [
+    "テラス席限定",
+    "要予約",
+    "リード必須"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJkw0Ni0dIGmARAxpxX4QlzHY",
+  "name": "広野海岸公園",
+  "category": "公園",
+  "extended_category": "tourist_attraction",
+  "prefecture": "静岡県",
+  "address": "〒422-0000 静岡県静岡市駿河区広野海岸通",
+  "rating": 4.2,
+  "user_ratings_total": 1667,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可の公園です（当アプリ確認済み）。用宗港の東側、駿河湾に面した海岸沿いの公園で、駐車場は第1・第2合わせて200台以上と広く用意されています。園内は帆船型アスレチックや魚礁遊具、じゃぶじゃぶ池のあるエリアと、7,000m²の芝生広場、海沿いの散策路などで構成されています。遊具周辺は砂浜のような地面になっており、足元に砂が入りやすいという声があります。海側の散策路は堤防伝いに歩けますが、海に近い区間もあるため足元の安定性には注意が必要です。全体的に木陰が少なく直射日光を受けやすいため、夏場は地面や砂の熱さ、熱中症対策として水分補給や時間帯の配慮が必要だとする報告があります。休日は家族連れで賑わうため、遊具エリアは人や子どもとの距離に配慮しながらの散歩になりそうです。大型犬に関する制限の記載は確認できませんでした。",
+   "keywords": [
+    "リード必須",
+    "砂浜・砂地あり",
+    "日陰少なめ"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJIaZfgflKPWARFp3FDWQcsfg",
+  "name": "キャメルゴルフ＆ホテルリゾート",
+  "category": "キャンプ場",
+  "extended_category": "spa",
+  "prefecture": "千葉県",
+  "address": "日本、〒299-5111 千葉県夷隅郡御宿町上布施３３６０",
+  "rating": 3.8,
+  "user_ratings_total": 1667,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "犬同伴OKの宿泊施設で、愛犬と同室に泊まれる客室が用意されている。ペット宿泊費は小型犬3,300円・中型犬4,400円・大型犬5,500円で当日現地精算となり、小型犬は2頭まで、中大型犬は1頭までの制限がある。生後1年以上であることが条件で、狂犬病および混合ワクチン接種済証の提示が必要。無駄吠えをしない、排泄のしつけができていることなど室内犬としてのマナーも求められ、室内犬であることが前提となっている。ペットの食事は持参が必要で、施設側の用意はない。「ワンちゃんとお泊り」プランではドッグラン使い放題とBBQコースがセットになっている。実際の宿泊者レビューでは、ペット同伴可の施設のためドーム内のソファなどにシミが見られたとの声もあり、清潔さは同伴施設ならではの傾向がある点は事前に理解しておきたい。犬種やしつけの状況によって向き不向きが分かれるため、大型犬や複数頭連れの場合は事前に条件を公式サイトで確認するのがおすすめ。",
+   "keywords": [
+    "ペット同伴宿泊可",
+    "サイズ別料金あり",
+    "ドッグラン使い放題プラン"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJLR28tsmRGGARGNpmcPFaxyk",
+  "name": "元渕江公園",
+  "category": "公園",
+  "extended_category": "tourist_attraction",
+  "prefecture": "東京都",
+  "address": "〒121-0064 東京都足立区保木間２丁目１７−１",
+  "rating": 4.1,
+  "user_ratings_total": 1670,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用であれば同伴可能な公園です。約4万平方メートルの敷地に釣り池・多目的広場・遊具広場が点在し、外周には桜並木があり木陰も期待できます。多目的広場ではペットの放し飼いが禁止行為として明記されているため、ノーリードでの利用は避けてください。駐車場ありとされていますが、有料の可能性があるため訪問前に確認すると安心です。水遊び可という情報がありますが、園内には子ども向けの衛生管理されたじゃぶじゃぶ池があり、これが犬にも開放されているかは明確でないため、水遊びをさせたい場合は現地で対象範囲を確認してください。園内の足立区生物園（有料の生きもの施設）へのペット同伴可否は不明のため、立ち寄りたい場合は別途確認が必要です。休日は10時から15時ごろに混雑しやすいとされているので、のんびり散歩したい場合は時間帯をずらすのがおすすめです。サイズ制限に関する情報は見当たりませんでした。",
+   "keywords": [
+    "リード着用で同伴可",
+    "広い園内で散歩向き",
+    "桜並木の木陰あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJW-TTziY7dV8RvaXruHMTFhM",
+  "name": "しこつ湖鶴雅リゾートスパ 水の謌",
+  "category": "宿泊",
+  "extended_category": "onsen",
+  "prefecture": "北海道",
+  "address": "日本、〒066-0281 北海道千歳市支笏湖温泉１７",
+  "rating": 4.4,
+  "user_ratings_total": 1721,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "犬同伴は「ワンちゃんルーム」のみで宿泊可、予約前に空室と条件を確認したい。同室は小型・中型犬でケージに収まる10kgまで1室2匹までが基本で、露天風呂付和洋室のみ大型犬も利用可となっている。猫は宿泊不可。料金は1匹1泊5,500円で、狂犬病予防接種後12ヶ月以内・3種以上混合ワクチン接種後12ヶ月以内の証明書持参が条件。ワンちゃんルームは道路に隣接し専用出入口があるため、部屋から直接支笏湖畔への散歩に出やすい造りになっている。室内にはケージ・給水機・食器・トイレトレー・消臭スプレー・エチケット袋など犬用備品が用意され、初めての犬連れ旅でも設備面の不安は少ない。一方でペットと入れる風呂・ペット専用風呂はなく、館内の温泉は犬と一緒に入れない。ドッグラン施設は敷地内・周辺ともになし。無駄吠えなどで他の宿泊客に迷惑がかかる場合は車への移動を求められることがある点は要注意。",
+   "keywords": [
+    "ワンちゃんルーム専用出入口",
+    "小型犬10kg・2匹まで",
+    "散歩OK支笏湖畔"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJB3HyeepFGGARJUZrLXjEtuk",
+  "name": "GARDEN HOUSE KAMAKURA ガーデンハウスカマクラ",
+  "category": "レストラン",
+  "extended_category": "tourist_attraction",
+  "prefecture": "神奈川県",
+  "address": "〒248-0012 神奈川県鎌倉市御成町１５−４６",
+  "rating": 4.1,
+  "user_ratings_total": 1674,
+  "pet": {
+   "pet_friendly_status": "outdoor_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": true,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴できるのはテラス席のみで、建物内へは犬を連れて入れません。テラス内ではリード着用が必須で、椅子に乗せる場合はタオルやシートを敷く必要があります。大型犬もテラス利用が可能とされていますが、混雑時は満席になりやすいため予約時にテラス席の指定をしておくと安心です。排泄物の処理は飼い主の責任とされているため、マナー用品は持参しましょう。犬用メニューの提供については確認できていません。",
+   "keywords": [
+    "テラスのみ同伴可",
+    "リード必須",
+    "大型犬OK"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJWRrlnKDyGGARpaFZp5QgZHA",
+  "name": "中野区立哲学堂公園",
+  "category": "公園",
+  "extended_category": "tourist_attraction",
+  "prefecture": "東京都",
+  "address": "〒165-0024 東京都中野区松が丘１丁目３４−２８",
+  "rating": 4,
+  "user_ratings_total": 1763,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用でエリアを選べば同伴可。公式サイトによると、夜間閉鎖する庭園区域（哲学関連の建物や石造物が並ぶメインエリア）はペットの入場不可だが、児童遊園や運動施設まわりの常時開園している園路は利用できるとされている。哲学堂公園ならではの見どころが集まる庭園部分には入れない点は事前に理解しておきたい。駐車場ありと確認されているため車での来園はしやすい。園内は起伏や石段のある造りとされ、足元はフラットな舗装路ばかりではない可能性がある。水飲み場や足洗い場については確認できる情報がなく、持参が無難。サイズ制限についての明記は見当たらないが、詳細な同伴ルールや立入可能エリアの範囲は事前に公式サイトや現地の案内板で確認するのが確実。",
+   "keywords": [
+    "エリア限定同伴可",
+    "駐車場あり",
+    "リード必須"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJRxyFckf9ZUARxM3RVBcURSc",
+  "name": "野島公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "神奈川県",
+  "address": "〒236-0025 神奈川県横浜市金沢区野島町２４",
+  "rating": 4,
+  "user_ratings_total": 1829,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "園内はリード着用での同伴が可能で、ノーリードで遊べる区画は確認されていない。横浜市最南部の平潟湾入口の島全体が公園になっており、野島山山頂の展望台や旧伊藤博文金沢別邸、バーベキュー場・キャンプ場・野球場などが点在する広い敷地のため、犬連れでも歩き応えがある。公園前面には横浜市内で唯一残る自然の海浜があり、水遊びが可能とされている。展望台へは山道の遊歩道を登ることになるため、足元は舗装だけでなく土や坂道の区間も想定しておきたい。トイレや水飲み・手洗い場の設置は案内されているが、犬用の足洗い場の有無は確認できなかった。駐車場は用意されているが、有料で、第一・第二駐車場のほか室ノ木地区の臨時駐車場もあるため、混雑期は駐車位置によって公園入口までの距離が変わる点に注意したい。",
+   "keywords": [
+    "リード必須",
+    "海浜・磯遊び",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJk1fgThmPAGAR0X_vUw6KnYM",
+  "name": "相楽園",
+  "category": "公園",
+  "extended_category": "tourist_attraction",
+  "prefecture": "兵庫県",
+  "address": "〒650-0004 兵庫県神戸市中央区中山手通５丁目３−１",
+  "rating": 4.3,
+  "user_ratings_total": 2049,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可というアプリ確認情報があります。ただし公式サイトの利用案内では盲導犬を除きペット同伴入園は不可と案内されており、情報に相違があるため、訪問前に施設へ直接確認することを強くおすすめします。設備面では水遊びができる場所があることが確認できていますが、足洗い場や水飲み場、大型犬の制限、日陰の状況などの詳細は材料がなく不明です。庭園エリアは池泉回遊式で飛石や石橋があるため、足元が滑りやすい箇所がある可能性も念頭に置いてください。同伴のルールが施設側の最新案内と異なる可能性がある以上、当日トラブルにならないよう電話等での事前確認を優先してください。",
+   "keywords": [
+    "リード同伴可",
+    "水遊びスポット",
+    "事前確認推奨"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ5b8sAsq9QzURrtuEK2XTDL8",
+  "name": "大丸下関店",
+  "category": "レストラン",
+  "extended_category": "shopping_mall",
+  "prefecture": "山口県",
+  "address": "〒750-8503 山口県下関市竹崎町４丁目４−１０",
+  "rating": 3.6,
+  "user_ratings_total": 2039,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "店内への犬の同伴は不可のため、レストラン利用は難しく、テイクアウトや周辺での食事向けの利用に限られます。駐車場はあり、シーモール下関の提携駐車場が利用でき、買い上げ金額にかかわらず当日購入で3時間駐車料金無料のサービスがあります。犬用メニューや足洗い場、水飲み場などの設備については情報がなく、確認できませんでした。同伴時の詳しい取り扱い（カートでの入店可否や小型犬のケース同伴など）は来店前に店舗へ直接確認することをおすすめします。",
+   "keywords": [
+    "店内同伴不可",
+    "駐車場あり",
+    "テイクアウト向け"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJvZjaHjxxA2ARl3QJg8RViBg",
+  "name": "スカイル",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "愛知県",
+  "address": "〒460-0008 愛知県名古屋市中区栄３丁目４−５",
+  "rating": 3.8,
+  "user_ratings_total": 2050,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴条件はペットケースに入れての同伴のみ可で、リードでの歩行同伴は不可。公式サイトによると、ペットの同伴はペットケースに入れ、他のお客様の迷惑にならないようにする必要があり、レストランなど食品を取り扱う売場へは入場できない。ペットの種類や大きさによっては同伴を断られる場合があるとされ、大型犬などケースに入らないサイズは実質利用が難しいと考えられる。なお盲導犬・介助犬・聴導犬は全館同伴可とされている。買い物フロア（無印良品・ユニクロ・ダイソーなど）はケース入りなら移動できる可能性があるが、9階の飲食店街や食品売場は同伴不可のため、ランチ利用は想定できない。館内は栄駅direct結の大型商業ビルで休日は混雑しやすく、ケース越しでも人の往来が多い点は留意したい。犬用メニューや足洗い場、ドッグラン的な設備についての情報は確認できなかった。ケース収納が前提のため、大型犬や歩かせての来店を考えている場合は来店前に各店舗・スカイル事務所へ直接確認するのが確実。",
+   "keywords": [
+    "ペットケース必須",
+    "飲食エリア入場不可",
+    "盲導犬等は全館可"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJTcvaW8iFil8RwoTrB96wW4A",
+  "name": "S-PAL 福島",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "福島県",
+  "address": "〒960-8031 福島県福島市栄町１−１",
+  "rating": 3.7,
+  "user_ratings_total": 2048,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否は来店前に確認を。公式サイトや検索結果では一般のペット同伴に関する明記が見当たらず、バリアフリー情報では補助犬同伴可の記載があるのみでした。施設はJR福島駅に直結する駅ビルで、館内には土産店やスーパー、レストランなどが入っています。駐車場ありのため車での来店は可能ですが、館内が犬同伴可能かどうかは店舗ごとに異なる可能性があるため、訪問前に各テナントまたは施設に直接問い合わせることをおすすめします。",
+   "keywords": [
+    "駐車場あり",
+    "駅ビル直結",
+    "同伴要確認"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJDUHX3vo_GGAR8Zjovrs_M_g",
+  "name": "うみかぜ公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "神奈川県",
+  "address": "〒238-0013 神奈川県横須賀市平成町３丁目２３",
+  "rating": 4.1,
+  "user_ratings_total": 2664,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "園内はリード着用で同伴でき、ノーリードで走れる区画は確認されていない。芝生広場は猿島や東京湾を望む広さがあり、タープを張って休憩しながら散歩する飼い主も見られる。地面は芝生広場のほか、スポーツ広場側はスケートボードエリアやマウンテンバイクコースなどアスファルト・舗装区画が中心で、犬にとっては芝生エリアの方が足に優しい。親水護岸は階段状の岩場で満潮時は滑りやすく、水生物の採取は禁止されているため犬を近づける際は足元に注意したい。駐車場は普通車182台・大型2台分あり、24時間利用可能なので早朝や夕方の散歩にも使いやすい。トイレは遊具広場近くに設置されているが、公式サイトに足洗い場の記載はなく、水道の有無は現地での確認が必要。週末はバーベキューや家族連れで混み合うため、静かに歩きたい場合は平日や午前中が向いている。大型犬の同伴を制限する記載は見当たらないが、広場は子どもの遊具エリアと隣接するため、他の利用者への配慮としてリードを短めに持つと安心。",
+   "keywords": [
+    "リード必須",
+    "芝生広場あり",
+    "海沿い眺望"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJazYc1WlcGGARTjx-zFTO-KU",
+  "name": "グランモール公園",
+  "category": "公園",
+  "extended_category": "tourist_attraction",
+  "prefecture": "神奈川県",
+  "address": "〒220-0012 神奈川県横浜市西区みなとみらい３丁目５",
+  "rating": 3.9,
+  "user_ratings_total": 2667,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可。水遊び可とされているが、公園内は横浜美術館前から続く広い遊歩道状の空間で、噴水広場は夏場に子ども連れで混雑しやすい。日差しの強い日は噴水横の石畳が熱くなりやすく、日陰はマークイズ側の植栽帯周辺に限られるため、真夏の同伴は足元の熱さに注意したい。公園全体は南北に長く舗装された歩行者エリアが中心で、足洗い場や専用の水飲み場などペット向け設備の情報は確認できていない。駐車場はなく、最寄りはみなとみらい線みなとみらい駅から徒歩5分ほど。買い物や食事の合間に短時間立ち寄る散歩コースとしては使いやすいが、長時間の水遊びを目的にする場合は事前に現地の表示や横浜市の案内を確認するのが安心。",
+   "keywords": [
+    "リード必須",
+    "水遊びスポット",
+    "混雑注意"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJoy_18iojAWAR-mvCD2vG7mc",
+  "name": "イオンモール奈良登美ヶ丘",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "奈良県",
+  "address": "〒630-0115 奈良県生駒市鹿畑町３０２７",
+  "rating": 3.7,
+  "user_ratings_total": 2666,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "館内一般エリアの自由な同伴はできず、ペット同伴が可能なのは館内2階のペットショップ「ペテモ」を利用する場合の専用出入口・専用ルートに限られます。ペット同伴は可（館内ルールのご理解とご協力をお願いします）とされ、ペット同伴可ルート以外での館内のペット同伴はご遠慮くださいと案内されています。ペットをお連れの場合は「２F平面駐車場」の利用が案内され、そこから「南側指定エレベーター」で「ペテモ専用出入り口」へ向かうルートになっています。つまりフードコートや一般テナントを含むモール全体を自由に歩き回れるわけではなく、目的地はペテモ店舗に限定されると考えるのが安全です。駐車場は1,200台分あり、バイク駐輪場170台・自転車駐輪場320台も備わっています。ペテモ店舗を利用する際は、イオンペットメンバーズカードの入会・提示や、1年以内の狂犬病・混合ワクチン（5種以上）の証明書提示、マナーパンツ・マナーバンドの着用が求められますので、初めて訪れる場合は事前にワクチン証明書を用意しておくと安心です。フードコートや専門店街を犬連れでゆっくり過ごす目的の来店には向かないため、モール全体の犬同伴利用を考えている場合は事前に公式サイトで最新のルールを確認してください。",
+   "keywords": [
+    "ペット同伴専用出入口",
+    "館内は同伴ルートのみ",
+    "駐車場1200台"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ04nrVeuRQTURnaFHBhcIT0Y",
+  "name": "博多リバレインモール by TAKASHIMAYA",
+  "category": "ショッピング",
+  "extended_category": "shopping_mall",
+  "prefecture": "福岡県",
+  "address": "〒812-0027 福岡県福岡市博多区下川端町３−１",
+  "rating": 3.8,
+  "user_ratings_total": 2668,
+  "pet": {
+   "pet_friendly_status": "unknown",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "館内へは同伴OKですが、ペット用ゲージに入れた状態でのみ入店可能で、保健所の指導により食料品取扱店・飲食店へのペット同伴は不可です。唯一の例外は1F「&G（アンジー）」のテラス席のみで、盲導犬・聴導犬・介助犬は館内すべての店舗に入店できます。抱っこやカートでの入店は案内されておらず、必ずキャリーゲージが必要な点に注意してください。駐車場はありますが、土日祝の11時〜13時は満車になりやすいため、混雑を避けた来館がおすすめです。足洗い場や犬用ウォーターサーバーなど犬連れ専用設備の記載は見当たらず、買い物中心の利用に向いた施設です。ゲージ対応済みの小型犬連れなら店内散策はできますが、食事を伴うお出かけには不向きなので、目的に応じて&Gのテラス利用か周辺の犬同伴可カフェを組み合わせるのがよさそうです。",
+   "keywords": [
+    "ゲージ入店限定",
+    "食品・飲食フロア不可",
+    "テラス席のみ可(&G)"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJowLlTd2OGGARR-BEdamTD5w",
+  "name": "今戸神社",
+  "category": "神社仏閣",
+  "extended_category": "tourist_attraction",
+  "prefecture": "東京都",
+  "address": "〒111-0024 東京都台東区今戸１丁目５−２２",
+  "rating": 4.2,
+  "user_ratings_total": 4209,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用であれば境内への同伴が可能です。招き猫発祥を名乗る神社で、境内には白猫が住み着いているとの情報があり、犬との遭遇に配慮が必要な場面があるかもしれません。境内はそれほど広くなくこじんまりとしており、縁結びのパワースポットとして参拝者が多く、特に週末は人の混雑で足元が窮屈になりやすいと考えられます。社殿前には狛犬の像もあります。授与品やお守りに猫モチーフが多い神社のため、猫を驚かせないよう他の参拝者への配慮も忘れずに。足洗い場や給水設備、日陰の有無についての情報は確認できなかったため、暑い時期に訪れる場合は水分補給を自分で用意しておくと安心です。社殿内への同伴可否や大型犬に関する制限の記載は見当たらなかったため、詳細は訪問前に神社へ直接確認することをおすすめします。",
+   "keywords": [
+    "リード必須",
+    "境内に猫在住",
+    "コンパクトな境内"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJGXlLvcp2A2ARjzehP-PoMqk",
+  "name": "名城公園",
+  "category": "公園",
+  "extended_category": "tourist_attraction",
+  "prefecture": "愛知県",
+  "address": "〒462-0846 愛知県名古屋市北区名城１丁目２−２５",
+  "rating": 4.1,
+  "user_ratings_total": 4243,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用で同伴可。名城公園の公式ルールでも、他の利用者への配慮からリード使用と排泄物の後始末が求められており、ペットの立ち入りが禁止されている区域には入らないよう注意が必要。園内は自動車・バイクの乗り入れ禁止のため、駐車場に車を停めてから散歩する形になる。サイズ制限についての記載は確認できなかったため、大型犬の同伴可否や混雑状況、足洗い場・水飲み場・日陰の有無などの詳細は、訪問前に公式サイトや現地の掲示で確認するのがおすすめ。",
+   "keywords": [
+    "リード必須",
+    "排泄物持ち帰り",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJx62FmcGOGGARDxQTl8Zx6U4",
+  "name": "浅草神社",
+  "category": "神社仏閣",
+  "extended_category": "tourist_attraction",
+  "prefecture": "東京都",
+  "address": "〒111-0032 東京都台東区浅草２丁目３−１",
+  "rating": 4.5,
+  "user_ratings_total": 5201,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "当アプリの検証情報では、リード着用であれば境内への同伴が可能です。浅草寺と隣接しており、参道や境内は観光客で混雑することが多く、足元の砂利や敷石でリードが伸びると人とすれ違いにくいため、短めに持って歩かせるのがおすすめです。神社境内は本来「祈りの場」とされ、多くの神社で立ち入りに配慮が求められるため、参拝時は抱っこやカートに切り替えると安心です。日中は特に参拝客が多く、日陰の少ない開けた場所もあるため、真夏の同伴は熱中症に注意してください。境内での排泄は厳禁とされているため、事前にトイレを済ませ、粗相した場合に備えて水とシートを持参しましょう。専用の足洗い場や給水設備があるという情報は確認できておらず、水分補給は事前に用意しておくと安全です。初詣や祭事など混雑期は同伴不可になる場合もあるため、大きな行事の際は最新情報を確認してから訪れてください。",
+   "keywords": [
+    "リード必須",
+    "境内は人出多め",
+    "抱っこ・カート推奨"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJvajEEF7aGGARWqggaYZSmaY",
+  "name": "川越 熊野神社",
+  "category": "神社仏閣",
+  "extended_category": "tourist_attraction",
+  "prefecture": "埼玉県",
+  "address": "〒350-0066 埼玉県川越市連雀町１７−１",
+  "rating": 4.3,
+  "user_ratings_total": 4516,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "アプリ検証済み情報によると、リード着用で境内への同伴が可能です。境内には石畳の参道があり、その脇には裸足で歩く「足踏み健康ロード」という石の突起で足つぼを刺激する仕掛けがあるため、犬の足裏を歩かせないよう注意が必要です。境内には厳島神社（銭洗弁財天）に隣接する宝池（弁天池）があり、水辺の足元は滑りやすい可能性があります。参拝者の多い毎月第三日曜（縁日）は境内が賑わうため、リード操作に配慮が必要です。日陰や水飲み場、大型犬制限についての情報は確認できなかったため、暑い時期の参拝や大型犬を連れて行く場合は事前に社務所へ確認することをおすすめします。",
+   "keywords": [
+    "リード必須",
+    "足つぼ参道は足元注意",
+    "境内は石畳・段差あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ8Viv__eziF8RULiPyKViIZg",
+  "name": "小黒滝",
+  "category": "観光スポット",
+  "extended_category": "tourist_attraction",
+  "prefecture": "岩手県",
+  "address": "日本、〒029-0602 岩手県一関市大東町鳥海字小黒滝",
+  "rating": 4.2,
+  "user_ratings_total": 54,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否の明確な記載はないが、屋外の渓流・滝への遊歩道でリード着用であれば同伴できると考えられる。滝壺までの踏み跡はあるものの渓流沿いは滑りやすく、口コミでも足元が悪く危険との声が複数あるため、同伴して滝壺付近まで下りる際は特に注意が必要。駐車スペースは狭く、入口付近ではなく少し離れた広めの場所に停める方が良いとの声がある。水量のある渓流瀑で水遊びができそうな水場はあるが、足場が悪いため水辺での同伴時は滑落に注意したい。",
+   "keywords": [
+    "リード必須",
+    "足元注意",
+    "駐車場狭い"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJLZB9oOhJGmARoz3CrOheiJU",
+  "name": "あさり動物病院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "静岡県",
+  "address": "日本、〒422-8063 静岡県静岡市駿河区駿河区馬渕４丁目１４−３",
+  "rating": 4.4,
+  "user_ratings_total": 54,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "診察やペットホテル利用の際は犬・猫を同伴して来院する動物病院で、院内には診察室が犬と猫で分かれています。駐車場は病院前と横で合計4台分あり、口コミでは出入りがやや大変との声もあります。手術やペットホテルは完全予約制ですが、通常の診察は予約不要で受け付けています。診療動物は犬・猫・うさぎで、アニコム損保やアイペットのペット保険にも対応しています。",
+   "keywords": [
+    "予約不要（通常診察）",
+    "犬猫別診察室",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ-WDedbsCQDURpjtwXmZIp3U",
+  "name": "Retro Hawaii Cafe",
+  "category": "カフェ",
+  "extended_category": "dog_run",
+  "prefecture": "長崎県",
+  "address": "日本、〒856-0846 長崎県大村市日泊町１５４４−１",
+  "rating": 4.4,
+  "user_ratings_total": 54,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "ペット同伴可のカフェで、敷地内には広々としたドッグランが併設されている。口コミでも「ワンコOK」「大村でペット可のランチ」と紹介されており、オーシャンビューの席で食事とドッグランでの運動を両方楽しめる点が特徴。ただし店内席の同伴可否やリードの扱いについては明記がなく、来店前に確認した方がよい。お店までの道が狭く、離合が難しい箇所があるとの声も複数あるため、車でのアクセスには注意が必要。駐車場はあるが台数に限りがあり、時間帯によっては満車で入店できないこともある。",
+   "keywords": [
+    "ドッグランあり",
+    "ペット可",
+    "オーシャンビュー"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ6QUf8ruNGGAR8A4zGHcVX6Q",
+  "name": "駕籠町公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "東京都",
+  "address": "〒113-0021 東京都文京区本駒込２丁目１０",
+  "rating": 4.1,
+  "user_ratings_total": 54,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "ワンちゃん同伴に関する明確な明記はないが、住宅地内にある一般的な区立公園のため、リード着用であれば散歩や同伴利用ができると考えられる。園内には旧町名の由来を説明する石碑や、タイル張りのカエル・オタマジャクシが泳ぐように見える井戸があり、遊具も充実した小規模公園。井戸水は飲料用ではないため、水遊びや給水目的での利用には適さない。同伴の可否について明確な確認は取れていないため、利用前に文京区（みどり公園課）へ確認すると安心。",
+   "keywords": [
+    "リード必須",
+    "住宅地の公園",
+    "要確認"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJqbysutL5GGARS2wFj6dPaUE",
+  "name": "可愛動物病院",
+  "category": "動物病院",
+  "extended_category": "dog_run",
+  "prefecture": "神奈川県",
+  "address": "〒227-0061 神奈川県横浜市青葉区桜台１−８５",
+  "rating": 4.1,
+  "user_ratings_total": 58,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "動物病院として犬・猫・うさぎの同伴診察に対応しており、院内は種類ごとに専用の診察室・入院室・待合室が分けられています。屋上には開放的なドッグラン設備があり、予防接種や診療のほか気分転換にも利用できます。完全予約制で、電話またはネットでの事前予約が必要です。院内にはトリミング・ペットホテルも併設され、高齢や病気の子にも配慮した対応がされています。駐車場は目の前に4〜5台分あり、車での来院にも便利です。うさぎ専用の待合室は分離されていますが、口コミでは犬の鳴き声が気になったという声も一部あります。",
+   "keywords": [
+    "屋上ドッグラン完備",
+    "完全予約制",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJGck8pAgqil8RFe5bObtQTmQ",
+  "name": "もみのき動物病院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "宮城県",
+  "address": "日本、〒989-3203 宮城県仙台市青葉区中山吉成１丁目１３−４１",
+  "rating": 3.4,
+  "user_ratings_total": 58,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "動物病院のため、診察・治療の際はペット同伴が前提となる。院内（受付・待合室・診察室）に犬・猫・うさぎ・フェレット・ハムスター・モルモット・小鳥などを連れて入ることができる。口コミでは駐車場が入りにくく道路に面しているため出入りに注意が必要との指摘があり、車で行く場合は気をつけたい。日曜も17時までは診療対応で、電話での相談・折り返し対応がある点は評価されている一方、小動物の診断精度については賛否のある口コミも見られるため、ハムスターやうさぎなど小動物での受診を検討する場合は事前に確認しておくと安心。",
+   "keywords": [
+    "同伴前提の動物病院",
+    "小動物対応",
+    "駐車場は狭め"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJOY1DlbiOGGARNfa7oT27leA",
+  "name": "ペットハウスう～ちゃん",
+  "category": "ペットショップ",
+  "extended_category": "pet_store",
+  "prefecture": "東京都",
+  "address": "〒111-0042 東京都台東区寿４丁目９−６",
+  "rating": 4.5,
+  "user_ratings_total": 58,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否について明確な記載は見つからなかったため事前確認をおすすめします。犬猫用品を扱う地域密着型の小さめのペットショップで、スタッフが親切で猫や犬の飼育相談にも対応してもらえるとの口コミが複数あります。店内はコンパクトで品揃えは充実しているものの、広さには限りがあるとの声もあります。品切れ時の入荷後配達などのサービスも利用者から評価されています。",
+   "keywords": [
+    "ペットショップ",
+    "犬猫用品",
+    "配達対応あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJKS-IoneRQTURRAl5ZJP3HdM",
+  "name": "武石動物病院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "福岡県",
+  "address": "〒810-0014 福岡県福岡市中央区平尾３丁目６−８ 武石ビル １Ｆ",
+  "rating": 4.1,
+  "user_ratings_total": 58,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "動物病院のため、診察目的で犬・猫を同伴して来院する利用形態です。口コミでは、休診日でも対応してもらえたという声や、猫の避妊手術を安心して任せられたという声がある一方、診断内容や治療方針について不満を述べる口コミも複数見られます。正面に4台、病院横に4台の無料駐車場があり、車での来院がしやすい点は安心材料です。同伴条件（待合室でのケージ利用の有無など）についての明記はないため、混雑時の対応は事前に電話で確認すると良いでしょう。",
+   "keywords": [
+    "動物病院",
+    "無料駐車場あり",
+    "要事前確認"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJr_sC2JMIAWARcihMnGl6ZvE",
+  "name": "THE L.A. MART HOTEL KYOTO",
+  "category": "宿泊",
+  "extended_category": "pet_hotel",
+  "prefecture": "京都府",
+  "address": "日本、〒604-8072 京都府京都市中京区八百屋町111番地",
+  "rating": 4.2,
+  "user_ratings_total": 62,
+  "pet": {
+   "pet_friendly_status": "not_allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": false,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "このホテルはペット同伴不可のため、ワンちゃんを連れての宿泊はできない。旅行比較サイトの施設情報にも同伴不可の記載があり、駐車場もない点も合わせて事前確認しておきたい。",
+   "keywords": [
+    "ペット同伴不可",
+    "駐車場なし"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJRYnMyyf0GGAR_XkshJfx2lM",
+  "name": "久本薬医門公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "神奈川県",
+  "address": "〒213-0011 神奈川県川崎市高津区久本１丁目５−１９ 久本薬医門公園",
+  "rating": 3.6,
+  "user_ratings_total": 62,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否について公式な明記は見つからず、一般的な都市公園としてリード着用での散歩が想定される。園内には蔵や薬医門が残る日本庭園風の景観があり、ベンチや水道の蛇口があるため休憩や水分補給はしやすい。トイレは設置されていない点は事前に確認しておきたい。遊具はなく静かな雰囲気の公園のため、のんびり散歩するのに向いている。",
+   "keywords": [
+    "リード必須",
+    "水道あり",
+    "トイレなし"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJwRvP3B7oj18RlJMyWu4R6w4",
+  "name": "手形山すずき動物病院",
+  "category": "動物病院",
+  "extended_category": "dog_run",
+  "prefecture": "秋田県",
+  "address": "〒010-0041 秋田県秋田市広面蓮沼７８−１",
+  "rating": 4.3,
+  "user_ratings_total": 62,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "犬・猫の診療で通院同伴が前提の動物病院です。アイペットの施設情報によると院内にドッグラン・ペットホテル・トリミング設備・猫専用待合室・駐車場が併設されており、犬と猫の待合スペースが分けられている点は多頭飼いの家庭にも安心材料です。予約制のため事前に電話予約が必要で、混雑時は診察が慌ただしくなるという口コミもあります。院内での医師間の情報共有や説明対応に不満を挙げる口コミも複数見られるため、じっくり相談したい場合は事前に相談内容を整理しておくと良さそうです。",
+   "keywords": [
+    "猫専用待合室あり",
+    "ドッグラン併設",
+    "予約制"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJe9pgbX30GGARqEFWyJLlhqA",
+  "name": "桜新町動物医療センター",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "東京都",
+  "address": "〒154-0014 東京都世田谷区新町２丁目２５−１６",
+  "rating": 4.5,
+  "user_ratings_total": 62,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "診療・入院はもちろん、ペットを連れて院内に入ることが前提の動物病院です。予約不要で土日診療にも対応しており、急な体調変化時にも利用しやすい体制です。犬・猫のほか、うさぎ・ハムスター・フェレットなど小動物の診療にも対応しています。ペットホテルを併設しており、犬は朝夕の散歩を行ってもらえますが、利用にはカルテ登録とワクチン接種等の証明が必要です。駐車場は専用ではなく、医院前の路上パーキングメーターを利用する形で、料金は病院が負担してくれます。口コミには診察室に飼い主が同席して処置を見せてもらえたという声もあり、診療スタイルの目安になります。",
+   "keywords": [
+    "予約不要",
+    "ペットホテル併設",
+    "土日診療"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJTzakl6CSGGARltjexhviPHQ",
+  "name": "たま動物病院",
+  "category": "動物病院",
+  "extended_category": "dog_run",
+  "prefecture": "東京都",
+  "address": "〒171-0014 東京都豊島区池袋３丁目６２−６",
+  "rating": 4.6,
+  "user_ratings_total": 68,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "診察のためワンちゃんを連れて院内に入ることができる動物病院です。口コミでは先生やスタッフの対応が丁寧で優しいという声が多く、かかりつけ医として利用している飼い主も見られます。駐車スペースは1台分と狭く、大型車での来院は難しいとの口コミがあります。現在は完全予約制で、ホームページから当日予約も可能とのことです。設備情報としてドッグランやトリミング、ペットホテルの記載もありますが、詳細な利用条件は確認できませんでした。",
+   "keywords": [
+    "院内OK",
+    "完全予約制",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJyRhhXHSRQTURCKHBAuyxkrU",
+  "name": "くま動物病院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "福岡県",
+  "address": "〒815-0083 福岡県福岡市南区高宮１丁目２−２３",
+  "rating": 4.2,
+  "user_ratings_total": 68,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "自分の犬・猫を同伴して受診・トリミング利用ができる動物病院です。院内の待合席は犬と猫で分けられており、猫にも配慮された作り。屋根付きの外待合スペースもあり、他の犬が苦手な子や大型犬はそちらでゆっくり待つことができます。病院前に駐車場が3台分あります。口コミでは、先生の対応は丁寧で信頼できるとの声が多い一方、受付スタッフの対応やトリミング時の爪切りで出血があった際の対応について不満の声も見られました。爪切り・耳掃除・肛門腺しぼりなど単品メニューでの利用も可能です。",
+   "keywords": [
+    "外待合あり",
+    "猫と分離待合",
+    "駐車場3台"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJldSg5sTwnl8RTe_SiJagQVE",
+  "name": "北斗犬ねこ病院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "北海道",
+  "address": "〒049-0156 北海道北斗市中野通３丁目２２−１",
+  "rating": 4.3,
+  "user_ratings_total": 68,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "診察の際は自分の犬を同伴して来院する動物病院で、店内（待合室・診察室）にも一緒に入れる。西洋医学に加え東洋医学やメディカルアロマも取り入れた診療を行っており、血液検査機器やリハビリ用の運動器具も備えている。ペットホテルとしての機能もあるとの口コミがあり、預かりを利用する飼い主もいるようだ。駐車場は2箇所あるが、混雑時は2時間近く待つこともあり、順番が近づくとベルで知らせてもらえるため車内で待機する形になる場合がある。診療は日曜・祝日以外で土曜も夜まで対応しており、仕事帰りでも通いやすい。",
+   "keywords": [
+    "店内OK",
+    "ペットホテル併設",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJx_TctdP0GGAR28GnNt5d3zA",
+  "name": "アビス動物病院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "東京都",
+  "address": "〒152-0003 東京都目黒区碑文谷２丁目１０−２１ ディアハイム碑文谷",
+  "rating": 4.7,
+  "user_ratings_total": 69,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "診察・トリミング・ペットホテル利用時は院内（待合室・診察室）にワンちゃんを同伴できます。口コミでは、待合室で愛犬にスタッフが話しかけてくれるなど、院内で一緒に過ごせる様子が伝えられています。院内は清潔で、待合室にはテレビモニターが設置されているとの声もあります。ペットホテル利用時は1年以内の混合ワクチン接種または抗体検査が必要で、証明書の提示が求められます。診療は循環器科・腫瘍科に力を入れており、トリミングは予約制です。駐車場についてはコインパーキング利用時の一部負担サポートがあるとの情報があります。犬種や体重によるお断りの記載は見当たりませんでした。",
+   "keywords": [
+    "院内同伴可",
+    "ワクチン証明が必要",
+    "駐車料金サポートあり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJCTMNhKWfRjURBxdSCtckV24",
+  "name": "藤田犬猫病院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "大分県",
+  "address": "〒870-0939 大分県大分市中津留１丁目９−２４",
+  "rating": 4.4,
+  "user_ratings_total": 77,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "動物病院として犬猫を連れて受診できる施設。院内での同伴診察が前提で、口コミには長年犬や猫を連れて通院している飼い主の声が複数あり、スタッフの対応の良さが評価されている。一方で診察内容への不満を挙げる口コミも一部あり、対応には差があるようなので、初診時は相談内容を具体的に伝えるとよさそう。トリミングも行っているとのことで、通院以外の利用もできる。休診日は日曜・祝日。",
+   "keywords": [
+    "同伴診察",
+    "トリミングあり",
+    "地域密着50年"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJHf6eWfc1GmARcKN4fP0fuu8",
+  "name": "山田どうぶつ病院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "静岡県",
+  "address": "〒420-0816 静岡県静岡市葵区沓谷３丁目７−３",
+  "rating": 4.3,
+  "user_ratings_total": 77,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "動物病院のため、診察のために自分の犬（他の動物種も含む）を連れて行くことができる。うさぎ・デグー・猫・インコなどエキゾチックアニマルの診療例が口コミで多く見られ、幅広い動物種に対応している様子がうかがえる。院長は説明が丁寧で安心できるとの声がある一方、対応が威圧的だったとする口コミも見られ、担当医によって印象が分かれるようだ。駐車場は公式サイトに案内があり、車での来院も可能。院内での犬・猫の待合スペースの分離やペット用設備についての記載は口コミ・公式サイトともに見当たらず、詳細は来院時に確認するのがよい。",
+   "keywords": [
+    "エキゾチックアニマル対応",
+    "駐車場あり",
+    "同伴前提の動物病院"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJzxua092MGGARHrcpazpx39Q",
+  "name": "新宿区立東大久保公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "東京都",
+  "address": "〒160-0022 東京都新宿区新宿６丁目１４",
+  "rating": 3.5,
+  "user_ratings_total": 77,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用であれば同伴して散歩できる区立公園です。実際に口コミでも「犬のお散歩」に利用している様子が伝えられています。園内はブランコ・すべり台・健康器具などがある小さな公園で、公衆トイレ（だれでもトイレ含む）も整備されています。ドッグランのような専用の遊具や水場はなく、あくまで一般的な近隣公園としての利用が中心です。夜間や早朝はネズミの出没に関する口コミもあるため、足元には注意した方がよさそうです。",
+   "keywords": [
+    "リード必須",
+    "公衆トイレあり",
+    "小規模公園"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJD1XganvJVDURNkq1uX562sY",
+  "name": "GARB COSTA ORANGE LONG TERRACE",
+  "category": "レストラン",
+  "extended_category": "restaurant",
+  "prefecture": "兵庫県",
+  "address": "〒656-1511 兵庫県淡路市郡家１０２８−１ フロッグス・ファーム ピクニックガーデン内",
+  "rating": 3,
+  "user_ratings_total": 78,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "ペット同伴での利用実績があり、同伴に関するルール案内もきちんとされていたという口コミがあります。スタッフが同伴のワンちゃんに声をかけて可愛がってくれたとの声もあり、同伴客への配慮が感じられます。ただし店内・テラスいずれの席で同伴可能かなど詳細な条件は口コミからは分からないため、来店前に電話等で確認すると安心です。駐車場はフロッグス・ファーム敷地内に無料で約300台分あります。",
+   "keywords": [
+    "ペット同伴可",
+    "スタッフ対応良好",
+    "要事前確認"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJcVPtJySJGGARaZvMfneoHBg",
+  "name": "中央区立石川島公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "東京都",
+  "address": "日本、〒104-0051 東京都中央区佃２丁目１−５",
+  "rating": 4.4,
+  "user_ratings_total": 87,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否について公式な明記は見当たらないが、区立の屋外公園であるためリード着用であれば散歩に利用できると考えられる。隅田川沿いの遊歩道が中心で、ベンチや広々とした空間があり、川や船を眺めながらのんびり歩けるロケーション。夜景スポットとしても人気で、日中だけでなく夕方以降の散歩利用も見られる。台風の後は川からの汚れが遊歩道に散らばることがあるとの声もあり、足元の状態には注意が必要。ドッグラン等の専用設備がある記載はなく、あくまで一般的な散歩・休憩向けの公園という位置づけ。",
+   "keywords": [
+    "リード必須",
+    "隅田川沿い散歩",
+    "夜景スポット"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJc_Q5r2K--F8RxV3k40eH4CE",
+  "name": "柴田動物病院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "福井県",
+  "address": "〒918-8204 福井県福井市南四ツ居１丁目１０−４",
+  "rating": 3.8,
+  "user_ratings_total": 87,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "動物病院のため、診察・検査・トリミングのために自分の犬（や猫）を連れて行く形の施設です。院内に入って診察を受けられ、テラスのみ等の制限は確認できません。併設の「NO-LEAD」ではシャンプー・トリミングも予約制で利用できます。駐車場は病院隣にあります。診療時間は曜日により異なり、水曜午後・木曜・日曜・祝日は休診なので事前確認がおすすめです。なお口コミには診察対応や説明について厳しい意見も複数見られるため、通院を検討する際は参考にしてください。",
+   "keywords": [
+    "同伴前提",
+    "トリミング併設",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJ9dNEqriFil8RJCUOIwQzKm8",
+  "name": "千葉小動物クリニック",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "福島県",
+  "address": "〒960-8055 福島県福島市野田町３丁目１−１８",
+  "rating": 4.3,
+  "user_ratings_total": 87,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "診察目的でワンちゃん（また猫ちゃん）を連れて行ける動物病院で、院内（待合室・診察室）への同伴が前提。口コミには椎間板ヘルニアの手術入院や難しい病気の紹介受診など、犬猫での利用実績が複数見られる。一方でハムスターなど犬猫以外の小動物は専門外とされたという口コミがあり、名称に「小動物」とあっても対応範囲は事前に電話確認した方が安心。駐車場はあるものの狭く車での来院には向かないとの声がある。水曜午後は休診となった時期があり、来院前に診療時間の確認が望ましい。",
+   "keywords": [
+    "犬猫の診察に同伴可",
+    "小動物は対応外の場合あり",
+    "駐車場は狭い"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJu9EKSNqcGGAR_23PztOaebo",
+  "name": "緑ヶ丘動物病院",
+  "category": "動物病院",
+  "extended_category": "dog_run",
+  "prefecture": "千葉県",
+  "address": "〒277-0082 千葉県柏市緑ケ丘１９−１ フローラル大塚",
+  "rating": 4.2,
+  "user_ratings_total": 87,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "受診・トリミング・ペットホテルいずれも自分のペットを連れて行く前提の動物病院で、院内にはワンちゃん・ネコちゃんと一緒に入れます。病院内にドッグランが併設されており、通院やホテル利用の際に活用できます。ペットホテルは予約制で、混合ワクチン・狂犬病ワクチン（1週間以上前～1年以内接種済）とノミ予防（過去1カ月以内）が利用条件になっており、当院にかかりつけの子に限定されます。料金は体重別で、小型犬（～8kg）1泊5,500円、中型犬6,600円、大型犬7,150円、超大型犬7,700円、猫5,500円などです。病院前および近隣に駐車場が完備されているとの口コミもあります。院内は年中無休で夜間診療の電話対応もあり、緊急時にも安心して利用できるという声が複数あります。獣医師が少人数のため混雑時は待ち時間が長くなることがある、との口コミもあるため予約時間には余裕を持つとよいでしょう。",
+   "keywords": [
+    "同伴前提",
+    "ドッグラン併設",
+    "ペットホテルあり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJp5RRR38Lm18RrPxOWl-SMsc",
+  "name": "合子沢記念公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "青森県",
+  "address": "〒030-0134 青森県青森市合子沢山崎２２６−２",
+  "rating": 3.8,
+  "user_ratings_total": 99,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "リード着用であれば同伴して散策できる公園です。青森市公式サイトの利用ルールに「犬の放し飼い」の禁止が明記されており、逆に言えばリードをつけていれば芝生広場や林間歩道を歩けます。146ヘクタールの広い敷地に芝生広場・林間歩道・野鳥観察施設があり、口コミでは屋外でボール遊びをしても気にならないほど人が少ないと紹介されています。駐車場は120台分あり、トイレや休憩スペースも整備されています。バーベキューや花火など火気の使用は禁止なので、のんびり散策や自然観察向きの利用が中心になります。熊の出没に触れる口コミもあるため、季節や時間帯には注意した方がよさそうです。",
+   "keywords": [
+    "リード必須",
+    "広い芝生広場",
+    "駐車場あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJCe17HtaHGGAR7rVvcfIunUw",
+  "name": "江戸川区立宇喜田川公園",
+  "category": "公園",
+  "extended_category": "park",
+  "prefecture": "東京都",
+  "address": "〒134-0081 東京都江戸川区北葛西３丁目５",
+  "rating": 3.8,
+  "user_ratings_total": 99,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "同伴可否について公式な明記は見つからなかったが、江戸川区立の公園として一般的にはリード着用であれば同伴散歩が可能と考えられる。園内は幼児向け遊具エリアとアスレチック遊具エリアに分かれており、砂場やローラー滑り台、ベンチ、トイレ、飲料自販機が設置されている。ドッグランや足洗い場など、ワンちゃん向けの専用設備についての情報はない。遊具中心の公園のため、利用者は子供連れが多く、混雑時は周囲への配慮が必要になりそうだ。",
+   "keywords": [
+    "リード必須",
+    "遊具中心",
+    "専用設備なし"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJI6f8tT1lGWARr82fktFI1Bs",
+  "name": "R GARDEN（アールガーデン山中湖）",
+  "category": "宿泊",
+  "extended_category": "pet_hotel",
+  "prefecture": "山梨県",
+  "address": "〒401-0501 山梨県南都留郡山中湖村山中８６５−２８９",
+  "rating": 4.8,
+  "user_ratings_total": 99,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": true,
+   "pet_terrace_only": false,
+   "pet_size_limit": "小型犬のみ2頭まで（合計体重7kgまで）"
+  },
+  "review": {
+   "summary": "客室内へのペット同伴が可能で、公式予約サイトでは「ペット同伴プラン」からの予約が必要です。同伴できるのは小型犬のみ2頭まで（合計体重7kgまで）で、トイレのしつけができていて無駄吠え・飛びつき・施設破壊をしない愛犬が対象です。客室内にペット用品の用意はないため、ペットグッズは持参する必要があります。客室は全室禁煙ですが、屋外の敷地内に喫煙スポットが用意されています。口コミでは、愛犬と宿泊し朝は湖畔の道を散歩したという利用者の声もあり、寒くなったらすぐ暖かい室内に戻れる点が小さな子供や愛犬のいる家族に良いポイントとして挙げられています。夜は敷地内で焚き火を楽しめ、BBQ設備も整っています。サイズ制限があるため、大型犬や中型犬での利用はできない点に注意が必要です。",
+   "keywords": [
+    "小型犬のみ7kgまで",
+    "客室同伴可",
+    "ペット同伴プラン予約制"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJKSA1rXqSGGARP5QZS7tdfes",
+  "name": "松尾犬猫病院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "東京都",
+  "address": "〒114-0003 東京都北区豊島１丁目３８−９ 水口マンション",
+  "rating": 4.3,
+  "user_ratings_total": 99,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "動物病院のため、診療目的でワンちゃん・ネコちゃんを同伴して院内に入ることができます。口コミでは猫の尿閉や膀胱炎の治療、犬の避妊手術など幅広い診療実績が伺え、女性医師の説明が丁寧で、猫が処置中も落ち着いていたとの声があります。飼い主の意向に沿った治療方針の相談にも応じてもらえるとの口コミもあります。支払いは現金のみとの言及があるため、受診時は現金を用意しておくと安心です。ペット同伴に関する特別な条件（サイズ制限やリード必須等）についての記載は見当たりませんでした。",
+   "keywords": [
+    "動物病院",
+    "猫・犬の診療",
+    "現金払いのみ"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJHYbCBH_Yn18RZonTEyJSxCw",
+  "name": "奥山獣医科 登別医院",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "北海道",
+  "address": "〒059-0015 北海道登別市新川町１丁目２",
+  "rating": 4.4,
+  "user_ratings_total": 103,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "診察のためワンちゃん・ネコちゃんを同伴して来院する動物病院で、院内にペットを連れて入ることができる。口コミではネット予約により待ち時間が少なく済んだという声がある一方、患者数が多く予約が取りづらく、当日は数時間待たされることがあるとの声もある。予約制のため、事前予約のうえ時間に余裕を持って来院するのがよい。診察室・待合室は清潔でスタッフの対応も丁寧との口コミが複数あった。",
+   "keywords": [
+    "予約制",
+    "院内同伴可",
+    "混雑あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJcalqMdjmAGARTGY4PFXjmnI",
+  "name": "松原動物病院 天満橋医療センター",
+  "category": "動物病院",
+  "extended_category": "veterinary_care",
+  "prefecture": "大阪府",
+  "address": "〒530-0043 大阪府大阪市北区天満３丁目２−１６",
+  "rating": 4.2,
+  "user_ratings_total": 103,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": null,
+   "pet_terrace_only": null,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "動物病院のため、飼い主が自分の犬・猫を同伴して受診する形態です。眼科・皮膚科・整形外科・循環器科・腫瘍科など専門診療に対応しており、健康診断や手術後のフォローで通う利用者の口コミが多く見られます。健康診断は事前予約制で、受付や獣医師の対応が丁寧という声が複数あります。希望すれば犬用の飲み水を用意してもらえるサービスがあります。クレジットカードでの支払いにも対応しています。眼科診療は完全予約制で、予約が取りにくいという声もあるため事前確認がおすすめです。",
+   "keywords": [
+    "事前予約制",
+    "専門診療対応",
+    "犬用の水あり"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJmQX9U1iLGGARtglf3yHinyM",
+  "name": "P2 DOG&CAT",
+  "category": "ペットショップ",
+  "extended_category": "pet_store",
+  "prefecture": "東京都",
+  "address": "〒150-8509 東京都渋谷区渋谷２丁目２１−１ 渋谷ヒカリエShinQs 5F",
+  "rating": 3.5,
+  "user_ratings_total": 103,
+  "pet": {
+   "pet_friendly_status": "allowed",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": true,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "店内にワンちゃんを連れて入れると考えられるペットショップです。犬猫用のフードやおやつ、雑貨、プレミアムフードなどを扱い、特におやつの種類が豊富と口コミにあります。実際に子犬を連れて来店しフードサンプルをもらったという口コミもあり、同伴での利用がしやすい店舗のようです。ただし渋谷ヒカリエ5F内の店舗のため、商業施設側の規定も事前に確認すると安心です。",
+   "keywords": [
+    "店内OK",
+    "おやつ豊富",
+    "プレミアムフード"
+   ]
+  }
+ },
+ {
+  "place_id": "ChIJm2r7M0KbImARQxwF5QYQpyI",
+  "name": "動物総合医療センター千葉",
+  "category": "ショッピング",
+  "extended_category": "veterinary_care",
+  "prefecture": "千葉県",
+  "address": "〒260-0808 千葉県千葉市中央区星久喜町１７０−１",
+  "rating": 4.3,
+  "user_ratings_total": 102,
+  "pet": {
+   "pet_friendly_status": "leashed_only",
+   "pet_friendly_verified": true,
+   "pet_indoor_allowed": true,
+   "pet_terrace_only": false,
+   "pet_size_limit": null
+  },
+  "review": {
+   "summary": "診療・入院・ペットホテル利用でワンちゃん・ネコちゃんを同伴できる動物病院です。来院時はワンちゃんはリード着用、ネコちゃんはキャリー使用が必須と公式サイトに明記されています。予約不要で土日祝も診療しており、駐車場も完備しているとの口コミがあります。腫瘍外科や特殊外科（整形外科・神経外科）に力を入れており、セカンドオピニオンやCT検査にも対応しています。ペットホテルは予約制で、利用には1年以内の混合ワクチン接種とノミ・ダニ予防が条件になっています。",
+   "keywords": [
+    "リード必須",
+    "駐車場あり",
+    "ペットホテル併設"
+   ]
+  }
+ }
+]
