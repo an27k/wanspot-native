@@ -164,3 +164,101 @@ function minutesUntilClose(body: string): number | null {
   const diff = closeMin - nowMin
   return diff > 0 ? diff : null
 }
+
+
+/**
+ * Google Places の opening_hours.periods。日と時刻だけを持つので、時刻に依存しない。
+ *
+ * open_now はサーバー側で「その瞬間」を焼き込むため、24時間キャッシュに載せると
+ * 大半の時間帯で嘘になる。periods を配ってクライアントで判定すれば、キャッシュを
+ * 壊さずに常に正しい状態を出せる。
+ */
+export type OpeningPeriod = {
+  open?: { day?: number; time?: string } | null
+  close?: { day?: number; time?: string } | null
+}
+
+function toMinutes(time: string | undefined): number | null {
+  if (!time || !/^\d{4}$/.test(time)) return null
+  const h = Number(time.slice(0, 2))
+  const m = Number(time.slice(2))
+  if (!Number.isFinite(h) || !Number.isFinite(m) || h > 23 || m > 59) return null
+  return h * 60 + m
+}
+
+/** JST の今の曜日（0=日）と分 */
+function nowInTokyo(now = new Date()): { day: number; minutes: number } {
+  const f = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Tokyo',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  const parts = Object.fromEntries(f.formatToParts(now).map((x) => [x.type, x.value]))
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const day = Math.max(0, days.indexOf(String(parts.weekday)))
+  const minutes = Number(parts.hour) * 60 + Number(parts.minute)
+  return { day, minutes }
+}
+
+/**
+ * periods から今の営業状態と、閉店までの残り分を返す。
+ * 日をまたぐ区間（22:00-02:00）も扱う。
+ */
+export function openStateFromPeriods(
+  periods: OpeningPeriod[] | null | undefined,
+  now = new Date()
+): { status: OpenStatus; minutesUntilClose: number | null } {
+  if (!periods?.length) return { status: 'unknown', minutesUntilClose: null }
+
+  // 24時間営業は close を持たない1件だけで表現される
+  if (periods.length === 1 && !periods[0]?.close) {
+    return { status: 'open', minutesUntilClose: null }
+  }
+
+  const { day, minutes } = nowInTokyo(now)
+  for (const p of periods) {
+    const od = p.open?.day
+    const om = toMinutes(p.open?.time)
+    const cd = p.close?.day
+    const cm = toMinutes(p.close?.time)
+    if (od == null || om == null || cd == null || cm == null) continue
+
+    // 週内の通し分に直して比較する。日をまたぐ区間は終端が先頭より小さくなる
+    const start = od * 1440 + om
+    let end = cd * 1440 + cm
+    if (end <= start) end += 7 * 1440
+    let cur = day * 1440 + minutes
+    if (cur < start) cur += 7 * 1440
+
+    if (cur >= start && cur < end) {
+      return { status: 'open', minutesUntilClose: end - cur }
+    }
+  }
+  return { status: 'closed', minutesUntilClose: null }
+}
+
+/** その日の営業区間を「9:00-17:30」の形で返す。無ければ null（休み） */
+export function todayRangeFromPeriods(
+  periods: OpeningPeriod[] | null | undefined,
+  now = new Date()
+): string | null {
+  if (!periods?.length) return null
+  if (periods.length === 1 && !periods[0]?.close) return '24時間'
+
+  const { day } = nowInTokyo(now)
+  const fmt = (t: string | undefined): string | null => {
+    const m = toMinutes(t)
+    return m == null ? null : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`
+  }
+  const ranges = periods
+    .filter((p) => p.open?.day === day)
+    .map((p) => {
+      const o = fmt(p.open?.time)
+      const c = fmt(p.close?.time)
+      return o && c ? `${o}-${c}` : null
+    })
+    .filter(Boolean)
+  return ranges.length ? ranges.join('、') : null
+}
