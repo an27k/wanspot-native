@@ -13,6 +13,7 @@ import { type } from '@/constants/typography'
 import { GOOGLE_HOME, GOOGLE_HOME_DARK_CHIPS } from '@/constants/google-home-tokens'
 import { useAppTheme } from '@/context/ThemeContext'
 import { useThemedStyles } from '@/hooks/use-themed-styles'
+import { petPolicyBadge } from '@/lib/nearby/pet-policy'
 
 const PHOTO_CONTROL_ICON = '#242220'
 
@@ -94,6 +95,7 @@ export function NearbySheetSpotCard({
   )
   const uri = spotPhotoUrl(spot.photoRef, 'thumbnail')
 
+  const petBadge = petPolicyBadge(spot)
   const distLabel =
     userLocation &&
     formatDistanceLabel(calcDistanceMeters(userLocation.lat, userLocation.lng, spot.lat, spot.lng))
@@ -167,6 +169,19 @@ export function NearbySheetSpotCard({
         <Text style={styles.spotName} numberOfLines={compact || variant === 'carousel' ? 1 : 2}>
           {spot.name}
         </Text>
+        {/*
+          このカードには犬の情報が1つも出ていなかった（カテゴリ・★・価格・距離・名前だけ）。
+          犬と行ける場所を探すアプリで、一覧から可否が分からないのでは1枚ずつ開いて
+          戻る作業になる。pet-policy.ts は「3面の真実源」と宣言しているのに、
+          地図面だけ接続されていなかった。
+        */}
+        {petBadge ? (
+          <View style={[styles.petPill, petPillTone[petBadge.tone]]}>
+            <Text style={[styles.petPillTxt, petPillTxtTone[petBadge.tone]]} numberOfLines={1}>
+              {petBadge.label}
+            </Text>
+          </View>
+        ) : null}
         {!compact && variant !== 'carousel' ? (
           <Text style={styles.spotAddr} numberOfLines={2}>{spot.address}</Text>
         ) : null}
@@ -174,6 +189,18 @@ export function NearbySheetSpotCard({
     </TouchableOpacity>
   )
 }
+
+/** バッジの色味はスポット詳細と揃える。同じ語が違う色で出ると別物に見える */
+const petPillTone = StyleSheet.create({
+  ok: { backgroundColor: 'rgba(18,179,160,0.12)' },
+  terrace: { backgroundColor: 'rgba(242,153,43,0.14)' },
+  caution: { backgroundColor: 'rgba(255,106,77,0.12)' },
+})
+const petPillTxtTone = StyleSheet.create({
+  ok: { color: '#0E8C7E' },
+  terrace: { color: '#B26A12' },
+  caution: { color: '#C4442A' },
+})
 
 const iconStyles = StyleSheet.create({
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
@@ -250,6 +277,15 @@ const makeStyles = (chipTokens: ListGenreTokens) => (colors: AppColors) => Style
   // 地図と並ぶカードでも店名が起点。carousel / compact は numberOfLines 1 のまま
   spotName: { ...type.heading, color: colors.textPrimary },
   spotAddr: { ...type.caption, color: colors.textMuted },
+  petPill: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+    maxWidth: '100%',
+  },
+  petPillTxt: { ...type.caption, fontWeight: '700' as const },
 })
 
 const createLightStyles = makeStyles(GOOGLE_HOME)
