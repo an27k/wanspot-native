@@ -72,9 +72,19 @@ export function LiquidGlass({
   const native = isNativeLiquidGlassSupported() && !reduceTransparency
 
   if (native) {
+    /*
+      ネイティブのガラスが一瞬落ちて、バーが完全に透明になることがある。
+      操作中（isInteractive で再合成が走る）と、freezeOnBlur / detachInactiveScreens で
+      凍結された画面が戻るときに起きる。画面遷移で直るのは、そこで作り直されるため。
+
+      効果が落ちても中身が読めるよう、薄い面を下に敷いておく。ガラスが効いている
+      ときはほぼ見えず、落ちたときだけ受け皿になる濃さにしてある。
+      フォールバック側（BlurView）は 0.72 の面を持っているのでこの問題が出ない。
+    */
+    const safety = isDark ? 'rgba(28,26,24,0.16)' : 'rgba(255,252,250,0.16)'
     return (
       <GlassView
-        style={style}
+        style={[style, { backgroundColor: safety }]}
         glassEffectStyle={glassEffectStyle}
         tintColor={tintColor}
         isInteractive={isInteractive}
