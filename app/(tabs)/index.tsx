@@ -68,7 +68,7 @@ import { useWeather } from '@/lib/weather/use-weather'
 import { useDogProfile } from '@/components/dog/useDogProfile'
 import type { PlaceResult } from '@/types/places'
 import { breedHeatSensitivity } from '@/lib/dog-breeds'
-import { walkAlertFromTemp, walkAlertLevel, type WalkAlertKey } from '@/lib/weather/walk-alert'
+import { walkAlertFromTemp, type WalkAlertKey } from '@/lib/weather/walk-alert'
 import { dogAgeMonths } from '@/lib/analytics-context'
 
 const FILTER_BAR_H = 52
@@ -409,12 +409,6 @@ function NearbyPage() {
     }).key
   }, [weather.data?.tempC, dog?.breed, dog?.birthday])
 
-  /** 地図に出す暑さ警告。警戒段階のときだけ返す */
-  const heatAlert = useMemo(() => {
-    if (heatKey !== 'caution' && heatKey !== 'danger' && heatKey !== 'stop') return null
-    return walkAlertLevel(heatKey)
-  }, [heatKey])
-
   const situation = useMemo<WalkSituation>(
     () => ({
       rainy: weather.data?.condition === 'rain' || weather.data?.condition === 'snow' || weather.data?.condition === 'thunder',
@@ -561,30 +555,6 @@ function NearbyPage() {
             topInset={overlayTop}
             bottomInset={carouselBottom + 150}
           />
-
-          {/*
-            暑さの警告は地図に常設する。これまで唯一の表示は設定タブの
-            WalkAlertCard で、しかもゲストは早期 return で到達できなかった。
-            行き先を選ぶ画面に出ていなければ、選ぶ前に知らせたことにならない。
-
-            気温と位置だけで決まるのでアカウントは要らない。快適な日は出さない
-            （毎日出ていると読まれなくなる）。
-          */}
-          {heatAlert ? (
-            <LiquidGlass
-              style={[styles.heatChip, { top: overlayTop + 8 }]}
-              glassEffectStyle="regular"
-            >
-              <View style={[styles.heatDot, { backgroundColor: heatAlert.color }]} />
-              <Text style={[styles.heatLabel, { color: heatAlert.color }]}>{heatAlert.label}</Text>
-              {typeof weather.data?.tempC === 'number' ? (
-                <Text style={styles.heatTemp}>{weather.data.tempC}℃</Text>
-              ) : null}
-              <Text style={styles.heatAdvice} numberOfLines={2}>
-                {heatAlert.advice}
-              </Text>
-            </LiquidGlass>
-          ) : null}
 
           {locationPermissionDenied ? (
             <View style={[styles.permissionBanner, { top: overlayTop + 8 }]}>
@@ -737,26 +707,6 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     zIndex: 2,
     elevation: 2,
   },
-  heatChip: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  heatDot: { width: 8, height: 8, borderRadius: 4 },
-  heatLabel: { ...type.label, fontWeight: '800' },
-  heatTemp: { ...type.label, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
-  heatAdvice: { ...type.caption, color: colors.textSecondary, flex: 1 },
   permissionBanner: {
     position: 'absolute',
     left: 16,
