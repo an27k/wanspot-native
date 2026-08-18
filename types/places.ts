@@ -23,6 +23,7 @@ export type PlaceResult = {
   pet_indoor_allowed?: boolean | null
   /** サーバー検証済みの拡張カテゴリ（dog_run / onsen）。名前の表記ゆれより優先する分類 */
   extended_category?: string | null
+  pet_policy_evidence?: 'official' | 'aggregator' | 'reviews' | 'inferred' | null
   /**
    * 営業時間。open_now ではなく periods を受け取り、判定はクライアントで毎回行う。
    * open_now は「その瞬間」を焼き込むので、24時間キャッシュに載せると嘘になる。

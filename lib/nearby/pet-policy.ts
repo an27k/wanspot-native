@@ -20,6 +20,19 @@ export type PetPolicySource = {
   pet_terrace_only?: boolean | null
   pet_friendly_status?: string | null
   pet_friendly_verified?: boolean | null
+  /**
+   * 判定の根拠。verified は「検証を試みた」であって「裏が取れた」ではなく、
+   * verified=true かつ実際は推測の行が 8,241件ある。信頼の指標にはこちらを使う。
+   */
+  pet_policy_evidence?: 'official' | 'aggregator' | 'reviews' | 'inferred' | null
+}
+
+/** 根拠の強さ。表示の言い切り方をここで決める */
+export function evidenceTone(p: PetPolicySource): 'confirmed' | 'reported' | 'weak' {
+  const e = p.pet_policy_evidence
+  if (e === 'official' || e === 'aggregator') return 'confirmed'
+  if (e === 'reviews') return 'reported'
+  return 'weak'
 }
 
 /** 「店内OK」フィルタの表示語（地図・検索タブで共通）。
@@ -58,6 +71,22 @@ export type PetPolicyBadge = {
 }
 
 /**
+ * 根拠の強さをラベルに反映する。
+ *
+ * 「確認済み」を名乗れるのは一次情報か掲載系で裏が取れたものだけ。口コミ由来は
+ * 伝聞なのでそう書く。推測は何も足さない（可否だけ述べる）。
+ *
+ * 裏付けの無い「確認済み」は無根拠の断定より悪い。飼い主はそう書かれた情報を
+ * 最も強く信じるので、そこを外すと他の正しい判定まで信用を失う。
+ */
+function withEvidence(base: string, p: PetPolicySource): string {
+  const tone = evidenceTone(p)
+  if (tone === 'confirmed') return `${base}・確認済み`
+  if (tone === 'reported') return `${base}（口コミによる）`
+  return base
+}
+
+/**
  * 同伴可否バッジの内容を決める。
  *
  * 分岐が indoor / terrace / not_allowed の3つしかなく、leashed_only と
@@ -80,12 +109,18 @@ export function petPolicyBadge(p: PetPolicySource): PetPolicyBadge | null {
     根拠の質を伴わない「確認済み」は、無根拠の断定より悪い。飼い主はそう書かれた
     情報を最も強く信じる。根拠の質を返す仕組みができるまでは、可否だけを述べる。
   */
-  if (p.pet_indoor_allowed === true) return { label: '店内OK', tone: 'ok' }
-  if (placeIsTerracePetOk(p)) return { label: 'テラス席のみOK', tone: 'terrace' }
-  if (p.pet_friendly_status === 'leashed_only') return { label: 'リード着用で同伴OK', tone: 'ok' }
+  if (p.pet_indoor_allowed === true) {
+    return { label: withEvidence('店内OK', p), tone: 'ok' }
+  }
+  if (placeIsTerracePetOk(p)) return { label: withEvidence('テラス席のみOK', p), tone: 'terrace' }
+  if (p.pet_friendly_status === 'leashed_only') {
+    return { label: withEvidence('リード着用で同伴OK', p), tone: 'ok' }
+  }
   // 同伴自体は確認済みだが、屋内まで入れるかは分かっていない。
   // 「OK」だけを出すと店内に入れる前提で来てしまうので、そこは言い切らない
-  if (p.pet_friendly_status === 'allowed') return { label: '同伴OK・店内は要確認', tone: 'ok' }
+  if (p.pet_friendly_status === 'allowed') {
+    return { label: withEvidence('同伴OK・店内は要確認', p), tone: 'ok' }
+  }
   // 検証は済んでいるが可否を判定できなかった。未検証（何も出さない）とは別の状態
   if (p.pet_friendly_verified === true) return { label: '同伴可否は要確認', tone: 'caution' }
   return null

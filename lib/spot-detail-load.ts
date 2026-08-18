@@ -18,7 +18,7 @@ import { wanspotFetch } from '@/lib/wanspot-api'
   表示が変わるのは、飼い主から見れば情報が消えたのと同じ。
 */
 export const SPOT_DETAIL_SELECT =
-  'id, place_id, name, category, rating, address, lat, lng, price_level, price_label, instagram_id, instagram_lookup_due, pet_indoor_allowed, pet_terrace_only, pet_friendly_status, pet_friendly_verified, pet_size_limit'
+  'id, place_id, name, category, rating, address, lat, lng, price_level, price_label, instagram_id, instagram_lookup_due, pet_indoor_allowed, pet_terrace_only, pet_friendly_status, pet_friendly_verified, pet_size_limit, pet_policy_evidence'
 
 export type SpotDetailRow = {
   id: string
@@ -38,6 +38,7 @@ export type SpotDetailRow = {
   pet_terrace_only?: boolean | null
   pet_friendly_status?: string | null
   pet_friendly_verified?: boolean | null
+  pet_policy_evidence?: 'official' | 'aggregator' | 'reviews' | 'inferred' | null
   /** 「11kg以下」「キャリーに入るサイズ」等の自由文。バッジだけでは判断できない条件 */
   pet_size_limit?: string | null
   /** 構造化属性の短いラベル（共有文用。犬情報は含めない） */
@@ -69,6 +70,7 @@ export function spotRowFromPlace(routeId: string, place: PlaceResult, resolvedId
     pet_terrace_only: place.pet_terrace_only ?? null,
     pet_friendly_status: place.pet_friendly_status ?? null,
     pet_friendly_verified: place.pet_friendly_verified ?? null,
+    pet_policy_evidence: place.pet_policy_evidence ?? null,
     pet_size_limit: place.pet_size_limit ?? null,
   }
 }

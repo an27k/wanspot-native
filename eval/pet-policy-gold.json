@@ -351,7 +351,8 @@
    "basis": "公式サイト https://bakecoffee-taik.com/about.php には「OPEN 8:30ー17:00」「CLOSED Tuesdays」等の営業情報のみで、ペット・犬に関する記載は一切なし。ヒトサラ店舗ページ https://hitosara.com/0031539987/ にもペット可否の項目なし。itsumo dog「目黒駅周辺のドッグカフェ・愛犬同伴可の飲食店」 https://itsumo.dog/tokyo/st/2800919/cafe/ の掲載店一覧にも当店は出てこない。紹介記事（visitingcafe）では「キッチン横の右側に2人掛けテーブル2席、カウンター4席」「出入り口横には4人掛けテーブルと1人掛けテーブル」と小規模なイートインのみでテラス席の言及もなし。一次情報・二次情報とも犬同伴の裏が取れない。",
    "db_at_2026_08_18": "allowed",
    "was_wrong": true,
-   "direction": "db_too_permissive"
+   "direction": "db_too_permissive",
+   "disputed": "undeterminable としたが、食べログと利用口コミにペット可の記載あり。同上"
   },
   {
    "place_id": "ChIJZfBelB_1GGARDUASn3Iaw3c",
@@ -393,7 +394,8 @@
    "basis": "千代田区の公園個別ページ https://www.city.chiyoda.lg.jp/shisetsu/koen/rensei-ko.html には住所・地図・問い合わせ先のみで、犬の持ち込み禁止や利用ルールの記載はなし。区の「犬を飼われている方へのお願い」 https://www.city.chiyoda.lg.jp/koho/kurashi/dobutsu/onegai.html に「東京都の動物愛護条例により、散歩の際はリードをさせないといけません。」とあり、区として犬の散歩自体を禁じる記載はない（区は2025年に飯田橋でドッグランも開設 https://www.city.chiyoda.lg.jp/koho/machizukuri/koen/dogrun.html ）。ただし練成公園に固有の掲示（芝生地への立入可否等）は一次情報で確認できておらず、条例レベルからの一般則にとどまるため confidence は low。",
    "db_at_2026_08_18": "leashed_only",
    "was_wrong": false,
-   "direction": "none"
+   "direction": "none",
+   "disputed": "confidence=low。README の除外ルールでは分母から外すべきなのに、初版の集計では一致に含めていた"
   },
   {
    "place_id": "ChIJ3dbBrVyLGGARBImW4AHTB-I",
@@ -407,7 +409,8 @@
    "basis": "店舗公式サイト（Owner's Table）https://shintragarden.owst.jp/ の店舗詳細に「ペット同伴：可」「テラス席：あり」と明記。詳細セクションを個別に確認しても、総席数25席・個室なし・貸切可などの項目とともに「ペット同伴：可」とあるだけで、「テラス席のみ」といった限定の注記は付いていない。ホットペッパーグルメ https://www.hotpepper.jp/strJ004089096/ も「その他」欄に「ペット同伴：可」と条件なしで掲載。ただし「店内可」を明示した文言は公式にも存在せず、屋内席まで確実に同伴できるかの直接的な裏は取れていないため medium。",
    "db_at_2026_08_18": "outdoor_only",
    "was_wrong": true,
-   "direction": "db_too_strict"
+   "direction": "db_too_strict",
+   "disputed": "第三者監査が反証。2026年の犬向け掲載は「テラス席のみ」。公式の『ペット可＋テラスあり』から店内可は導けない。DBの outdoor_only が正しい可能性が高い。この gold ラベルは誤り"
   },
   {
    "place_id": "ChIJq5lKGwCNGGARbV_wGhUKuus",
@@ -563,5 +566,17 @@
    "was_wrong": false,
    "direction": "db_missing_condition"
   }
- ]
+ ],
+ "audit_2026_08_18": {
+  "by": "第三者データ品質監査",
+  "verdict": "このセットのラベル自体に既知の欠陥がある。出荷判定には使えない。回帰用に留めること",
+  "known_defects": [
+   "新虎ガーデン: gold=allowed は誤り。DB の outdoor_only が正しい可能性が高い",
+   "undeterminable 8件のうち少なくとも2件（LAZZY coffee / taik）は公開情報が存在した。『世に情報が無い率』ではなく『この検索プロトコルの未解決率』",
+   "undeterminable のうち許容方向だった5件を was_wrong=true としたが、これは未裏付けであって誤りの証明ではない",
+   "confidence=low を分母から外すと宣言しながら、初版の集計では含めていた",
+   "5値への圧縮に曖昧さがある（ケージ必須・抱っこ必須・屋上全席・診療目的が同じ status に落ちる）。gold 同士でも同じ事実が別 status になりうる"
+  ],
+  "disputed_marked": 3
+ }
 }

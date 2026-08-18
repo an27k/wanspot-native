@@ -25,6 +25,7 @@ export type SheetSpot = {
   pet_friendly_status?: string | null
   /** ペット同伴情報が確認済みか */
   pet_friendly_verified?: boolean | null
+  pet_policy_evidence?: 'official' | 'aggregator' | 'reviews' | 'inferred' | null
   /** 営業時間。カードで「営業時間外」を出すのに使う */
   opening_hours?: { periods?: OpeningPeriod[] | null } | null
   /** サーバー検証済みの拡張カテゴリ（dog_run / onsen）。ジャンル推定で名称より優先する */
@@ -50,6 +51,7 @@ export function sheetSpotFromPlace(p: PlaceResult): SheetSpot {
     pet_terrace_only: p.pet_terrace_only ?? null,
     pet_friendly_status: p.pet_friendly_status ?? null,
     pet_friendly_verified: p.pet_friendly_verified ?? null,
+    pet_policy_evidence: p.pet_policy_evidence ?? null,
     opening_hours: p.opening_hours ?? null,
     extended_category: p.extended_category ?? null,
   }
