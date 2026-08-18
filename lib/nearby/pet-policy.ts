@@ -62,7 +62,7 @@ export type PetPolicyBadge = {
  *
  * 分岐が indoor / terrace / not_allowed の3つしかなく、leashed_only と
  * 「allowed だが屋内可否は未確認」が揃って null に落ちていた。実データで測ると
- * 70%（50件中35件）がバッジ無しで、「確認済みでリード着用なら同伴可」と
+ * 70%（50件中35件）がバッジ無しで、「リード着用なら同伴可」と
  * 「そもそも誰も調べていない」が画面上で見分けられなかった。
  *
  * 検証済みで分かっていることは、弱い情報でも必ず何か出す。出さないのは
@@ -70,7 +70,17 @@ export type PetPolicyBadge = {
  */
 export function petPolicyBadge(p: PetPolicySource): PetPolicyBadge | null {
   if (p.pet_friendly_status === 'not_allowed') return { label: '同伴不可の可能性', tone: 'caution' }
-  if (p.pet_indoor_allowed === true) return { label: '店内OK・確認済み', tone: 'ok' }
+  /*
+    「確認済み」は名乗らない。
+
+    pet_friendly_verified が立っていても、その根拠が推測のものが実測で 2,602件（確定
+    ステータスの16.1%）ある。注記に「推測」「要確認」「web検索は実施できず」と自分で
+    書き残しながら確定値になっている行が、そのまま同じバッジで出ていた。
+
+    根拠の質を伴わない「確認済み」は、無根拠の断定より悪い。飼い主はそう書かれた
+    情報を最も強く信じる。根拠の質を返す仕組みができるまでは、可否だけを述べる。
+  */
+  if (p.pet_indoor_allowed === true) return { label: '店内OK', tone: 'ok' }
   if (placeIsTerracePetOk(p)) return { label: 'テラス席のみOK', tone: 'terrace' }
   if (p.pet_friendly_status === 'leashed_only') return { label: 'リード着用で同伴OK', tone: 'ok' }
   // 同伴自体は確認済みだが、屋内まで入れるかは分かっていない。
