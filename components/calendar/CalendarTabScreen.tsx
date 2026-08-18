@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { RunningDog, PowState } from '@/components/DogStates'
-import { AppHeader } from '@/components/AppHeader'
+import { AppHeader, appHeaderOverlayPadding } from '@/components/AppHeader'
 import { PriceLevelMark } from '@/components/calendar/PriceLevelMark'
 import { resolveEventPrefecture } from '@/lib/calendar/resolve-prefecture'
 import type { AppColors } from '@/constants/colors'
@@ -175,10 +175,9 @@ export function CalendarTabScreen() {
 
   return (
     <View style={styles.root}>
-      <AppHeader />
       <ScrollView
         contentContainerStyle={{
-          paddingTop: 12,
+          paddingTop: appHeaderOverlayPadding(insets.top) + 12,
           paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24,
         }}
       >
@@ -375,6 +374,7 @@ export function CalendarTabScreen() {
           </View>
         )}
       </ScrollView>
+      <AppHeader overlay />
     </View>
   )
 }

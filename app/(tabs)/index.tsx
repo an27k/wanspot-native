@@ -13,7 +13,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { AppHeader } from '@/components/AppHeader'
+import { AppHeader, appHeaderOverlayPadding } from '@/components/AppHeader'
+import { LiquidGlass } from '@/components/ui/LiquidGlass'
 import type { AppColors } from '@/constants/colors'
 import { type } from '@/constants/typography'
 import { TAB_BAR_HEIGHT } from '@/constants/layout'
@@ -87,9 +88,8 @@ function NearbyPage() {
   const filtersLocked = !session
   const { colors } = useAppTheme()
   const styles = useThemedStyles(createStyles)
-  // 共通 AppHeader がセーフエリアを受け持つため、地図内は純粋な余白だけでよい。
-  const topSafe = 8
-  const searchBarTop = topSafe
+  // ヘッダーは地図の上に重ねる。検索バーはガラスヘッダーのすぐ下に置く。
+  const searchBarTop = appHeaderOverlayPadding(insets.top) + 8
   const filterBarTop = searchBarTop + SEARCH_BAR_H
   const overlayTop = filterBarTop + FILTER_BAR_H
 
@@ -549,7 +549,6 @@ function NearbyPage() {
   return (
     <GestureHandlerRootView style={styles.flex}>
       <View style={styles.flex}>
-        <AppHeader />
         <View style={styles.mapContent}>
           <View style={styles.mapArea}>
           <NearbyMapView
@@ -572,7 +571,10 @@ function NearbyPage() {
             （毎日出ていると読まれなくなる）。
           */}
           {heatAlert ? (
-            <View style={[styles.heatChip, { top: overlayTop + 8, borderColor: heatAlert.color }]}>
+            <LiquidGlass
+              style={[styles.heatChip, { top: overlayTop + 8 }]}
+              glassEffectStyle="regular"
+            >
               <View style={[styles.heatDot, { backgroundColor: heatAlert.color }]} />
               <Text style={[styles.heatLabel, { color: heatAlert.color }]}>{heatAlert.label}</Text>
               {typeof weather.data?.tempC === 'number' ? (
@@ -581,7 +583,7 @@ function NearbyPage() {
               <Text style={styles.heatAdvice} numberOfLines={2}>
                 {heatAlert.advice}
               </Text>
-            </View>
+            </LiquidGlass>
           ) : null}
 
           {locationPermissionDenied ? (
@@ -617,7 +619,7 @@ function NearbyPage() {
           {/* 地図上部: 検索バー（旧検索ホームから統合）＋フィルタバー */}
           <View style={styles.mapOverlays} pointerEvents="box-none">
           <View style={[styles.searchBarWrap, { top: searchBarTop }]}>
-            <View style={styles.searchPill}>
+            <LiquidGlass style={styles.searchPill} glassEffectStyle="regular" isInteractive>
               <Ionicons name="search" size={18} color={colors.textSecondary} />
               <TextInput
                 style={styles.searchInput}
@@ -638,7 +640,7 @@ function NearbyPage() {
                   <Ionicons name="close-circle" size={18} color={colors.textHint} />
                 </TouchableOpacity>
               ) : null}
-            </View>
+            </LiquidGlass>
           </View>
 
           {/* ジャンル・条件バーは検索地点選択中も表示（アンカーを維持したまま絞り込める） */}
@@ -655,19 +657,19 @@ function NearbyPage() {
           />
 
           {searchActive ? (
-            <View style={[styles.resultBar, { top: overlayTop + 4 }]}>
+            <LiquidGlass style={[styles.resultBar, { top: overlayTop + 4 }]} glassEffectStyle="regular">
               <Text style={styles.resultBarTxt} numberOfLines={1}>
                 {searchAnchor!.label} 周辺のスポット {items.length}件
               </Text>
               <TouchableOpacity onPress={clearSearch} hitSlop={8} accessibilityLabel="検索地点を解除して現在地に戻る">
                 <Text style={styles.resultBarClose}>現在地に戻る</Text>
               </TouchableOpacity>
-            </View>
+            </LiquidGlass>
           ) : null}
 
           {/* 予測候補ドロップダウン（Googleマップ型: 地名・駅・施設） */}
           {searchFocused && predictions.length > 0 ? (
-            <View style={[styles.predList, { top: filterBarTop + 4 }]}>
+            <LiquidGlass style={[styles.predList, { top: filterBarTop + 4 }]} glassEffectStyle="regular">
               {predictions.map((pItem) => (
                 <TouchableOpacity
                   key={pItem.place_id}
@@ -687,7 +689,7 @@ function NearbyPage() {
                   </View>
                 </TouchableOpacity>
               ))}
-            </View>
+            </LiquidGlass>
           ) : null}
           </View>
 
@@ -717,6 +719,7 @@ function NearbyPage() {
             </View>
           ) : null}
         </View>
+        <AppHeader overlay />
       </View>
     </GestureHandlerRootView>
   )
@@ -744,8 +747,6 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 14,
-    borderWidth: 1,
-    backgroundColor: colors.surface,
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -834,14 +835,11 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     height: 48,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: colors.input,
-    borderWidth: 1,
-    borderColor: colors.border,
     shadowColor: colors.shadow,
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   // 自分で打つ検索文字。入れ物は height 48 固定なので 17 でも収まる
   searchInput: { flex: 1, ...type.row, color: colors.textPrimary, paddingVertical: 0 },
@@ -855,14 +853,11 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.border,
     shadowColor: colors.shadow,
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   // 左は今どこを見ているかの表示、右は押せる出口。同じ太さで並べると出口が埋もれる
   resultBarTxt: { ...type.caption, flex: 1, color: colors.textPrimary },
@@ -871,17 +866,13 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     position: 'absolute',
     left: 20,
     right: 20,
-    backgroundColor: colors.surfaceRaised,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
     zIndex: 6,
     shadowColor: colors.shadow,
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   predRow: {
     flexDirection: 'row',

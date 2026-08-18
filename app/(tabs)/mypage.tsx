@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { AppHeader } from '@/components/AppHeader'
+import { AppHeader, appHeaderOverlayPadding } from '@/components/AppHeader'
 import { SafeDogAvatar } from '@/components/dog/SafeDogAvatar'
 import { RunningDog } from '@/components/DogStates'
 import { WalkAlertCard } from '@/components/search/WalkAlertCard'
@@ -54,7 +54,6 @@ function SettingsTab() {
   if (isGuest) {
     return (
       <View style={styles.root}>
-        <AppHeader />
         {/*
           説明文は置かない。押した先の入口画面に同じことが書いてあるので、
           ここで先に読ませても二度手間になる。
@@ -63,7 +62,7 @@ function SettingsTab() {
           ようにする。ここを閉じていると、登録しない人はライト/ダークを選べない。
           表示の切り替えを上、登録の導線を下に置き、2つをまとめて中央に寄せる。
         */}
-        <View style={styles.guestMain}>
+        <View style={[styles.guestMain, { paddingTop: appHeaderOverlayPadding(insets.top) }]}>
           <View style={styles.guestTheme}>
             <Text style={styles.sectionCaption}>表示</Text>
             <ThemePreferenceSegments />
@@ -87,6 +86,7 @@ function SettingsTab() {
             <Text style={styles.legalTxt}>利用規約</Text>
           </PressableScale>
         </View>
+        <AppHeader overlay />
       </View>
     )
   }
@@ -94,19 +94,22 @@ function SettingsTab() {
   if (loading && !dog) {
     return (
       <View style={styles.root}>
-        <AppHeader />
         <View style={styles.loadRoot}>
           <RunningDog label="設定を読み込み中..." />
         </View>
+        <AppHeader overlay />
       </View>
     )
   }
 
   return (
     <View style={styles.root}>
-      <AppHeader />
       <ScrollView
-        contentContainerStyle={{ paddingTop: 12, paddingBottom: padBottom, gap: 8 }}
+        contentContainerStyle={{
+          paddingTop: appHeaderOverlayPadding(insets.top) + 12,
+          paddingBottom: padBottom,
+          gap: 8,
+        }}
       >
         <View style={styles.section}>
           <PressableScale
@@ -226,6 +229,7 @@ function SettingsTab() {
           </View>
         </View>
       </ScrollView>
+      <AppHeader overlay />
     </View>
   )
 }

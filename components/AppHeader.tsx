@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Logo } from '@/components/Logo'
+import { LiquidGlass } from '@/components/ui/LiquidGlass'
 import type { AppColors } from '@/constants/colors'
 import { useAppTheme } from '@/context/ThemeContext'
 import { useThemedStyles } from '@/hooks/use-themed-styles'
@@ -13,10 +14,17 @@ type AppHeaderProps = {
   title?: string
   onBack?: () => void
   rightSlot?: ReactNode
+  /** コンテンツの上に重ね、背後がガラスを透ける */
+  overlay?: boolean
 }
 
 /** セーフエリアを除いた、全画面共通ヘッダーの高さ。 */
 export const APP_HEADER_HEIGHT = 52
+
+/** overlay 時に本文がヘッダーに隠れないための paddingTop。 */
+export function appHeaderOverlayPadding(topInset: number) {
+  return topInset + APP_HEADER_HEIGHT
+}
 
 /**
  * 全画面共通のブランドヘッダー。
@@ -24,14 +32,17 @@ export const APP_HEADER_HEIGHT = 52
  * タブと詳細のどちらでも中央は必ず「現行アイコン + wanspot」に固定し、
  * 詳細画面だけ左右に戻る・共有などの操作を足す。
  */
-export function AppHeader({ variant = 'default', onBack, rightSlot }: AppHeaderProps) {
+export function AppHeader({ variant = 'default', onBack, rightSlot, overlay = false }: AppHeaderProps) {
   const insets = useSafeAreaInsets()
   const { colors } = useAppTheme()
   const styles = useThemedStyles(createStyles)
   const hasBack = variant === 'back'
 
   return (
-    <View style={[styles.bar, { paddingTop: insets.top, borderBottomColor: colors.border }]}>
+    <LiquidGlass
+      glassEffectStyle="regular"
+      style={[styles.bar, { paddingTop: insets.top }, overlay && styles.overlay]}
+    >
       <View style={styles.row}>
         <View style={styles.side}>
           {hasBack ? (
@@ -56,7 +67,7 @@ export function AppHeader({ variant = 'default', onBack, rightSlot }: AppHeaderP
           {rightSlot}
         </View>
       </View>
-    </View>
+    </LiquidGlass>
   )
 }
 
@@ -69,9 +80,14 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     flex: 1,
   },
   bar: {
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
     zIndex: 20,
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 30,
   },
   row: {
     height: APP_HEADER_HEIGHT,

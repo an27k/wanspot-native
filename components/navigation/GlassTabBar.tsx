@@ -2,7 +2,9 @@ import { type ReactNode } from 'react'
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { LiquidGlass } from '@/components/ui/LiquidGlass'
 import { REVIEW_ALBUM_TAB_ENABLED } from '@/lib/feature-flags'
+import { TAB_BAR_FLOAT_GAP, TAB_BAR_PILL_HEIGHT } from '@/constants/layout'
 import type { AppColors } from '@/constants/colors'
 import { useAppTheme } from '@/context/ThemeContext'
 import { useThemedStyles } from '@/hooks/use-themed-styles'
@@ -14,60 +16,65 @@ function isTabBarVisible(routeName: string): boolean {
   return true
 }
 
-/** セーフエリアを除いた共通タブバーの高さ。 */
-export const PILL_HEIGHT = 64
+/** @deprecated TAB_BAR_PILL_HEIGHT を使う */
+export const PILL_HEIGHT = TAB_BAR_PILL_HEIGHT
 
 /**
- * 全タブ共通の固定タブバー。
- * 文字ラベルは表示せず、選択中のアイコンだけをコーラルの円で示す。
+ * LINE / iOS 26 と同じく、画面下に浮く Liquid Glass のタブバー。
+ * 文字ラベルは出さず、選択中はコーラルのアイコン＋薄い円で示す。
  */
 export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets()
   const { colors } = useAppTheme()
   const styles = useThemedStyles(createStyles)
+  const bottomGap = insets.bottom > 0 ? Math.max(insets.bottom - 4, TAB_BAR_FLOAT_GAP) : TAB_BAR_FLOAT_GAP
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      <View style={styles.row}>
-        {state.routes.map((route, index) => {
-          if (!isTabBarVisible(route.name)) return null
-          const { options } = descriptors[route.key]
-          const focused = state.index === index
-          const activeColor = options.tabBarActiveTintColor ?? colors.primary
-          const inactiveColor = options.tabBarInactiveTintColor ?? colors.textSecondary
-          const color = focused ? activeColor : inactiveColor
-          const icon = options.tabBarIcon?.({
-            focused,
-            color,
-            size: focused ? 26 : 24,
-          })
+    <View pointerEvents="box-none" style={[styles.container, { paddingBottom: bottomGap }]}>
+      <View style={styles.shadowWrap}>
+        <LiquidGlass style={styles.pill} glassEffectStyle="regular" isInteractive>
+          <View style={styles.row}>
+            {state.routes.map((route, index) => {
+              if (!isTabBarVisible(route.name)) return null
+              const { options } = descriptors[route.key]
+              const focused = state.index === index
+              const activeColor = options.tabBarActiveTintColor ?? colors.primary
+              const inactiveColor = options.tabBarInactiveTintColor ?? colors.textSecondary
+              const color = focused ? activeColor : inactiveColor
+              const icon = options.tabBarIcon?.({
+                focused,
+                color,
+                size: focused ? 26 : 24,
+              })
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            })
-            if (!focused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params)
-            }
-          }
+              const onPress = () => {
+                const event = navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                })
+                if (!focused && !event.defaultPrevented) {
+                  navigation.navigate(route.name, route.params)
+                }
+              }
 
-          const onLongPress = () => {
-            navigation.emit({ type: 'tabLongPress', target: route.key })
-          }
+              const onLongPress = () => {
+                navigation.emit({ type: 'tabLongPress', target: route.key })
+              }
 
-          return (
-            <TabBarItem
-              key={route.key}
-              focused={focused}
-              onPress={onPress}
-              onLongPress={onLongPress}
-              accessibilityLabel={options.tabBarAccessibilityLabel ?? options.title}
-              icon={icon}
-            />
-          )
-        })}
+              return (
+                <TabBarItem
+                  key={route.key}
+                  focused={focused}
+                  onPress={onPress}
+                  onLongPress={onLongPress}
+                  accessibilityLabel={options.tabBarAccessibilityLabel ?? options.title}
+                  icon={icon}
+                />
+              )
+            })}
+          </View>
+        </LiquidGlass>
       </View>
     </View>
   )
@@ -86,6 +93,7 @@ function TabBarItem({
   accessibilityLabel?: string
   icon: ReactNode
 }) {
+  const { isDark } = useAppTheme()
   const styles = useThemedStyles(createStyles)
 
   return (
@@ -99,7 +107,16 @@ function TabBarItem({
         style={({ pressed }) => [styles.tabPressable, pressed && styles.tabPressed]}
         hitSlop={8}
       >
-        <View style={[styles.iconWrap, focused && styles.iconWrapFocused]}>{icon}</View>
+        <View
+          style={[
+            styles.iconWrap,
+            focused && {
+              backgroundColor: isDark ? 'rgba(255,103,87,0.28)' : 'rgba(255,103,87,0.16)',
+            },
+          ]}
+        >
+          {icon}
+        </View>
       </Pressable>
     </View>
   )
@@ -111,16 +128,26 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    paddingHorizontal: 16,
+  },
+  shadowWrap: {
+    borderRadius: 28,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.16,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 12,
+  },
+  pill: {
+    height: TAB_BAR_PILL_HEIGHT,
+    borderRadius: 28,
   },
   row: {
-    height: PILL_HEIGHT,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 20,
+    paddingHorizontal: 8,
   },
   tab: {
     flex: 1,
@@ -142,5 +169,4 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapFocused: { backgroundColor: colors.tintWeak },
 })

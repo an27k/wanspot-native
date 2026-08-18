@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router'
 import { useIsFocused } from '@react-navigation/native'
 import { DiscoverFeedCard } from '@/components/search/DiscoverFeedCard'
 import { ArticleListRow } from '@/components/articles/ArticleListRow'
-import { AppHeader } from '@/components/AppHeader'
+import { AppHeader, appHeaderOverlayPadding } from '@/components/AppHeader'
 import { ArticleListSkeleton } from '@/components/common/ShimmerSkeleton'
 import { ListEnterItem } from '@/components/common/ListEnterItem'
 import { PowState } from '@/components/DogStates'
@@ -310,7 +310,6 @@ export function ArticlesTabScreen() {
 
   return (
     <View style={styles.root}>
-      <AppHeader />
       <Animated.ScrollView
         onScroll={scrollHandler}
         scrollEventThrottle={16}
@@ -321,12 +320,17 @@ export function ArticlesTabScreen() {
           viewportHeightRef.current = e.nativeEvent.layout.height
         }}
         contentContainerStyle={{
-          paddingTop: 12,
+          paddingTop: appHeaderOverlayPadding(insets.top) + 12,
           paddingHorizontal: 20,
           paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24,
         }}
         refreshControl={
-          <RefreshControl refreshing={pullRefreshing} onRefresh={() => void handleRefresh()} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={pullRefreshing}
+            onRefresh={() => void handleRefresh()}
+            tintColor={colors.primary}
+            progressViewOffset={appHeaderOverlayPadding(insets.top)}
+          />
         }
       >
         {articlesLoading && articlesRaw.length === 0 ? (
@@ -425,6 +429,7 @@ export function ArticlesTabScreen() {
           )
         })}
       </Animated.ScrollView>
+      <AppHeader overlay />
     </View>
   )
 }
