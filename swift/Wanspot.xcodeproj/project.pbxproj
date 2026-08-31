@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0F5D6C55598B7C02EEB2A783 /* SpotDetailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C83C641FC2CD0291EC3D17 /* SpotDetailStore.swift */; };
 		192D9B5B49AD8C013DAFFBDA /* ChatFAB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F5A4E5FE6EBD2374D9A474A /* ChatFAB.swift */; };
+		1A55CCD09A2AA27D7A005FB3 /* ChatFABClearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464B0F460EBAC3BD1AD69B4B /* ChatFABClearance.swift */; };
 		202443443825BF458888E639 /* OnboardingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A019E23D24FDD99E332C356 /* OnboardingStore.swift */; };
 		23A5B67E8A845626F0F5E412 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 994E78B986487EEB1956475A /* AppSettingsView.swift */; };
 		4A11BA799CFE4AB83E416BDD /* WanspotSharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 228E0CA1289554FD4E5E0537 /* WanspotSharedComponents.swift */; };
@@ -73,6 +74,7 @@
 		3652C1407EAC58283D4E3414 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3A019E23D24FDD99E332C356 /* OnboardingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStore.swift; sourceTree = "<group>"; };
 		3F5A4E5FE6EBD2374D9A474A /* ChatFAB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatFAB.swift; sourceTree = "<group>"; };
+		464B0F460EBAC3BD1AD69B4B /* ChatFABClearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatFABClearance.swift; sourceTree = "<group>"; };
 		485E4D610C7494E11B86AD2E /* WanspotKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = WanspotKit; path = WanspotKit; sourceTree = SOURCE_ROOT; };
 		497E88EECA58E0AAD4D05356 /* Wanspot.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Wanspot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B190184EFA043583FD5ACA9 /* ChatSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSheetView.swift; sourceTree = "<group>"; };
@@ -180,6 +182,7 @@
 			isa = PBXGroup;
 			children = (
 				3F5A4E5FE6EBD2374D9A474A /* ChatFAB.swift */,
+				464B0F460EBAC3BD1AD69B4B /* ChatFABClearance.swift */,
 				4B190184EFA043583FD5ACA9 /* ChatSheetView.swift */,
 				D57F8EA224641407949E3C90 /* ChatStore.swift */,
 			);
@@ -434,6 +437,7 @@
 				E54C41F70872F1A2E38AADC8 /* CalendarEventDetailView.swift in Sources */,
 				5B6FF92A66268DE7AA4FB7ED /* CalendarTabView.swift in Sources */,
 				192D9B5B49AD8C013DAFFBDA /* ChatFAB.swift in Sources */,
+				1A55CCD09A2AA27D7A005FB3 /* ChatFABClearance.swift in Sources */,
 				8406FCEAC0DAEB04E52E6706 /* ChatSheetView.swift in Sources */,
 				CC826B4B2D9B59C954CAB965 /* ChatStore.swift in Sources */,
 				7EF6CDAF4267CE86FF12FC38 /* DogSettingsViews.swift in Sources */,

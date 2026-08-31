@@ -17,11 +17,14 @@ struct RootTabView: View {
         .tint(WanspotColors.primary)
         .accessibilityIdentifier("root.tabs")
         // チャットFABは未ログイン時は非表示（相談枠が個人単位のため）
-        .overlay(alignment: .bottomTrailing) {
+        .overlayPreferenceValue(
+            ChatFABClearanceKey.self,
+            alignment: .bottomTrailing
+        ) { clearance in
             if model.isAuthenticated {
                 ChatFAB { showsChatSheet = true }
                     .padding(.trailing, 16)
-                    .padding(.bottom, 66)
+                    .padding(.bottom, Self.tabBarInset + clearance)
             }
         }
         .sheet(isPresented: $showsChatSheet) {
@@ -29,8 +32,20 @@ struct RootTabView: View {
         }
     }
 
+    // タブバーを避けるための固定ぶん。画面ごとの下部バーは clearance で加算する
+    private static let tabBarInset: CGFloat = 66
+
     private func tabContent(_ tab: AppTab) -> some View {
-        AppTabNavigationStack(tab: tab)
+        let isSelected = tab == router.selectedTab
+
+        return AppTabNavigationStack(tab: tab)
+            // 選択されていないタブも階層に残るので、そのぶんの申告は捨てる
+            // （詳細から戻ったときや別タブへ移ったときに値が残らないように）
+            .transformPreference(ChatFABClearanceKey.self) { value in
+                if !isSelected {
+                    value = 0
+                }
+            }
             .tabItem {
                 Image(systemName: tab.systemImage)
                     .accessibilityLabel(tab.title)
@@ -46,8 +61,17 @@ private struct AppTabNavigationStack: View {
     let tab: AppTab
 
     var body: some View {
-        NavigationStack(path: path) {
+        let isPushed = !router.path(for: tab).isEmpty
+
+        return NavigationStack(path: path) {
             rootView
+                // push 中は根の画面も階層に残るので、そのぶんの申告は捨てる
+                // （前面の画面が申告した値だけを FAB に効かせる）
+                .transformPreference(ChatFABClearanceKey.self) { value in
+                    if isPushed {
+                        value = 0
+                    }
+                }
                 .navigationDestination(for: AppRoute.self) { route in
                     switch route {
                     case let .spot(id):

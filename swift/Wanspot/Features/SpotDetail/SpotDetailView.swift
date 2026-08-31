@@ -288,6 +288,8 @@ struct SpotDetailView: View {
         .overlay(alignment: .top) {
             Divider()
         }
+        // チャットFABが「行った」ボタンに重ならないよう、バーの高さを申告する
+        .measuresChatFABClearance()
         .wanspotAuthenticationPrompt($authenticationPrompt) {
             model.requestAuthentication()
         }

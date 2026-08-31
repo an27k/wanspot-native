@@ -509,9 +509,16 @@ final class WanspotUITests: XCTestCase {
                 .waitForExistence(timeout: 10)
         )
         sleep(6)
-        let eventDay = app.buttons.matching(
-            NSPredicate(format: "label CONTAINS %@", "イベント")
+        // 1件だけの日を選ぶと一覧がスカスカになるので、
+        // ドットが3つ（＝3件以上）の日を優先して開く
+        let denseDay = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "イベント3件以上")
         ).firstMatch
+        let eventDay = denseDay.waitForExistence(timeout: 8)
+            ? denseDay
+            : app.buttons.matching(
+                NSPredicate(format: "label CONTAINS %@", "イベント")
+            ).firstMatch
         XCTAssertTrue(eventDay.waitForExistence(timeout: 8))
         eventDay.tap()
         sleep(4)
@@ -611,6 +618,9 @@ final class WanspotUITests: XCTestCase {
 
     /// スポット詳細から右下のチャットFABを開き、サジェスト質問を送って
     /// 回答が出たところを 09-chat.png として撮る。
+    /// サジェスト質問チップは会話が空のときだけ出るので、撮る前に
+    /// wanspot-app-store-previews の scripts/reset-swift-preview-chat.mjs で
+    /// 撮影用アカウントのチャット履歴を消しておくこと（復元されると撮れない）。
     /// 本番の /api/chat を叩くため、相談枠切れ・混雑・回線で撮れないことがある。
     /// その場合でも後続の撮影を続けたいので XCTAssert では落とさず、
     /// 撮らずにシートを閉じて戻る。
@@ -626,95 +636,69 @@ final class WanspotUITests: XCTestCase {
         guard sheet.waitForExistence(timeout: 10) else { return }
         defer { dismissChatSheet(app) }
 
-        // 起動をまたいだ会話が復元されるとサジェストチップが出ないので、
-        // 復元を待ってから流す（サジェストは messages が空のときだけ出る）
-        sleep(4)
-        clearChatConversationIfNeeded(app)
-
-        guard let chip = chatSuggestionChip(in: app) else { return }
+        // 起動をまたいだ会話が復元されるとサジェストチップが出ない
+        // （チップは messages が空のときだけ出る）。復元の通信を待ってから、
+        // チップが出ていなければ会話を流してもう一度探す
+        sleep(8)
+        if chatSuggestionChip(in: app, timeout: 2) == nil {
+            clearChatConversation(app)
+        }
+        guard let chip = chatSuggestionChip(in: app, timeout: 5) else {
+            // 何が出ていたのか後から見られるようにしておく
+            try? capture(app, named: "99-chat-debug.png", in: directory)
+            return
+        }
         chip.tap()
-        guard waitForChatAnswer(app) else { return }
-        try? capture(app, named: "09-chat.png", in: directory)
-        // 2問目を足すと 09-chat.png は上書きされるので、
-        // 1往復ぶんも選べるように別名で残しておく
-        try? capture(app, named: "09-chat-single.png", in: directory)
-
-        // 1往復だと画面の下半分が空くので、もう1問だけ足して会話で埋める。
-        // ここまでで1往復ぶんの絵は保存済みなので、2問目が崩れても
-        // 上書きされないぶんが残る。日本語のtypeTextが通らない環境では
-        // XCTestが失敗を記録するため、この区間だけ続行できるようにしておく
-        let stopsOnFailure = !continueAfterFailure
-        continueAfterFailure = true
-        defer { continueAfterFailure = stopsOnFailure }
-        guard sendChatFollowUpQuestion(app) else { return }
+        // 1往復ぶん。回答が長いので画面のおよそ3/4が埋まる
         guard waitForChatAnswer(app) else { return }
         try? capture(app, named: "09-chat.png", in: directory)
     }
 
-    private func clearChatConversationIfNeeded(_ app: XCUIApplication) {
+    /// メニューの isEnabled は当てにしない（会話があっても false で返ってくる）。
+    /// 開いて「会話をクリア」が出たら押す、出なければ消すものが無い、で判断する。
+    /// 復元が遅れて届くこともあるので数回試す
+    private func clearChatConversation(_ app: XCUIApplication) {
         let menu = element("chat.menu", in: app)
-        guard menu.exists, menu.isEnabled else { return }
-        menu.tap()
-        let clear = element("chat.clearConversation", in: app)
-        if clear.waitForExistence(timeout: 4) {
-            clear.tap()
-        } else {
-            // メニューが開けなかったときは開いたままにしない
+        guard menu.waitForExistence(timeout: 5) else { return }
+        for _ in 0 ..< 3 {
+            guard menu.isHittable else { return }
+            menu.tap()
+            let clear = element("chat.clearConversation", in: app)
+            if clear.waitForExistence(timeout: 3) {
+                clear.tap()
+                sleep(2)
+                return
+            }
+            // メニューが開かなかったときは開いたままにしない
             app.coordinate(
                 withNormalizedOffset: CGVector(dx: 0.5, dy: 0.06)
             ).tap()
+            sleep(2)
         }
-        sleep(1)
     }
 
     /// スポット詳細の文脈で出るチップを優先して選ぶ。
     /// 文言が変わっていてもシートの先頭チップで代替する
     private func chatSuggestionChip(
-        in app: XCUIApplication
+        in app: XCUIApplication,
+        timeout: TimeInterval
     ) -> XCUIElement? {
         for label in ["店内に入れる？", "大型犬でもOK？", "駐車場はある？"] {
             let button = app.buttons[label]
-            if button.waitForExistence(timeout: 4), button.isHittable {
+            if button.waitForExistence(timeout: timeout), button.isHittable {
                 return button
             }
         }
         let fallback = element("chat.suggestions", in: app)
             .buttons
             .firstMatch
-        guard fallback.waitForExistence(timeout: 4), fallback.isHittable else {
+        guard
+            fallback.waitForExistence(timeout: timeout),
+            fallback.isHittable
+        else {
             return nil
         }
         return fallback
-    }
-
-    /// 2問目は入力欄から送る（1問目でサジェストチップは消えるため）。
-    /// 送信直後はキーボードが上がったままなので、会話を軽く下へ送って
-    /// scrollDismissesKeyboard(.interactively) に引っ込めてもらう。
-    /// 以降のストリーミング更新が末尾へ戻してくれる
-    private func sendChatFollowUpQuestion(_ app: XCUIApplication) -> Bool {
-        let input = element("chat.input", in: app)
-        guard input.waitForExistence(timeout: 5), input.isHittable else {
-            return false
-        }
-        input.tap()
-        let question = "テラス席はある？"
-        input.typeText(question)
-        // 日本語が打ち込めない環境ではここで空のまま。送らずに引き返す
-        guard let typed = input.value as? String, typed.contains(question) else {
-            return false
-        }
-        let send = element("chat.send", in: app)
-        guard send.waitForExistence(timeout: 3), send.isEnabled else {
-            return false
-        }
-        send.tap()
-
-        let keyboard = app.keyboards.element
-        for _ in 0 ..< 3 where keyboard.exists {
-            app.swipeDown()
-            _ = keyboard.waitForNonExistence(timeout: 3)
-        }
-        return !keyboard.exists
     }
 
     /// ストリーミングの完了を知らせる要素は無いので、
