@@ -609,8 +609,8 @@ final class WanspotUITests: XCTestCase {
         return app.buttons[title]
     }
 
-    /// スポット詳細から右下のチャットFABを開き、サジェスト質問を1つ送って
-    /// 回答（出るならカードも）が揃ったところを 09-chat.png として撮る。
+    /// スポット詳細から右下のチャットFABを開き、サジェスト質問を送って
+    /// 回答が出たところを 09-chat.png として撮る。
     /// 本番の /api/chat を叩くため、相談枠切れ・混雑・回線で撮れないことがある。
     /// その場合でも後続の撮影を続けたいので XCTAssert では落とさず、
     /// 撮らずにシートを閉じて戻る。
@@ -633,10 +633,21 @@ final class WanspotUITests: XCTestCase {
 
         guard let chip = chatSuggestionChip(in: app) else { return }
         chip.tap()
+        guard waitForChatAnswer(app) else { return }
+        try? capture(app, named: "09-chat.png", in: directory)
+        // 2問目を足すと 09-chat.png は上書きされるので、
+        // 1往復ぶんも選べるように別名で残しておく
+        try? capture(app, named: "09-chat-single.png", in: directory)
 
-        guard waitForChatAnswer(in: sheet, app: app) else { return }
-        // 末尾までのスクロールアニメーションが落ち着くのを待つ
-        sleep(3)
+        // 1往復だと画面の下半分が空くので、もう1問だけ足して会話で埋める。
+        // ここまでで1往復ぶんの絵は保存済みなので、2問目が崩れても
+        // 上書きされないぶんが残る。日本語のtypeTextが通らない環境では
+        // XCTestが失敗を記録するため、この区間だけ続行できるようにしておく
+        let stopsOnFailure = !continueAfterFailure
+        continueAfterFailure = true
+        defer { continueAfterFailure = stopsOnFailure }
+        guard sendChatFollowUpQuestion(app) else { return }
+        guard waitForChatAnswer(app) else { return }
         try? capture(app, named: "09-chat.png", in: directory)
     }
 
@@ -676,13 +687,46 @@ final class WanspotUITests: XCTestCase {
         return fallback
     }
 
-    /// ストリーミング完了を知らせる要素が無いので、
-    /// カードが出るか本文が伸びきる（＝長さが変わらなくなる）まで待つ
+    /// 2問目は入力欄から送る（1問目でサジェストチップは消えるため）。
+    /// 送信直後はキーボードが上がったままなので、会話を軽く下へ送って
+    /// scrollDismissesKeyboard(.interactively) に引っ込めてもらう。
+    /// 以降のストリーミング更新が末尾へ戻してくれる
+    private func sendChatFollowUpQuestion(_ app: XCUIApplication) -> Bool {
+        let input = element("chat.input", in: app)
+        guard input.waitForExistence(timeout: 5), input.isHittable else {
+            return false
+        }
+        input.tap()
+        let question = "テラス席はある？"
+        input.typeText(question)
+        // 日本語が打ち込めない環境ではここで空のまま。送らずに引き返す
+        guard let typed = input.value as? String, typed.contains(question) else {
+            return false
+        }
+        let send = element("chat.send", in: app)
+        guard send.waitForExistence(timeout: 3), send.isEnabled else {
+            return false
+        }
+        send.tap()
+
+        let keyboard = app.keyboards.element
+        for _ in 0 ..< 3 where keyboard.exists {
+            app.swipeDown()
+            _ = keyboard.waitForNonExistence(timeout: 3)
+        }
+        return !keyboard.exists
+    }
+
+    /// ストリーミングの完了を知らせる要素は無いので、
+    /// 「返答を考えています」（回答待ちの3点）が消えたあと、
+    /// 送信前には無かった長文が現れて伸びきるまでを完了とみなす。
+    /// 送信前のラベル集合を基準にするのは、裏のスポット詳細に出ている
+    /// AIレビュー本文を回答と取り違えないため
     private func waitForChatAnswer(
-        in sheet: XCUIElement,
-        app: XCUIApplication,
-        timeout: TimeInterval = 120
+        _ app: XCUIApplication,
+        timeout: TimeInterval = 150
     ) -> Bool {
+        let baseline = Set(chatVisibleLabels(app))
         let cards = app.descendants(matching: .any).matching(
             NSPredicate(
                 format: "identifier == %@ OR identifier == %@"
@@ -692,19 +736,31 @@ final class WanspotUITests: XCTestCase {
                 "chat.eventCard"
             )
         )
-        let minimumAnswerLength = 60
+        let thinking = app.descendants(matching: .any).matching(
+            NSPredicate(format: "label == %@", "返答を考えています")
+        ).firstMatch
+        let minimumAnswerLength = 40
         let deadline = Date().addingTimeInterval(timeout)
+
+        // 3点が出るまで（＝送信が受け付けられるまで）
+        while Date() < deadline, !thinking.exists {
+            sleep(1)
+        }
+        // 3点が消えるまで（＝本文が届くまで）
+        while Date() < deadline, thinking.exists {
+            sleep(2)
+        }
+
         var previousLength = 0
         var stableRounds = 0
         while Date() < deadline {
             sleep(3)
-            if cards.count > 0 {
-                return true
-            }
-            let length = longestChatTextLength(in: sheet)
+            let length = newAnswerLength(app, baseline: baseline)
             if length >= minimumAnswerLength, length == previousLength {
                 stableRounds += 1
                 if stableRounds >= 2 {
+                    // 末尾までのスクロールとカード描画が落ち着くのを待つ
+                    sleep(3)
                     return true
                 }
             } else {
@@ -713,13 +769,22 @@ final class WanspotUITests: XCTestCase {
             previousLength = length
         }
         return cards.count > 0
-            || longestChatTextLength(in: sheet) >= minimumAnswerLength
+            || newAnswerLength(app, baseline: baseline) >= minimumAnswerLength
     }
 
-    private func longestChatTextLength(in sheet: XCUIElement) -> Int {
-        sheet.staticTexts
+    private func chatVisibleLabels(_ app: XCUIApplication) -> [String] {
+        app.staticTexts
             .allElementsBoundByIndex
-            .map { $0.label.count }
+            .map { $0.label }
+    }
+
+    private func newAnswerLength(
+        _ app: XCUIApplication,
+        baseline: Set<String>
+    ) -> Int {
+        chatVisibleLabels(app)
+            .filter { !baseline.contains($0) }
+            .map { $0.count }
             .max() ?? 0
     }
 

@@ -93,8 +93,16 @@ struct CalendarEventDetailView: View {
                     }
 
                     detailSection(title: "開催日時") {
-                        ForEach(event.occurrences) { occurrence in
-                            Text(CalendarRules.occurrenceLabel(occurrence))
+                        // schedule_lines があればまとめ済みの行をそのまま出し、
+                        // 無ければ occurrences から1件ずつ組み立てる
+                        ForEach(
+                            Array(
+                                CalendarRules.scheduleLines(for: event)
+                                    .enumerated()
+                            ),
+                            id: \.offset
+                        ) { _, line in
+                            Text(line)
                                 .font(.body)
                                 .foregroundStyle(WanspotColors.textPrimary)
                         }
