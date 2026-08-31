@@ -1,0 +1,114 @@
+name: Swift CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "feature/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: swift-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-26
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Select Xcode 26.6
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Type-check fixture generator
+        run: npm run typecheck
+
+      - name: Verify generated parity fixtures
+        run: |
+          npm run swift:fixtures
+          git diff --exit-code -- \
+            swift/WanspotKit/Tests/WanspotKitTests/Fixtures \
+            swift/WanspotKit/Sources/WanspotKit/Resources/onboarding-catalog.json \
+            swift/WanspotKit/Sources/WanspotKit/Resources/japan-holidays.json
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+        working-directory: swift
+
+      - name: Resolve app dependencies
+        run: >-
+          xcodebuild
+          -resolvePackageDependencies
+          -project Wanspot.xcodeproj
+          -scheme Wanspot
+          -scmProvider system
+          -packageAuthorizationProvider netrc
+        working-directory: swift
+
+      - name: Test WanspotKit
+        run: swift test --package-path WanspotKit
+        working-directory: swift
+        env:
+          SUPABASE_URL: ${{ secrets.WANSPOT_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.WANSPOT_SUPABASE_PUBLISHABLE_KEY }}
+          WANSPOT_SUPABASE_TEST_EMAIL: ${{ secrets.WANSPOT_SUPABASE_TEST_EMAIL }}
+          WANSPOT_SUPABASE_TEST_PASSWORD: ${{ secrets.WANSPOT_SUPABASE_TEST_PASSWORD }}
+
+      - name: Build SwiftUI app
+        run: >-
+          xcodebuild
+          -project Wanspot.xcodeproj
+          -scheme Wanspot
+          -configuration Debug
+          -destination 'generic/platform=iOS Simulator'
+          -scmProvider system
+          -packageAuthorizationProvider netrc
+          CODE_SIGNING_ALLOWED=NO
+          build
+        working-directory: swift
+
+      - name: Run Wanspot UI tests
+        run: |
+          SIMULATOR_ID="$(
+            xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          payload = json.load(sys.stdin)
+          devices = [
+              device
+              for runtime in payload["devices"].values()
+              for device in runtime
+              if device.get("isAvailable") and device["name"].startswith("iPhone")
+          ]
+          if not devices:
+              raise SystemExit("No available iPhone simulator")
+          print(devices[0]["udid"])
+          '
+          )"
+          xcrun simctl boot "$SIMULATOR_ID" 2>/dev/null || true
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+          xcodebuild \
+            -project Wanspot.xcodeproj \
+            -scheme Wanspot \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -only-testing:WanspotUITests \
+            -scmProvider system \
+            -packageAuthorizationProvider netrc \
+            test
+        working-directory: swift

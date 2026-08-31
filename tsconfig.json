@@ -14,6 +14,10 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "integrations/nextjs-stripe/**/*"
+    "integrations/nextjs-stripe/**/*",
+    "DerivedData/**/*",
+    "swift/DerivedData/**/*",
+    "swift/build/**/*",
+    "swift/WanspotKit/.build/**/*"
   ]
 }

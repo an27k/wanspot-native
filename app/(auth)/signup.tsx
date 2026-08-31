@@ -28,6 +28,8 @@ import { completeLoginNavigation } from '@/lib/complete-login-navigation'
 import { continueAsGuest } from '@/lib/continue-as-guest'
 import { isSupabaseOAuthReady, signInWithGoogleOAuth } from '@/lib/oauth-supabase'
 import { track } from '@/lib/analytics'
+import { toJapaneseAuthError } from '@/lib/auth/auth-error-ja'
+import { PASSWORD_HINT, passwordPolicyError } from '@/lib/auth/password-policy'
 
 export default function SignupScreen() {
   const router = useRouter()
@@ -49,12 +51,17 @@ export default function SignupScreen() {
   }, [])
 
   const submit = async () => {
+    const policyError = passwordPolicyError(password)
+    if (policyError) {
+      setError(policyError)
+      return
+    }
     setLoading(true)
     setError('')
     const { error: e } = await signUp(email.trim(), password)
     setLoading(false)
     if (e) {
-      setError(e.message)
+      setError(toJapaneseAuthError(e.message))
       return
     }
     track('signup_completed')
@@ -70,13 +77,16 @@ export default function SignupScreen() {
       const { error, cancelled } = await signInWithGoogleOAuth()
       if (cancelled) return
       if (error) {
-        Alert.alert('エラー', error.message)
+        Alert.alert('エラー', toJapaneseAuthError(error.message))
         return
       }
       track('signup_completed')
       await completeLoginNavigation(router)
     } catch (error) {
-      Alert.alert('エラー', error instanceof Error ? error.message : 'Google登録に失敗しました')
+      Alert.alert(
+        'エラー',
+        error instanceof Error ? toJapaneseAuthError(error.message) : 'Google登録に失敗しました'
+      )
     } finally {
       setOauthLoading(null)
     }
@@ -94,9 +104,12 @@ export default function SignupScreen() {
         return
       }
       if (res.error === 'cancelled') return
-      if (res.error) Alert.alert('エラー', res.error)
+      if (res.error) Alert.alert('エラー', toJapaneseAuthError(res.error))
     } catch (error) {
-      Alert.alert('エラー', error instanceof Error ? error.message : 'Appleサインインに失敗しました')
+      Alert.alert(
+        'エラー',
+        error instanceof Error ? toJapaneseAuthError(error.message) : 'Appleサインインに失敗しました'
+      )
     } finally {
       setOauthLoading(null)
     }
@@ -136,18 +149,22 @@ export default function SignupScreen() {
             <TextInput
               ref={passwordRef}
               style={styles.input}
-              placeholder="パスワード（6文字以上）"
+              placeholder="パスワード"
               placeholderTextColor={colors.textMuted}
               keyboardAppearance={isDark ? 'dark' : 'light'}
               secureTextEntry
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(value) => {
+                setPassword(value)
+                if (error) setError('')
+              }}
               returnKeyType="done"
               onSubmitEditing={() => {
                 Keyboard.dismiss()
                 if (email.trim() && password && !loading) void submit()
               }}
             />
+            <Text style={styles.hint}>{PASSWORD_HINT}</Text>
             {error ? <Text style={styles.err}>{error}</Text> : null}
             <Pressable
               style={[styles.btn, (!email || !password) && styles.btnDis]}
@@ -234,6 +251,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     color: colors.text,
   },
   err: { ...type.caption, color: colors.error, textAlign: 'center', marginBottom: 8 },
+  hint: { ...type.caption, color: colors.textMuted, textAlign: 'center', marginTop: -4, marginBottom: 10 },
   btn: {
     backgroundColor: colors.primary,
     paddingVertical: 14,

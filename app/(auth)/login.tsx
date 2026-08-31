@@ -23,6 +23,7 @@ import { isAppleSignInAvailable, signInWithApple } from '@/lib/apple-signin'
 import { completeLoginNavigation } from '@/lib/complete-login-navigation'
 import { continueAsGuest } from '@/lib/continue-as-guest'
 import { isSupabaseOAuthReady, signInWithGoogleOAuth } from '@/lib/oauth-supabase'
+import { toJapaneseAuthError } from '@/lib/auth/auth-error-ja'
 
 import { LoadingDogSvg } from '@/components/common/LoadingDog'
 import { Logo } from '@/components/Logo'
@@ -53,7 +54,7 @@ export default function LoginScreen() {
     setError('')
     const { error: e } = await signIn(email.trim(), password)
     if (e) {
-      setError(e.message)
+      setError(toJapaneseAuthError(e.message))
       setLoading(false)
       return
     }
@@ -70,12 +71,15 @@ export default function LoginScreen() {
       const { error, cancelled } = await signInWithGoogleOAuth()
       if (cancelled) return
       if (error) {
-        Alert.alert('エラー', error.message)
+        Alert.alert('エラー', toJapaneseAuthError(error.message))
         return
       }
       await completeLoginNavigation(router)
     } catch (error) {
-      Alert.alert('エラー', error instanceof Error ? error.message : 'Googleログインに失敗しました')
+      Alert.alert(
+        'エラー',
+        error instanceof Error ? toJapaneseAuthError(error.message) : 'Googleログインに失敗しました'
+      )
     } finally {
       setOauthLoading(null)
     }
@@ -93,9 +97,12 @@ export default function LoginScreen() {
         return
       }
       if (res.error === 'cancelled') return
-      if (res.error) Alert.alert('エラー', res.error)
+      if (res.error) Alert.alert('エラー', toJapaneseAuthError(res.error))
     } catch (error) {
-      Alert.alert('エラー', error instanceof Error ? error.message : 'Appleサインインに失敗しました')
+      Alert.alert(
+        'エラー',
+        error instanceof Error ? toJapaneseAuthError(error.message) : 'Appleサインインに失敗しました'
+      )
     } finally {
       setOauthLoading(null)
     }

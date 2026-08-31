@@ -28,6 +28,9 @@
         ]
       },
       "infoPlist": {
+        "LSRequiresIPhoneOS": true,
+        "UIDeviceFamily": [1],
+        "UIRequiredDeviceCapabilities": ["arm64", "gps"],
         "ITSAppUsesNonExemptEncryption": false,
         "GADNativeAdValidatorEnabled": false,
         "NSPhotoLibraryUsageDescription": "ワンちゃんやプロフィールの写真を設定するため、写真ライブラリへのアクセスを許可してください。",
@@ -71,6 +74,7 @@
       "enabled": false
     },
     "plugins": [
+      "./plugins/withIphoneOnlyCompatibility",
       "expo-router",
       "expo-font",
       "expo-web-browser",
