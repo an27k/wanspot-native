@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "release": {
+    "bundleIdentifier": "app.wanspot.native",
+    "marketingVersion": "2.0.1",
+    "buildNumber": "262"
+  },
+  "lastLocalVerification": "2026-08-21",
+  "automatedChecks": [
+    {
+      "id": "fixtures",
+      "status": "passed",
+      "command": "npm run swift:fixtures",
+      "result": "All five generated outputs were byte-identical on a second run."
+    },
+    {
+      "id": "typecheck",
+      "status": "passed",
+      "command": "npm run typecheck"
+    },
+    {
+      "id": "focused-lint",
+      "status": "passed",
+      "command": "npx eslint scripts/generate-*.ts 'app/(auth)/*.tsx' lib/auth --max-warnings=0"
+    },
+    {
+      "id": "swift-tests",
+      "status": "passed_with_external_skip",
+      "command": "swift test --package-path swift/WanspotKit",
+      "result": "91 tests passed; the credentialed Supabase smoke test was skipped."
+    },
+    {
+      "id": "simulator-build-debug",
+      "status": "passed",
+      "command": "xcodebuild -configuration Debug -destination generic/platform=iOS Simulator build"
+    },
+    {
+      "id": "simulator-build-release",
+      "status": "passed",
+      "command": "xcodebuild -configuration Release -destination generic/platform=iOS Simulator build"
+    },
+    {
+      "id": "ui-tests",
+      "status": "passed",
+      "command": "xcodebuild -only-testing:WanspotUITests test",
+      "result": "5 tests passed on iPhone 17 Pro simulator, iOS 26.5."
+    }
+  ],
+  "manualChecks": [
+    {
+      "id": "physical-device",
+      "status": "skipped_by_user",
+      "observed": "Atsu (iOS 26.6) became available and paired, but was locked while Xcode attempted to mount the Developer Disk Image. The user explicitly chose to skip physical-device verification for this pass.",
+      "check": "Verify location, camera, photo picker, local notifications, deep links, VoiceOver, dark mode, and icon rendering on a connected physical iPhone."
+    },
+    {
+      "id": "associated-domains",
+      "status": "blocked_external_configuration",
+      "observed": "The wanspot.app and www.wanspot.app AASA files have the correct app ID and /spots/* plus /articles/* components, but no /events/* component.",
+      "check": "Verify the production AASA file for wanspot.app contains 3ZKJY68M2F.app.wanspot.native and the supported spot, article, and event paths."
+    },
+    {
+      "id": "oauth",
+      "status": "pending",
+      "check": "Verify Apple and Google sign-in plus the wanspot://auth/callback redirect with production provider configuration."
+    },
+    {
+      "id": "notifications",
+      "status": "pending",
+      "check": "Verify permission prompts and scheduled morning-walk notification delivery on a physical device."
+    },
+    {
+      "id": "privacy-labels",
+      "status": "pending",
+      "check": "Reconcile App Store Connect privacy answers with PrivacyInfo.xcprivacy and the production backend retention policy."
+    },
+    {
+      "id": "distribution-assets",
+      "status": "pending",
+      "check": "Inspect the App Store icon, screenshots, metadata, signing, and provisioning in the distribution account without enabling ads or ATT."
+    }
+  ],
+  "constraints": {
+    "adsEnabled": false,
+    "attConfigured": false,
+    "archiveRequiredForThisPass": true,
+    "uploadRequiredForThisPass": true
+  }
+}
