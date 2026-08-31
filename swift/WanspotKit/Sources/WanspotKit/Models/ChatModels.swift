@@ -58,6 +58,10 @@ public struct ChatSSEEvent: Decodable, Equatable, Sendable {
         public let tone: String?
         public let photoURL: String?
         public let comment: String?
+        // spots.instagram_id（追補v10）。値が無い行はサーバがキーごと落とすため
+        // 「キーがある＝Instagram 導線を出してよい」と読んでよい。
+        // 旧サーバは送ってこないので Optional のまま扱う（カードのアイコンを出さないだけ）
+        public let instagramID: String?
 
         public init(
             placeID: String? = nil,
@@ -68,7 +72,8 @@ public struct ChatSSEEvent: Decodable, Equatable, Sendable {
             label: String? = nil,
             tone: String? = nil,
             photoURL: String? = nil,
-            comment: String? = nil
+            comment: String? = nil,
+            instagramID: String? = nil
         ) {
             self.placeID = placeID
             self.name = name
@@ -79,6 +84,7 @@ public struct ChatSSEEvent: Decodable, Equatable, Sendable {
             self.tone = tone
             self.photoURL = photoURL
             self.comment = comment
+            self.instagramID = instagramID
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -91,6 +97,7 @@ public struct ChatSSEEvent: Decodable, Equatable, Sendable {
             case tone
             case photoURL = "photoUrl"
             case comment
+            case instagramID = "instagramId"
         }
     }
 

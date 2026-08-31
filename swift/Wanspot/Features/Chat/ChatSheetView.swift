@@ -428,15 +428,96 @@ struct ChatSheetView: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("chat.spotCard")
 
-                if let comment = spot.comment, !comment.isEmpty {
+                spotCardFooter(spot, name: name)
+            }
+            // カードと直下のリンク行を1組に見せるため、次のカードとの間だけ広げる
+            .padding(.bottom, 6)
+        }
+    }
+
+    // 一言説明と外部リンク（Instagram / Google マップ）の行。
+    //
+    // リンクはカード本体の Button の **外側** に置く。カード全面が「詳細へ」の
+    // Button なので、その label の中に Link を入れると入れ子のタップが競合し、
+    // アイコンを押したのに詳細へ飛ぶ（またはその逆）が起きる。行を分ければ
+    // 競合そのものが発生しない。
+    // 加えてカード1行は サムネ52pt＋テキスト＋シェブロン で埋まっており、
+    // iPhone SE 幅で 28pt のアイコンを2つ差し込むと店名がほとんど出ない
+    // （契約 3. の「comment 行の右端に置く」案を採った）
+    @ViewBuilder
+    private func spotCardFooter(
+        _ spot: ChatSSEEvent.SpotCard,
+        name: String
+    ) -> some View {
+        let comment = spot.comment ?? ""
+        let links = Self.spotCardLinks(spot, name: name)
+        if !comment.isEmpty || !links.isEmpty {
+            HStack(alignment: .bottom, spacing: 6) {
+                if !comment.isEmpty {
                     Text(comment)
                         .font(.system(size: 12.5))
                         .lineSpacing(5)
                         .foregroundStyle(WanspotColors.textSecondary)
-                        .padding(.horizontal, 4)
+                        // HStack の中の Text は「1行にわずかに収まらない」長さのとき
+                        // 折り返さずに末尾を省略してしまう（アイコン1個の行で再現）。
+                        // 縦だけ理想サイズを尊重させて、必ず折り返させる
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Spacer(minLength: 0)
+                }
+
+                ForEach(links) { link in
+                    ChatSpotCardLinkButton(link: link)
                 }
             }
+            .padding(.horizontal, 4)
         }
+    }
+
+    // カードに出す外部リンク。Instagram は **instagramID を持つカードだけ**
+    // （SpotSharing の「Google で名前を検索」フォールバックには乗せない。
+    // 詳細画面と違いカードは狭く、当たり外れのある導線を並べたくない）
+    private static func spotCardLinks(
+        _ spot: ChatSSEEvent.SpotCard,
+        name: String
+    ) -> [ChatSpotCardLink] {
+        var links: [ChatSpotCardLink] = []
+
+        let instagramID = spot.instagramID?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if
+            !instagramID.isEmpty,
+            let url = SpotSharing.instagramURL(
+                instagramID: instagramID,
+                spotName: name
+            )
+        {
+            links.append(
+                ChatSpotCardLink(
+                    kind: .instagram,
+                    url: url,
+                    accessibilityLabel: "\(name)のInstagram",
+                    accessibilityIdentifier: "chat.spotCard.instagram"
+                )
+            )
+        }
+
+        if let url = SpotSharing.googleMapsURL(
+            name: name,
+            placeID: spot.placeID
+        ) {
+            links.append(
+                ChatSpotCardLink(
+                    kind: .googleMaps,
+                    url: url,
+                    accessibilityLabel: "\(name)をGoogleマップで開く",
+                    accessibilityIdentifier: "chat.spotCard.maps"
+                )
+            )
+        }
+
+        return links
     }
 
     // 写真なし/読み込み失敗は肉球プレースホルダにフォールバック
@@ -983,6 +1064,101 @@ private struct ChatTypingIndicator: View {
         .frame(height: 18)
         .accessibilityElement()
         .accessibilityLabel("返答を考えています")
+    }
+}
+
+/*
+  チャットのスポットカードに添える外部リンク1件。
+  カード本体（詳細へ遷移する Button）とは別の行に置く前提。
+*/
+private struct ChatSpotCardLink: Identifiable {
+    enum Kind {
+        case instagram
+        case googleMaps
+    }
+
+    let kind: Kind
+    let url: URL
+    let accessibilityLabel: String
+    let accessibilityIdentifier: String
+
+    var id: String { accessibilityIdentifier }
+}
+
+/*
+  30pt の丸ボタン。アイコンはスポット詳細と同じもの
+  （Instagram は自作グリフの写し、マップは SpotDetailSections の GoogleMapsIcon）。
+*/
+private struct ChatSpotCardLinkButton: View {
+    let link: ChatSpotCardLink
+
+    var body: some View {
+        Link(destination: link.url) {
+            icon
+                .frame(width: 30, height: 30)
+                .background(WanspotColors.surface, in: Circle())
+                .overlay {
+                    Circle().strokeBorder(WanspotColors.border)
+                }
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(link.accessibilityLabel)
+        .accessibilityIdentifier(link.accessibilityIdentifier)
+    }
+
+    @ViewBuilder
+    private var icon: some View {
+        switch link.kind {
+        case .instagram:
+            ChatInstagramIcon(size: 16.5)
+        case .googleMaps:
+            // 塗りのアイコンは輪郭線の Instagram より重く見えるので、
+            // 角丸の外周が Instagram の枠と揃う 18pt にしてある
+            // （下地は 48 座標系の 2..46＝frame の 91.7%＝16.5pt）
+            GoogleMapsIcon()
+                .frame(width: 18, height: 18)
+        }
+    }
+}
+
+/*
+  スポット詳細（SpotDetailSections の InstagramIcon）と同じグリフ。
+  向こうは private なので、24pt 原寸の各寸法をそのまま比率で持ち直した写しにしてある
+  （カード用に 16.5pt まで小さくするため寸法を size 依存にした）。
+*/
+private struct ChatInstagramIcon: View {
+    let size: CGFloat
+
+    private let gradient = LinearGradient(
+        colors: [
+            Color(red: 0.50, green: 0.20, blue: 0.80),
+            Color(red: 0.88, green: 0.18, blue: 0.47),
+            Color(red: 1.00, green: 0.58, blue: 0.20),
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    // 原寸 24pt に対する倍率。詳細画面の見た目をそのまま縮める
+    private var scale: CGFloat { size / 24 }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 6.5 * scale, style: .continuous)
+                .stroke(gradient, lineWidth: 2.4 * scale)
+
+            Circle()
+                .stroke(gradient, lineWidth: 2.4 * scale)
+                .frame(width: 9.5 * scale, height: 9.5 * scale)
+
+            Circle()
+                .fill(gradient)
+                .frame(width: 3 * scale, height: 3 * scale)
+                .offset(x: 6.5 * scale, y: -6.5 * scale)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }
 

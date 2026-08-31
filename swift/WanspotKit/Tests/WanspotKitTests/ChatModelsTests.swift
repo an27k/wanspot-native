@@ -143,6 +143,27 @@ final class ChatModelsTests: XCTestCase {
         XCTAssertEqual(items[0].comment, "店内OKと公式サイトに記載があります")
     }
 
+    func testDecodesSpotCardInstagramID() throws {
+        // instagramId は「キーがある行だけ」導線を出す契約。
+        // キー欠損の行と混在しても両方 decode でき、欠損側は nil のままであること
+        let event = try XCTUnwrap(
+            ChatAPIClient.decodeEvent(
+                fromLine: """
+                data: {"type":"spots","items":[\
+                {"placeId":"place-1","name":"テラスカフェ",\
+                "label":"店内 同伴可","tone":"confirmed",\
+                "instagramId":"terrace_cafe"},\
+                {"placeId":"place-2","name":"公園","tone":"weak"}]}
+                """
+            )
+        )
+        let items = try XCTUnwrap(event.items)
+        XCTAssertEqual(items.count, 2)
+        XCTAssertEqual(items[0].instagramID, "terrace_cafe")
+        // 旧サーバ／値の無い行はキーごと来ない＝アイコンを出さない
+        XCTAssertNil(items[1].instagramID)
+    }
+
     func testDecodesSpotsEventLineWithoutItems() throws {
         // items 欠損でもイベント自体は decode でき、消費側が空扱いにできること
         let event = try XCTUnwrap(

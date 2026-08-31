@@ -168,6 +168,136 @@ struct SpotDetailIdentitySection: View {
     }
 }
 
+/*
+  Google マップのブランドアイコン。RN 版 components/IconGoogleMaps.tsx の SVG
+  （viewBox 48×48）を座標・色そのままに SwiftUI の Path へ写したもの。
+  ブランド資産なので比率・配色は変えない。与えられた frame いっぱいに
+  48×48 座標系をスケールするので、任意サイズ（24pt / 28pt / 16pt）で使える。
+
+  唯一 SVG と違うのは角丸でクリップしている点。元の SVG は clip を持たず、
+  緑（左下）と青（右上）の直角が角丸の外へ食み出す。アイコンとしては
+  そこが欠けて見えるため、下地と同じ角丸で切り抜いている。
+*/
+struct GoogleMapsIcon: View {
+    /// #E8F0FE / #34A853 / #FBBC05 / #4285F4 / #EA4335 / #B31412
+    private static let plate = Color(red: 232 / 255, green: 240 / 255, blue: 254 / 255)
+    private static let green = Color(red: 52 / 255, green: 168 / 255, blue: 83 / 255)
+    private static let yellow = Color(red: 251 / 255, green: 188 / 255, blue: 5 / 255)
+    private static let blue = Color(red: 66 / 255, green: 133 / 255, blue: 244 / 255)
+    private static let red = Color(red: 234 / 255, green: 67 / 255, blue: 53 / 255)
+    private static let holeRim = Color(red: 179 / 255, green: 20 / 255, blue: 18 / 255)
+
+    private static let plateShape = GoogleMapsGlyph { path in
+        path.addRoundedRect(
+            in: CGRect(x: 2, y: 2, width: 44, height: 44),
+            cornerSize: CGSize(width: 10, height: 10)
+        )
+    }
+
+    var body: some View {
+        ZStack {
+            // 下地（rx10 の角丸）
+            Self.plateShape.fill(Self.plate)
+
+            // M2 14h18L8 46H2V14z
+            GoogleMapsGlyph { path in
+                path.move(to: CGPoint(x: 2, y: 14))
+                path.addLine(to: CGPoint(x: 20, y: 14))
+                path.addLine(to: CGPoint(x: 8, y: 46))
+                path.addLine(to: CGPoint(x: 2, y: 46))
+                path.closeSubpath()
+            }
+            .fill(Self.green)
+
+            // M20 2h18l-12 44H8L20 2z
+            GoogleMapsGlyph { path in
+                path.move(to: CGPoint(x: 20, y: 2))
+                path.addLine(to: CGPoint(x: 38, y: 2))
+                path.addLine(to: CGPoint(x: 26, y: 46))
+                path.addLine(to: CGPoint(x: 8, y: 46))
+                path.closeSubpath()
+            }
+            .fill(Self.yellow)
+
+            // M38 2h8v32L28 46 38 2z
+            GoogleMapsGlyph { path in
+                path.move(to: CGPoint(x: 38, y: 2))
+                path.addLine(to: CGPoint(x: 46, y: 2))
+                path.addLine(to: CGPoint(x: 46, y: 34))
+                path.addLine(to: CGPoint(x: 28, y: 46))
+                path.closeSubpath()
+            }
+            .fill(Self.blue)
+
+            // ピン本体（c / s を絶対座標のベジェへ展開）
+            GoogleMapsGlyph { path in
+                path.move(to: CGPoint(x: 30, y: 6))
+                path.addCurve(
+                    to: CGPoint(x: 20, y: 15.8),
+                    control1: CGPoint(x: 24.5, y: 6),
+                    control2: CGPoint(x: 20, y: 10.4)
+                )
+                path.addCurve(
+                    to: CGPoint(x: 30, y: 33),
+                    control1: CGPoint(x: 20, y: 23),
+                    control2: CGPoint(x: 30, y: 33)
+                )
+                path.addCurve(
+                    to: CGPoint(x: 40, y: 15.8),
+                    control1: CGPoint(x: 30, y: 33),
+                    control2: CGPoint(x: 40, y: 23)
+                )
+                path.addCurve(
+                    to: CGPoint(x: 30, y: 6),
+                    control1: CGPoint(x: 40, y: 10.4),
+                    control2: CGPoint(x: 35.5, y: 6)
+                )
+                path.closeSubpath()
+            }
+            .fill(Self.red)
+
+            // 穴（cx30 cy16 / r4.2 と r2.2）
+            GoogleMapsGlyph { path in
+                path.addEllipse(
+                    in: CGRect(x: 25.8, y: 11.8, width: 8.4, height: 8.4)
+                )
+            }
+            .fill(Self.holeRim)
+
+            GoogleMapsGlyph { path in
+                path.addEllipse(
+                    in: CGRect(x: 27.8, y: 13.8, width: 4.4, height: 4.4)
+                )
+            }
+            .fill(.white)
+        }
+        .clipShape(Self.plateShape)
+        .accessibilityHidden(true)
+    }
+}
+
+/*
+  48×48 の viewBox で書いた図形を、渡された frame の短辺に合わせて拡大縮小する。
+  ベクタのままスケールするので 16pt でも 44pt でも潰れない。
+*/
+private struct GoogleMapsGlyph: Shape {
+    let build: @Sendable (inout Path) -> Void
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        build(&path)
+        let side = min(rect.width, rect.height)
+        let scale = side / 48
+        // 短辺に合わせたうえで、余った側は中央へ寄せる
+        let offsetX = rect.minX + (rect.width - side) / 2
+        let offsetY = rect.minY + (rect.height - side) / 2
+        return path.applying(
+            CGAffineTransform(translationX: offsetX, y: offsetY)
+                .scaledBy(x: scale, y: scale)
+        )
+    }
+}
+
 private struct InstagramIcon: View {
     private let gradient = LinearGradient(
         colors: [
@@ -682,7 +812,12 @@ struct SpotDetailsSection: View {
     private var destinationLinks: some View {
         if let mapURL {
             Link(destination: mapURL) {
-                Label("Google Maps", systemImage: "map.fill")
+                Label {
+                    Text("Google Maps")
+                } icon: {
+                    GoogleMapsIcon()
+                        .frame(width: 17, height: 17)
+                }
             }
             .buttonStyle(.borderedProminent)
             .tint(WanspotColors.primary)
