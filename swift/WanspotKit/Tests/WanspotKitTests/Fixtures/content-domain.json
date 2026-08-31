@@ -1,0 +1,482 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    "lib/articles/article-theme.ts",
+    "components/articles/ArticlesTabScreen.tsx",
+    "lib/calendar/types.ts",
+    "lib/calendar/japan-holidays.ts",
+    "lib/calendar/resolve-prefecture.ts",
+    "components/calendar/CalendarTabScreen.tsx"
+  ],
+  "articles": {
+    "themes": [
+      {
+        "id": "missing",
+        "theme": null,
+        "expected": {
+          "area": null,
+          "genre": null,
+          "genreLabel": null
+        }
+      },
+      {
+        "id": "trimmed-area-cafe",
+        "theme": "  【東京都】カフェおすすめ  ",
+        "expected": {
+          "area": "東京都",
+          "genre": "cafe",
+          "genreLabel": "カフェ"
+        }
+      },
+      {
+        "id": "event-job-theme-without-brackets",
+        "theme": "2026-08 関東 イベント",
+        "expected": {
+          "area": null,
+          "genre": "event",
+          "genreLabel": "イベント"
+        }
+      },
+      {
+        "id": "dog-run-spelling-variation",
+        "theme": "【横浜】ドックラン特集",
+        "expected": {
+          "area": "横浜",
+          "genre": "dog_run",
+          "genreLabel": "ドッグラン"
+        }
+      },
+      {
+        "id": "hotel-wins-before-onsen",
+        "theme": "【箱根】温泉宿まとめ",
+        "expected": {
+          "area": "箱根",
+          "genre": "hotel",
+          "genreLabel": "お泊まり"
+        }
+      },
+      {
+        "id": "area-with-unknown-genre",
+        "theme": "【湘南】愛犬との休日",
+        "expected": {
+          "area": "湘南",
+          "genre": null,
+          "genreLabel": null
+        }
+      },
+      {
+        "id": "no-area-indoor",
+        "theme": "雨の日に行ける屋内施設",
+        "expected": {
+          "area": null,
+          "genre": "indoor",
+          "genreLabel": "雨の日OK"
+        }
+      }
+    ],
+    "monthKeys": [
+      {
+        "id": "slug-wins",
+        "title": "【2025年1月】古い表示",
+        "slug": "events-2026-08-kanto",
+        "theme": "2026-09 関東 イベント",
+        "expected": "2026-08"
+      },
+      {
+        "id": "theme-fallback",
+        "title": "イベントまとめ",
+        "slug": "other",
+        "theme": "2026-09 関西 イベント",
+        "expected": "2026-09"
+      },
+      {
+        "id": "title-fallback-pads-month",
+        "title": "【2027年2月】イベントまとめ",
+        "slug": "other",
+        "theme": "イベント",
+        "expected": "2027-02"
+      },
+      {
+        "id": "leading-space-slug-does-not-match",
+        "title": "【2027年3月】イベントまとめ",
+        "slug": " events-2026-01-kanto",
+        "theme": "2026-10 関東 イベント",
+        "expected": "2026-10"
+      },
+      {
+        "id": "missing-month",
+        "title": "イベントまとめ",
+        "slug": "other",
+        "theme": "イベント",
+        "expected": null
+      }
+    ],
+    "eventOrder": {
+      "articles": [
+        {
+          "id": "unknown",
+          "title": "未定イベント",
+          "slug": "other",
+          "theme": "イベント"
+        },
+        {
+          "id": "sep-b",
+          "title": "びわ湖イベント",
+          "slug": "events-2026-09-kansai",
+          "theme": null
+        },
+        {
+          "id": "aug",
+          "title": "東京イベント",
+          "slug": "events-2026-08-kanto",
+          "theme": null
+        },
+        {
+          "id": "sep-a",
+          "title": "愛犬イベント",
+          "slug": "events-2026-09-kanto",
+          "theme": null
+        }
+      ],
+      "expectedIds": [
+        "aug",
+        "sep-b",
+        "sep-a",
+        "unknown"
+      ]
+    },
+    "availableGenreOrder": {
+      "themes": [
+        "【東京】ホテル",
+        "【東京】カフェ",
+        "2026-08 関東 イベント",
+        "【東京】公園"
+      ],
+      "expected": [
+        "event",
+        "cafe",
+        "park",
+        "hotel"
+      ]
+    }
+  },
+  "calendar": {
+    "dates": [
+      {
+        "id": "utc-crosses-into-next-jst-day",
+        "iso": "2026-08-18T15:30:00Z",
+        "expectedDateKey": "2026-08-19",
+        "expectedTimeLabel": "00:30"
+      },
+      {
+        "id": "offset-crosses-back-to-jst-day",
+        "iso": "2026-08-19T01:15:00-07:00",
+        "expectedDateKey": "2026-08-19",
+        "expectedTimeLabel": "17:15"
+      },
+      {
+        "id": "fractional-seconds",
+        "iso": "2026-12-31T23:59:59.123+09:00",
+        "expectedDateKey": "2026-12-31",
+        "expectedTimeLabel": "23:59"
+      }
+    ],
+    "occurrences": [
+      {
+        "id": "all-day-means-time-unlisted",
+        "occurrence": {
+          "id": "o1",
+          "event_id": "e1",
+          "starts_at": "2026-08-23T00:00:00+09:00",
+          "ends_at": null,
+          "is_all_day": true
+        },
+        "expected": "8/23(日)（時刻の記載なし）"
+      },
+      {
+        "id": "timed-with-end",
+        "occurrence": {
+          "id": "o2",
+          "event_id": "e1",
+          "starts_at": "2026-08-23T10:00:00+09:00",
+          "ends_at": "2026-08-23T16:30:00+09:00",
+          "is_all_day": false
+        },
+        "expected": "8/23(日) 10:00〜16:30"
+      },
+      {
+        "id": "timed-without-end",
+        "occurrence": {
+          "id": "o3",
+          "event_id": "e1",
+          "starts_at": "2026-08-24T09:05:00+09:00",
+          "ends_at": null,
+          "is_all_day": false
+        },
+        "expected": "8/24(月) 09:05"
+      }
+    ],
+    "tones": [
+      {
+        "id": "past-overrides-sunday",
+        "dateKey": "2026-08-16",
+        "todayKey": "2026-08-19",
+        "holidayName": null,
+        "expected": "past"
+      },
+      {
+        "id": "future-saturday",
+        "dateKey": "2026-08-22",
+        "todayKey": "2026-08-19",
+        "holidayName": null,
+        "expected": "saturday"
+      },
+      {
+        "id": "future-sunday",
+        "dateKey": "2026-08-23",
+        "todayKey": "2026-08-19",
+        "holidayName": null,
+        "expected": "sunday_or_holiday"
+      },
+      {
+        "id": "weekday-holiday",
+        "dateKey": "2026-09-21",
+        "todayKey": "2026-08-19",
+        "holidayName": "敬老の日",
+        "expected": "sunday_or_holiday"
+      },
+      {
+        "id": "plain-weekday",
+        "dateKey": "2026-08-20",
+        "todayKey": "2026-08-19",
+        "holidayName": null,
+        "expected": "weekday"
+      }
+    ],
+    "holidayFormats": [
+      {
+        "id": "citizens-holiday-ja",
+        "entry": {
+          "name": "休日",
+          "name_en": ""
+        },
+        "expected": "国民の休日"
+      },
+      {
+        "id": "citizens-holiday-en",
+        "entry": {
+          "name": "Holiday",
+          "name_en": "Citizen's Holiday"
+        },
+        "expected": "国民の休日"
+      },
+      {
+        "id": "substitute",
+        "entry": {
+          "name": "振替休日",
+          "name_en": "Substitute Holiday"
+        },
+        "expected": "振替休日"
+      },
+      {
+        "id": "named-substitute-stays-verbatim",
+        "entry": {
+          "name": "こどもの日 振替休日",
+          "name_en": ""
+        },
+        "expected": "こどもの日 振替休日"
+      }
+    ],
+    "knownHoliday": {
+      "dateKey": "2026-01-01",
+      "expected": "元日"
+    },
+    "prefectures": [
+      {
+        "id": "postal-prefix",
+        "address": "日本、〒238-0316 神奈川県横須賀市長井２丁目１４−１",
+        "expectedFromAddress": "神奈川県",
+        "expectedResolved": "神奈川県"
+      },
+      {
+        "id": "venue-fallback",
+        "address": null,
+        "venueName": "大阪府営 深北緑地",
+        "expectedFromAddress": null,
+        "expectedResolved": "大阪府"
+      },
+      {
+        "id": "address-wins-over-venue",
+        "address": "東京都渋谷区",
+        "venueName": "京都府アンテナショップ",
+        "expectedFromAddress": "東京都",
+        "expectedResolved": "東京都"
+      },
+      {
+        "id": "unknown-is-null",
+        "address": "海外会場",
+        "venueName": "オンライン",
+        "expectedFromAddress": null,
+        "expectedResolved": null
+      }
+    ],
+    "monthGrids": [
+      {
+        "id": "starts-sunday",
+        "year": 2026,
+        "month": 2,
+        "expected": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ]
+        ]
+      },
+      {
+        "id": "six-week-month",
+        "year": 2026,
+        "month": 8,
+        "expected": [
+          [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1
+          ],
+          [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          [
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          [
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          [
+            30,
+            31,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "id": "leap-february",
+        "year": 2028,
+        "month": 2,
+        "expected": [
+          [
+            null,
+            null,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          [
+            27,
+            28,
+            29,
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      }
+    ]
+  }
+}

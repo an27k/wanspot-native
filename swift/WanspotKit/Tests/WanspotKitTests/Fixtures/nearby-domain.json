@@ -1,0 +1,945 @@
+{
+  "schemaVersion": 1,
+  "source": [
+    "lib/nearby/geo.ts",
+    "lib/nearby/map-filter.ts",
+    "lib/nearby/pet-policy.ts",
+    "lib/nearby/place-score.ts",
+    "lib/nearby/spread-overlapping.ts",
+    "lib/weather/walk-alert.ts"
+  ],
+  "ranking": [
+    {
+      "id": "certainty-outranks-small-distance-advantage",
+      "spots": [
+        {
+          "place_id": "near-unknown",
+          "name": "near-unknown",
+          "category": "カフェ",
+          "lat": 35.6813,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4.8,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_friendly_verified": false
+        },
+        {
+          "place_id": "far-confirmed",
+          "name": "far-confirmed",
+          "category": "カフェ",
+          "lat": 35.688,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4.2,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": true,
+          "pet_friendly_verified": true
+        }
+      ],
+      "origin": {
+        "lat": 35.6812,
+        "lng": 139.7671
+      },
+      "situation": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "placeIds": [
+          "far-confirmed",
+          "near-unknown"
+        ],
+        "scores": {
+          "far-confirmed": 8.135072206336673,
+          "near-unknown": 6.261553110904292
+        }
+      }
+    },
+    {
+      "id": "known-not-allowed-and-meet-dogs-are-excluded",
+      "spots": [
+        {
+          "place_id": "not-allowed",
+          "name": "not-allowed",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 5,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_friendly_status": "not_allowed",
+          "pet_friendly_verified": true
+        },
+        {
+          "place_id": "meet-dogs",
+          "name": "meet-dogs",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 5,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_friendly_verified": true,
+          "dog_interaction": "meet_dogs"
+        },
+        {
+          "place_id": "bring-own",
+          "name": "bring-own",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 3.8,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_friendly_status": "allowed",
+          "pet_friendly_verified": true,
+          "dog_interaction": "bring_own"
+        }
+      ],
+      "origin": {
+        "lat": 35.6812,
+        "lng": 139.7671
+      },
+      "situation": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "placeIds": [
+          "bring-own"
+        ],
+        "scores": {
+          "bring-own": 8.48
+        }
+      }
+    },
+    {
+      "id": "rain-penalizes-outdoor-only",
+      "spots": [
+        {
+          "place_id": "outdoor",
+          "name": "outdoor",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4.9,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_terrace_only": true,
+          "pet_friendly_status": "outdoor_only",
+          "pet_friendly_verified": true
+        },
+        {
+          "place_id": "indoor",
+          "name": "indoor",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": true,
+          "pet_friendly_verified": true
+        }
+      ],
+      "origin": {
+        "lat": 35.6812,
+        "lng": 139.7671
+      },
+      "situation": {
+        "rainy": true,
+        "dogSize": null,
+        "heatLevel": null,
+        "travel": "walking"
+      },
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "placeIds": [
+          "indoor",
+          "outdoor"
+        ],
+        "scores": {
+          "indoor": 9,
+          "outdoor": 6.630000000000001
+        }
+      }
+    },
+    {
+      "id": "extreme-heat-prefers-indoor-dog-run",
+      "spots": [
+        {
+          "place_id": "outdoor-run",
+          "name": "outdoor-run",
+          "category": "ドッグラン",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4.8,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_friendly_verified": true,
+          "extended_category": "dog_run"
+        },
+        {
+          "place_id": "indoor-run",
+          "name": "indoor-run",
+          "category": "ドッグラン",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_friendly_verified": true,
+          "extended_category": "dog_run_indoor"
+        }
+      ],
+      "origin": {
+        "lat": 35.6812,
+        "lng": 139.7671
+      },
+      "situation": {
+        "rainy": false,
+        "dogSize": null,
+        "heatLevel": "stop",
+        "travel": "walking"
+      },
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "placeIds": [
+          "indoor-run",
+          "outdoor-run"
+        ],
+        "scores": {
+          "indoor-run": 9,
+          "outdoor-run": 6.880000000000001
+        }
+      }
+    },
+    {
+      "id": "closed-business-is-penalized",
+      "spots": [
+        {
+          "place_id": "closed",
+          "name": "closed",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4.9,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": true,
+          "pet_friendly_verified": true,
+          "opening_hours": {
+            "periods": [
+              {
+                "open": {
+                  "day": 2,
+                  "time": "1800"
+                },
+                "close": {
+                  "day": 2,
+                  "time": "1900"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "place_id": "open",
+          "name": "open",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": true,
+          "pet_friendly_verified": true,
+          "opening_hours": {
+            "periods": [
+              {
+                "open": {
+                  "day": 2,
+                  "time": "0900"
+                },
+                "close": {
+                  "day": 2,
+                  "time": "1700"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "origin": {
+        "lat": 35.6812,
+        "lng": 139.7671
+      },
+      "situation": {
+        "rainy": false,
+        "dogSize": null,
+        "heatLevel": null,
+        "travel": "walking"
+      },
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "placeIds": [
+          "open",
+          "closed"
+        ],
+        "scores": {
+          "open": 9,
+          "closed": 7.365
+        }
+      }
+    },
+    {
+      "id": "large-dog-size-limit-is-penalized",
+      "spots": [
+        {
+          "place_id": "limited",
+          "name": "limited",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4.9,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": true,
+          "pet_friendly_verified": true,
+          "pet_size_limit": "大型犬不可"
+        },
+        {
+          "place_id": "unlimited",
+          "name": "unlimited",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": true,
+          "pet_friendly_verified": true
+        }
+      ],
+      "origin": {
+        "lat": 35.6812,
+        "lng": 139.7671
+      },
+      "situation": {
+        "rainy": false,
+        "dogSize": "L",
+        "heatLevel": null,
+        "travel": "walking"
+      },
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "placeIds": [
+          "unlimited",
+          "limited"
+        ],
+        "scores": {
+          "unlimited": 9,
+          "limited": 7.215
+        }
+      }
+    }
+  ],
+  "conditions": [
+    {
+      "id": "indoor-only-is-strict-about-unknown",
+      "spots": [
+        {
+          "place_id": "indoor",
+          "name": "indoor",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": true
+        },
+        {
+          "place_id": "unknown",
+          "name": "unknown",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": null
+        },
+        {
+          "place_id": "outside",
+          "name": "outside",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": false
+        }
+      ],
+      "conditions": {
+        "indoorOnly": true,
+        "terraceOnly": false,
+        "likedOnly": false
+      },
+      "likedPlaceIds": [],
+      "genre": "cafe",
+      "expected": [
+        "indoor"
+      ]
+    },
+    {
+      "id": "terrace-status-fallback-and-not-allowed-defense",
+      "spots": [
+        {
+          "place_id": "flag",
+          "name": "flag",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_terrace_only": true
+        },
+        {
+          "place_id": "status",
+          "name": "status",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_friendly_status": "outdoor_only"
+        },
+        {
+          "place_id": "contradiction",
+          "name": "contradiction",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_terrace_only": true,
+          "pet_friendly_status": "not_allowed"
+        }
+      ],
+      "conditions": {
+        "indoorOnly": false,
+        "terraceOnly": true,
+        "likedOnly": false
+      },
+      "likedPlaceIds": [],
+      "genre": "restaurant",
+      "expected": [
+        "flag",
+        "status"
+      ]
+    },
+    {
+      "id": "condition-filters-compose-with-and",
+      "spots": [
+        {
+          "place_id": "all",
+          "name": "all",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": true,
+          "pet_terrace_only": true
+        },
+        {
+          "place_id": "not-liked",
+          "name": "not-liked",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": true,
+          "pet_terrace_only": true
+        },
+        {
+          "place_id": "no-terrace",
+          "name": "no-terrace",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": true
+        }
+      ],
+      "conditions": {
+        "indoorOnly": true,
+        "terraceOnly": true,
+        "likedOnly": true
+      },
+      "likedPlaceIds": [
+        "all",
+        "no-terrace"
+      ],
+      "genre": "cafe",
+      "expected": [
+        "all"
+      ]
+    },
+    {
+      "id": "veterinary-ignores-pet-companion-conditions",
+      "spots": [
+        {
+          "place_id": "vet",
+          "name": "vet",
+          "category": "動物病院",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "pet_indoor_allowed": null,
+          "pet_terrace_only": null
+        }
+      ],
+      "conditions": {
+        "indoorOnly": true,
+        "terraceOnly": true,
+        "likedOnly": false
+      },
+      "likedPlaceIds": [],
+      "genre": "veterinary_care",
+      "expected": [
+        "vet"
+      ]
+    }
+  ],
+  "genres": [
+    {
+      "id": "cafe-rejects-restaurant-only-types",
+      "genre": "cafe",
+      "spots": [
+        {
+          "place_id": "cafe",
+          "name": "cafe",
+          "category": "スポット",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "types": [
+            "cafe"
+          ]
+        },
+        {
+          "place_id": "restaurant",
+          "name": "restaurant",
+          "category": "レストラン",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "types": [
+            "restaurant"
+          ]
+        }
+      ],
+      "expected": [
+        "cafe"
+      ]
+    },
+    {
+      "id": "dog-run-accepts-extended-category-and-name-variation",
+      "genre": "dog_run",
+      "spots": [
+        {
+          "place_id": "extended",
+          "name": "extended",
+          "category": "公園",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null,
+          "extended_category": "dog_run_indoor"
+        },
+        {
+          "place_id": "name",
+          "name": "ドックラン エム 恵比寿",
+          "category": "スポット",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        },
+        {
+          "place_id": "noise",
+          "name": "犬用品店",
+          "category": "ペットショップ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        }
+      ],
+      "expected": [
+        "extended",
+        "name"
+      ]
+    },
+    {
+      "id": "pet-hotel-drops-grooming-only-name",
+      "genre": "pet_hotel",
+      "spots": [
+        {
+          "place_id": "grooming",
+          "name": "トリミングサロン ポチ",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        },
+        {
+          "place_id": "hotel",
+          "name": "トリミング＆ペットホテル ポチ",
+          "category": "カフェ",
+          "lat": 35.6812,
+          "lng": 139.7671,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        }
+      ],
+      "expected": [
+        "hotel"
+      ]
+    }
+  ],
+  "coordinates": [
+    {
+      "id": "deduplicates-same-name-and-spreads-distinct-spots",
+      "spots": [
+        {
+          "place_id": "b",
+          "name": "ワン カフェ",
+          "category": "カフェ",
+          "lat": 35.681234,
+          "lng": 139.767123,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        },
+        {
+          "place_id": "duplicate",
+          "name": "ワン　カフェ",
+          "category": "カフェ",
+          "lat": 35.681231,
+          "lng": 139.767121,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        },
+        {
+          "place_id": "a",
+          "name": "併設動物病院",
+          "category": "カフェ",
+          "lat": 35.681234,
+          "lng": 139.767123,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        },
+        {
+          "place_id": "solo",
+          "name": "少し離れた公園",
+          "category": "カフェ",
+          "lat": 35.682,
+          "lng": 139.768,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        }
+      ],
+      "expectedDeduplicatedPlaceIds": [
+        "b",
+        "a",
+        "solo"
+      ],
+      "expectedSpread": [
+        {
+          "placeId": "b",
+          "displayLat": 35.68131508108108,
+          "displayLng": 139.767123
+        },
+        {
+          "placeId": "a",
+          "displayLat": 35.681152918918926,
+          "displayLng": 139.767123
+        },
+        {
+          "placeId": "solo",
+          "displayLat": 35.682,
+          "displayLng": 139.768
+        }
+      ]
+    },
+    {
+      "id": "three-overlaps-use-stable-key-order",
+      "spots": [
+        {
+          "place_id": "z",
+          "name": "z",
+          "category": "カフェ",
+          "lat": 34.7,
+          "lng": 135.5,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        },
+        {
+          "place_id": "x",
+          "name": "x",
+          "category": "カフェ",
+          "lat": 34.7,
+          "lng": 135.5,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        },
+        {
+          "place_id": "y",
+          "name": "y",
+          "category": "カフェ",
+          "lat": 34.7,
+          "lng": 135.5,
+          "address": "東京都千代田区",
+          "photo_ref": null,
+          "rating": 4,
+          "user_ratings_total": null,
+          "price_level": null,
+          "price_label": null
+        }
+      ],
+      "expectedDeduplicatedPlaceIds": [
+        "z",
+        "x",
+        "y"
+      ],
+      "expectedSpread": [
+        {
+          "placeId": "z",
+          "displayLat": 34.70004054054054,
+          "displayLng": 135.49991459127295
+        },
+        {
+          "placeId": "x",
+          "displayLat": 34.699918918918925,
+          "displayLng": 135.5
+        },
+        {
+          "placeId": "y",
+          "displayLat": 34.70004054054054,
+          "displayLng": 135.50008540872705
+        }
+      ]
+    }
+  ],
+  "distances": [
+    {
+      "id": "same-point",
+      "origin": {
+        "lat": 35.6812,
+        "lng": 139.7671
+      },
+      "point": {
+        "lat": 35.6812,
+        "lng": 139.7671
+      },
+      "expectedMeters": 0
+    },
+    {
+      "id": "tokyo-station-to-imperial-palace",
+      "origin": {
+        "lat": 35.681236,
+        "lng": 139.767125
+      },
+      "point": {
+        "lat": 35.685175,
+        "lng": 139.752799
+      },
+      "expectedMeters": 1366.0266662291795
+    },
+    {
+      "id": "crosses-antimeridian",
+      "origin": {
+        "lat": 35,
+        "lng": 179.9
+      },
+      "point": {
+        "lat": 35,
+        "lng": -179.9
+      },
+      "expectedMeters": 18217.107252343634
+    }
+  ],
+  "weather": {
+    "alerts": [
+      {
+        "id": "standard-comfortable",
+        "tempC": 24,
+        "humidityPct": null,
+        "feelsLikeC": null,
+        "heatSensitivity": 0,
+        "ageMonths": null,
+        "expected": "comfortable"
+      },
+      {
+        "id": "short-nosed-dog-stops-four-degrees-earlier",
+        "tempC": 31,
+        "humidityPct": null,
+        "feelsLikeC": null,
+        "heatSensitivity": 2,
+        "ageMonths": null,
+        "expected": "stop"
+      },
+      {
+        "id": "humid-caution-escalates-to-danger",
+        "tempC": 28,
+        "humidityPct": 70,
+        "feelsLikeC": null,
+        "heatSensitivity": 0,
+        "ageMonths": null,
+        "expected": "danger"
+      },
+      {
+        "id": "senior-age-combines-with-breed-and-caps-at-two",
+        "tempC": 31,
+        "humidityPct": null,
+        "feelsLikeC": null,
+        "heatSensitivity": 1,
+        "ageMonths": 130,
+        "expected": "stop"
+      }
+    ]
+  }
+}

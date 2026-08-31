@@ -1,0 +1,641 @@
+{
+  "schemaVersion": 1,
+  "source": "lib/business-hours.ts",
+  "timeZone": "Asia/Tokyo",
+  "openStateFromPeriods": [
+    {
+      "id": "missing-periods",
+      "periods": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "status": "unknown",
+        "minutesUntilClose": null
+      }
+    },
+    {
+      "id": "single-open-only-is-24-hours",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "0000"
+          }
+        }
+      ],
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "status": "open",
+        "minutesUntilClose": null
+      }
+    },
+    {
+      "id": "single-empty-period-is-also-24-hours",
+      "periods": [
+        {}
+      ],
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "status": "open",
+        "minutesUntilClose": null
+      }
+    },
+    {
+      "id": "same-day-open",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "0900"
+          },
+          "close": {
+            "day": 2,
+            "time": "1700"
+          }
+        }
+      ],
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "status": "open",
+        "minutesUntilClose": 420
+      }
+    },
+    {
+      "id": "closing-boundary-is-closed",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "0900"
+          },
+          "close": {
+            "day": 2,
+            "time": "1700"
+          }
+        }
+      ],
+      "now": "2026-08-18T17:00:00+09:00",
+      "expected": {
+        "status": "closed",
+        "minutesUntilClose": null
+      }
+    },
+    {
+      "id": "before-opening-is-closed",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "0900"
+          },
+          "close": {
+            "day": 2,
+            "time": "1700"
+          }
+        }
+      ],
+      "now": "2026-08-18T08:59:00+09:00",
+      "expected": {
+        "status": "closed",
+        "minutesUntilClose": null
+      }
+    },
+    {
+      "id": "overnight-before-midnight",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "2200"
+          },
+          "close": {
+            "day": 3,
+            "time": "0200"
+          }
+        }
+      ],
+      "now": "2026-08-18T23:30:00+09:00",
+      "expected": {
+        "status": "open",
+        "minutesUntilClose": 150
+      }
+    },
+    {
+      "id": "overnight-after-midnight",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "2200"
+          },
+          "close": {
+            "day": 3,
+            "time": "0200"
+          }
+        }
+      ],
+      "now": "2026-08-19T01:00:00+09:00",
+      "expected": {
+        "status": "open",
+        "minutesUntilClose": 60
+      }
+    },
+    {
+      "id": "week-wrap-saturday-to-sunday",
+      "periods": [
+        {
+          "open": {
+            "day": 6,
+            "time": "2200"
+          },
+          "close": {
+            "day": 0,
+            "time": "0200"
+          }
+        }
+      ],
+      "now": "2026-08-23T01:00:00+09:00",
+      "expected": {
+        "status": "open",
+        "minutesUntilClose": 60
+      }
+    },
+    {
+      "id": "multiple-periods-second-match",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "0900"
+          },
+          "close": {
+            "day": 2,
+            "time": "1200"
+          }
+        },
+        {
+          "open": {
+            "day": 2,
+            "time": "1300"
+          },
+          "close": {
+            "day": 2,
+            "time": "1800"
+          }
+        }
+      ],
+      "now": "2026-08-18T14:00:00+09:00",
+      "expected": {
+        "status": "open",
+        "minutesUntilClose": 240
+      }
+    },
+    {
+      "id": "invalid-clock-is-skipped",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "2500"
+          },
+          "close": {
+            "day": 2,
+            "time": "1700"
+          }
+        }
+      ],
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "status": "closed",
+        "minutesUntilClose": null
+      }
+    }
+  ],
+  "todayRangeFromPeriods": [
+    {
+      "id": "missing-periods",
+      "periods": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": null
+    },
+    {
+      "id": "single-open-only-is-24-hours",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "0000"
+          }
+        }
+      ],
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "24時間"
+    },
+    {
+      "id": "multiple-ranges",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "0900"
+          },
+          "close": {
+            "day": 2,
+            "time": "1200"
+          }
+        },
+        {
+          "open": {
+            "day": 2,
+            "time": "1300"
+          },
+          "close": {
+            "day": 2,
+            "time": "1730"
+          }
+        }
+      ],
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "9:00-12:00、13:00-17:30"
+    },
+    {
+      "id": "overnight-is-listed-on-opening-day",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "2200"
+          },
+          "close": {
+            "day": 3,
+            "time": "0200"
+          }
+        }
+      ],
+      "now": "2026-08-18T23:00:00+09:00",
+      "expected": "22:00-2:00"
+    },
+    {
+      "id": "overnight-is-not-listed-on-closing-day",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "2200"
+          },
+          "close": {
+            "day": 3,
+            "time": "0200"
+          }
+        }
+      ],
+      "now": "2026-08-19T01:00:00+09:00",
+      "expected": null
+    },
+    {
+      "id": "invalid-range-is-omitted",
+      "periods": [
+        {
+          "open": {
+            "day": 2,
+            "time": "0900"
+          },
+          "close": {
+            "day": 2,
+            "time": "9960"
+          }
+        },
+        {
+          "open": {
+            "day": 2,
+            "time": "1300"
+          },
+          "close": {
+            "day": 2,
+            "time": "1700"
+          }
+        }
+      ],
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "13:00-17:00"
+    }
+  ],
+  "getSpotOpenStatus": [
+    {
+      "id": "open-now-true-wins",
+      "weekdayText": [
+        "火曜日: 定休日"
+      ],
+      "openNow": true,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "open"
+    },
+    {
+      "id": "open-now-false-wins",
+      "weekdayText": [
+        "火曜日: 24時間営業"
+      ],
+      "openNow": false,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "closed"
+    },
+    {
+      "id": "missing-weekday-text",
+      "weekdayText": null,
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "unknown"
+    },
+    {
+      "id": "same-day-open",
+      "weekdayText": [
+        "火曜日: 9:00-17:00"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "open"
+    },
+    {
+      "id": "closing-boundary-is-closed",
+      "weekdayText": [
+        "火曜日: 9:00-17:00"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T17:00:00+09:00",
+      "expected": "closed"
+    },
+    {
+      "id": "closed-japanese",
+      "weekdayText": [
+        "火曜日: 定休日"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "closed"
+    },
+    {
+      "id": "closed-english",
+      "weekdayText": [
+        "火曜日: Closed"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "closed"
+    },
+    {
+      "id": "all-day",
+      "weekdayText": [
+        "火曜日: 24 時間営業"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "open"
+    },
+    {
+      "id": "am-pm-clock",
+      "weekdayText": [
+        "火曜日: 9:00 AM – 5:00 PM"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T16:00:00+09:00",
+      "expected": "open"
+    },
+    {
+      "id": "japanese-clock",
+      "weekdayText": [
+        "火曜日: 9時30分～18時"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "open"
+    },
+    {
+      "id": "overnight-open",
+      "weekdayText": [
+        "水曜日: 22:00-02:00"
+      ],
+      "openNow": null,
+      "now": "2026-08-19T23:00:00+09:00",
+      "expected": "open"
+    },
+    {
+      "id": "missing-today",
+      "weekdayText": [
+        "月曜日: 9:00-17:00"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "unknown"
+    },
+    {
+      "id": "malformed-clock",
+      "weekdayText": [
+        "火曜日: 朝から夕方"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": "unknown"
+    },
+    {
+      "id": "midnight-to-24-clock",
+      "weekdayText": [
+        "火曜日: 0:00-24:00"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T23:59:00+09:00",
+      "expected": "open"
+    }
+  ],
+  "todayHoursSummary": [
+    {
+      "id": "fallback-open",
+      "weekdayText": null,
+      "openNow": true,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "label": "営業中",
+        "tone": "open"
+      }
+    },
+    {
+      "id": "fallback-closed",
+      "weekdayText": null,
+      "openNow": false,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "label": "営業時間外",
+        "tone": "closed"
+      }
+    },
+    {
+      "id": "missing-everything",
+      "weekdayText": null,
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": null
+    },
+    {
+      "id": "closing-within-two-hours",
+      "weekdayText": [
+        "火曜日: 9:00-17:00"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T15:30:00+09:00",
+      "expected": {
+        "label": "本日 9:00-17:00（あと1時間30分）",
+        "tone": "open"
+      }
+    },
+    {
+      "id": "open-with-more-than-two-hours",
+      "weekdayText": [
+        "火曜日: 9:00-17:00"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "label": "本日 9:00-17:00",
+        "tone": "open"
+      }
+    },
+    {
+      "id": "closed-day",
+      "weekdayText": [
+        "火曜日: 休業"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "label": "本日は休み",
+        "tone": "closed"
+      }
+    },
+    {
+      "id": "after-hours",
+      "weekdayText": [
+        "火曜日: 9:00-17:00"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T18:00:00+09:00",
+      "expected": {
+        "label": "本日 9:00-17:00",
+        "tone": "closed"
+      }
+    },
+    {
+      "id": "overnight-does-not-show-remaining-time",
+      "weekdayText": [
+        "火曜日: 22:00-02:00"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T23:00:00+09:00",
+      "expected": {
+        "label": "本日 22:00-02:00",
+        "tone": "open"
+      }
+    },
+    {
+      "id": "missing-today-ignores-open-now",
+      "weekdayText": [
+        "月曜日: 9:00-17:00"
+      ],
+      "openNow": true,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": null
+    },
+    {
+      "id": "all-day-summary",
+      "weekdayText": [
+        "火曜日: 24時間営業"
+      ],
+      "openNow": null,
+      "now": "2026-08-18T10:00:00+09:00",
+      "expected": {
+        "label": "本日 24時間営業",
+        "tone": "open"
+      }
+    }
+  ],
+  "stripLeadingYen": [
+    {
+      "id": "null",
+      "label": null,
+      "expected": null
+    },
+    {
+      "id": "empty",
+      "label": "",
+      "expected": null
+    },
+    {
+      "id": "whitespace",
+      "label": "   ",
+      "expected": null
+    },
+    {
+      "id": "multiple-leading-yen",
+      "label": " ¥¥ 2,000 ",
+      "expected": "2,000"
+    },
+    {
+      "id": "non-leading-yen",
+      "label": "料金 ¥2,000",
+      "expected": "料金 ¥2,000"
+    }
+  ],
+  "formatPriceDisplay": [
+    {
+      "id": "free-label",
+      "priceLabel": "無料",
+      "priceLevel": 4,
+      "expected": "無料"
+    },
+    {
+      "id": "numeric-label",
+      "priceLabel": "¥2,000 – ¥3,000",
+      "priceLevel": 1,
+      "expected": "2000~¥3000"
+    },
+    {
+      "id": "yen-symbols-fall-back",
+      "priceLabel": "¥¥",
+      "priceLevel": 2,
+      "expected": "2000~5000"
+    },
+    {
+      "id": "non-numeric-label-falls-back",
+      "priceLabel": "応相談",
+      "priceLevel": 3,
+      "expected": "5000~10000"
+    },
+    {
+      "id": "normalizes-spaces-and-wave-dash",
+      "priceLabel": " 1,000 ～ 2,000 ",
+      "priceLevel": null,
+      "expected": "1000~2000"
+    },
+    {
+      "id": "rounds-half-up",
+      "priceLabel": null,
+      "priceLevel": 1.5,
+      "expected": "2000~5000"
+    },
+    {
+      "id": "negative-half-rounds-to-zero",
+      "priceLabel": null,
+      "priceLevel": -0.5,
+      "expected": "無料"
+    },
+    {
+      "id": "out-of-band",
+      "priceLabel": null,
+      "priceLevel": 4.6,
+      "expected": null
+    },
+    {
+      "id": "missing-price",
+      "priceLabel": null,
+      "priceLevel": null,
+      "expected": null
+    }
+  ]
+}

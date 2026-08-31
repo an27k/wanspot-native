@@ -1,0 +1,736 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0F5D6C55598B7C02EEB2A783 /* SpotDetailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C83C641FC2CD0291EC3D17 /* SpotDetailStore.swift */; };
+		192D9B5B49AD8C013DAFFBDA /* ChatFAB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F5A4E5FE6EBD2374D9A474A /* ChatFAB.swift */; };
+		202443443825BF458888E639 /* OnboardingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A019E23D24FDD99E332C356 /* OnboardingStore.swift */; };
+		23A5B67E8A845626F0F5E412 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 994E78B986487EEB1956475A /* AppSettingsView.swift */; };
+		4A11BA799CFE4AB83E416BDD /* WanspotSharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 228E0CA1289554FD4E5E0537 /* WanspotSharedComponents.swift */; };
+		4AEB4A0D38636AA7849AE1CB /* AuthRequiredAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A54F76DFFA17A1F93806E2 /* AuthRequiredAction.swift */; };
+		4C22275061B5470BBFC66835 /* MyPageTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038D12E62FDC382D16C6C8DA /* MyPageTabView.swift */; };
+		5201EEA78C5B311F14EDD69C /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF14D30427D4B15D4EDC9609 /* RootTabView.swift */; };
+		53F524DD968F7201470F1A13 /* LocationSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD42B30F9B97930A160D403F /* LocationSession.swift */; };
+		5B6FF92A66268DE7AA4FB7ED /* CalendarTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0993C6B0822D543FF458DC22 /* CalendarTabView.swift */; };
+		5CCA2207FA463AB3B1F3997D /* SearchTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C9E75B381B4A58433286031 /* SearchTabView.swift */; };
+		698C461B2D8A108A0E50002F /* MapSearchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F7B55F96620D6821782CD2F /* MapSearchStore.swift */; };
+		70CAC6416AF4FD7584153E66 /* WanspotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E25AE06D907FE5FE7B99B6 /* WanspotApp.swift */; };
+		7223051A33857A64A77100E2 /* SharingBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCD3427044A823DAD31FD5E /* SharingBridge.swift */; };
+		77A5850B7CD1F8A2E70CE1A4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3652C1407EAC58283D4E3414 /* Assets.xcassets */; };
+		7EF6CDAF4267CE86FF12FC38 /* DogSettingsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7049181A85483CA22C003A /* DogSettingsViews.swift */; };
+		824D0273CC78FE41F87598B5 /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1F172F8E67FE6887E4FBF88 /* NotificationSettingsView.swift */; };
+		82D67E038526311CCE4C0599 /* ArticleDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0222D2990DAA2469C956AA6B /* ArticleDetailView.swift */; };
+		8406FCEAC0DAEB04E52E6706 /* ChatSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B190184EFA043583FD5ACA9 /* ChatSheetView.swift */; };
+		92EC3BFD8FA2153DEF207110 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A49A3DB997345CDD3B00F6DC /* PrivacyInfo.xcprivacy */; };
+		9929135D411D3BE20D9504DA /* WalkForecastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75CDE629DDB2581B5F0B0235 /* WalkForecastView.swift */; };
+		9FA37305CC4339544FADC2F4 /* SpotDetailSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80104984E7D9742BBBC30C61 /* SpotDetailSections.swift */; };
+		A6CBFA823A03B14E1A16AA98 /* AppAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE6F484880ED19E6393C74D /* AppAnalytics.swift */; };
+		AA648D7C0AF4D10D7E69879B /* SpotDetailSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EC33D44851DE1C502A27E3C /* SpotDetailSheets.swift */; };
+		AE360A92C4415DB3A801787D /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03388D3C9FAEB7B620210544 /* AppPreferences.swift */; };
+		AF35A6668634A7826381A6C8 /* WanspotUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63F3E5AA17F3923504AA925F /* WanspotUITests.swift */; };
+		B01F5695729D2355CF74863C /* AuthenticationFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62346B5EA07A226319F9F376 /* AuthenticationFlowView.swift */; };
+		B03777B941605790E7B4D40F /* UITestingSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C187CD723235E8FB1880F7F /* UITestingSupport.swift */; };
+		B314D753DC35D5DC3CAA1D59 /* SpotDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27ED3217BAA8FF71E33C468A /* SpotDetailView.swift */; };
+		BA3F7C787AC5BC9A3DB50F09 /* LinkedSDKs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E674E42269CAC8855280D26 /* LinkedSDKs.swift */; };
+		C477A9AC3DCEC5BF5E1A3562 /* ArticlesTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12CBCA96BB58D30D0FCE35A /* ArticlesTabView.swift */; };
+		C7D07019CE6011A1E23903C3 /* HistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5885D499FFAA35D14977D895 /* HistoryViews.swift */; };
+		CC826B4B2D9B59C954CAB965 /* ChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57F8EA224641407949E3C90 /* ChatStore.swift */; };
+		D3E2A1ED6683BD077C7DD014 /* WanspotTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCC3CEA4099A858F33625B1 /* WanspotTheme.swift */; };
+		DA58156A8249E143A6A40575 /* OnboardingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D1EA68B01CB2FA98F5912A4 /* OnboardingFlowView.swift */; };
+		DBCCBE277E226E4A8BACE124 /* MorningWalkNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBE7D74B35DFA41A079D5AA2 /* MorningWalkNotificationService.swift */; };
+		DEF794688E84E0F52634D52B /* AccountDeleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93F4ECCB790F544E02DB714 /* AccountDeleteView.swift */; };
+		E0E08FDDB626F8867234CD66 /* OnboardingLocationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B450288E8B219181D8153B38 /* OnboardingLocationProvider.swift */; };
+		E54C41F70872F1A2E38AADC8 /* CalendarEventDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 726AC4B5120E09FAD019F08D /* CalendarEventDetailView.swift */; };
+		E5AD0A34667237896E06B535 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE9A1DEBB531DACDA0722A86 /* AppRouter.swift */; };
+		EAAB0F7EEF692A4039F397EA /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 319E1DC32B49C4DB8F271537 /* AppModel.swift */; };
+		F2BF7AE2E8DD15098BDC9743 /* WanspotKit in Frameworks */ = {isa = PBXBuildFile; productRef = E14F6A384B240B07D287F938 /* WanspotKit */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F48EA613F0A703EAE6D5E3BC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C0C4EF40E88FB188E5D39243 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3DFA4F0EDA43916A5B461D9C;
+			remoteInfo = Wanspot;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0222D2990DAA2469C956AA6B /* ArticleDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleDetailView.swift; sourceTree = "<group>"; };
+		03388D3C9FAEB7B620210544 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
+		038D12E62FDC382D16C6C8DA /* MyPageTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyPageTabView.swift; sourceTree = "<group>"; };
+		0993C6B0822D543FF458DC22 /* CalendarTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarTabView.swift; sourceTree = "<group>"; };
+		0EC33D44851DE1C502A27E3C /* SpotDetailSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDetailSheets.swift; sourceTree = "<group>"; };
+		228E0CA1289554FD4E5E0537 /* WanspotSharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WanspotSharedComponents.swift; sourceTree = "<group>"; };
+		27ED3217BAA8FF71E33C468A /* SpotDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDetailView.swift; sourceTree = "<group>"; };
+		319E1DC32B49C4DB8F271537 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		3652C1407EAC58283D4E3414 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3A019E23D24FDD99E332C356 /* OnboardingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStore.swift; sourceTree = "<group>"; };
+		3F5A4E5FE6EBD2374D9A474A /* ChatFAB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatFAB.swift; sourceTree = "<group>"; };
+		485E4D610C7494E11B86AD2E /* WanspotKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = WanspotKit; path = WanspotKit; sourceTree = SOURCE_ROOT; };
+		497E88EECA58E0AAD4D05356 /* Wanspot.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Wanspot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B190184EFA043583FD5ACA9 /* ChatSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSheetView.swift; sourceTree = "<group>"; };
+		5885D499FFAA35D14977D895 /* HistoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViews.swift; sourceTree = "<group>"; };
+		5C187CD723235E8FB1880F7F /* UITestingSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestingSupport.swift; sourceTree = "<group>"; };
+		5F7B55F96620D6821782CD2F /* MapSearchStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapSearchStore.swift; sourceTree = "<group>"; };
+		62346B5EA07A226319F9F376 /* AuthenticationFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationFlowView.swift; sourceTree = "<group>"; };
+		63F3E5AA17F3923504AA925F /* WanspotUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WanspotUITests.swift; sourceTree = "<group>"; };
+		6C9E75B381B4A58433286031 /* SearchTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTabView.swift; sourceTree = "<group>"; };
+		6D1EA68B01CB2FA98F5912A4 /* OnboardingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
+		6FCD3427044A823DAD31FD5E /* SharingBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingBridge.swift; sourceTree = "<group>"; };
+		726AC4B5120E09FAD019F08D /* CalendarEventDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEventDetailView.swift; sourceTree = "<group>"; };
+		75CDE629DDB2581B5F0B0235 /* WalkForecastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkForecastView.swift; sourceTree = "<group>"; };
+		77C83C641FC2CD0291EC3D17 /* SpotDetailStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDetailStore.swift; sourceTree = "<group>"; };
+		7E674E42269CAC8855280D26 /* LinkedSDKs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkedSDKs.swift; sourceTree = "<group>"; };
+		80104984E7D9742BBBC30C61 /* SpotDetailSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDetailSections.swift; sourceTree = "<group>"; };
+		87ECA28A4084BCF176D3FB30 /* Wanspot-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Wanspot-Debug.xcconfig"; sourceTree = "<group>"; };
+		8A7049181A85483CA22C003A /* DogSettingsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DogSettingsViews.swift; sourceTree = "<group>"; };
+		994E78B986487EEB1956475A /* AppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsView.swift; sourceTree = "<group>"; };
+		9CCC3CEA4099A858F33625B1 /* WanspotTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WanspotTheme.swift; sourceTree = "<group>"; };
+		A49A3DB997345CDD3B00F6DC /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A8E25AE06D907FE5FE7B99B6 /* WanspotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WanspotApp.swift; sourceTree = "<group>"; };
+		B450288E8B219181D8153B38 /* OnboardingLocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLocationProvider.swift; sourceTree = "<group>"; };
+		B48D57894C2088FAEA02E2F2 /* Wanspot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Wanspot.entitlements; sourceTree = "<group>"; };
+		B8A54F76DFFA17A1F93806E2 /* AuthRequiredAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRequiredAction.swift; sourceTree = "<group>"; };
+		BF14D30427D4B15D4EDC9609 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		BF2CB60E0E693BA2B4663F7E /* WanspotUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WanspotUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C4F7BE0048A3F01431C48999 /* Wanspot-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Wanspot-Release.xcconfig"; sourceTree = "<group>"; };
+		CBE7D74B35DFA41A079D5AA2 /* MorningWalkNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningWalkNotificationService.swift; sourceTree = "<group>"; };
+		D57F8EA224641407949E3C90 /* ChatStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatStore.swift; sourceTree = "<group>"; };
+		D93F4ECCB790F544E02DB714 /* AccountDeleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountDeleteView.swift; sourceTree = "<group>"; };
+		DD42B30F9B97930A160D403F /* LocationSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationSession.swift; sourceTree = "<group>"; };
+		DE9A1DEBB531DACDA0722A86 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
+		F12CBCA96BB58D30D0FCE35A /* ArticlesTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticlesTabView.swift; sourceTree = "<group>"; };
+		F1F172F8E67FE6887E4FBF88 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
+		FAE6F484880ED19E6393C74D /* AppAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAnalytics.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		871FD5D3F7FB3F2A9805E520 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F2BF7AE2E8DD15098BDC9743 /* WanspotKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1BE6F510EE8F0D0C112054BC /* Articles */ = {
+			isa = PBXGroup;
+			children = (
+				0222D2990DAA2469C956AA6B /* ArticleDetailView.swift */,
+				F12CBCA96BB58D30D0FCE35A /* ArticlesTabView.swift */,
+			);
+			path = Articles;
+			sourceTree = "<group>";
+		};
+		1D525E941C2E520E7BE87B42 /* Search */ = {
+			isa = PBXGroup;
+			children = (
+				5F7B55F96620D6821782CD2F /* MapSearchStore.swift */,
+				6C9E75B381B4A58433286031 /* SearchTabView.swift */,
+			);
+			path = Search;
+			sourceTree = "<group>";
+		};
+		283755B35E695F281456A6DA /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				1BE6F510EE8F0D0C112054BC /* Articles */,
+				55BDA9DC87FC425D2CBC630C /* Auth */,
+				EA0D26939781F88047A40C5C /* Calendar */,
+				499CE34316852617C5F872C1 /* Chat */,
+				66CD1C5DE4721F7A68E672FE /* MyPage */,
+				2F280B0B302A93FA28D4835C /* Onboarding */,
+				1D525E941C2E520E7BE87B42 /* Search */,
+				7E1B12C90F261E4A556C4592 /* SpotDetail */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		2F280B0B302A93FA28D4835C /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				6D1EA68B01CB2FA98F5912A4 /* OnboardingFlowView.swift */,
+				3A019E23D24FDD99E332C356 /* OnboardingStore.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		4202517E4A3EF02859D2C07C = {
+			isa = PBXGroup;
+			children = (
+				485E4D610C7494E11B86AD2E /* WanspotKit */,
+				DEF3BF57D726ADF6C7BE0648 /* Config */,
+				DC0E149A5D56D45884DA3688 /* Wanspot */,
+				7FD090CE6E113FDA6159BE1A /* WanspotUITests */,
+				C6A5AA171CBDBFC05F3C5673 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		499CE34316852617C5F872C1 /* Chat */ = {
+			isa = PBXGroup;
+			children = (
+				3F5A4E5FE6EBD2374D9A474A /* ChatFAB.swift */,
+				4B190184EFA043583FD5ACA9 /* ChatSheetView.swift */,
+				D57F8EA224641407949E3C90 /* ChatStore.swift */,
+			);
+			path = Chat;
+			sourceTree = "<group>";
+		};
+		55BDA9DC87FC425D2CBC630C /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				62346B5EA07A226319F9F376 /* AuthenticationFlowView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		66CD1C5DE4721F7A68E672FE /* MyPage */ = {
+			isa = PBXGroup;
+			children = (
+				D93F4ECCB790F544E02DB714 /* AccountDeleteView.swift */,
+				994E78B986487EEB1956475A /* AppSettingsView.swift */,
+				8A7049181A85483CA22C003A /* DogSettingsViews.swift */,
+				5885D499FFAA35D14977D895 /* HistoryViews.swift */,
+				038D12E62FDC382D16C6C8DA /* MyPageTabView.swift */,
+				F1F172F8E67FE6887E4FBF88 /* NotificationSettingsView.swift */,
+				75CDE629DDB2581B5F0B0235 /* WalkForecastView.swift */,
+			);
+			path = MyPage;
+			sourceTree = "<group>";
+		};
+		7E1B12C90F261E4A556C4592 /* SpotDetail */ = {
+			isa = PBXGroup;
+			children = (
+				80104984E7D9742BBBC30C61 /* SpotDetailSections.swift */,
+				0EC33D44851DE1C502A27E3C /* SpotDetailSheets.swift */,
+				77C83C641FC2CD0291EC3D17 /* SpotDetailStore.swift */,
+				27ED3217BAA8FF71E33C468A /* SpotDetailView.swift */,
+			);
+			path = SpotDetail;
+			sourceTree = "<group>";
+		};
+		7FD090CE6E113FDA6159BE1A /* WanspotUITests */ = {
+			isa = PBXGroup;
+			children = (
+				63F3E5AA17F3923504AA925F /* WanspotUITests.swift */,
+			);
+			path = WanspotUITests;
+			sourceTree = "<group>";
+		};
+		BB449D25EFC50E608CA2D32D /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				228E0CA1289554FD4E5E0537 /* WanspotSharedComponents.swift */,
+				9CCC3CEA4099A858F33625B1 /* WanspotTheme.swift */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		C4897EC460E780504046E9A3 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				3652C1407EAC58283D4E3414 /* Assets.xcassets */,
+				A49A3DB997345CDD3B00F6DC /* PrivacyInfo.xcprivacy */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		C6A5AA171CBDBFC05F3C5673 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				497E88EECA58E0AAD4D05356 /* Wanspot.app */,
+				BF2CB60E0E693BA2B4663F7E /* WanspotUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DC0E149A5D56D45884DA3688 /* Wanspot */ = {
+			isa = PBXGroup;
+			children = (
+				B48D57894C2088FAEA02E2F2 /* Wanspot.entitlements */,
+				F856638803D021E6745E8D0B /* App */,
+				BB449D25EFC50E608CA2D32D /* DesignSystem */,
+				283755B35E695F281456A6DA /* Features */,
+				F09F8557A7622D02259B5529 /* Platform */,
+				C4897EC460E780504046E9A3 /* Resources */,
+			);
+			path = Wanspot;
+			sourceTree = "<group>";
+		};
+		DEF3BF57D726ADF6C7BE0648 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				87ECA28A4084BCF176D3FB30 /* Wanspot-Debug.xcconfig */,
+				C4F7BE0048A3F01431C48999 /* Wanspot-Release.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		EA0D26939781F88047A40C5C /* Calendar */ = {
+			isa = PBXGroup;
+			children = (
+				726AC4B5120E09FAD019F08D /* CalendarEventDetailView.swift */,
+				0993C6B0822D543FF458DC22 /* CalendarTabView.swift */,
+			);
+			path = Calendar;
+			sourceTree = "<group>";
+		};
+		F09F8557A7622D02259B5529 /* Platform */ = {
+			isa = PBXGroup;
+			children = (
+				FAE6F484880ED19E6393C74D /* AppAnalytics.swift */,
+				B8A54F76DFFA17A1F93806E2 /* AuthRequiredAction.swift */,
+				7E674E42269CAC8855280D26 /* LinkedSDKs.swift */,
+				DD42B30F9B97930A160D403F /* LocationSession.swift */,
+				CBE7D74B35DFA41A079D5AA2 /* MorningWalkNotificationService.swift */,
+				B450288E8B219181D8153B38 /* OnboardingLocationProvider.swift */,
+				6FCD3427044A823DAD31FD5E /* SharingBridge.swift */,
+			);
+			path = Platform;
+			sourceTree = "<group>";
+		};
+		F856638803D021E6745E8D0B /* App */ = {
+			isa = PBXGroup;
+			children = (
+				319E1DC32B49C4DB8F271537 /* AppModel.swift */,
+				03388D3C9FAEB7B620210544 /* AppPreferences.swift */,
+				DE9A1DEBB531DACDA0722A86 /* AppRouter.swift */,
+				BF14D30427D4B15D4EDC9609 /* RootTabView.swift */,
+				5C187CD723235E8FB1880F7F /* UITestingSupport.swift */,
+				A8E25AE06D907FE5FE7B99B6 /* WanspotApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3DFA4F0EDA43916A5B461D9C /* Wanspot */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C717057E7337F31E3ABDE7DC /* Build configuration list for PBXNativeTarget "Wanspot" */;
+			buildPhases = (
+				DFCA4F2CA70EC207FB2A5816 /* Sources */,
+				C3210DB40388F3DF205EAE2B /* Resources */,
+				871FD5D3F7FB3F2A9805E520 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Wanspot;
+			packageProductDependencies = (
+				E14F6A384B240B07D287F938 /* WanspotKit */,
+			);
+			productName = Wanspot;
+			productReference = 497E88EECA58E0AAD4D05356 /* Wanspot.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8DAE2457EDAB2FE658420028 /* WanspotUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3A49013420DEB8F46FD5779B /* Build configuration list for PBXNativeTarget "WanspotUITests" */;
+			buildPhases = (
+				6E26B5E3D2CBB3BCDB3EEDE3 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				81268692DE4A897279851FDC /* PBXTargetDependency */,
+			);
+			name = WanspotUITests;
+			packageProductDependencies = (
+			);
+			productName = WanspotUITests;
+			productReference = BF2CB60E0E693BA2B4663F7E /* WanspotUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C0C4EF40E88FB188E5D39243 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					3DFA4F0EDA43916A5B461D9C = {
+						DevelopmentTeam = 3ZKJY68M2F;
+						ProvisioningStyle = Automatic;
+					};
+					8DAE2457EDAB2FE658420028 = {
+						DevelopmentTeam = 3ZKJY68M2F;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 3DFA4F0EDA43916A5B461D9C;
+					};
+				};
+			};
+			buildConfigurationList = 73ECDCA720431D43BD648E7D /* Build configuration list for PBXProject "Wanspot" */;
+			developmentRegion = ja;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				ja,
+			);
+			mainGroup = 4202517E4A3EF02859D2C07C;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				14B3606BD803F593971600A1 /* XCLocalSwiftPackageReference "WanspotKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C6A5AA171CBDBFC05F3C5673 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3DFA4F0EDA43916A5B461D9C /* Wanspot */,
+				8DAE2457EDAB2FE658420028 /* WanspotUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C3210DB40388F3DF205EAE2B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				77A5850B7CD1F8A2E70CE1A4 /* Assets.xcassets in Resources */,
+				92EC3BFD8FA2153DEF207110 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		6E26B5E3D2CBB3BCDB3EEDE3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF35A6668634A7826381A6C8 /* WanspotUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFCA4F2CA70EC207FB2A5816 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DEF794688E84E0F52634D52B /* AccountDeleteView.swift in Sources */,
+				A6CBFA823A03B14E1A16AA98 /* AppAnalytics.swift in Sources */,
+				EAAB0F7EEF692A4039F397EA /* AppModel.swift in Sources */,
+				AE360A92C4415DB3A801787D /* AppPreferences.swift in Sources */,
+				E5AD0A34667237896E06B535 /* AppRouter.swift in Sources */,
+				23A5B67E8A845626F0F5E412 /* AppSettingsView.swift in Sources */,
+				82D67E038526311CCE4C0599 /* ArticleDetailView.swift in Sources */,
+				C477A9AC3DCEC5BF5E1A3562 /* ArticlesTabView.swift in Sources */,
+				4AEB4A0D38636AA7849AE1CB /* AuthRequiredAction.swift in Sources */,
+				B01F5695729D2355CF74863C /* AuthenticationFlowView.swift in Sources */,
+				E54C41F70872F1A2E38AADC8 /* CalendarEventDetailView.swift in Sources */,
+				5B6FF92A66268DE7AA4FB7ED /* CalendarTabView.swift in Sources */,
+				192D9B5B49AD8C013DAFFBDA /* ChatFAB.swift in Sources */,
+				8406FCEAC0DAEB04E52E6706 /* ChatSheetView.swift in Sources */,
+				CC826B4B2D9B59C954CAB965 /* ChatStore.swift in Sources */,
+				7EF6CDAF4267CE86FF12FC38 /* DogSettingsViews.swift in Sources */,
+				C7D07019CE6011A1E23903C3 /* HistoryViews.swift in Sources */,
+				BA3F7C787AC5BC9A3DB50F09 /* LinkedSDKs.swift in Sources */,
+				53F524DD968F7201470F1A13 /* LocationSession.swift in Sources */,
+				698C461B2D8A108A0E50002F /* MapSearchStore.swift in Sources */,
+				DBCCBE277E226E4A8BACE124 /* MorningWalkNotificationService.swift in Sources */,
+				4C22275061B5470BBFC66835 /* MyPageTabView.swift in Sources */,
+				824D0273CC78FE41F87598B5 /* NotificationSettingsView.swift in Sources */,
+				DA58156A8249E143A6A40575 /* OnboardingFlowView.swift in Sources */,
+				E0E08FDDB626F8867234CD66 /* OnboardingLocationProvider.swift in Sources */,
+				202443443825BF458888E639 /* OnboardingStore.swift in Sources */,
+				5201EEA78C5B311F14EDD69C /* RootTabView.swift in Sources */,
+				5CCA2207FA463AB3B1F3997D /* SearchTabView.swift in Sources */,
+				7223051A33857A64A77100E2 /* SharingBridge.swift in Sources */,
+				9FA37305CC4339544FADC2F4 /* SpotDetailSections.swift in Sources */,
+				AA648D7C0AF4D10D7E69879B /* SpotDetailSheets.swift in Sources */,
+				0F5D6C55598B7C02EEB2A783 /* SpotDetailStore.swift in Sources */,
+				B314D753DC35D5DC3CAA1D59 /* SpotDetailView.swift in Sources */,
+				B03777B941605790E7B4D40F /* UITestingSupport.swift in Sources */,
+				9929135D411D3BE20D9504DA /* WalkForecastView.swift in Sources */,
+				70CAC6416AF4FD7584153E66 /* WanspotApp.swift in Sources */,
+				4A11BA799CFE4AB83E416BDD /* WanspotSharedComponents.swift in Sources */,
+				D3E2A1ED6683BD077C7DD014 /* WanspotTheme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		81268692DE4A897279851FDC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3DFA4F0EDA43916A5B461D9C /* Wanspot */;
+			targetProxy = F48EA613F0A703EAE6D5E3BC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		21A5B1855B4AB0D29980A7D2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 3ZKJY68M2F;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.wanspot.native.uitests;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Wanspot;
+			};
+			name = Release;
+		};
+		2B23169A731C29189DE90872 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 3ZKJY68M2F;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.wanspot.native.uitests;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Wanspot;
+			};
+			name = Debug;
+		};
+		4DCA7DA7BB96AB1756FA304E /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C4F7BE0048A3F01431C48999 /* Wanspot-Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Wanspot/Wanspot.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 3ZKJY68M2F;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Wanspot/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_NAME = Wanspot;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		59077C15EF499E3AD152A1ED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 87ECA28A4084BCF176D3FB30 /* Wanspot-Debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Wanspot/Wanspot.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 3ZKJY68M2F;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Wanspot/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_NAME = Wanspot;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		6E390720137BD9F3D17C7974 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		B5E0DC17DC2B4E8032033F9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3A49013420DEB8F46FD5779B /* Build configuration list for PBXNativeTarget "WanspotUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B23169A731C29189DE90872 /* Debug */,
+				21A5B1855B4AB0D29980A7D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		73ECDCA720431D43BD648E7D /* Build configuration list for PBXProject "Wanspot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6E390720137BD9F3D17C7974 /* Debug */,
+				B5E0DC17DC2B4E8032033F9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C717057E7337F31E3ABDE7DC /* Build configuration list for PBXNativeTarget "Wanspot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				59077C15EF499E3AD152A1ED /* Debug */,
+				4DCA7DA7BB96AB1756FA304E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		14B3606BD803F593971600A1 /* XCLocalSwiftPackageReference "WanspotKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = WanspotKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E14F6A384B240B07D287F938 /* WanspotKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WanspotKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = C0C4EF40E88FB188E5D39243 /* Project object */;
+}

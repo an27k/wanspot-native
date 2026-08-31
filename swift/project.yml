@@ -1,0 +1,80 @@
+name: Wanspot
+
+options:
+  deploymentTarget:
+    iOS: "26.0"
+  developmentLanguage: ja
+  localPackagesGroup: ""
+  xcodeVersion: "26.6"
+
+configs:
+  Debug: debug
+  Release: release
+
+packages:
+  WanspotKit:
+    path: WanspotKit
+    group: ""
+
+targets:
+  Wanspot:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Wanspot
+        excludes:
+          - Resources/Info.plist
+    dependencies:
+      - package: WanspotKit
+    configFiles:
+      Debug: Config/Wanspot-Debug.xcconfig
+      Release: Config/Wanspot-Release.xcconfig
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: Wanspot/Wanspot.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 3ZKJY68M2F
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Wanspot/Resources/Info.plist
+        PRODUCT_NAME: Wanspot
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+        SWIFT_STRICT_CONCURRENCY: complete
+        TARGETED_DEVICE_FAMILY: 1
+  WanspotUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: WanspotUITests
+    dependencies:
+      - target: Wanspot
+    settings:
+      base:
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 3ZKJY68M2F
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: app.wanspot.native.uitests
+        SWIFT_STRICT_CONCURRENCY: complete
+        TARGETED_DEVICE_FAMILY: 1
+        TEST_TARGET_NAME: Wanspot
+
+schemes:
+  Wanspot:
+    build:
+      targets:
+        Wanspot: all
+        WanspotUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - name: WanspotUITests
+          parallelizable: false
+          randomExecutionOrder: false
+    run:
+      config: Debug
+    archive:
+      config: Release
