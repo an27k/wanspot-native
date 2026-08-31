@@ -73,9 +73,6 @@ struct SearchTabView: View {
             recenterButton
                 .padding(.horizontal, WanspotSpacing.md)
                 .padding(.bottom, store.displaySpots.isEmpty ? 116 : 224)
-                // 現在地ボタンはカルーセルの上に置いてあるので、その上端までを
-                // 申告すればチャットFABはカードにも現在地ボタンにも重ならない
-                .measuresChatFABClearance()
         }
         .toolbar(.hidden, for: .navigationBar)
         .task {
